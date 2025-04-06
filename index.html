@@ -5,29 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WaveTravel - Login</title>
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js"></script>
 
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      background: linear-gradient(135deg, #2b5876, #4e4376);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       margin: 0;
-      color: white;
+      color: #fff;
     }
 
     .container {
-      background: rgba(0, 0, 0, 0.3);
+      background-color: rgba(255, 255, 255, 0.1);
       padding: 30px;
       border-radius: 15px;
-      width: 90%;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
       max-width: 400px;
+      width: 90%;
     }
 
     h2 {
@@ -35,7 +35,7 @@
       margin-bottom: 20px;
     }
 
-    input, select {
+    select, input {
       width: 100%;
       padding: 12px;
       margin: 10px 0;
@@ -47,13 +47,27 @@
     button {
       width: 100%;
       padding: 12px;
-      background-color: #ff6ec4;
+      margin-top: 10px;
+      background-color: #00c9ff;
       border: none;
-      color: white;
+      color: #fff;
       font-weight: bold;
       font-size: 16px;
       border-radius: 8px;
       cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #009fcb;
+    }
+
+    #otpSection {
+      display: none;
+    }
+
+    #recaptcha-container {
+      margin-top: 10px;
     }
 
     .signup-link {
@@ -62,7 +76,7 @@
     }
 
     .signup-link a {
-      color: #ffd1f4;
+      color: #00c9ff;
       text-decoration: none;
     }
 
@@ -70,82 +84,79 @@
       text-decoration: underline;
     }
 
-    #resendBtn {
-      margin-top: 10px;
-      background: transparent;
-      border: 1px solid #fff;
+    .flex-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .flex-row select {
+      width: 30%;
+    }
+
+    .flex-row input {
+      width: 70%;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Login with Mobile</h2>
+    <h2>Login to WaveTravel</h2>
 
-    <select id="countryCode">
-      <option value="+91" selected>🇮🇳 +91</option>
-      <option value="+1">🇺🇸 +1</option>
-      <option value="+44">🇬🇧 +44</option>
-      <option value="+61">🇦🇺 +61</option>
-      <option value="+880">🇧🇩 +880</option>
-    </select>
-    <input type="text" id="phone" placeholder="Phone Number" />
+    <div class="flex-row">
+      <select id="countryCode">
+        <option value="+91" selected>🇮🇳 +91</option>
+        <option value="+1">🇺🇸 +1</option>
+        <option value="+44">🇬🇧 +44</option>
+        <option value="+61">🇦🇺 +61</option>
+        <option value="+880">🇧🇩 +880</option>
+        <!-- Add more if needed -->
+      </select>
+      <input type="text" id="phone" placeholder="Phone Number" />
+    </div>
 
     <div id="recaptcha-container"></div>
     <button onclick="sendOTP()">Send OTP</button>
 
-    <div id="otpSection" style="display: none;">
+    <div id="otpSection">
       <input type="text" id="otp" placeholder="Enter OTP" />
-      <button onclick="verifyOTP()">Verify OTP</button>
-      <button id="resendBtn" onclick="sendOTP()">Resend OTP</button>
+      <button onclick="verifyOTP()">Verify & Login</button>
     </div>
 
     <div class="signup-link">
-      New user? <a href="signup.html">Create Account</a>
+      Don’t have an account? <a href="signup.html">Sign up</a>
     </div>
   </div>
 
   <script>
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
       databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
       projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
+      storageBucket: "wavetravel-3c4c4.firebasestorage.app",
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.database();
 
-    let fullPhone = "";
-
-    window.onload = () => {
-      // Setup visible reCAPTCHA
-      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        size: 'normal',
-        callback: function(response) {
-          console.log("reCAPTCHA solved");
-        },
-        'expired-callback': function() {
-          alert("reCAPTCHA expired. Please retry.");
-        }
-      });
-      recaptchaVerifier.render();
-    };
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      size: 'normal',
+      callback: (response) => {
+        console.log("Recaptcha verified");
+      }
+    });
 
     function sendOTP() {
-      const phone = document.getElementById('phone').value.trim();
-      const code = document.getElementById('countryCode').value;
+      const countryCode = document.getElementById('countryCode').value;
+      const phoneInput = document.getElementById('phone').value.trim();
+      const fullPhone = countryCode + phoneInput;
 
-      if (!/^\d{10}$/.test(phone)) {
-        alert("Enter a valid 10-digit phone number.");
+      if (!/^\d{10}$/.test(phoneInput)) {
+        alert("Please enter a valid 10-digit phone number");
         return;
       }
-
-      fullPhone = code + phone;
 
       auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
         .then(confirmationResult => {
@@ -154,39 +165,24 @@
           alert("OTP sent to " + fullPhone);
         })
         .catch(error => {
-          console.error(error);
           alert("Error: " + error.message);
         });
     }
 
     function verifyOTP() {
-      const code = document.getElementById('otp').value.trim();
-
+      const code = document.getElementById('otp').value;
       if (!code) {
-        alert("Enter the OTP.");
+        alert("Enter the OTP");
         return;
       }
 
       window.confirmationResult.confirm(code)
         .then(result => {
-          // Check role in database
-          db.ref("users/" + fullPhone).once("value", snapshot => {
-            const userData = snapshot.val();
-            if (!userData || userData.role !== "customer") {
-              alert("Access denied. Only customers can log in.");
-              auth.signOut();
-              return;
-            }
-
-            alert("Login successful!");
-            localStorage.setItem("loggedIn", "true");
-            localStorage.setItem("phone", fullPhone);
-            window.location.href = "home.html";
-          });
+          alert("Login Successful!");
+          window.location.href = "booking.html"; // ✅ redirect to booking.html
         })
         .catch(error => {
-          console.error(error);
-          alert("Incorrect OTP or expired. Please try again.");
+          alert("Incorrect OTP or session expired.");
         });
     }
   </script>
