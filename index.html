@@ -1,8 +1,9 @@
+<!-- signup.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Login - WaveTravel</title>
+  <title>Signup - WaveTravel</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -27,37 +28,26 @@
       border: 1px solid #ccc;
     }
     button {
-      background-color: #007bff;
+      background-color: #28a745;
       color: white;
       border: none;
       cursor: pointer;
-    }
-    #otp-box {
-      display: none;
     }
   </style>
 </head>
 <body>
 <div class="container">
-  <h3>Login with Phone</h3>
-
-  <div id="phone-box">
-    <input type="text" id="phoneNumber" placeholder="+91XXXXXXXXXX" />
-    <div id="recaptcha-container"></div>
-    <button id="send-otp">Send OTP</button>
-  </div>
-
-  <div id="otp-box">
-    <input type="text" id="otp" placeholder="Enter OTP" />
-    <button id="verify-otp">Verify OTP</button>
-  </div>
+  <h3>Complete Signup</h3>
+  <input type="text" id="name" placeholder="Full Name" />
+  <input type="email" id="email" placeholder="Email" />
+  <button id="signup">Submit</button>
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getAuth, signInWithPhoneNumber, RecaptchaVerifier } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
     authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -70,39 +60,27 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = getDatabase(app);
 
-  // Set up invisible reCAPTCHA
-  const recaptcha = new RecaptchaVerifier(auth, 'recaptcha-container', {
-    size: 'invisible',
-    callback: (response) => {
-      sendOTP(); // when reCAPTCHA solved
-    }
-  });
+  document.getElementById('signup').addEventListener('click', () => {
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
 
-  let confirmationResult;
-
-  document.getElementById('send-otp').addEventListener('click', async () => {
-    const phone = document.getElementById('phoneNumber').value;
-    try {
-      confirmationResult = await signInWithPhoneNumber(auth, phone, recaptcha);
-      document.getElementById('phone-box').style.display = 'none';
-      document.getElementById('otp-box').style.display = 'block';
-      alert('OTP sent!');
-    } catch (error) {
-      alert('Failed to send OTP: ' + error.message);
-    }
-  });
-
-  document.getElementById('verify-otp').addEventListener('click', async () => {
-    const otp = document.getElementById('otp').value;
-    try {
-      const result = await confirmationResult.confirm(otp);
-      alert("Login Successful");
-      // redirect to dashboard
-      window.location.href = "dashboard.html";
-    } catch (error) {
-      alert("Invalid OTP. Please try again.");
-    }
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const uid = user.uid;
+        set(ref(db, 'users/' + uid), {
+          name,
+          email,
+          phone: user.phoneNumber
+        }).then(() => {
+          alert("Signup complete!");
+          window.location.href = "dashboard.html";
+        });
+      } else {
+        alert("User not logged in.");
+      }
+    });
   });
 </script>
 </body>
