@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WaveTravel - Login</title>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js"></script>
@@ -66,11 +66,8 @@
       text-decoration: none;
     }
 
-    #recaptcha-container {
-      margin: 10px 0;
-      min-height: 78px;
-      display: block !important;
-      visibility: visible !important;
+    .signup-link a:hover {
+      text-decoration: underline;
     }
 
     #resendBtn {
@@ -84,18 +81,16 @@
   <div class="container">
     <h2>Login with Mobile</h2>
 
-    <div>
-      <select id="countryCode">
-        <option value="+91" selected>🇮🇳 +91</option>
-        <option value="+1">🇺🇸 +1</option>
-        <option value="+44">🇬🇧 +44</option>
-        <option value="+61">🇦🇺 +61</option>
-        <option value="+880">🇧🇩 +880</option>
-      </select>
-      <input type="text" id="phone" placeholder="Phone Number" />
-    </div>
+    <select id="countryCode">
+      <option value="+91" selected>🇮🇳 +91</option>
+      <option value="+1">🇺🇸 +1</option>
+      <option value="+44">🇬🇧 +44</option>
+      <option value="+61">🇦🇺 +61</option>
+      <option value="+880">🇧🇩 +880</option>
+    </select>
+    <input type="text" id="phone" placeholder="Phone Number" />
 
-    <div id="recaptcha-container"></div>
+    <div id="recaptcha-container" style="margin: 10px 0;"></div>
     <button onclick="sendOTP()">Send OTP</button>
 
     <div id="otpSection" style="display: none;">
@@ -110,6 +105,7 @@
   </div>
 
   <script>
+    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -120,26 +116,13 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
     let fullPhone = "";
 
     window.onload = () => {
-      firebase.initializeApp(firebaseConfig);
-
-      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        size: 'normal',
-        callback: function (response) {
-          console.log("reCAPTCHA solved");
-        },
-        'expired-callback': function () {
-          alert("reCAPTCHA expired. Please verify again.");
-        }
-      });
-
-      recaptchaVerifier.render().then(function (widgetId) {
-        window.recaptchaWidgetId = widgetId;
-      });
-
-      // Auto-fill if redirected
       const params = new URLSearchParams(window.location.search);
       const phone = params.get('phone');
       if (phone) {
@@ -147,13 +130,15 @@
         document.getElementById("phone").value = phone.replace("+91", "");
       }
 
-      // Reload if reCAPTCHA fails
-      setTimeout(() => {
-        if (!document.querySelector('iframe[src*="google.com/recaptcha"]')) {
-          alert("ReCAPTCHA failed to load. Reloading...");
-          window.location.reload();
-        }
-      }, 5000);
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'normal',
+        callback: response => console.log("reCAPTCHA verified."),
+        'expired-callback': () => alert("reCAPTCHA expired. Please refresh and try again.")
+      });
+
+      recaptchaVerifier.render().then(widgetId => {
+        window.recaptchaWidgetId = widgetId;
+      });
     };
 
     function sendOTP() {
@@ -167,7 +152,7 @@
 
       fullPhone = code + phone;
 
-      firebase.auth().signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
+      auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
         .then(confirmationResult => {
           window.confirmationResult = confirmationResult;
           document.getElementById('otpSection').style.display = 'block';
@@ -181,6 +166,7 @@
 
     function verifyOTP() {
       const code = document.getElementById('otp').value.trim();
+
       if (!code) {
         alert("Enter the OTP.");
         return;
@@ -188,12 +174,11 @@
 
       window.confirmationResult.confirm(code)
         .then(result => {
-          const db = firebase.database();
           db.ref("users/" + fullPhone).once("value", snapshot => {
             const userData = snapshot.val();
             if (!userData || userData.role !== "customer") {
               alert("Access denied. Only customers can log in.");
-              firebase.auth().signOut();
+              auth.signOut();
               return;
             }
 
@@ -203,7 +188,7 @@
         })
         .catch(error => {
           console.error(error);
-          alert("Incorrect OTP or expired. Please try again.");
+          alert("Incorrect or expired OTP.");
         });
     }
   </script>
