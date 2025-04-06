@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Bookings - WaveTravel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #007bff;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    nav ul {
+      list-style: none;
+      background: #333;
+      display: flex;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+    }
+    nav ul li a {
+      display: block;
+      color: white;
+      padding: 14px 20px;
+      text-decoration: none;
+    }
+    nav ul li a:hover {
+      background: #555;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #007bff;
+    }
+    .search-box {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .search-box input {
+      width: 300px;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #f1f1f1;
+    }
+    .btn-cancel {
+      background: red;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .pagination {
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .pagination button {
+      margin: 0 5px;
+      padding: 8px 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .pagination button.disabled {
+      background: #ccc;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>WaveTravel</h1>
+</header>
+
+<nav>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="booking.html">Book Cab</a></li>
+    <li><a href="mybookings.html">My Bookings</a></li>
+    <li><a href="profile.html">Profile</a></li>
+  </ul>
+</nav>
+
+<div class="container">
+  <h2>My Bookings</h2>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search by pickup/drop/date..." />
+  </div>
+
+  <table id="bookingTable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Pickup</th>
+        <th>Drop</th>
+        <th>Seats</th>
+        <th>Fare</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="bookingBody">
+      <tr><td colspan="7">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pagination" id="paginationControls"></div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.firebasestorage.app",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+
+  const tbody = document.getElementById('bookingBody');
+  const searchInput = document.getElementById('searchInput');
+  const paginationControls = document.getElementById('paginationControls');
+  const bookingsPerPage = 5;
+  let currentPage = 1;
+  let allBookings = [];
+
+  const renderTable = () => {
+    tbody.innerHTML = '';
+    const start = (currentPage - 1) * bookingsPerPage;
+    const paginatedBookings = allBookings.slice(start, start + bookingsPerPage);
+
+    if (paginatedBookings.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7">No bookings found.</td></tr>`;
+      return;
+    }
+
+    paginatedBookings.forEach(booking => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${booking.date}</td>
+        <td>${booking.pickup}</td>
+        <td>${booking.drop}</td>
+        <td>${booking.seats}</td>
+        <td>₹${booking.fare}</td>
+        <td>${booking.status || 'Pending'}</td>
+        <td><button class="btn-cancel" data-id="${booking.id}">Cancel</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    setupCancelListeners();
+    renderPagination();
+  };
+
+  const renderPagination = () => {
+    paginationControls.innerHTML = '';
+    const totalPages = Math.ceil(allBookings.length / bookingsPerPage);
+
+    for (let i = 1; i <= totalPages; i++) {
+      const btn = document.createElement('button');
+      btn.textContent = i;
+      btn.disabled = i === currentPage;
+      btn.classList.toggle('disabled', i === currentPage);
+      btn.addEventListener('click', () => {
+        currentPage = i;
+        renderTable();
+      });
+      paginationControls.appendChild(btn);
+    }
+  };
+
+  const setupCancelListeners = () => {
+    document.querySelectorAll('.btn-cancel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        if (confirm('Are you sure you want to cancel this booking?')) {
+          const bookingRef = ref(db, `bookings/${auth.currentUser.uid}/${id}`);
+          remove(bookingRef);
+        }
+      });
+    });
+  };
+
+  onAuthStateChanged(auth, user => {
+    if (!user) {
+      window.location.href = "login.html";
+    } else {
+      const userId = user.uid;
+      const bookingsRef = ref(db, `bookings/${userId}`);
+
+      onValue(bookingsRef, snapshot => {
+        const data = snapshot.val();
+        allBookings = [];
+
+        if (data) {
+          for (let id in data) {
+            allBookings.push({ ...data[id], id });
+          }
+        }
+
+        renderTable();
+
+        searchInput.addEventListener('input', function() {
+          const filter = this.value.toLowerCase();
+          const filtered = allBookings.filter(b => {
+            return (
+              b.pickup.toLowerCase().includes(filter) ||
+              b.drop.toLowerCase().includes(filter) ||
+              b.date.toLowerCase().includes(filter)
+            );
+          });
+          allBookings = filtered;
+          currentPage = 1;
+          renderTable();
+        });
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
