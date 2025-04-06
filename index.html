@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WaveTravel - Login</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js"></script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: white;
+    }
+
+    .container {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 30px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #ff6ec4;
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .signup-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .signup-link a {
+      color: #ffd1f4;
+      text-decoration: none;
+    }
+
+    .signup-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Login with Mobile</h2>
+
+    <div class="flex-row">
+      <select id="countryCode">
+        <option value="+91" selected>🇮🇳 +91</option>
+        <option value="+1">🇺🇸 +1</option>
+        <option value="+44">🇬🇧 +44</option>
+        <option value="+61">🇦🇺 +61</option>
+        <option value="+880">🇧🇩 +880</option>
+      </select>
+      <input type="text" id="phone" placeholder="Phone Number" />
+    </div>
+
+    <div id="recaptcha-container"></div>
+    <button onclick="sendOTP()">Send OTP</button>
+
+    <div id="otpSection" style="display: none;">
+      <input type="text" id="otp" placeholder="Enter OTP" />
+      <button onclick="verifyOTP()">Verify OTP</button>
+    </div>
+
+    <div class="signup-link">
+      New user? <a href="signup.html">Create Account</a>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    window.onload = () => {
+      const params = new URLSearchParams(window.location.search);
+      const phone = params.get('phone');
+      if (phone && phone.startsWith("+91")) {
+        document.getElementById("countryCode").value = "+91";
+        document.getElementById("phone").value = phone.replace("+91", "");
+      }
+
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'normal',
+        callback: response => console.log("Recaptcha solved"),
+        'expired-callback': () => alert("Recaptcha expired. Please retry.")
+      });
+    };
+
+    function sendOTP() {
+      const phone = document.getElementById('phone').value.trim();
+      const code = document.getElementById('countryCode').value;
+
+      if (!/^\d{10}$/.test(phone)) {
+        alert("Enter a valid 10-digit phone number.");
+        return;
+      }
+
+      const fullPhone = code + phone;
+
+      auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
+        .then(confirmationResult => {
+          window.confirmationResult = confirmationResult;
+          document.getElementById('otpSection').style.display = 'block';
+          alert("OTP sent to " + fullPhone);
+        })
+        .catch(error => alert("Error: " + error.message));
+    }
+
+    function verifyOTP() {
+      const code = document.getElementById('otp').value.trim();
+
+      if (!code) {
+        alert("Enter the OTP.");
+        return;
+      }
+
+      window.confirmationResult.confirm(code)
+        .then(result => {
+          alert("Login successful!");
+          window.location.href = "booking.html";
+        })
+        .catch(error => alert("Incorrect OTP or expired. Please try again."));
+    }
+  </script>
+</body>
+</html>
