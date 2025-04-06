@@ -69,6 +69,24 @@
     .login-link a:hover {
       text-decoration: underline;
     }
+
+    #resendContainer {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    #resendBtn {
+      background-color: transparent;
+      color: #ffbdf0;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #resendBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -87,13 +105,16 @@
     </select>
 
     <input type="text" id="phone" placeholder="Phone Number" />
-
     <div id="recaptcha-container"></div>
     <button onclick="sendOTP()">Send OTP</button>
 
     <div id="otpSection" style="display: none;">
       <input type="text" id="otp" placeholder="Enter OTP" />
       <button onclick="verifyOTP()">Verify OTP</button>
+
+      <div id="resendContainer">
+        <button id="resendBtn" onclick="resendOTP()" disabled>Resend OTP (<span id="timer">30</span>s)</button>
+      </div>
     </div>
 
     <div class="login-link">
@@ -102,7 +123,6 @@
   </div>
 
   <script>
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -117,6 +137,9 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
+    let countdown;
+    let fullPhoneGlobal;
+
     window.onload = () => {
       window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
         size: 'normal',
@@ -125,10 +148,27 @@
       });
     };
 
+    function startResendTimer() {
+      let timeLeft = 30;
+      document.getElementById('resendBtn').disabled = true;
+      document.getElementById('timer').textContent = timeLeft;
+
+      countdown = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(countdown);
+          document.getElementById('resendBtn').disabled = false;
+          document.getElementById('resendBtn').textContent = 'Resend OTP';
+        }
+      }, 1000);
+    }
+
     function sendOTP() {
       const phone = document.getElementById('phone').value.trim();
       const code = document.getElementById('countryCode').value;
       const fullPhone = code + phone;
+      fullPhoneGlobal = fullPhone;
 
       if (!/^\d{10}$/.test(phone)) {
         alert("Enter a valid 10-digit phone number.");
@@ -139,9 +179,22 @@
         .then(confirmationResult => {
           window.confirmationResult = confirmationResult;
           document.getElementById('otpSection').style.display = 'block';
+          startResendTimer();
           alert("OTP sent to " + fullPhone);
         })
         .catch(error => alert("Error: " + error.message));
+    }
+
+    function resendOTP() {
+      if (!fullPhoneGlobal) return;
+
+      auth.signInWithPhoneNumber(fullPhoneGlobal, window.recaptchaVerifier)
+        .then(confirmationResult => {
+          window.confirmationResult = confirmationResult;
+          startResendTimer();
+          alert("OTP resent to " + fullPhoneGlobal);
+        })
+        .catch(error => alert("Error resending OTP: " + error.message));
     }
 
     function verifyOTP() {
@@ -164,11 +217,11 @@
 
       window.confirmationResult.confirm(otp)
         .then(result => {
-          // Save to Realtime DB
           db.ref('users/' + fullPhone).set({
             name: name,
             email: email,
-            phone: fullPhone
+            phone: fullPhone,
+            role: "signup" // Prevent login by signup users
           });
 
           alert("Signup successful!");
