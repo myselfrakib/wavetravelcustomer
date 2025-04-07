@@ -73,8 +73,8 @@
 </head>
 <body>
   <div class="container">
-    <h2>Wavetravel</h2>
-   <center> <h3>Login with mobile </h3></center>
+    <h2>WaveTravel</h2>
+    <center><h3>Login with Mobile</h3></center>
 
     <div>
       <select id="countryCode">
@@ -101,7 +101,7 @@
     </div>
   </div>
 
-  <!-- Firebase App SDK -->
+  <!-- Firebase Scripts -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
@@ -121,20 +121,29 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
-
     let confirmationResult;
     let fullPhone = "";
     let recaptchaVerifier;
 
+    // Check session persistence
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        const userPhone = user.phoneNumber;
+        db.ref("users/" + userPhone).once("value").then(snapshot => {
+          const userData = snapshot.val();
+          if (userData && userData.role === "customer") {
+            window.location.href = "home.html";
+          }
+        });
+      }
+    });
+
+    // Load reCAPTCHA
     window.onload = () => {
       recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
         size: 'normal',
-        callback: (response) => {
-          console.log("reCAPTCHA solved");
-        },
-        'expired-callback': () => {
-          alert("reCAPTCHA expired. Please try again.");
-        }
+        callback: () => console.log("reCAPTCHA solved"),
+        'expired-callback': () => alert("reCAPTCHA expired. Please try again.")
       });
       recaptchaVerifier.render().then(widgetId => {
         window.recaptchaWidgetId = widgetId;
