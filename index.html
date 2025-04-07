@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WaveTravel - Login</title>
   <style>
@@ -24,9 +24,8 @@
       max-width: 400px;
     }
 
-    h2 {
+    h2, h3 {
       text-align: center;
-      margin-bottom: 20px;
     }
 
     input, select {
@@ -50,6 +49,12 @@
       cursor: pointer;
     }
 
+    #resendBtn {
+      margin-top: 10px;
+      background: transparent;
+      border: 1px solid #fff;
+    }
+
     .signup-link {
       text-align: center;
       margin-top: 20px;
@@ -59,141 +64,123 @@
       color: #ffd1f4;
       text-decoration: none;
     }
-
-    .signup-link a:hover {
-      text-decoration: underline;
-    }
-
-    #resendBtn {
-      margin-top: 10px;
-      background: transparent;
-      border: 1px solid #fff;
-    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Wavetravel</h2>
-    <center><h3>Login with mobile</h3></center>
+<div class="container">
+  <h2>WaveTravel</h2>
+  <h3>Login with Mobile</h3>
 
-    <div>
-      <select id="countryCode">
-        <option value="+91" selected>🇮🇳 +91</option>
-        <option value="+1">🇺🇸 +1</option>
-        <option value="+44">🇬🇧 +44</option>
-        <option value="+61">🇦🇺 +61</option>
-        <option value="+880">🇧🇩 +880</option>
-      </select>
-      <input type="text" id="phone" placeholder="Phone Number" />
-    </div>
+  <select id="countryCode">
+    <option value="+91" selected>🇮🇳 +91</option>
+  </select>
+  <input type="text" id="phone" placeholder="Phone Number" />
 
-    <div id="recaptcha-container"></div>
-    <button onclick="sendOTP()">Send OTP</button>
+  <div id="recaptcha-container"></div>
+  <button onclick="sendOTP()">Send OTP</button>
 
-    <div id="otpSection" style="display: none;">
-      <input type="text" id="otp" placeholder="Enter OTP" />
-      <button onclick="verifyOTP()">Verify OTP</button>
-      <button id="resendBtn" onclick="sendOTP()">Resend OTP</button>
-    </div>
-
-    <div class="signup-link">
-      New user? <a href="signup.html">Create Account</a>
-    </div>
+  <div id="otpSection" style="display: none;">
+    <input type="text" id="otp" placeholder="Enter OTP" />
+    <button onclick="verifyOTP()">Verify OTP</button>
+    <button id="resendBtn" onclick="sendOTP()">Resend OTP</button>
   </div>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+  <div class="signup-link">
+    New user? <a href="signup.html">Create Account</a>
+  </div>
+</div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
 
-    let confirmationResult;
-    let fullPhone = "";
-    let recaptchaVerifier;
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
 
-    window.onload = () => {
-      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        size: 'normal',
-        callback: () => {
-          console.log("reCAPTCHA verified");
-        },
-        'expired-callback': () => {
-          alert("reCAPTCHA expired. Try again.");
+  let confirmationResult;
+  let fullPhone = "";
+
+  window.onload = () => {
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      size: 'normal',
+      callback: response => {
+        console.log("reCAPTCHA verified");
+      },
+      'expired-callback': () => {
+        alert("reCAPTCHA expired. Try again.");
+      }
+    });
+    recaptchaVerifier.render();
+  };
+
+  function sendOTP() {
+    const phone = document.getElementById('phone').value.trim();
+    const code = document.getElementById('countryCode').value;
+
+    if (!/^\d{10}$/.test(phone)) {
+      alert("Enter valid 10-digit phone number.");
+      return;
+    }
+
+    fullPhone = code + phone;
+
+    auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
+      .then(result => {
+        confirmationResult = result;
+        document.getElementById('otpSection').style.display = 'block';
+        alert("OTP sent to " + fullPhone);
+      })
+      .catch(error => {
+        console.error(error);
+        alert("Error sending OTP: " + error.message);
+      });
+  }
+
+  function verifyOTP() {
+    const code = document.getElementById('otp').value.trim();
+    if (!code) {
+      alert("Enter the OTP.");
+      return;
+    }
+
+    confirmationResult.confirm(code)
+      .then(result => {
+        const user = result.user;
+        sessionStorage.setItem("userPhone", fullPhone);
+
+        // Redirect logic
+        if (fullPhone === "+919908838070") {
+          window.location.href = "admindashboard.html";
+        } else {
+          db.ref("users/" + fullPhone).once("value").then(snapshot => {
+            const userData = snapshot.val();
+            if (!userData || userData.role !== "customer") {
+              alert("Access denied. Only customers can log in.");
+              auth.signOut();
+              return;
+            }
+            window.location.href = "home.html";
+          });
         }
+      })
+      .catch(error => {
+        console.error(error);
+        alert("Incorrect or expired OTP.");
       });
-      recaptchaVerifier.render().then(widgetId => {
-        window.recaptchaWidgetId = widgetId;
-      });
-    };
-
-    function sendOTP() {
-      const phone = document.getElementById('phone').value.trim();
-      const code = document.getElementById('countryCode').value;
-
-      if (!/^\d{10}$/.test(phone)) {
-        alert("Enter a valid 10-digit phone number.");
-        return;
-      }
-
-      fullPhone = code + phone;
-
-      auth.signInWithPhoneNumber(fullPhone, recaptchaVerifier)
-        .then(result => {
-          confirmationResult = result;
-          document.getElementById('otpSection').style.display = 'block';
-          alert("OTP sent to " + fullPhone);
-        })
-        .catch(error => {
-          console.error(error);
-          alert("Error sending OTP: " + error.message);
-        });
-    }
-
-    function verifyOTP() {
-      const code = document.getElementById('otp').value.trim();
-      if (!code) {
-        alert("Please enter the OTP.");
-        return;
-      }
-
-      confirmationResult.confirm(code)
-        .then(result => {
-          const user = result.user;
-          // Redirect based on phone number
-          if (fullPhone === "+919908838070") {
-            window.location.href = "admindashboard.html";
-          } else {
-            db.ref("users/" + fullPhone).once("value").then(snapshot => {
-              const userData = snapshot.val();
-              if (!userData || userData.role !== "customer") {
-                alert("Access denied. Only customers can log in.");
-                auth.signOut();
-                return;
-              }
-              alert("Login successful!");
-              window.location.href = "home.html";
-            });
-          }
-        })
-        .catch(error => {
-          console.error(error);
-          alert("Incorrect or expired OTP.");
-        });
-    }
-  </script>
+  }
+</script>
 </body>
 </html>
