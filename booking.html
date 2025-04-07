@@ -1,175 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Book Your Cab - WaveTravel</title>
+  <meta charset="UTF-8">
+  <title>WaveTravel - Book a Cab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
       margin: 0;
       padding: 0;
-    }
-    header {
-      background-color: #007bff;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-    }
-    nav ul {
-      list-style: none;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
       display: flex;
+      align-items: center;
       justify-content: center;
-      padding: 0;
-      margin: 0;
-      background-color: #333;
-    }
-    nav ul li {
-      margin: 0;
-    }
-    nav ul li a {
-      display: block;
-      padding: 14px 20px;
-      text-decoration: none;
-      color: white;
-    }
-    nav ul li a:hover {
-      background-color: #555;
+      min-height: 100vh;
     }
     .container {
-      max-width: 600px;
-      margin: 2rem auto;
-      background: white;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      background: #fff;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
-    input, select, button {
+    h2 {
+      text-align: center;
+      color: #4facfe;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    select, input[type="date"] {
       width: 100%;
       padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
+      margin-bottom: 15px;
+      border-radius: 10px;
       border: 1px solid #ccc;
+      font-size: 15px;
+    }
+    .fare {
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #27ae60;
+      font-weight: 600;
     }
     button {
-      background-color: #007bff;
+      width: 100%;
+      padding: 12px;
+      background-color: #4facfe;
       color: white;
       border: none;
+      border-radius: 10px;
+      font-size: 16px;
       cursor: pointer;
+      transition: background 0.3s ease;
     }
-    button:hover {
-      background-color: #0056b3;
-    }
-    #fareDisplay {
-      font-weight: bold;
-      margin-top: 10px;
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>Book Your Ride</h2>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-  import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    <label for="pickup">Pickup Location</label>
+    <select id="pickup">
+      <option value="">Select Pickup</option>
+      <option>Kolkata Station</option>
+      <option>Sealdah Station</option>
+      <option>Howrah Station</option>
+      <option>Kolkata Airport</option>
+      <option>Ranaghat</option>
+      <option>Krishnagar</option>
+      <option>Bethua</option>
+      <option>Debagram</option>
+      <option>Plassey</option>
+      <option>Rejinagar</option>
+      <option>Beldanga</option>
+      <option>Berhampore Mohona Bus Stand</option>
+    </select>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-    authDomain: "wavetravel-3c4c4.firebaseapp.com",
-    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-    projectId: "wavetravel-3c4c4",
-    storageBucket: "wavetravel-3c4c4.firebasestorage.app",
-    messagingSenderId: "298226098137",
-    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-  };
+    <label for="drop">Drop-off Location</label>
+    <select id="drop">
+      <option value="">Select Drop</option>
+      <option>Kolkata Station</option>
+      <option>Sealdah Station</option>
+      <option>Howrah Station</option>
+      <option>Kolkata Airport</option>
+      <option>Ranaghat</option>
+      <option>Krishnagar</option>
+      <option>Bethua</option>
+      <option>Debagram</option>
+      <option>Plassey</option>
+      <option>Rejinagar</option>
+      <option>Beldanga</option>
+      <option>Berhampore Mohona Bus Stand</option>
+    </select>
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
+    <label for="date">Date</label>
+    <input type="date" id="date">
 
-  onAuthStateChanged(auth, user => {
-    if (!user) {
-      window.location.href = "login.html";
+    <label for="time">Time</label>
+    <select id="time"></select>
+
+    <label for="seats">Number of Seats</label>
+    <select id="seats">
+      <option value="">Select Seats</option>
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option>
+    </select>
+
+    <div class="fare">Estimated Fare: ₹<span id="fare">0</span></div>
+
+    <button id="bookBtn" disabled>Book Now</button>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const pickup = document.getElementById("pickup");
+    const drop = document.getElementById("drop");
+    const date = document.getElementById("date");
+    const time = document.getElementById("time");
+    const seats = document.getElementById("seats");
+    const fareDisplay = document.getElementById("fare");
+    const bookBtn = document.getElementById("bookBtn");
+
+    function setTodayDate() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      date.value = `${yyyy}-${mm}-${dd}`;
     }
-  });
 
-  window.submitBooking = () => {
-    const pickup = document.getElementById("pickup").value;
-    const drop = document.getElementById("drop").value;
-    const date = document.getElementById("date").value;
-    const seats = parseInt(document.getElementById("seats").value);
+    function populateTimeSlots() {
+      for (let hour = 0; hour < 24; hour++) {
+        for (let min = 0; min < 60; min += 30) {
+          const h12 = hour % 12 === 0 ? 12 : hour % 12;
+          const mStr = min === 0 ? "00" : "30";
+          const ampm = hour < 12 ? "AM" : "PM";
+          const label = `${h12}:${mStr} ${ampm}`;
+          const option = document.createElement("option");
+          option.value = label;
+          option.textContent = label;
+          time.appendChild(option);
+        }
+      }
+    }
 
-    const fare = seats * 150;
+    function estimateFare() {
+      const p = pickup.value, d = drop.value, s = parseInt(seats.value);
+      if (p && d && s && p !== d) {
+        const fare = 100 + Math.abs(pickup.selectedIndex - drop.selectedIndex) * 10 * s;
+        fareDisplay.textContent = fare;
+        return fare;
+      } else {
+        fareDisplay.textContent = 0;
+        return 0;
+      }
+    }
 
-    const bookingData = {
-      pickup,
-      drop,
-      date,
-      seats,
-      fare,
-      userId: auth.currentUser.uid
+    function validate() {
+      const valid = pickup.value && drop.value && date.value && time.value && seats.value && pickup.value !== drop.value;
+      bookBtn.disabled = !valid;
+      estimateFare();
+    }
+
+    pickup.onchange = drop.onchange = date.onchange = time.onchange = seats.onchange = validate;
+
+    bookBtn.onclick = () => {
+      const data = {
+        pickup: pickup.value,
+        drop: drop.value,
+        date: date.value,
+        time: time.value,
+        seats: seats.value,
+        fare: estimateFare(),
+        createdAt: new Date().toISOString()
+      };
+      db.ref("bookings").push(data).then(() => {
+        alert("Booking Successful!");
+        window.location.href = "success.html";
+      }).catch(err => {
+        alert("Booking Failed: " + err.message);
+      });
     };
 
-    const bookingsRef = ref(db, "bookings/");
-    push(bookingsRef, bookingData)
-      .then(() => {
-        localStorage.setItem("lastBooking", JSON.stringify(bookingData));
-        window.location.href = "success.html";
-      });
-  };
-
-  window.calculateFare = () => {
-    const seats = parseInt(document.getElementById("seats").value);
-    const fare = seats * 150;
-    document.getElementById("fareDisplay").textContent = "Estimated Fare: ₹" + fare;
-  };
-</script>
-
-<header>
-  <h1>Book Your Cab</h1>
-</header>
-
-<nav>
-  <ul>
-    <li><a href="index.html">Home</a></li>
-    <li><a href="booking.html">Book Cab</a></li>
-    <li><a href="mybookings.html">My Bookings</a></li>
-    <li><a href="profile.html">Profile</a></li>
-  </ul>
-</nav>
-
-<div class="container">
-  <label for="pickup">Pickup Location</label>
-  <select id="pickup">
-    <option value="Kolkata Station">Kolkata Station</option>
-    <option value="Sealdah Station">Sealdah Station</option>
-    <option value="Howrah Station">Howrah Station</option>
-    <option value="Kolkata Airport">Kolkata Airport</option>
-    <option value="Berhampore Mohona Bus Stand">Berhampore Mohona Bus Stand</option>
-  </select>
-
-  <label for="drop">Drop Location</label>
-  <select id="drop">
-    <option value="Ranaghat">Ranaghat</option>
-    <option value="Krishnagar">Krishnagar</option>
-    <option value="Bethua">Bethua</option>
-    <option value="Debagram">Debagram</option>
-    <option value="Plassey">Plassey</option>
-    <option value="Rejinagar">Rejinagar</option>
-    <option value="Beldanga">Beldanga</option>
-  </select>
-
-  <label for="date">Select Date</label>
-  <input type="date" id="date" />
-
-  <label for="seats">Select Number of Seats</label>
-  <input type="number" id="seats" min="1" max="6" oninput="calculateFare()" />
-
-  <div id="fareDisplay">Estimated Fare: ₹0</div>
-
-  <button onclick="submitBooking()">Confirm Booking</button>
-</div>
-
+    setTodayDate();
+    populateTimeSlots();
+    validate();
+  </script>
 </body>
 </html>
