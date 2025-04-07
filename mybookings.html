@@ -4,261 +4,241 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>My Bookings - WaveTravel</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js"></script>
+
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
       margin: 0;
       padding: 0;
-    }
-    header {
-      background: #007bff;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-    }
-    nav ul {
-      list-style: none;
-      background: #333;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #8e2de2, #4a00e0);
+      color: #fff;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
-      margin: 0;
-      padding: 0;
     }
-    nav ul li a {
-      display: block;
-      color: white;
-      padding: 14px 20px;
-      text-decoration: none;
-    }
-    nav ul li a:hover {
-      background: #555;
-    }
+
     .container {
-      max-width: 1000px;
-      margin: 2rem auto;
-      background: white;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 600px;
+      padding: 20px;
     }
+
     h2 {
       text-align: center;
-      color: #007bff;
+      margin-bottom: 20px;
+      color: #fff;
     }
-    .search-box {
-      text-align: center;
-      margin-bottom: 1.5rem;
+
+    .filters {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
     }
-    .search-box input {
-      width: 300px;
+
+    .filters input, .filters select {
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    #bookingsList {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .booking-card {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: 0.3s;
+    }
+
+    .booking-card:hover {
+      transform: scale(1.01);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .status {
+      font-weight: bold;
+      padding: 5px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .confirmed {
+      background: #28a745;
+      color: white;
+    }
+
+    .cancelled {
+      background: #dc3545;
+      color: white;
+    }
+
+    button {
       padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    table {
+      background: #ff6ec4;
+      border: none;
+      color: white;
+      border-radius: 10px;
+      font-weight: bold;
+      margin-top: 10px;
       width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-    table, th, td {
-      border: 1px solid #ccc;
-    }
-    th, td {
-      padding: 10px;
-      text-align: center;
-    }
-    th {
-      background: #f1f1f1;
-    }
-    .btn-cancel {
-      background: red;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 5px;
       cursor: pointer;
     }
-    .pagination {
-      text-align: center;
-      margin-top: 1rem;
+
+    button:hover {
+      background: #ff87d2;
     }
-    .pagination button {
-      margin: 0 5px;
-      padding: 8px 12px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
     }
-    .pagination button.disabled {
-      background: #ccc;
-      cursor: default;
+
+    .nav-buttons a {
+      text-decoration: none;
+      background: #ffd1f4;
+      color: black;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 480px) {
+      .booking-card {
+        font-size: 14px;
+      }
+
+      .nav-buttons {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .nav-buttons a {
+        width: 100%;
+        text-align: center;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>📖 My Bookings</h2>
 
-<header>
-  <h1>WaveTravel</h1>
-</header>
+    <div class="filters">
+      <input type="text" id="search" placeholder="Search pickup or drop..." />
+      <select id="statusFilter">
+        <option value="">All Statuses</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
 
-<nav>
-  <ul>
-    <li><a href="index.html">Home</a></li>
-    <li><a href="booking.html">Book Cab</a></li>
-    <li><a href="mybookings.html">My Bookings</a></li>
-    <li><a href="profile.html">Profile</a></li>
-  </ul>
-</nav>
+    <div id="bookingsList"></div>
 
-<div class="container">
-  <h2>My Bookings</h2>
-
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search by pickup/drop/date..." />
+    <div class="nav-buttons">
+      <a href="home.html">🏠 Home</a>
+      <a href="profile.html">👤 Profile</a>
+    </div>
   </div>
 
-  <table id="bookingTable">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Pickup</th>
-        <th>Drop</th>
-        <th>Seats</th>
-        <th>Fare</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="bookingBody">
-      <tr><td colspan="7">Loading...</td></tr>
-    </tbody>
-  </table>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
 
-  <div class="pagination" id="paginationControls"></div>
-</div>
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    let bookings = [];
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-    authDomain: "wavetravel-3c4c4.firebaseapp.com",
-    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-    projectId: "wavetravel-3c4c4",
-    storageBucket: "wavetravel-3c4c4.firebasestorage.app",
-    messagingSenderId: "298226098137",
-    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const auth = getAuth(app);
-
-  const tbody = document.getElementById('bookingBody');
-  const searchInput = document.getElementById('searchInput');
-  const paginationControls = document.getElementById('paginationControls');
-  const bookingsPerPage = 5;
-  let currentPage = 1;
-  let allBookings = [];
-
-  const renderTable = () => {
-    tbody.innerHTML = '';
-    const start = (currentPage - 1) * bookingsPerPage;
-    const paginatedBookings = allBookings.slice(start, start + bookingsPerPage);
-
-    if (paginatedBookings.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7">No bookings found.</td></tr>`;
-      return;
-    }
-
-    paginatedBookings.forEach(booking => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${booking.date}</td>
-        <td>${booking.pickup}</td>
-        <td>${booking.drop}</td>
-        <td>${booking.seats}</td>
-        <td>₹${booking.fare}</td>
-        <td>${booking.status || 'Pending'}</td>
-        <td><button class="btn-cancel" data-id="${booking.id}">Cancel</button></td>
-      `;
-      tbody.appendChild(tr);
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        const phone = user.phoneNumber;
+        loadBookings(phone);
+      } else {
+        window.location.href = "index.html";
+      }
     });
 
-    setupCancelListeners();
-    renderPagination();
-  };
-
-  const renderPagination = () => {
-    paginationControls.innerHTML = '';
-    const totalPages = Math.ceil(allBookings.length / bookingsPerPage);
-
-    for (let i = 1; i <= totalPages; i++) {
-      const btn = document.createElement('button');
-      btn.textContent = i;
-      btn.disabled = i === currentPage;
-      btn.classList.toggle('disabled', i === currentPage);
-      btn.addEventListener('click', () => {
-        currentPage = i;
-        renderTable();
-      });
-      paginationControls.appendChild(btn);
-    }
-  };
-
-  const setupCancelListeners = () => {
-    document.querySelectorAll('.btn-cancel').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        if (confirm('Are you sure you want to cancel this booking?')) {
-          const bookingRef = ref(db, `bookings/${auth.currentUser.uid}/${id}`);
-          remove(bookingRef);
-        }
-      });
-    });
-  };
-
-  onAuthStateChanged(auth, user => {
-    if (!user) {
-      window.location.href = "login.html";
-    } else {
-      const userId = user.uid;
-      const bookingsRef = ref(db, `bookings/${userId}`);
-
-      onValue(bookingsRef, snapshot => {
-        const data = snapshot.val();
-        allBookings = [];
-
-        if (data) {
-          for (let id in data) {
-            allBookings.push({ ...data[id], id });
-          }
-        }
-
-        renderTable();
-
-        searchInput.addEventListener('input', function() {
-          const filter = this.value.toLowerCase();
-          const filtered = allBookings.filter(b => {
-            return (
-              b.pickup.toLowerCase().includes(filter) ||
-              b.drop.toLowerCase().includes(filter) ||
-              b.date.toLowerCase().includes(filter)
-            );
-          });
-          allBookings = filtered;
-          currentPage = 1;
-          renderTable();
+    function loadBookings(phone) {
+      db.ref("bookings").orderByChild("phone").equalTo(phone).on("value", snapshot => {
+        bookings = [];
+        snapshot.forEach(child => {
+          const data = child.val();
+          data.id = child.key;
+          bookings.push(data);
         });
+        displayBookings();
       });
     }
-  });
-</script>
 
+    function displayBookings() {
+      const list = document.getElementById("bookingsList");
+      const search = document.getElementById("search").value.toLowerCase();
+      const status = document.getElementById("statusFilter").value;
+
+      list.innerHTML = "";
+
+      const filtered = bookings.filter(b => {
+        const matchText = (b.pickup + b.dropoff).toLowerCase().includes(search);
+        const matchStatus = !status || b.status === status;
+        return matchText && matchStatus;
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = "<p>No bookings found.</p>";
+        return;
+      }
+
+      filtered.forEach(b => {
+        const div = document.createElement("div");
+        div.className = "booking-card";
+        div.innerHTML = `
+          <p><strong>From:</strong> ${b.pickup}</p>
+          <p><strong>To:</strong> ${b.dropoff}</p>
+          <p><strong>Date:</strong> ${b.date}</p>
+          <p><strong>Time:</strong> ${b.time}</p>
+          <p><strong>Seats:</strong> ${b.seats}</p>
+          <p><strong>Fare:</strong> ₹${b.fare}</p>
+          <p><strong>Status:</strong> <span class="status ${b.status}">${b.status.charAt(0).toUpperCase() + b.status.slice(1)}</span></p>
+          ${b.status === "confirmed" ? `<button onclick="cancelBooking('${b.id}')">Cancel</button>` : ""}
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function cancelBooking(id) {
+      if (confirm("Are you sure you want to cancel this booking?")) {
+        db.ref("bookings/" + id).update({ status: "cancelled" });
+        alert("Booking cancelled.");
+      }
+    }
+
+    document.getElementById("search").addEventListener("input", displayBookings);
+    document.getElementById("statusFilter").addEventListener("change", displayBookings);
+  </script>
 </body>
 </html>
