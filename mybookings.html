@@ -6,66 +6,86 @@
   <title>My Bookings - WaveTravel</title>
   <style>
     body {
-      margin: 0;
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to right, #8e2de2, #4a00e0);
       color: white;
+      margin: 0;
+      padding: 0;
     }
 
     header {
-      background: rgba(0, 0, 0, 0.4);
-      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 1rem;
       text-align: center;
-      font-size: 24px;
+      font-size: 1.5rem;
       font-weight: bold;
     }
 
-    .container {
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 15px;
+    nav {
+      background-color: rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: center;
+      padding: 0.5rem 0;
     }
 
-    .booking {
-      background: rgba(255, 255, 255, 0.1);
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+      font-weight: bold;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .booking-card {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
       padding: 15px;
       margin-bottom: 15px;
-      border-radius: 10px;
     }
 
-    .booking p {
+    .booking-card p {
       margin: 5px 0;
     }
 
     .cancel-btn {
-      background-color: #ff4d4d;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background-color: #ff4b5c;
       color: white;
       border: none;
-      padding: 10px;
-      border-radius: 8px;
+      border-radius: 5px;
       cursor: pointer;
-      font-weight: bold;
     }
 
     .cancel-btn:hover {
-      background-color: #e60000;
+      background-color: #e03e4c;
     }
   </style>
 </head>
 <body>
-
-  <header>My Bookings</header>
+  <header>WaveTravel - My Bookings</header>
+  <nav>
+    <a href="home.html">Home</a>
+    <a href="booking.html">Book Cab</a>
+    <a href="mybookings.html">My Bookings</a>
+    <a href="profile.html">Profile</a>
+  </nav>
 
   <div class="container" id="bookingList">
-    <!-- Bookings will load here -->
+    <p>Loading your bookings...</p>
   </div>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
   <script>
     const firebaseConfig = {
@@ -79,52 +99,49 @@
     };
 
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.database();
 
-    const userPhone = localStorage.getItem("userPhone");
     const bookingList = document.getElementById("bookingList");
 
-    function loadBookings() {
-      db.ref("bookings/").orderByChild("phone").equalTo(userPhone).once("value", snapshot => {
-        bookingList.innerHTML = "";
-        if (!snapshot.exists()) {
-          bookingList.innerHTML = "<p>No bookings found.</p>";
-          return;
-        }
-
-        snapshot.forEach(child => {
-          const booking = child.val();
-          const key = child.key;
-
-          const div = document.createElement("div");
-          div.className = "booking";
-          div.innerHTML = `
-            <p><strong>From:</strong> ${booking.pickup}</p>
-            <p><strong>To:</strong> ${booking.drop}</p>
-            <p><strong>Date:</strong> ${booking.date}</p>
-            <p><strong>Time:</strong> ${booking.time}</p>
-            <p><strong>Seats:</strong> ${booking.seats}</p>
-            <p><strong>Fare:</strong> ₹${booking.fare}</p>
-            <button class="cancel-btn" onclick="cancelBooking('${key}')">Cancel Booking</button>
-          `;
-          bookingList.appendChild(div);
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        const phone = user.phoneNumber;
+        db.ref("bookings").orderByChild("phone").equalTo(phone).on("value", snapshot => {
+          bookingList.innerHTML = "";
+          if (snapshot.exists()) {
+            snapshot.forEach(child => {
+              const data = child.val();
+              const bookingId = child.key;
+              const card = document.createElement("div");
+              card.className = "booking-card";
+              card.innerHTML = `
+                <p><strong>From:</strong> ${data.pickup}</p>
+                <p><strong>To:</strong> ${data.drop}</p>
+                <p><strong>Date:</strong> ${data.date}</p>
+                <p><strong>Time:</strong> ${data.time}</p>
+                <p><strong>Seats:</strong> ${data.seats}</p>
+                <p><strong>Fare:</strong> ₹${data.fare}</p>
+                <button class="cancel-btn" onclick="cancelBooking('${bookingId}')">Cancel Booking</button>
+              `;
+              bookingList.appendChild(card);
+            });
+          } else {
+            bookingList.innerHTML = "<p>No bookings found.</p>";
+          }
         });
-      });
-    }
+      } else {
+        window.location.href = "index.html";
+      }
+    });
 
-    function cancelBooking(key) {
-      const confirmCancel = confirm("Are you sure you want to cancel this booking?");
-      if (confirmCancel) {
-        db.ref("bookings/" + key).remove()
-          .then(() => {
-            alert("Booking cancelled.");
-            loadBookings();
-          })
-          .catch(err => alert("Error cancelling booking: " + err.message));
+    function cancelBooking(id) {
+      if (confirm("Are you sure you want to cancel this booking?")) {
+        db.ref("bookings/" + id).remove()
+          .then(() => alert("Booking cancelled."))
+          .catch(err => alert("Error: " + err.message));
       }
     }
-
-    window.onload = loadBookings;
   </script>
 </body>
 </html>
