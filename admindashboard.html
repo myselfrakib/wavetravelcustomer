@@ -93,7 +93,7 @@
     // ✅ Check if admin is marked as logged in
     if (localStorage.getItem("isAdmin") !== "true") {
       alert("Unauthorized access. Please login as admin.");
-      window.location.href = "adminlogin.html";
+      window.location.href = "admindashboard.html";
     } else {
       loadBookings();
     }
