@@ -90,30 +90,19 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        alert("Please login first!");
-        window.location.href = "index.html";
-        return;
-      }
-
-      // Only allow access if admin
-      if (user.phoneNumber !== "9907738070") {
-        alert("Unauthorized access!");
-        auth.signOut().then(() => {
-          window.location.href = "adminlogin.html";
-        });
-        return;
-      }
-
+    // ✅ Check if admin is marked as logged in
+    if (localStorage.getItem("isAdmin") !== "true") {
+      alert("Unauthorized access. Please login as admin.");
+      window.location.href = "adminlogin.html";
+    } else {
       loadBookings();
-    });
+    }
 
     function loadBookings() {
       const tableBody = document.querySelector("#bookingTable tbody");
-      tableBody.innerHTML = "";
       db.ref("bookings").once("value", snapshot => {
         let index = 1;
+        tableBody.innerHTML = "";
         snapshot.forEach(child => {
           const data = child.val();
           const key = child.key;
@@ -149,6 +138,7 @@
 
     function logout() {
       auth.signOut().then(() => {
+        localStorage.removeItem("isAdmin"); // Remove admin flag
         window.location.href = "adminlogin.html";
       });
     }
