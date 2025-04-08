@@ -40,6 +40,14 @@
       cursor: pointer;
       font-weight: bold;
     }
+    .cancel-btn {
+      background-color: #ff3e3e;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -56,6 +64,7 @@
         <th>Seats</th>
         <th>Fare</th>
         <th>Status</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -64,6 +73,7 @@
   <button class="logout-btn" onclick="logout()">Logout</button>
 
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
   <script>
     const firebaseConfig = {
@@ -77,26 +87,38 @@
     };
 
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.database();
 
-    // Admin Login Check
-    window.onload = () => {
-      const isAdmin = localStorage.getItem("adminLoggedIn");
-      if (isAdmin !== "true") {
-        alert("Unauthorized access. Redirecting to login.");
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        alert("Please login first!");
         window.location.href = "index.html";
         return;
       }
+
+      // Only allow access if admin
+      if (user.phoneNumber !== "+919907738070") {
+        alert("Unauthorized access!");
+        auth.signOut().then(() => {
+          window.location.href = "index.html";
+        });
+        return;
+      }
+
       loadBookings();
-    };
+    });
 
     function loadBookings() {
       const tableBody = document.querySelector("#bookingTable tbody");
+      tableBody.innerHTML = "";
       db.ref("bookings").once("value", snapshot => {
         let index = 1;
         snapshot.forEach(child => {
           const data = child.val();
+          const key = child.key;
           const row = document.createElement("tr");
+
           row.innerHTML = `
             <td>${index++}</td>
             <td>${data.name || "N/A"}</td>
@@ -106,16 +128,29 @@
             <td>${data.time}</td>
             <td>${data.seats}</td>
             <td>₹${data.fare}</td>
-            <td>${data.status || "Confirmed"}</td>
+            <td id="status-${key}">${data.status || "Confirmed"}</td>
+            <td><button class="cancel-btn" onclick="cancelBooking('${key}')">Cancel</button></td>
           `;
           tableBody.appendChild(row);
         });
       });
     }
 
+    function cancelBooking(bookingId) {
+      if (confirm("Are you sure you want to cancel this booking?")) {
+        db.ref("bookings/" + bookingId).update({
+          status: "Cancelled"
+        }).then(() => {
+          document.getElementById("status-" + bookingId).innerText = "Cancelled";
+          alert("Booking cancelled successfully.");
+        });
+      }
+    }
+
     function logout() {
-      localStorage.removeItem("adminLoggedIn");
-      window.location.href = "index.html";
+      auth.signOut().then(() => {
+        window.location.href = "index.html";
+      });
     }
   </script>
 </body>
