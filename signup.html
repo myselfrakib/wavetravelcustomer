@@ -4,12 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WaveTravel - Sign Up</title>
-
-  <!-- Firebase SDKs (compat versions) -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -58,7 +52,7 @@
 
     .login-link {
       text-align: center;
-      margin-top: 20px;
+      margin-top: 15px;
     }
 
     .login-link a {
@@ -69,21 +63,16 @@
     .login-link a:hover {
       text-decoration: underline;
     }
-
-    #resendBtn {
-      margin-top: 10px;
-      background: transparent;
-      border: 1px solid #fff;
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Sign Up with Mobile</h2>
+    <h2>WaveTravel</h2>
+    <center><h3>Create Account</h3></center>
 
     <input type="text" id="name" placeholder="Full Name" />
     <input type="email" id="email" placeholder="Email Address" />
-
+    
     <select id="countryCode">
       <option value="+91" selected>🇮🇳 +91</option>
       <option value="+1">🇺🇸 +1</option>
@@ -91,21 +80,21 @@
       <option value="+61">🇦🇺 +61</option>
       <option value="+880">🇧🇩 +880</option>
     </select>
+    
     <input type="text" id="phone" placeholder="Phone Number" />
-
-    <div id="recaptcha-container"></div>
-    <button onclick="sendOTP()">Send OTP</button>
-
-    <div id="otpSection" style="display: none;">
-      <input type="text" id="otp" placeholder="Enter OTP" />
-      <button onclick="verifyOTP()">Verify OTP</button>
-      <button id="resendBtn" onclick="sendOTP()">Resend OTP</button>
-    </div>
+    <input type="password" id="password" placeholder="Password" />
+    
+    <button onclick="register()">Sign Up</button>
 
     <div class="login-link">
-      Already have an account? <a href="index.html">Login</a>
+      Already have an account? <a href="index.html">Login here</a>
     </div>
   </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
   <script>
     const firebaseConfig = {
@@ -119,31 +108,18 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
     const db = firebase.database();
 
-    let confirmationResult;
-    let fullPhone = "";
-
-    window.onload = () => {
-      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        size: 'normal',
-        callback: response => console.log("reCAPTCHA solved"),
-        'expired-callback': () => {
-          alert("reCAPTCHA expired. Please try again.");
-        }
-      });
-      recaptchaVerifier.render();
-    };
-
-    function sendOTP() {
+    function register() {
       const name = document.getElementById('name').value.trim();
       const email = document.getElementById('email').value.trim();
       const phone = document.getElementById('phone').value.trim();
-      const code = document.getElementById('countryCode').value;
+      const password = document.getElementById('password').value;
+      const countryCode = document.getElementById('countryCode').value;
+      const fullPhone = countryCode + phone;
 
-      if (!name || !email || !phone) {
-        alert("Please fill in all fields.");
+      if (!name || !email || !phone || !password) {
+        alert("All fields are required.");
         return;
       }
 
@@ -152,48 +128,26 @@
         return;
       }
 
-      fullPhone = code + phone;
+      const userRef = db.ref("users/" + fullPhone);
 
-      auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
-        .then(result => {
-          confirmationResult = result;
-          document.getElementById('otpSection').style.display = 'block';
-          alert("OTP sent to " + fullPhone);
-        })
-        .catch(error => {
-          console.error(error);
-          alert("Error sending OTP: " + error.message);
-        });
-    }
-
-    function verifyOTP() {
-      const code = document.getElementById('otp').value.trim();
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-
-      if (!code) {
-        alert("Please enter the OTP.");
-        return;
-      }
-
-      confirmationResult.confirm(code)
-        .then(result => {
-          const user = result.user;
-          db.ref("users/" + fullPhone).set({
-            name: name,
-            email: email,
+      userRef.once("value").then(snapshot => {
+        if (snapshot.exists()) {
+          alert("User with this phone number already exists.");
+        } else {
+          userRef.set({
+            name,
+            email,
             phone: fullPhone,
-            role: "customer",
-            createdAt: new Date().toISOString()
+            password,
+            role: "customer"
           }).then(() => {
-            alert("Signup successful! Please login.");
+            alert("Account created successfully!");
             window.location.href = "index.html";
+          }).catch(err => {
+            alert("Signup error: " + err.message);
           });
-        })
-        .catch(error => {
-          console.error(error);
-          alert("Incorrect or expired OTP.");
-        });
+        }
+      });
     }
   </script>
 </body>
