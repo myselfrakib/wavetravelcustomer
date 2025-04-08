@@ -17,16 +17,16 @@
     }
 
     .container {
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.4);
       padding: 30px;
-      border-radius: 12px;
+      border-radius: 15px;
       width: 90%;
       max-width: 400px;
     }
 
     h2 {
       text-align: center;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
     }
 
     input {
@@ -51,21 +51,17 @@
       margin-top: 10px;
     }
 
-    button:hover {
-      background-color: #e85ebd;
-    }
-
-    .back {
+    .back-link {
       text-align: center;
       margin-top: 15px;
     }
 
-    .back a {
+    .back-link a {
       color: #ffd1f4;
       text-decoration: none;
     }
 
-    .back a:hover {
+    .back-link a:hover {
       text-decoration: underline;
     }
   </style>
@@ -73,25 +69,38 @@
 <body>
   <div class="container">
     <h2>WaveTravel Admin Login</h2>
-    <input type="text" id="adminPhone" placeholder="Enter Admin Phone Number" />
+    <input type="text" id="adminPhone" placeholder="Enter Admin Phone" />
     <input type="password" id="adminPassword" placeholder="Enter Admin Password" />
     <button onclick="adminLogin()">Login</button>
-    
-    <div class="back">
-      <a href="index.html">← Back to OTP Login</a>
+    <div class="back-link">
+      <a href="index.html">← Back to User Login</a>
     </div>
   </div>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+    firebase.initializeApp(firebaseConfig);
+
     function adminLogin() {
       const phone = document.getElementById("adminPhone").value.trim();
-      const password = document.getElementById("adminPassword").value.trim();
+      const password = document.getElementById("adminPassword").value;
 
       if (phone === "9907738070" && password === "#Rakib321") {
         alert("Admin login successful!");
         window.location.href = "admindashboard.html";
       } else {
-        alert("Invalid admin credentials!");
+        alert("Invalid credentials!");
         window.location.href = "index.html";
       }
     }
