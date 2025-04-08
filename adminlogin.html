@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Login - WaveTravel</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: white;
+    }
+
+    .container {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #ff6ec4;
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #e85ebd;
+    }
+
+    .back {
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .back a {
+      color: #ffd1f4;
+      text-decoration: none;
+    }
+
+    .back a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>WaveTravel Admin Login</h2>
+    <input type="text" id="adminPhone" placeholder="Enter Admin Phone Number" />
+    <input type="password" id="adminPassword" placeholder="Enter Admin Password" />
+    <button onclick="adminLogin()">Login</button>
+    
+    <div class="back">
+      <a href="index.html">← Back to OTP Login</a>
+    </div>
+  </div>
+
+  <script>
+    function adminLogin() {
+      const phone = document.getElementById("adminPhone").value.trim();
+      const password = document.getElementById("adminPassword").value.trim();
+
+      if (phone === "9907738070" && password === "#Rakib321") {
+        alert("Admin login successful!");
+        window.location.href = "admindashboard.html";
+      } else {
+        alert("Invalid admin credentials!");
+        window.location.href = "index.html";
+      }
+    }
+  </script>
+</body>
+</html>
