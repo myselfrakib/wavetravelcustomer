@@ -3,31 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WaveTravel - Profile</title>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js"></script>
-
+  <title>My Profile - WaveTravel</title>
   <style>
     body {
-      margin: 0;
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to right, #8e2de2, #4a00e0);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      margin: 0;
+      padding: 0;
       color: white;
     }
 
+    .navbar {
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: space-around;
+      padding: 15px 0;
+    }
+
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .navbar a:hover {
+      text-decoration: underline;
+    }
+
     .container {
-      background-color: rgba(0, 0, 0, 0.4);
-      padding: 30px;
-      border-radius: 15px;
-      width: 90%;
-      max-width: 400px;
+      padding: 30px 20px;
+      max-width: 600px;
+      margin: auto;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 10px;
+      margin-top: 40px;
     }
 
     h2 {
@@ -35,40 +45,40 @@
       margin-bottom: 20px;
     }
 
-    input {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
+    .profile-info {
+      font-size: 18px;
+      line-height: 1.6;
+      text-align: center;
     }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      background-color: #ff6ec4;
-      border: none;
-      color: white;
-      font-weight: bold;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
+    @media (max-width: 600px) {
+      .navbar {
+        flex-direction: column;
+        align-items: center;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>My Profile</h2>
-    <input type="text" id="name" placeholder="Full Name" />
-    <input type="email" id="email" placeholder="Email Address" />
-    <button onclick="updateProfile()">Update Profile</button>
-    <button onclick="logout()">Logout</button>
+
+  <div class="navbar">
+    <a href="home.html">Home</a>
+    <a href="booking.html">Book</a>
+    <a href="mybooking.html">My Bookings</a>
+    <a href="profile.html">Profile</a>
   </div>
 
+  <div class="container">
+    <h2>My Profile</h2>
+    <div class="profile-info">
+      <p><strong>Phone Number:</strong> <span id="userPhone">Loading...</span></p>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script>
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -78,52 +88,13 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
 
-    let userPhone = "";
-
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        userPhone = user.phoneNumber;
-        db.ref("users/" + userPhone).once("value").then(snapshot => {
-          const data = snapshot.val();
-          if (data) {
-            document.getElementById("name").value = data.name || "";
-            document.getElementById("email").value = data.email || "";
-          }
-        });
-      } else {
-        window.location.href = "index.html";
-      }
-    });
-
-    function updateProfile() {
-      const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim();
-
-      if (!name || !email) {
-        alert("Please enter all fields.");
-        return;
-      }
-
-      db.ref("users/" + userPhone).update({
-        name: name,
-        email: email
-      }).then(() => {
-        alert("Profile updated successfully.");
-      }).catch(error => {
-        alert("Error updating profile: " + error.message);
-      });
-    }
-
-    function logout() {
-      auth.signOut().then(() => {
-        window.location.href = "index.html";
-      });
-    }
+    window.onload = () => {
+      const phone = localStorage.getItem("userPhone");
+      document.getElementById("userPhone").textContent = phone ? phone : "Not logged in";
+    };
   </script>
+
 </body>
 </html>
