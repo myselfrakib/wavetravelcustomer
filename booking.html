@@ -3,213 +3,232 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WaveTravel Booking</title>
+  <title>WaveTravel - Book a Cab</title>
   <style>
     body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #00b4db, #0083b0);
-      font-family: 'Segoe UI', sans-serif;
-      color: #333;
+      color: white;
+    }
+
+    header {
+      background-color: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    nav {
+      background-color: rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
     }
 
     .container {
-      max-width: 400px;
-      margin: 60px auto;
-      background: #ffffffdd;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      padding: 20px;
     }
 
-    h2 {
-      text-align: center;
-      color: #0083b0;
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin: 12px 0 6px;
-      font-weight: bold;
-    }
-
-    select, input[type="date"], input[type="number"] {
-      width: 100%;
-      padding: 10px;
-      border: 2px solid #ccc;
-      border-radius: 8px;
-      font-size: 15px;
-      margin-bottom: 12px;
-    }
-
-    #fare {
-      font-weight: bold;
-      text-align: center;
-      margin: 15px 0;
-      font-size: 18px;
-      color: #004466;
-    }
-
-    button {
+    select, input, button {
       width: 100%;
       padding: 12px;
-      background-color: #0083b0;
-      color: white;
+      margin: 10px 0;
       border: none;
       border-radius: 8px;
       font-size: 16px;
+    }
+
+    button {
+      background-color: #ff6ec4;
+      color: white;
+      font-weight: bold;
       cursor: pointer;
-      transition: background 0.3s ease;
     }
 
-    button:hover:not(:disabled) {
-      background-color: #005f80;
-    }
-
-    button:disabled {
-      background-color: #999;
-      cursor: not-allowed;
+    #fare {
+      margin-top: 10px;
+      font-size: 18px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Book a Cab</h2>
 
-    <label for="pickup">Pickup Location</label>
-    <select id="pickup">
-      <option value="">Select</option>
-      <option>Kolkata Station</option>
-      <option>Sealdah Station</option>
-      <option>Howrah Station</option>
-      <option>Kolkata Airport</option>
-      <option>Ranaghat</option>
-      <option>Krishnagar</option>
-      <option>Bethua</option>
-      <option>Debagram</option>
-      <option>Plassey</option>
-      <option>Rejinagar</option>
-      <option>Beldanga</option>
-      <option>Berhampore Mohona Bus Stand</option>
-    </select>
+<header>WaveTravel - Book a Cab</header>
 
-    <label for="drop">Drop Location</label>
-    <select id="drop">
-      <option value="">Select</option>
-      <option>Kolkata Station</option>
-      <option>Sealdah Station</option>
-      <option>Howrah Station</option>
-      <option>Kolkata Airport</option>
-      <option>Ranaghat</option>
-      <option>Krishnagar</option>
-      <option>Bethua</option>
-      <option>Debagram</option>
-      <option>Plassey</option>
-      <option>Rejinagar</option>
-      <option>Beldanga</option>
-      <option>Berhampore Mohona Bus Stand</option>
-    </select>
+<nav>
+  <a href="home.html">Home</a>
+  <a href="booking.html">Book</a>
+  <a href="mybookings.html">My Bookings</a>
+  <a href="profile.html">Profile</a>
+</nav>
 
-    <label for="date">Date</label>
-    <input type="date" id="date" min="" />
+<div class="container">
+  <select id="pickup">
+    <option value="">Select Pickup</option>
+    <option value="Kolkata Station">Kolkata Station</option>
+    <option value="Sealdah Station">Sealdah Station</option>
+    <option value="Howrah Station">Howrah Station</option>
+    <option value="Kolkata Airport">Kolkata Airport</option>
+    <option value="Ranaghat">Ranaghat</option>
+    <option value="Krishnagar">Krishnagar</option>
+    <option value="Bethua">Bethua</option>
+    <option value="Debagram">Debagram</option>
+    <option value="Plassey">Plassey</option>
+    <option value="Rejinagar">Rejinagar</option>
+    <option value="Beldanga">Beldanga</option>
+    <option value="Berhampore Mohona Bus Stand">Berhampore Mohona Bus Stand</option>
+  </select>
 
-    <label for="time">Time</label>
-    <select id="time">
-      <option value="">Select</option>
-    </select>
+  <select id="drop">
+    <option value="">Select Drop</option>
+    <option value="Kolkata Station">Kolkata Station</option>
+    <option value="Sealdah Station">Sealdah Station</option>
+    <option value="Howrah Station">Howrah Station</option>
+    <option value="Kolkata Airport">Kolkata Airport</option>
+    <option value="Ranaghat">Ranaghat</option>
+    <option value="Krishnagar">Krishnagar</option>
+    <option value="Bethua">Bethua</option>
+    <option value="Debagram">Debagram</option>
+    <option value="Plassey">Plassey</option>
+    <option value="Rejinagar">Rejinagar</option>
+    <option value="Beldanga">Beldanga</option>
+    <option value="Berhampore Mohona Bus Stand">Berhampore Mohona Bus Stand</option>
+  </select>
 
-    <label for="seats">Number of Seats</label>
-    <input type="number" id="seats" min="1" max="6" placeholder="1-6" />
+  <input type="date" id="date" />
+  <select id="time"></select>
+  <select id="seats">
+    <option value="">Select Seats</option>
+    <option value="1">1 Seat</option>
+    <option value="2">2 Seats</option>
+    <option value="3">3 Seats</option>
+    <option value="4">4 Seats</option>
+    <option value="5">5 Seats</option>
+    <option value="6">6 Seats</option>
+  </select>
 
-    <div id="fare">Estimated Fare: ₹0</div>
+  <div id="fare">Estimated Fare: ₹0</div>
+  <button onclick="bookCab()">Confirm Booking</button>
+</div>
 
-    <button id="bookBtn" disabled>Book Now</button>
-  </div>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
-  <script>
-    const pickupEl = document.getElementById('pickup');
-    const dropEl = document.getElementById('drop');
-    const dateEl = document.getElementById('date');
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  const placeList = [
+    "Kolkata Station", "Sealdah Station", "Howrah Station", "Kolkata Airport",
+    "Ranaghat", "Krishnagar", "Bethua", "Debagram",
+    "Plassey", "Rejinagar", "Beldanga", "Berhampore Mohona Bus Stand"
+  ];
+
+  const fareRatePerKmPerSeat = 5; // ₹5 per km per seat
+
+  const pickupEl = document.getElementById('pickup');
+  const dropEl = document.getElementById('drop');
+  const seatEl = document.getElementById('seats');
+  const fareEl = document.getElementById('fare');
+
+  function calculateFare() {
+    const pickup = pickupEl.value;
+    const drop = dropEl.value;
+    const seats = parseInt(seatEl.value) || 1;
+
+    if (pickup && drop && pickup !== drop) {
+      const distance = Math.abs(placeList.indexOf(pickup) - placeList.indexOf(drop)) * 15;
+      const fare = distance * fareRatePerKmPerSeat * seats;
+      fareEl.textContent = `Estimated Fare: ₹${fare}`;
+      return fare;
+    } else {
+      fareEl.textContent = "Estimated Fare: ₹0";
+      return 0;
+    }
+  }
+
+  pickupEl.onchange = calculateFare;
+  dropEl.onchange = calculateFare;
+  seatEl.onchange = calculateFare;
+
+  function populateTimeSlots() {
     const timeEl = document.getElementById('time');
-    const seatsEl = document.getElementById('seats');
-    const fareEl = document.getElementById('fare');
-    const bookBtn = document.getElementById('bookBtn');
-
-    const locations = [
-      "Kolkata Station", "Sealdah Station", "Howrah Station", "Kolkata Airport",
-      "Ranaghat", "Krishnagar", "Bethua", "Debagram", "Plassey", 
-      "Rejinagar", "Beldanga", "Berhampore Mohona Bus Stand"
-    ];
-
-    const stationIndex = (loc) => {
-      if (["Kolkata Station", "Sealdah Station", "Howrah Station", "Kolkata Airport"].includes(loc)) return 0;
-      return locations.indexOf(loc);
-    };
-
-    const updateFare = () => {
-      const pickup = pickupEl.value;
-      const drop = dropEl.value;
-      const seats = parseInt(seatsEl.value);
-
-      if (!pickup || !drop || pickup === drop || !seats || isNaN(seats)) {
-        fareEl.innerText = "Estimated Fare: ₹0";
-        return;
+    const now = new Date();
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const hour = h.toString().padStart(2, '0');
+        const min = m.toString().padStart(2, '0');
+        timeEl.innerHTML += `<option value="${hour}:${min}">${hour}:${min}</option>`;
       }
+    }
+  }
 
-      const dist = Math.abs(stationIndex(pickup) - stationIndex(drop)) * 15;
-      const fare = 300 + (dist * 5 * seats);
-      fareEl.innerText = `Estimated Fare: ₹${fare}`;
+  function setTodayDate() {
+    const dateEl = document.getElementById('date');
+    const today = new Date().toISOString().split("T")[0];
+    dateEl.value = today;
+  }
+
+  populateTimeSlots();
+  setTodayDate();
+
+  function bookCab() {
+    const pickup = pickupEl.value;
+    const drop = dropEl.value;
+    const date = document.getElementById('date').value;
+    const time = document.getElementById('time').value;
+    const seats = seatEl.value;
+    const fare = calculateFare();
+
+    if (!pickup || !drop || !date || !time || !seats || pickup === drop) {
+      alert("Please fill all fields correctly.");
+      return;
+    }
+
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      alert("Please login to continue.");
+      window.location.href = "index.html";
+      return;
+    }
+
+    const booking = {
+      phone: user.phoneNumber,
+      pickup,
+      drop,
+      date,
+      time,
+      seats,
+      fare,
+      status: "confirmed"
     };
 
-    const checkFormValid = () => {
-      if (
-        pickupEl.value && dropEl.value && pickupEl.value !== dropEl.value &&
-        dateEl.value && timeEl.value && seatsEl.value >= 1 && seatsEl.value <= 6
-      ) {
-        bookBtn.disabled = false;
-      } else {
-        bookBtn.disabled = true;
-      }
-    };
-
-    const populateTimes = () => {
-      timeEl.innerHTML = '<option value="">Select</option>';
-      for (let hour = 0; hour < 24; hour++) {
-        for (let min = 0; min < 60; min += 30) {
-          const h = hour % 12 || 12;
-          const m = min.toString().padStart(2, '0');
-          const ampm = hour < 12 ? 'AM' : 'PM';
-          const label = `${h}:${m} ${ampm}`;
-          const option = document.createElement("option");
-          option.value = label;
-          option.textContent = label;
-          timeEl.appendChild(option);
-        }
-      }
-    };
-
-    [pickupEl, dropEl, seatsEl].forEach(el => el.addEventListener('change', () => {
-      updateFare();
-      checkFormValid();
-    }));
-
-    [dateEl, timeEl].forEach(el => el.addEventListener('change', checkFormValid));
-
-    bookBtn.addEventListener('click', () => {
+    firebase.database().ref("bookings/").push(booking).then(() => {
       alert("Booking successful!");
       window.location.href = "success.html";
     });
+  }
+</script>
 
-    // Init
-    window.addEventListener('DOMContentLoaded', () => {
-      const today = new Date().toISOString().split('T')[0];
-      dateEl.min = today;
-      dateEl.value = today;
-      populateTimes();
-      updateFare();
-      checkFormValid();
-    });
-  </script>
 </body>
 </html>
+
