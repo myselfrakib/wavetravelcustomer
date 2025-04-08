@@ -2,44 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WaveTravel - Home</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #f2f2f2;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #4e54c8, #8f94fb);
+      color: #fff;
     }
+
     header {
-      background-color: #007bff;
-      color: white;
-      padding: 1rem;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1.5rem 1rem;
       text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
+
     nav ul {
-      list-style-type: none;
+      list-style: none;
       display: flex;
       justify-content: center;
-      background-color: #333;
-      margin: 0;
+      background: rgba(0, 0, 0, 0.2);
       padding: 0;
+      margin: 0;
     }
+
     nav ul li {
-      margin: 0 15px;
+      margin: 0;
     }
+
     nav ul li a {
-      color: white;
-      text-decoration: none;
-      padding: 14px 20px;
       display: block;
+      padding: 15px 25px;
+      text-decoration: none;
+      color: #fff;
+      font-weight: 500;
+      transition: background 0.3s;
     }
+
     nav ul li a:hover {
-      background-color: #555;
+      background: rgba(255, 255, 255, 0.2);
     }
+
     main {
       padding: 2rem;
       text-align: center;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 3rem auto;
+      padding: 2rem;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .container h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .container p {
+      font-size: 1.1rem;
+      color: #e0e0e0;
     }
   </style>
 </head>
@@ -54,7 +84,7 @@
     authDomain: "wavetravel-3c4c4.firebaseapp.com",
     databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
     projectId: "wavetravel-3c4c4",
-    storageBucket: "wavetravel-3c4c4.firebasestorage.app",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
     messagingSenderId: "298226098137",
     appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
   };
@@ -70,7 +100,7 @@
 </script>
 
 <header>
-  <h1>Welcome to WaveTravel</h1>
+  WaveTravel Dashboard
 </header>
 
 <nav>
@@ -82,9 +112,12 @@
 </nav>
 
 <main>
-  <h2>Your One-Way Cab Journey Starts Here</h2>
-  <p>Choose your ride and enjoy a comfortable journey with WaveTravel!</p>
+  <div class="container">
+    <h2>Your One-Way Cab Journey Starts Here</h2>
+    <p>Choose your ride and enjoy a comfortable, safe and affordable journey with WaveTravel.</p>
+  </div>
 </main>
 
 </body>
 </html>
+
