@@ -64,7 +64,6 @@
   <button class="logout-btn" onclick="logout()">Logout</button>
 
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
   <script>
     const firebaseConfig = {
@@ -78,27 +77,18 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
     const db = firebase.database();
 
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        alert("Please login first!");
+    // Admin Login Check
+    window.onload = () => {
+      const isAdmin = localStorage.getItem("adminLoggedIn");
+      if (isAdmin !== "true") {
+        alert("Unauthorized access. Redirecting to login.");
         window.location.href = "index.html";
         return;
       }
-
-      // Only allow access if admin
-      if (user.phoneNumber !== "+919907738066") {
-        alert("Unauthorized access!");
-        auth.signOut().then(() => {
-          window.location.href = "index.html";
-        });
-        return;
-      }
-
       loadBookings();
-    });
+    };
 
     function loadBookings() {
       const tableBody = document.querySelector("#bookingTable tbody");
@@ -124,9 +114,8 @@
     }
 
     function logout() {
-      auth.signOut().then(() => {
-        window.location.href = "index.html";
-      });
+      localStorage.removeItem("adminLoggedIn");
+      window.location.href = "index.html";
     }
   </script>
 </body>
