@@ -108,6 +108,7 @@
       <a href="signup.html">SIGNUP</a>
     </div>
 
+    <!-- Admin Login Button -->
     <div class="admin-login-btn">
       <button onclick="window.location.href='adminlogin.html'">Admin Login</button>
     </div>
@@ -116,8 +117,6 @@
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -128,16 +127,15 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+
     let confirmationResult = null;
 
     window.onload = function () {
       window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
         'size': 'normal',
-        'callback': function () {
-          // CAPTCHA solved
+        'callback': function (response) {
+          // recaptcha solved
         },
         'expired-callback': function () {
           alert('reCAPTCHA expired. Please reload and try again.');
@@ -187,17 +185,8 @@
             alert("Admin login successful!");
             window.location.href = "admindashboard.html";
           } else {
-            db.ref("users/" + phoneNumber).once("value").then(snapshot => {
-              if (snapshot.exists()) {
-                alert("Login successful!");
-                window.location.href = "booking.html";
-              } else {
-                alert("This number is not registered. Redirecting to signup...");
-                firebase.auth().signOut().then(() => {
-                  window.location.href = "signup.html";
-                });
-              }
-            });
+            alert("Login successful!");
+            window.location.href = "booking.html";
           }
         })
         .catch(error => {
