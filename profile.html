@@ -3,81 +3,116 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My Profile - WaveTravel</title>
+  <title>WaveTravel - My Profile</title>
   <style>
     body {
+      margin: 0;
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to right, #8e2de2, #4a00e0);
-      margin: 0;
-      padding: 0;
       color: white;
     }
 
-    .navbar {
-      background: rgba(0, 0, 0, 0.6);
+    header {
       display: flex;
-      justify-content: space-around;
-      padding: 15px 0;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 25px;
+      background-color: rgba(0, 0, 0, 0.3);
     }
 
-    .navbar a {
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .logout-btn {
+      background-color: #ff6ec4;
+      border: none;
+      padding: 10px 18px;
       color: white;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 16px;
-    }
-
-    .navbar a:hover {
-      text-decoration: underline;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
     }
 
     .container {
-      padding: 30px 20px;
-      max-width: 600px;
-      margin: auto;
-      background: rgba(0, 0, 0, 0.4);
-      border-radius: 10px;
-      margin-top: 40px;
+      max-width: 500px;
+      margin: 60px auto;
+      background-color: rgba(0, 0, 0, 0.4);
+      padding: 30px;
+      border-radius: 15px;
     }
 
-    h2 {
+    .container h2 {
       text-align: center;
       margin-bottom: 20px;
     }
 
-    .profile-info {
-      font-size: 18px;
-      line-height: 1.6;
-      text-align: center;
+    .profile-field {
+      margin-bottom: 15px;
     }
 
-    @media (max-width: 600px) {
-      .navbar {
-        flex-direction: column;
-        align-items: center;
-      }
+    .profile-field label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .profile-field input {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .update-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #00c9ff;
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
 
-  <div class="navbar">
-    <a href="home.html">Home</a>
-    <a href="booking.html">Book</a>
-    <a href="mybookings.html">My Bookings</a>
-    <a href="profile.html">Profile</a>
-  </div>
+  <header>
+    <h1>My Profile</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </header>
 
   <div class="container">
-    <h2>My Profile</h2>
-    <div class="profile-info">
-      <p><strong>Phone Number:</strong> <span id="userPhone">Loading...</span></p>
+    <h2>WaveTravel User Details</h2>
+
+    <div class="profile-field">
+      <label>Name</label>
+      <input type="text" id="name" />
     </div>
+
+    <div class="profile-field">
+      <label>Email</label>
+      <input type="email" id="email" />
+    </div>
+
+    <div class="profile-field">
+      <label>Phone</label>
+      <input type="text" id="phone" readonly />
+    </div>
+
+    <button class="update-btn" onclick="updateProfile()">Update Profile</button>
   </div>
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -90,11 +125,62 @@
     };
     firebase.initializeApp(firebaseConfig);
 
-    window.onload = () => {
-      const phone = localStorage.getItem("userPhone");
-      document.getElementById("userPhone").textContent = phone ? phone : "Not logged in";
-    };
-  </script>
+    const phone = localStorage.getItem("userPhone");
+    let userKey = null;
 
+    if (!phone) {
+      alert("Please login first.");
+      window.location.href = "index.html";
+    }
+
+    firebase.database().ref("users").orderByChild("phone").equalTo(phone).once("value")
+      .then(snapshot => {
+        if (snapshot.exists()) {
+          const userData = Object.values(snapshot.val())[0];
+          userKey = Object.keys(snapshot.val())[0];
+
+          document.getElementById("name").value = userData.name || '';
+          document.getElementById("email").value = userData.email || '';
+          document.getElementById("phone").value = userData.phone || '';
+        } else {
+          alert("User not found.");
+        }
+      });
+
+    function updateProfile() {
+      const updatedName = document.getElementById("name").value.trim();
+      const updatedEmail = document.getElementById("email").value.trim();
+
+      if (!updatedName || !updatedEmail) {
+        alert("Name and email cannot be empty.");
+        return;
+      }
+
+      if (!userKey) {
+        alert("User record not found.");
+        return;
+      }
+
+      firebase.database().ref("users/" + userKey).update({
+        name: updatedName,
+        email: updatedEmail
+      })
+      .then(() => {
+        alert("Profile updated successfully!");
+      })
+      .catch(err => {
+        alert("Error updating profile: " + err.message);
+      });
+    }
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        localStorage.removeItem("userPhone");
+        window.location.href = "index.html";
+      }).catch(err => {
+        alert("Error logging out: " + err.message);
+      });
+    }
+  </script>
 </body>
 </html>
