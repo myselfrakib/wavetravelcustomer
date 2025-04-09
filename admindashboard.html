@@ -7,124 +7,62 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      margin: 0;
       background: linear-gradient(to right, #8e2de2, #4a00e0);
       color: white;
-    }
-
-    .navbar {
-      display: flex;
-      justify-content: space-around;
-      background-color: #1e1e2f;
-      padding: 15px;
-      flex-wrap: wrap;
-    }
-
-    .navbar button {
-      background-color: #ff6ec4;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 8px;
-      cursor: pointer;
-      color: white;
-      margin: 5px;
-      font-weight: bold;
-    }
-
-    .section {
-      display: none;
+      margin: 0;
       padding: 20px;
     }
-
-    .active {
-      display: block;
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
-      background-color: white;
-      color: black;
-      border-radius: 8px;
-      overflow-x: auto;
+      background-color: rgba(255, 255, 255, 0.1);
     }
-
     th, td {
       padding: 12px;
-      border: 1px solid #ccc;
-      text-align: left;
-    }
-
-    h2 {
+      border-bottom: 1px solid #ccc;
       text-align: center;
     }
-
-    @media (max-width: 768px) {
-      table, thead, tbody, th, td, tr {
-        font-size: 12px;
-      }
+    th {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    .logout-btn {
+      margin-top: 20px;
+      display: block;
+      background-color: #ff6ec4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div class="navbar">
-    <button onclick="showSection('customers')">Customer Details</button>
-    <button onclick="showSection('bookings')">Customer Bookings</button>
-    <button onclick="showSection('drivers')">Driver Details</button>
-    <button onclick="logout()">Logout</button>
-  </div>
+  <h1>Admin Dashboard</h1>
+  <table id="bookingTable">
+    <thead>
+      <tr>
+        <th>SL No.</th>
+        <th>User Name</th>
+        <th>Phone</th>
+        <th>Pickup</th>
+        <th>Drop</th>
+        <th>Time</th>
+        <th>Seats</th>
+        <th>Fare</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-  <div id="customers" class="section">
-    <h2>Customer Details</h2>
-    <table id="customerTable">
-      <thead>
-        <tr>
-          <th>SL</th>
-          <th>Phone</th>
-          <th>Created</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <button class="logout-btn" onclick="logout()">Logout</button>
 
-  <div id="bookings" class="section">
-    <h2>Customer Bookings</h2>
-    <table id="bookingTable">
-      <thead>
-        <tr>
-          <th>SL</th>
-          <th>Phone</th>
-          <th>From</th>
-          <th>To</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Seats</th>
-          <th>Cancel</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div id="drivers" class="section">
-    <h2>Driver Details</h2>
-    <table id="driverTable">
-      <thead>
-        <tr>
-          <th>SL</th>
-          <th>Phone</th>
-          <th>Name</th>
-          <th>Car</th>
-          <th>Route</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
@@ -138,100 +76,58 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-    firebase.initializeApp(firebaseConfig);
 
+    firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
 
-   
-      } else {
-        showSection('customers');
-        loadCustomers();
-        loadBookings();
-        loadDrivers();
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        alert("Please login first!");
+        window.location.href = "index.html";
+        return;
       }
-    };
 
-    function logout() {
-      firebase.auth().signOut().then(() => {
-        localStorage.removeItem("userPhone");
-        window.location.href = "adminlogin.html";
-      });
-    }
-
-    function showSection(id) {
-      document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
-      document.getElementById(id).classList.add("active");
-    }
-
-    function loadCustomers() {
-      const table = document.querySelector("#customerTable tbody");
-      db.ref("users").once("value", snapshot => {
-        table.innerHTML = "";
-        let sl = 1;
-        snapshot.forEach(child => {
-          const data = child.val();
-          const row = `<tr>
-            <td>${sl++}</td>
-            <td>${data.phone || "N/A"}</td>
-            <td>${data.createdAt || "Unknown"}</td>
-          </tr>`;
-          table.innerHTML += row;
+      // Only allow access if admin
+      if (user.phoneNumber !== "+919907738066") {
+        alert("Unauthorized access!");
+        auth.signOut().then(() => {
+          window.location.href = "index.html";
         });
-      });
-    }
+        return;
+      }
+
+      loadBookings();
+    });
 
     function loadBookings() {
-      const table = document.querySelector("#bookingTable tbody");
+      const tableBody = document.querySelector("#bookingTable tbody");
       db.ref("bookings").once("value", snapshot => {
-        table.innerHTML = "";
-        let sl = 1;
+        let index = 1;
         snapshot.forEach(child => {
           const data = child.val();
-          const row = `<tr>
-            <td>${sl++}</td>
-            <td>${data.phone}</td>
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${index++}</td>
+            <td>${data.name || "N/A"}</td>
+            <td>${data.phone || "N/A"}</td>
             <td>${data.pickup}</td>
             <td>${data.drop}</td>
-            <td>${data.date}</td>
             <td>${data.time}</td>
             <td>${data.seats}</td>
-            <td><button onclick="cancelBooking('${child.key}')">Cancel</button></td>
-          </tr>`;
-          table.innerHTML += row;
+            <td>₹${data.fare}</td>
+            <td>${data.status || "Confirmed"}</td>
+          `;
+          tableBody.appendChild(row);
         });
       });
     }
 
-    function cancelBooking(id) {
-      if (confirm("Are you sure you want to cancel this booking?")) {
-        db.ref("bookings/" + id).remove().then(() => {
-          alert("Booking cancelled.");
-          loadBookings();
-        });
-      }
-    }
-
-    function loadDrivers() {
-      const table = document.querySelector("#driverTable tbody");
-      db.ref("drivers").once("value", snapshot => {
-        table.innerHTML = "";
-        let sl = 1;
-        snapshot.forEach(child => {
-          const data = child.val();
-          const row = `<tr>
-            <td>${sl++}</td>
-            <td>${data.phone}</td>
-            <td>${data.name}</td>
-            <td>${data.carModel}</td>
-            <td>${data.route}</td>
-            <td>${data.status ? "Active" : "Inactive"}</td>
-          </tr>`;
-          table.innerHTML += row;
-        });
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = "index.html";
       });
     }
   </script>
 </body>
 </html>
-
