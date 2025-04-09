@@ -143,11 +143,7 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    window.onload = function () {
-      const phone = localStorage.getItem("userPhone");
-      if (phone !== "+919907738066") {
-        alert("Unauthorized access. Redirecting to admin login.");
-        window.location.href = "adminlogin.html";
+   
       } else {
         showSection('customers');
         loadCustomers();
@@ -238,3 +234,4 @@
   </script>
 </body>
 </html>
+
