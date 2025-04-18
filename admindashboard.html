@@ -81,11 +81,7 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        alert("Please login first!");
-        window.location.href = "index.html";
-        return;
+    
       }
 
       // Only allow access if admin
