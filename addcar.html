@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Car - WaveRide</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      color: white;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 30px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 500px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin: 15px 0;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #ff6ec4;
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .status-message {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #ff6ec4;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>Add Car<br>WaveRide</h2>
+
+  <!-- Add Car Form -->
+  <div class="form-group">
+    <input type="text" id="carModel" placeholder="Car Model" required>
+  </div>
+  <div class="form-group">
+    <input type="text" id="carNumber" placeholder="Car Number" required>
+  </div>
+  <div class="form-group">
+    <input type="number" id="carSeats" placeholder="Number of Seats" required>
+  </div>
+  <div class="form-group">
+    <input type="text" id="carType" placeholder="Car Type (e.g., Sedan, SUV)" required>
+  </div>
+
+  <!-- Submit button -->
+  <button id="submitCarBtn">Submit Car for Approval</button>
+
+  <!-- Status Message -->
+  <div class="status-message" id="statusMessage"></div>
+</div>
+
+<script type="module">
+  // Import Firebase SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBHKD70OH34uj7yA0tjBtQZuDbRcRiFins",
+    authDomain: "waveride-bike-rental-service.firebaseapp.com",
+    databaseURL: "https://waveride-bike-rental-service-default-rtdb.firebaseio.com",
+    projectId: "waveride-bike-rental-service",
+    storageBucket: "waveride-bike-rental-service.firebasestorage.app",
+    messagingSenderId: "341920732961",
+    appId: "1:341920732961:web:3967e19131f8984f0f1060",
+    measurementId: "G-59M75TD99E"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // Handle car submission
+  document.getElementById('submitCarBtn').addEventListener('click', function() {
+    const carModel = document.getElementById('carModel').value.trim();
+    const carNumber = document.getElementById('carNumber').value.trim();
+    const carSeats = document.getElementById('carSeats').value.trim();
+    const carType = document.getElementById('carType').value.trim();
+
+    // Validate inputs
+    if (!carModel || !carNumber || !carSeats || !carType) {
+      document.getElementById('statusMessage').textContent = "Please fill in all fields!";
+      return;
+    }
+
+    // Generate a unique ID for the car (could be based on the driver ID or auto-generated)
+    const carId = 'pending_' + Date.now();
+
+    // Save the car details in Firebase under a 'pending' node for admin review
+    set(ref(database, 'cars/pending/' + carId), {
+      carModel: carModel,
+      carNumber: carNumber,
+      carSeats: carSeats,
+      carType: carType,
+      status: 'pending', // Pending approval
+      driverId: 'driver123'  // Replace with actual driver ID from session/auth
+    }).then(() => {
+      document.getElementById('statusMessage').textContent = "Your car has been submitted for approval!";
+      // Optionally reset the form fields
+      document.getElementById('carModel').value = '';
+      document.getElementById('carNumber').value = '';
+      document.getElementById('carSeats').value = '';
+      document.getElementById('carType').value = '';
+    }).catch((error) => {
+      document.getElementById('statusMessage').textContent = "Error submitting your car. Please try again.";
+      console.error("Error submitting car:", error);
+    });
+  });
+</script>
+
+</body>
+</html>

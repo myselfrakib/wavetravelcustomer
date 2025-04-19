@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Driver Login - WaveRide</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: white;
+    }
+    .container {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 30px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 400px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #ff6ec4;
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #recaptcha-container {
+      margin-top: 10px;
+    }
+    .option-links {
+      text-align: center;
+      margin-top: 15px;
+    }
+    .option-links a {
+      color: #ffd1f4;
+      text-decoration: none;
+      display: block;
+      margin: 5px 0;
+    }
+    .option-links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Driver Login<br>WaveRide</h2>
+
+    <select id="countryCode">
+      <option value="+91" selected>🇮🇳 +91</option>
+      <option value="+1">🇺🇸 +1</option>
+      <option value="+44">🇬🇧 +44</option>
+      <option value="+880">🇧🇩 +880</option>
+    </select>
+
+    <input type="text" id="phone" placeholder="Enter phone number" />
+    <div id="recaptcha-container"></div>
+    <button id="sendOtpBtn">Send OTP</button>
+
+    <input type="text" id="otp" placeholder="Enter OTP" style="display:none;" />
+    <button id="verifyOtpBtn" style="display:none;">Verify OTP</button>
+
+    <div class="option-links">
+      Don't have a driver account? 
+      <a href="driversignup.html">Driver Sign Up</a>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+
+  <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    let confirmationResult = null;
+
+    window.onload = function () {
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'normal',
+        callback: function(response) {
+          console.log("reCAPTCHA solved");
+        },
+        'expired-callback': function() {
+          alert('reCAPTCHA expired. Please reload the page.');
+        }
+      });
+      recaptchaVerifier.render();
+    };
+
+    document.getElementById('sendOtpBtn').addEventListener('click', function() {
+      const code = document.getElementById('countryCode').value;
+      const phone = document.getElementById('phone').value.trim();
+      const fullPhone = code + phone;
+
+      if (!phone) {
+        alert("Please enter your phone number.");
+        return;
+      }
+
+      firebase.auth().signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
+        .then(function(result) {
+          confirmationResult = result;
+          alert("OTP Sent Successfully!");
+          document.getElementById('otp').style.display = 'block';
+          document.getElementById('verifyOtpBtn').style.display = 'block';
+        })
+        .catch(function(error) {
+          console.error("OTP sending error:", error.message);
+          alert(error.message);
+        });
+    });
+
+    document.getElementById('verifyOtpBtn').addEventListener('click', function() {
+      const otp = document.getElementById('otp').value.trim();
+
+      if (!otp || !confirmationResult) {
+        alert("Please enter the OTP.");
+        return;
+      }
+
+      confirmationResult.confirm(otp)
+        .then(function(result) {
+          const user = result.user;
+          const phoneNumber = user.phoneNumber;
+
+          // Save driver phone into local storage
+          localStorage.setItem("driverPhone", phoneNumber);
+
+          alert("Driver Login Successful!");
+          window.location.href = "driverprofile.html"; // Redirect to driver profile
+        })
+        .catch(function(error) {
+          console.error("OTP verification failed:", error.message);
+          alert("Incorrect or expired OTP.");
+        });
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driver Signup - WaveRide</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: white;
+    }
+    .container {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 30px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 400px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #ff6ec4;
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .option-links {
+      text-align: center;
+      margin-top: 15px;
+    }
+    .option-links a {
+      color: #ffd1f4;
+      text-decoration: none;
+      display: block;
+      margin: 5px 0;
+    }
+    .option-links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Driver Signup<br>WaveRide</h2>
+
+    <input type="text" id="name" placeholder="Full Name" required>
+    <input type="text" id="license" placeholder="License Number" required>
+    <input type="text" id="phone" placeholder="Phone Number" required>
+
+    <button id="signupBtn">Sign Up</button>
+
+    <div class="option-links">
+      Already have an account?
+      <a href="driverlogin.html">Driver Login</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('signupBtn').addEventListener('click', function() {
+      const name = document.getElementById('name').value.trim();
+      const license = document.getElementById('license').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+
+      if (!name || !license || !phone) {
+        alert("Please fill in all fields!");
+        return;
+      }
+
+      // Save driver signup data locally
+      const driverSignupData = {
+        name: name,
+        license: license,
+        phone: phone
+      };
+
+      localStorage.setItem("driverSignupData", JSON.stringify(driverSignupData));
+
+      alert("Signup Successful! Please login now.");
+      window.location.href = "driverlogin.html";
+    });
+  </script>
+
+</body>
+</html>
