@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cars</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f7fc;
+        }
+        header {
+            background-color: #0275d8;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+        }
+        .container {
+            padding: 20px;
+        }
+        .car-list {
+            list-style: none;
+            padding: 0;
+        }
+        .car-item {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .car-info {
+            flex-grow: 1;
+        }
+        .car-info h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .car-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .btn-add {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-add:hover {
+            background-color: #218838;
+        }
+        .btn-view {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-view:hover {
+            background-color: #0056b3;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #0275d8;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .bottom-nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 8px;
+            text-align: center;
+        }
+        .bottom-nav a:hover {
+            background-color: #025aa5;
+            border-radius: 5px;
+        }
+        /* Toast styles */
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 2px;
+            padding: 10px;
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+        }
+        .toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+        @keyframes fadeout {
+            from {bottom: 30px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>My Cars</h1>
+    </header>
+
+    <div class="container">
+        <!-- Car List Section -->
+        <div id="approvedCars">
+            <h2>Approved Cars</h2>
+            <ul class="car-list">
+                <!-- Car items will be dynamically injected here -->
+            </ul>
+        </div>
+
+        <!-- Button to Add New Car -->
+        <div>
+            <button class="btn-add" onclick="window.location.href = 'addcars.html'">Add New Car</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Car added successfully!</div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="home.html">Home</a>
+        <a href="slots.html">Slots</a>
+        <a href="myorders.html">My Orders</a>
+        <a href="mycars.html">My Cars</a>
+        <a href="profile.html">Profile</a>
+    </div>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+            authDomain: "wavetravel-3c4c4.firebaseapp.com",
+            databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+            projectId: "wavetravel-3c4c4",
+            storageBucket: "wavetravel-3c4c4.firebasestorage.app",
+            messagingSenderId: "298226098137",
+            appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        const db = firebase.database();
+        const approvedCarsRef = db.ref("approvedcars");
+
+        // Fetch approved cars and display them
+        approvedCarsRef.on("value", (snapshot) => {
+            const approvedCars = snapshot.val();
+            const carList = document.querySelector(".car-list");
+            carList.innerHTML = ""; // Clear existing list
+
+            for (let key in approvedCars) {
+                const car = approvedCars[key];
+                const carItem = document.createElement("li");
+                carItem.classList.add("car-item");
+
+                carItem.innerHTML = `
+                    <div class="car-info">
+                        <h3>${car.name}</h3>
+                        <p>Category: ${car.category}</p>
+                        <p>Rate: ₹${car.rate}</p>
+                        <p>Description: ${car.description}</p>
+                    </div>
+                    <button class="btn-view" onclick="viewCar('${key}')">View</button>
+                `;
+                carList.appendChild(carItem);
+            }
+        });
+
+        function viewCar(carId) {
+            window.location.href = `viewCar.html?carId=${carId}`;
+        }
+
+        // Show toast notification after adding a car
+        function showToast() {
+            const toast = document.getElementById("toast");
+            toast.className = "toast show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+    </script>
+
+</body>
+</html>
