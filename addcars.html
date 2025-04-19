@@ -4,217 +4,174 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Add Car</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
   <style>
     body {
-      margin: 0;
       font-family: 'Poppins', sans-serif;
-      background-color: #f8f9fa;
-    }
-    .container {
-      padding: 20px;
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      margin-top: 20px;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      background: white;
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-      z-index: 10;
-    }
-    .bottom-nav a {
-      color: black;
-      text-decoration: none;
-      font-size: 14px;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      min-height: 100vh;
+    }
+    .header {
+      padding: 1rem;
+      background: #4f46e5;
+      color: white;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    form {
+      flex: 1;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    input, textarea {
+      padding: 0.8rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    button {
+      background: #4f46e5;
+      color: white;
+      padding: 1rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .navbar {
+      display: flex;
+      justify-content: space-around;
+      background: white;
+      border-top: 1px solid #ccc;
+      padding: 0.5rem 0;
+    }
+    .navbar a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-size: 0.9rem;
     }
     .toast {
       position: fixed;
-      bottom: 80px;
+      bottom: 5rem;
       left: 50%;
       transform: translateX(-50%);
-      background: #4CAF50;
+      background: #4f46e5;
       color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      z-index: 9999;
-      font-size: 16px;
-      animation: fadeInOut 1.5s forwards;
-    }
-    @keyframes fadeInOut {
-      0% { opacity: 0; }
-      20% { opacity: 1; }
-      80% { opacity: 1; }
-      100% { opacity: 0; }
-    }
-    #loader {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      border: 6px solid #f3f3f3;
-      border-top: 6px solid #4CAF50;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
+      padding: 0.8rem 1.5rem;
+      border-radius: 25px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.5s;
       z-index: 1000;
     }
-    @keyframes spin {
-      0% { transform: translate(-50%, -50%) rotate(0deg); }
-      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    .toast.show {
+      opacity: 1;
     }
   </style>
 </head>
 
 <body>
 
-<div class="container">
-  <h2>Add Your Car</h2>
-  <input type="text" id="carName" placeholder="Car Name" required>
-  
-  <select id="carCompany" required>
-    <option value="">Select Car Company</option>
-    <option>Maruti Suzuki</option>
-    <option>Hyundai</option>
-    <option>Tata Motors</option>
-    <option>Mahindra</option>
-    <option>Kia</option>
-    <option>Honda</option>
-    <option>Renault</option>
-    <option>Ford</option>
-    <option>Volkswagen</option>
-    <option>Skoda</option>
-    <option>MG Motors</option>
-    <option>Nissan</option>
-    <option>Toyota</option>
-    <option>BMW</option>
-    <option>Mercedes</option>
-    <option>Audi</option>
-  </select>
-  
-  <input type="text" id="registrationNumber" placeholder="Registration Number" required>
-  <input type="text" id="ownerName" placeholder="Owner Name" required>
-  <input type="number" id="rate" placeholder="Rate (₹/day)" required>
-  <input type="text" id="description" placeholder="Short Description" required>
+  <div class="header">Add Car</div>
 
-  <button onclick="submitCar()">Add Car</button>
-</div>
+  <form id="addCarForm">
+    <input type="text" id="name" placeholder="Car Name" required>
+    <input type="text" id="company" placeholder="Company Name" required>
+    <input type="text" id="registrationNumber" placeholder="Registration Number" required>
+    <input type="text" id="ownerName" placeholder="Owner Name" required>
+    <input type="number" id="rate" placeholder="Rate per Day (₹)" required>
+    <textarea id="description" placeholder="Description" required></textarea>
+    <button type="button" onclick="submitCar()">Submit Car</button>
+  </form>
 
-<div id="loader"></div>
+  <div class="navbar">
+    <a href="driverhome.html">Home</a>
+    <a href="driverslots.html">Slots</a>
+    <a href="driverorders.html">Orders</a>
+    <a href="driverprofile.html">Profile</a>
+  </div>
 
-<!-- Bottom Navbar -->
-<div class="bottom-nav">
-  <a href="home.html">🏠<br>Home</a>
-  <a href="slots.html">🕒<br>Slots</a>
-  <a href="orders.html">📦<br>Orders</a>
-  <a href="profile.html">👤<br>Profile</a>
-</div>
+  <div id="toast" class="toast"></div>
 
-<!-- Firebase -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+  <!-- Firebase Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-    authDomain: "wavetravel-3c4c4.firebaseapp.com",
-    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-    projectId: "wavetravel-3c4c4",
-    storageBucket: "wavetravel-3c4c4.appspot.com",
-    messagingSenderId: "298226098137",
-    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  function toast(message) {
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerText = message;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.remove();
-    }, 1500);
-  }
-
-  function submitCar() {
-    const carName = document.getElementById('carName').value.trim();
-    const carCompany = document.getElementById('carCompany').value.trim();
-    const registrationNumber = document.getElementById('registrationNumber').value.trim();
-    const ownerName = document.getElementById('ownerName').value.trim();
-    const rate = document.getElementById('rate').value.trim();
-    const description = document.getElementById('description').value.trim();
-
-    if (!carName || !carCompany || !registrationNumber || !ownerName || !rate || !description) {
-      toast("Please fill all fields!");
-      return;
-    }
-
-    document.getElementById('loader').style.display = 'block';
-
-    // Dummy driver details (should be dynamic in real apps)
-    const driverId = localStorage.getItem('driverId') || "sampleDriverId";
-    const driverName = localStorage.getItem('driverName') || "Driver Name";
-    const driverPhone = localStorage.getItem('driverPhone') || "9999999999";
-
-    const carData = {
-      name: carName,
-      company: carCompany,
-      registrationNumber: registrationNumber,
-      ownerName: ownerName,
-      rate: rate,
-      description: description,
-      driverId: driverId,
-      driverName: driverName,
-      driverPhone: driverPhone,
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    const newCarRef = push(ref(db, 'pendingcarapproval'));
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-    set(newCarRef, carData)
-      .then(() => {
-        document.getElementById('loader').style.display = 'none';
-        toast("Car added successfully!");
-        setTimeout(() => {
-          window.location.href = "mycars.html";
-        }, 2000);
-      })
-      .catch((error) => {
-        document.getElementById('loader').style.display = 'none';
-        console.error(error);
-        toast("Error adding car!");
-      });
-  }
-</script>
+    // Make submitCar function global
+    window.submitCar = function () {
+      const driverId = sessionStorage.getItem("driverId");
+      if (!driverId) {
+        showToast("Please login first!");
+        setTimeout(() => window.location.href = "driverlogin.html", 2000);
+        return;
+      }
+
+      const name = document.getElementById("name").value.trim();
+      const company = document.getElementById("company").value.trim();
+      const registrationNumber = document.getElementById("registrationNumber").value.trim();
+      const ownerName = document.getElementById("ownerName").value.trim();
+      const rate = document.getElementById("rate").value.trim();
+      const description = document.getElementById("description").value.trim();
+
+      if (!name || !company || !registrationNumber || !ownerName || !rate || !description) {
+        showToast("Please fill all fields.");
+        return;
+      }
+
+      const carData = {
+        name,
+        company,
+        registrationNumber,
+        ownerName,
+        rate,
+        description,
+        driverId
+      };
+
+      const carsRef = ref(db, "pendingcarapproval");
+
+      push(carsRef, carData)
+        .then(() => {
+          showToast("Car submitted for approval!");
+          setTimeout(() => {
+            window.location.href = "mycars.html";
+          }, 2000);
+        })
+        .catch((error) => {
+          console.error("Error adding car: ", error);
+          showToast("Error submitting car.");
+        });
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3000);
+    }
+  </script>
 
 </body>
 </html>
