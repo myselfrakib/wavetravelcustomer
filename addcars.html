@@ -1,248 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Car</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Arial', sans-serif;
-            background: #f4f7fc;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #0275d8;
-            color: #fff;
-            text-align: center;
-            padding: 10px;
-        }
-        .container {
-            padding: 20px;
-            max-width: 600px;
-            margin: auto;
-        }
-        .form-container {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-        }
-        .form-container h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            font-size: 14px;
-            color: #333;
-            margin-bottom: 5px;
-            display: block;
-        }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-        }
-        .btn-submit {
-            background-color: #28a745;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.3s ease;
-        }
-        .btn-submit:hover {
-            background-color: #218838;
-        }
-        .btn-cancel {
-            background-color: #dc3545;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-        .btn-cancel:hover {
-            background-color: #c82333;
-        }
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: #0275d8;
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
-        }
-        .bottom-nav a {
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-            padding: 8px;
-            text-align: center;
-        }
-        .bottom-nav a:hover {
-            background-color: #025aa5;
-            border-radius: 5px;
-        }
-
-        /* Responsive Design */
-        @media screen and (max-width: 600px) {
-            .form-container {
-                padding: 15px;
-            }
-            .btn-submit, .btn-cancel {
-                font-size: 14px;
-                padding: 10px;
-            }
-            .bottom-nav a {
-                font-size: 12px;
-                padding: 5px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Add Car</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: #f8f9fa;
+    }
+    .container {
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      margin-top: 20px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: white;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    .bottom-nav a {
+      color: black;
+      text-decoration: none;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #4CAF50;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 9999;
+      font-size: 16px;
+      animation: fadeInOut 1.5s forwards;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0; }
+      20% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    #loader {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #4CAF50;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      z-index: 1000;
+    }
+    @keyframes spin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+  </style>
 </head>
+
 <body>
 
-    <header>
-        <h1>Add New Car</h1>
-    </header>
+<div class="container">
+  <h2>Add Your Car</h2>
+  <input type="text" id="carName" placeholder="Car Name" required>
+  
+  <select id="carCompany" required>
+    <option value="">Select Car Company</option>
+    <option>Maruti Suzuki</option>
+    <option>Hyundai</option>
+    <option>Tata Motors</option>
+    <option>Mahindra</option>
+    <option>Kia</option>
+    <option>Honda</option>
+    <option>Renault</option>
+    <option>Ford</option>
+    <option>Volkswagen</option>
+    <option>Skoda</option>
+    <option>MG Motors</option>
+    <option>Nissan</option>
+    <option>Toyota</option>
+    <option>BMW</option>
+    <option>Mercedes</option>
+    <option>Audi</option>
+  </select>
+  
+  <input type="text" id="registrationNumber" placeholder="Registration Number" required>
+  <input type="text" id="ownerName" placeholder="Owner Name" required>
+  <input type="number" id="rate" placeholder="Rate (₹/day)" required>
+  <input type="text" id="description" placeholder="Short Description" required>
 
-    <div class="container">
-        <div class="form-container">
-            <h2>Car Details</h2>
-            <form id="addCarForm">
-                <div class="form-group">
-                    <label for="carCompany">Car Company</label>
-                    <select id="carCompany" required>
-                        <option value="Maruti Suzuki">Maruti Suzuki</option>
-                        <option value="Hyundai">Hyundai</option>
-                        <option value="Tata Motors">Tata Motors</option>
-                        <option value="Honda">Honda</option>
-                        <option value="Toyota">Toyota</option>
-                        <option value="BMW">BMW</option>
-                        <option value="Mercedes">Mercedes</option>
-                        <option value="Ford">Ford</option>
-                        <option value="Chevrolet">Chevrolet</option>
-                        <option value="Renault">Renault</option>
-                        <option value="Mahindra">Mahindra</option>
-                    </select>
-                </div>
+  <button onclick="submitCar()">Add Car</button>
+</div>
 
-                <div class="form-group">
-                    <label for="carModel">Car Model</label>
-                    <input type="text" id="carModel" placeholder="Enter car model" required>
-                </div>
+<div id="loader"></div>
 
-                <div class="form-group">
-                    <label for="carNumber">Registration Number</label>
-                    <input type="text" id="carNumber" placeholder="Enter registration number" required>
-                </div>
+<!-- Bottom Navbar -->
+<div class="bottom-nav">
+  <a href="home.html">🏠<br>Home</a>
+  <a href="slots.html">🕒<br>Slots</a>
+  <a href="orders.html">📦<br>Orders</a>
+  <a href="profile.html">👤<br>Profile</a>
+</div>
 
-                <div class="form-group">
-                    <label for="ownerName">Owner Name</label>
-                    <input type="text" id="ownerName" placeholder="Enter owner name" required>
-                </div>
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-                <div class="form-group">
-                    <label for="driverName">Driver Name</label>
-                    <input type="text" id="driverName" placeholder="Enter driver name" required>
-                </div>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
 
-                <div class="form-group">
-                    <label for="driverPhone">Driver Phone Number</label>
-                    <input type="text" id="driverPhone" placeholder="Enter driver phone number" required>
-                </div>
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-                <button type="submit" class="btn-submit">Submit</button>
-                <button type="button" class="btn-cancel" onclick="window.location.href = 'mycars.html'">Cancel</button>
-            </form>
-        </div>
-    </div>
+  function toast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.remove();
+    }, 1500);
+  }
 
-    <!-- Bottom Navigation -->
-    <div class="bottom-nav">
-        <a href="home.html">Home</a>
-        <a href="slots.html">Slots</a>
-        <a href="myorders.html">My Orders</a>
-        <a href="mycars.html">My Cars</a>
-        <a href="profile.html">Profile</a>
-    </div>
+  function submitCar() {
+    const carName = document.getElementById('carName').value.trim();
+    const carCompany = document.getElementById('carCompany').value.trim();
+    const registrationNumber = document.getElementById('registrationNumber').value.trim();
+    const ownerName = document.getElementById('ownerName').value.trim();
+    const rate = document.getElementById('rate').value.trim();
+    const description = document.getElementById('description').value.trim();
 
-    <!-- Firebase integration -->
-    <script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-database.js"></script>
-    <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-            authDomain: "wavetravel-3c4c4.firebaseapp.com",
-            databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-            projectId: "wavetravel-3c4c4",
-            storageBucket: "wavetravel-3c4c4.firebasestorage.app",
-            messagingSenderId: "298226098137",
-            appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-        };
+    if (!carName || !carCompany || !registrationNumber || !ownerName || !rate || !description) {
+      toast("Please fill all fields!");
+      return;
+    }
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const pendingCarApprovalRef = db.ref("pendingcarapproval");
+    document.getElementById('loader').style.display = 'block';
 
-        const form = document.getElementById("addCarForm");
+    // Dummy driver details (should be dynamic in real apps)
+    const driverId = localStorage.getItem('driverId') || "sampleDriverId";
+    const driverName = localStorage.getItem('driverName') || "Driver Name";
+    const driverPhone = localStorage.getItem('driverPhone') || "9999999999";
 
-        form.addEventListener("submit", function(event) {
-            event.preventDefault();
+    const carData = {
+      name: carName,
+      company: carCompany,
+      registrationNumber: registrationNumber,
+      ownerName: ownerName,
+      rate: rate,
+      description: description,
+      driverId: driverId,
+      driverName: driverName,
+      driverPhone: driverPhone,
+    };
 
-            const carCompany = document.getElementById("carCompany").value;
-            const carModel = document.getElementById("carModel").value;
-            const carNumber = document.getElementById("carNumber").value;
-            const ownerName = document.getElementById("ownerName").value;
-            const driverName = document.getElementById("driverName").value;
-            const driverPhone = document.getElementById("driverPhone").value;
+    const newCarRef = push(ref(db, 'pendingcarapproval'));
 
-            // Save the car details to Firebase under /pendingcarapproval
-            const carData = {
-                carCompany,
-                carModel,
-                carNumber,
-                ownerName,
-                driverName,
-                driverPhone,
-                status: "pending" // Status is "pending" before admin approval
-            };
-
-            pendingCarApprovalRef.push(carData, function(error) {
-                if (error) {
-                    alert("Error saving car data!");
-                } else {
-                    alert("Car added successfully! Awaiting admin approval.");
-                    form.reset();
-                }
-            });
-        });
-    </script>
+    set(newCarRef, carData)
+      .then(() => {
+        document.getElementById('loader').style.display = 'none';
+        toast("Car added successfully!");
+        setTimeout(() => {
+          window.location.href = "mycars.html";
+        }, 2000);
+      })
+      .catch((error) => {
+        document.getElementById('loader').style.display = 'none';
+        console.error(error);
+        toast("Error adding car!");
+      });
+  }
+</script>
 
 </body>
 </html>
