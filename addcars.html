@@ -167,11 +167,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="driverId">Driver ID</label>
-                    <input type="text" id="driverId" placeholder="Enter driver ID" required>
-                </div>
-
-                <div class="form-group">
                     <label for="driverName">Driver Name</label>
                     <input type="text" id="driverName" placeholder="Enter driver name" required>
                 </div>
@@ -224,7 +219,6 @@
             const carModel = document.getElementById("carModel").value;
             const carNumber = document.getElementById("carNumber").value;
             const ownerName = document.getElementById("ownerName").value;
-            const driverId = document.getElementById("driverId").value;
             const driverName = document.getElementById("driverName").value;
             const driverPhone = document.getElementById("driverPhone").value;
 
@@ -234,7 +228,6 @@
                 carModel,
                 carNumber,
                 ownerName,
-                driverId,
                 driverName,
                 driverPhone,
                 status: "pending"
