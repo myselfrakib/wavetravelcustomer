@@ -222,7 +222,7 @@
             const driverName = document.getElementById("driverName").value;
             const driverPhone = document.getElementById("driverPhone").value;
 
-            // Save the car details to Firebase
+            // Save the car details to Firebase under /pendingcarapproval
             const carData = {
                 carCompany,
                 carModel,
@@ -230,7 +230,7 @@
                 ownerName,
                 driverName,
                 driverPhone,
-                status: "pending"
+                status: "pending" // Status is "pending" before admin approval
             };
 
             pendingCarApprovalRef.push(carData, function(error) {
