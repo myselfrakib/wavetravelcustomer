@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Driver Slots</title>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import { getDatabase, ref, get, push, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let currentUserId = null;
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        currentUserId = user.uid;
+        loadSlots();
+        loadLocations();
+        loadCars();
+      } else {
+        window.location.href = "driverlogin.html";
+      }
+    });
+
+    async function loadSlots() {
+      const slotsRef = ref(db, `availableslots/${currentUserId}`);
+      const snapshot = await get(slotsRef);
+      const slotsList = document.getElementById('slotsList');
+      slotsList.innerHTML = "";
+
+      if (snapshot.exists()) {
+        const slots = snapshot.val();
+        Object.keys(slots).forEach(key => {
+          const slot = slots[key];
+          const slotDiv = document.createElement('div');
+          slotDiv.className = 'slot-card';
+          slotDiv.innerHTML = `
+            <h3>${slot.pickup} ➔ ${slot.dropoff}</h3>
+            <p>Date: ${slot.date} | Time: ${slot.time}</p>
+            <p>Seats Available: ${slot.seats}</p>
+            <p>Car: ${slot.carModel}</p>
+          `;
+          slotsList.appendChild(slotDiv);
+        });
+      } else {
+        slotsList.innerHTML = "<p>No slots added yet.</p>";
+      }
+    }
+
+    async function loadLocations() {
+      const locationsRef = ref(db, "locations");
+      const snapshot = await get(locationsRef);
+      const pickup = document.getElementById('pickup');
+      const dropoff = document.getElementById('dropoff');
+
+      if (snapshot.exists()) {
+        const locations = snapshot.val();
+        Object.values(locations).forEach(location => {
+          const option1 = document.createElement('option');
+          option1.value = location.name;
+          option1.innerText = location.name;
+          pickup.appendChild(option1);
+
+          const option2 = document.createElement('option');
+          option2.value = location.name;
+          option2.innerText = location.name;
+          dropoff.appendChild(option2);
+        });
+      }
+    }
+
+    async function loadCars() {
+      const carsRef = ref(db, `drivercars/${currentUserId}`);
+      const snapshot = await get(carsRef);
+      const carSelect = document.getElementById('car');
+
+      if (snapshot.exists()) {
+        const cars = snapshot.val();
+        Object.keys(cars).forEach(key => {
+          const car = cars[key];
+          const option = document.createElement('option');
+          option.value = car.model || "Unnamed Car";
+          option.innerText = car.model || "Unnamed Car";
+          carSelect.appendChild(option);
+        });
+      }
+    }
+
+    async function addSlot(event) {
+      event.preventDefault();
+
+      const pickup = document.getElementById('pickup').value;
+      const dropoff = document.getElementById('dropoff').value;
+      const date = document.getElementById('date').value;
+      const time = document.getElementById('time').value;
+      const carModel = document.getElementById('car').value;
+      const seats = document.getElementById('seats').value;
+
+      const slotsRef = ref(db, `availableslots/${currentUserId}`);
+      const newSlotRef = push(slotsRef);
+
+      await set(newSlotRef, {
+        pickup,
+        dropoff,
+        date,
+        time,
+        carModel,
+        seats
+      });
+
+      alert("Slot added successfully!");
+      document.getElementById('slotForm').reset();
+      loadSlots();
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      color: white;
+      min-height: 100vh;
+      padding-bottom: 70px; /* for navbar */
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    form {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+    }
+
+    form input, form select, form button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    form button {
+      background: #ffd700;
+      font-weight: bold;
+      color: black;
+      cursor: pointer;
+    }
+
+    .slot-card {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+    }
+
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 0;
+      z-index: 999;
+    }
+
+    .navbar a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 16px;
+      padding: 10px 15px;
+      border-radius: 10px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .navbar a:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffd700;
+    }
+
+    @media (max-width: 600px) {
+      .navbar a {
+        font-size: 14px;
+        padding: 8px 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>Manage Slots</h1>
+
+    <form id="slotForm" onsubmit="addSlot(event)">
+      <select id="pickup" required>
+        <option value="">Select Pickup Location</option>
+      </select>
+
+      <select id="dropoff" required>
+        <option value="">Select Dropoff Location</option>
+      </select>
+
+      <input type="date" id="date" required>
+      <input type="time" id="time" required>
+
+      <select id="car" required>
+        <option value="">Select Car</option>
+      </select>
+
+      <input type="number" id="seats" placeholder="Available Seats" required min="1" max="6">
+
+      <button type="submit">Add Slot</button>
+    </form>
+
+    <div id="slotsList"></div>
+  </div>
+
+  <div class="navbar">
+    <a href="driverdashboard.html">Home</a>
+    <a href="mybookings.html">My Bookings</a>
+    <a href="slots.html">Slots</a>
+    <a href="mycars.html">My Cars</a>
+    <a href="profile.html">Profile</a>
+  </div>
+
+</body>
+</html>
