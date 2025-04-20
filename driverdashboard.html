@@ -1,116 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Driver Dashboard</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #00dfd8, #007cf0);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .navbar {
-      background: #ffffff;
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .navbar h1 {
-      font-size: 1.5rem;
-      color: #007cf0;
-      margin: 0;
-    }
-
-    .navbar button {
-      background-color: #ff4d4d;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-      border-radius: 0.5rem;
-      cursor: pointer;
-    }
-
-    .container {
-      flex: 1;
-      padding: 2rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .card {
-      background: white;
-      padding: 2rem;
-      border-radius: 1rem;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      width: 100%;
-      max-width: 400px;
-      margin-top: 2rem;
-    }
-
-    .card h2 {
-      margin-bottom: 1rem;
-      color: #007cf0;
-    }
-
-    .card p {
-      font-size: 1.1rem;
-      margin-bottom: 1rem;
-    }
-
-    .bottom-nav {
-      display: flex;
-      justify-content: space-around;
-      background: white;
-      padding: 0.7rem 0;
-      border-top: 1px solid #ccc;
-    }
-
-    .bottom-nav a {
-      text-decoration: none;
-      color: #007cf0;
-      font-weight: bold;
-      font-size: 1rem;
-    }
-  </style>
-</head>
-<body>
-
-  <div class="navbar">
-    <h1>Driver Dashboard</h1>
-    <button onclick="logout()">Logout</button>
-  </div>
-
-  <div class="container">
-    <div class="card">
-      <h2>Welcome, Driver!</h2>
-      <p id="driverEmail">Loading...</p>
-      <p>Manage your rides, profile, and earnings.</p>
-    </div>
-  </div>
-
-  <div class="bottom-nav">
-    <a href="#">Home</a>
-    <a href="#">Rides</a>
-    <a href="#">Profile</a>
-    <a href="#">Earnings</a>
-  </div>
-
-  <!-- Firebase Scripts -->
+  
+  <!-- Firebase Config -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-    import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -126,30 +25,93 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    function logout() {
-      signOut(auth).then(() => {
-        window.location.href = "driverlogin.html";
-      }).catch((error) => {
-        console.error("Logout Error:", error);
-      });
-    }
-
-    // Check if driver is logged in
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, user => {
       if (user) {
-        document.getElementById("driverEmail").innerText = user.email;
-        // Optionally, fetch driver details from database:
-        // get(child(ref(db), `driverdetails/${user.uid}`)).then(snapshot => {
-        //   if(snapshot.exists()) {
-        //     document.getElementById("driverEmail").innerText = snapshot.val().name;
-        //   }
-        // });
+        document.getElementById('welcomeMessage').innerText = `Welcome, Driver!`;
+        // You can fetch more driver info if needed from /driverdetails/
       } else {
         window.location.href = "driverlogin.html";
       }
     });
-
   </script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      color: white;
+      min-height: 100vh;
+      padding-bottom: 70px; /* space for navbar */
+    }
+
+    .container {
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 28px;
+    }
+
+    p {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 0;
+      z-index: 999;
+    }
+
+    .navbar a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 16px;
+      padding: 10px 15px;
+      border-radius: 10px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .navbar a:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffd700;
+    }
+
+    @media (max-width: 600px) {
+      .navbar a {
+        font-size: 14px;
+        padding: 8px 10px;
+      }
+    }
+  </style>
+
+</head>
+<body>
+
+  <div class="container">
+    <h1 id="welcomeMessage">Loading...</h1>
+    <p>This is your driver dashboard. Here you can manage your rides, cars, and profile easily.</p>
+  </div>
+
+  <div class="navbar">
+    <a href="driverdashboard.html">Home</a>
+    <a href="mybookings.html">My Bookings</a>
+    <a href="slots.html">Slots</a>
+    <a href="mycars.html">My Cars</a>
+    <a href="profile.html">Profile</a>
+  </div>
 
 </body>
 </html>
