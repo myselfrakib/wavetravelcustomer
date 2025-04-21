@@ -30,8 +30,9 @@
         
         // Check if admin is logged in
         onAuthStateChanged(auth, user => {
-            if (!user || user.email !== "contactwaveride@gmail.com") {
-                window.location.href = "login.html"; // Redirect to login page
+            if (!user || user.email !== "contactwaveride@gmail.com")
+            else{
+                window.location.href = "adminlogin.html"; // Redirect to login page
             }
         });
 
