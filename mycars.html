@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Cars</title>
+  <title>My Cars - Driver Panel</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -12,231 +12,150 @@
       background: linear-gradient(to right, #8e2de2, #4a00e0);
       color: white;
     }
-
-    .navbar, .navbar-bottom {
+    .navbar {
       background-color: rgba(0, 0, 0, 0.4);
-      padding: 15px;
+      padding: 10px;
       display: flex;
-      justify-content: space-around;
+      justify-content: center;
       position: fixed;
       bottom: 0;
       width: 100%;
-      z-index: 10;
     }
-
-    .navbar a, .navbar-bottom a {
+    .navbar a {
       color: #fff;
       text-decoration: none;
+      margin: 0 15px;
       font-weight: bold;
-      font-size: 16px;
-      padding: 10px;
-      transition: background-color 0.3s ease;
+      font-size: 14px;
     }
-
-    .navbar a:hover, .navbar-bottom a:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-      border-radius: 5px;
-    }
-
     .container {
-      margin-top: 80px;
-      padding: 30px;
-      text-align: center;
-      background-color: rgba(255, 255, 255, 0.9);
-      border-radius: 15px;
-      max-width: 900px;
-      margin: 80px auto;
-      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .container h1, .container h2 {
-      font-size: 28px;
-      color: #4a00e0;
-    }
-
-    .car-item {
-      background-color: rgba(0, 0, 0, 0.05);
       padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      box-shadow: 0px 2px 15px rgba(0, 0, 0, 0.1);
+      padding-bottom: 80px;
     }
-
-    .car-info {
-      flex: 1;
+    .car-form {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
     }
-
-    .car-info h3 {
-      font-size: 22px;
-      color: #4a00e0;
-    }
-
-    .car-info p {
-      font-size: 16px;
-      color: #555;
-    }
-
-    .input-field {
+    input, select, button {
       width: 100%;
-      padding: 12px;
-      margin: 15px 0;
-      border: 2px solid #ccc;
-      border-radius: 5px;
-      background-color: #fff;
-      color: #333;
-    }
-
-    .submit-button {
-      background-color: #4a00e0;
-      color: white;
-      padding: 12px 20px;
-      font-size: 18px;
+      padding: 10px;
+      margin-top: 10px;
       border: none;
       border-radius: 5px;
+    }
+    button {
+      background-color: #00c6ff;
+      color: white;
+      font-weight: bold;
       cursor: pointer;
-      width: 100%;
-      transition: background-color 0.3s ease;
+      margin-top: 20px;
     }
-
-    .submit-button:hover {
-      background-color: #8e2de2;
+    .car-list {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
     }
-
   </style>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.firebasestorage.app",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase();
-    const auth = getAuth();
-
-    let driverId = null;
-
-    // Function to check if the driver is authenticated
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        driverId = user.uid;
-        loadCars(); // Load the cars once the driver is authenticated
-      } else {"; // Redirect to login if not authenticated
-      }
-    });
-
-    // Function to load the approved cars for the driver from Firebase
-    function loadCars() {
-      const carsRef = ref(db, 'drivercars/' + driverId);
-      onValue(carsRef, (snapshot) => {
-        const cars = snapshot.val();
-        const carList = document.getElementById("car-list");
-        carList.innerHTML = ''; // Clear the current list
-
-        if (cars) {
-          Object.keys(cars).forEach(carId => {
-            const car = cars[carId];
-            const carItem = document.createElement("div");
-            carItem.classList.add("car-item");
-            carItem.innerHTML = `
-              <div class="car-info">
-                <h3>${car.model}</h3>
-                <p>License Plate: ${car.licensePlate}</p>
-                <p>Status: ${car.status}</p>
-              </div>
-            `;
-            carList.appendChild(carItem);
-          });
-        } else {
-          carList.innerHTML = "<p>No cars available. Add your car.</p>";
-        }
-      });
-    }
-
-    // Function to handle the form submission and add a new car
-    function addCar() {
-      const model = document.getElementById("car-model").value;
-      const licensePlate = document.getElementById("license-plate").value;
-      const status = document.getElementById("car-status").value;
-
-      if (model && licensePlate && status) {
-        const newCarRef = push(ref(db, 'drivercars/' + driverId));
-        set(newCarRef, {
-          model: model,
-          licensePlate: licensePlate,
-          status: status,
-        }).then(() => {
-          alert("Car added successfully!");
-          loadCars(); // Reload the cars list
-          document.getElementById("add-car-form").reset(); // Reset the form
-        }).catch((error) => {
-          console.error("Error adding car: ", error);
-        });
-      } else {
-        alert("Please fill out all fields.");
-      }
-    }
-
-  </script>
 </head>
 <body>
 
-  <!-- Navbar -->
-  <div class="navbar">
-    <a href="driverdashboard.html">Home</a>
-    <a href="mybookings.html">My Bookings</a>
-    <a href="slots.html">Slots</a>
-    <a href="mycars.html">My Cars</a>
-    <a href="profile.html">Profile</a>
-  </div>
+<div class="container">
+  <h2>My Cars</h2>
 
-  <div class="container">
-    <h1>My Cars</h1>
-
-    <!-- Section to show the list of approved cars -->
-    <div id="car-list"></div>
-
-    <h2>Add New Car</h2>
-    <form id="add-car-form" onsubmit="event.preventDefault(); addCar();">
-      <div>
-        <label for="car-model">Car Model</label>
-        <input type="text" id="car-model" class="input-field" required>
-      </div>
-      <div>
-        <label for="license-plate">License Plate</label>
-        <input type="text" id="license-plate" class="input-field" required>
-      </div>
-      <div>
-        <label for="car-status">Status</label>
-        <select id="car-status" class="input-field">
-          <option value="Available">Available</option>
-          <option value="Not Available">Not Available</option>
-        </select>
-      </div>
-      <button type="submit" class="submit-button">Add Car</button>
+  <div class="car-form">
+    <h3>Add a Car</h3>
+    <form id="addCarForm">
+      <input type="text" id="carName" placeholder="Car Name" required>
+      <input type="text" id="carNumber" placeholder="Car Number" required>
+      <input type="number" id="seatCount" placeholder=" Total Number of Seats for Customer" required>
+      <button type="submit">Submit Car for Approval</button>
     </form>
   </div>
 
-  <!-- Bottom Navbar -->
-  <div class="navbar-bottom">
-    <a href="driverdashboard.html">Home</a>
-    <a href="mybookings.html">My Bookings</a>
-    <a href="slots.html">Slots</a>
-    <a href="mycars.html">My Cars</a>
-    <a href="profile.html">Profile</a>
-  </div>
+  <h3>Your Approved Cars</h3>
+  <div id="approvedCars"></div>
+</div>
+
+<div class="navbar">
+  <a href="driverdashboard.html">Home</a>
+  <a href="drivermybookings.html">My Bookings</a>
+  <a href="driverslots.html">Slots</a>
+  <a href="mycars.html">My Cars</a>
+  <a href="driverprofile.html">Profile</a>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase();
+  const auth = getAuth();
+
+  const addCarForm = document.getElementById('addCarForm');
+  const approvedCarsDiv = document.getElementById('approvedCars');
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      const driverId = user.uid;
+
+      // Submit Car
+      addCarForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const carName = document.getElementById('carName').value;
+        const carNumber = document.getElementById('carNumber').value;
+        const seatCount = document.getElementById('seatCount').value;
+
+        const pendingRef = ref(db, `pendingcars/${driverId}`);
+        const newCarRef = push(pendingRef);
+        await set(newCarRef, {
+          carName,
+          carNumber,
+          seatCount,
+          status: "pending"
+        });
+
+        alert("Car submitted for approval!");
+        addCarForm.reset();
+      };
+
+      // Fetch Approved Cars
+      const driverCarsRef = ref(db, `drivercars/${driverId}`);
+      onValue(driverCarsRef, (snapshot) => {
+        approvedCarsDiv.innerHTML = '';
+        snapshot.forEach((childSnapshot) => {
+          const car = childSnapshot.val();
+          const div = document.createElement('div');
+          div.className = 'car-list';
+          div.innerHTML = `
+            <strong>${car.carName}</strong><br>
+            Number: ${car.carNumber}<br>
+            Seats: ${car.seatCount}
+          `;
+          approvedCarsDiv.appendChild(div);
+        });
+      });
+
+    } else {
+      window.location.hre
+    }
+  });
+
+</script>
 
 </body>
 </html>
