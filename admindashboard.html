@@ -16,7 +16,7 @@
             padding: 0;
             background-color: #f0f2f5;
         }
-        
+
         .navbar {
             display: flex;
             justify-content: space-around;
@@ -184,19 +184,21 @@
 
         // Tab Switching Functionality
         function openTab(tabName, button) {
+            // Hide all tabs
             const tabs = document.getElementsByClassName("tab");
             for (let i = 0; i < tabs.length; i++) {
-                tabs[i].style.display = "none"; // Hide all tabs
+                tabs[i].style.display = "none";
             }
 
+            // Remove active class from all buttons
             const buttons = document.getElementsByClassName("nav-btn");
             for (let i = 0; i < buttons.length; i++) {
-                buttons[i].classList.remove("active"); // Remove active class
+                buttons[i].classList.remove("active");
             }
 
-            // Show the clicked tab
+            // Show the selected tab and add active class to the clicked button
             document.getElementById(tabName).style.display = "block";
-            button.classList.add("active"); // Add active class to the clicked button
+            button.classList.add("active");
         }
 
         // Fetch Users Data from Firebase
@@ -263,8 +265,8 @@
             }, 3000);
         }
 
-        // Call fetch functions on page load
-        window.onload = function() {
+        // Initialize Data
+        window.onload = () => {
             fetchUsers();
             fetchPendingCars();
         };
