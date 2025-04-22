@@ -2,18 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin Dashboard - WaveTravel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* Basic Reset */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: "Poppins", sans-serif;
-    }
     body {
-      background: linear-gradient(to bottom right, #4facfe, #00f2fe);
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to bottom right, #0077b6, #00b4d8);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -24,114 +19,166 @@
       text-align: center;
       font-size: 24px;
       font-weight: bold;
-      background: rgba(0, 0, 0, 0.2);
+      background: rgba(0,0,0,0.2);
     }
-    main {
+    .container {
       flex: 1;
       padding: 20px;
+      overflow-y: auto;
     }
-    .tabcontent {
+    .tab {
       display: none;
-      animation: fadeEffect 0.5s;
     }
-    .activeTab {
+    .active-tab {
       display: block;
     }
-    @keyframes fadeEffect {
-      from {opacity: 0;}
-      to {opacity: 1;}
+    .card {
+      background: #ffffff22;
+      border-radius: 12px;
+      padding: 15px;
+      margin: 10px 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
-    .navbar {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      background: rgba(0, 0, 0, 0.4);
+    .bottom-nav {
       display: flex;
       justify-content: space-around;
-      padding: 10px 0;
+      background: rgba(0,0,0,0.3);
+      padding: 10px;
     }
-    .navbar button {
+    .bottom-nav button {
       background: none;
       border: none;
       color: #fff;
       font-size: 16px;
       cursor: pointer;
     }
-    .navbar button.active {
+    .bottom-nav button.active {
       font-weight: bold;
-      text-decoration: underline;
+      border-bottom: 2px solid #fff;
     }
-    .card {
-      background: rgba(255, 255, 255, 0.2);
-      margin-bottom: 15px;
-      padding: 15px;
-      border-radius: 12px;
+    .btn {
+      background-color: #00b4d8;
+      border: none;
+      padding: 8px 12px;
+      margin: 5px;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn.delete {
+      background-color: #ef233c;
+    }
+    .btn.approve {
+      background-color: #06d6a0;
+    }
+    table {
+      width: 100%;
+      margin-top: 10px;
+      border-collapse: collapse;
+      background: #ffffff22;
+      border-radius: 10px;
+    }
+    table th, table td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ffffff44;
+    }
+    .toast {
+      visibility: hidden;
+      max-width: 50%;
+      min-width: 200px;
+      margin-left: -125px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 2px;
+      padding: 16px;
+      position: fixed;
+      z-index: 1;
+      left: 50%;
+      top: 30px;
+      font-size: 17px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      opacity: 0;
+      transition: opacity 0.5s, top 0.5s;
+    }
+    .toast.show {
+      visibility: visible;
+      opacity: 1;
+      top: 50px;
     }
   </style>
 </head>
-
 <body>
 
 <header>Admin Dashboard</header>
 
-<main>
-  <div id="Dashboard" class="tabcontent activeTab">
-    <h2>Dashboard Summary</h2>
-    <div class="card" id="userCount">Users: Loading...</div>
-    <div class="card" id="driverCount">Drivers: Loading...</div>
-    <div class="card" id="pendingCarsCount">Pending Cars: Loading...</div>
-    <div class="card" id="totalBookingsCount">Total Bookings: Loading...</div>
+<div class="container">
+  <div id="dashboard" class="tab active-tab">
+    <div class="card" id="summaryCards">Loading summary...</div>
   </div>
 
-  <div id="Users" class="tabcontent">
-    <h2>All Users</h2>
-    <div id="usersList"></div>
+  <div id="users" class="tab">
+    <div class="card">
+      <h3>Users</h3>
+      <div id="usersList"></div>
+    </div>
   </div>
 
-  <div id="Drivers" class="tabcontent">
-    <h2>All Drivers</h2>
-    <div id="driversList"></div>
+  <div id="drivers" class="tab">
+    <div class="card">
+      <h3>Drivers</h3>
+      <div id="driversList"></div>
+    </div>
   </div>
 
-  <div id="PendingCars" class="tabcontent">
-    <h2>Pending Cars</h2>
-    <div id="pendingCarsList"></div>
+  <div id="pendingcars" class="tab">
+    <div class="card">
+      <h3>Pending Cars</h3>
+      <div id="pendingCarsList"></div>
+    </div>
   </div>
 
-  <div id="Slots" class="tabcontent">
-    <h2>Available Slots</h2>
-    <div id="slotsList"></div>
+  <div id="slots" class="tab">
+    <div class="card">
+      <h3>Slots</h3>
+      <div id="slotsList"></div>
+    </div>
   </div>
 
-  <div id="Bookings" class="tabcontent">
-    <h2>All Bookings</h2>
-    <div id="bookingsList"></div>
+  <div id="bookings" class="tab">
+    <div class="card">
+      <h3>Bookings</h3>
+      <div id="bookingsList"></div>
+    </div>
   </div>
 
-  <div id="Profile" class="tabcontent">
-    <h2>Admin Profile</h2>
-    <button onclick="logout()">Logout</button>
+  <div id="profile" class="tab">
+    <div class="card">
+      <h3>Admin Profile</h3>
+      <p>Email: contactwaveride@gmail.com</p>
+    </div>
   </div>
-</main>
-
-<div class="navbar">
-  <button onclick="openTab('Dashboard')" class="active">Dashboard</button>
-  <button onclick="openTab('Users')">Users</button>
-  <button onclick="openTab('Drivers')">Drivers</button>
-  <button onclick="openTab('PendingCars')">Pending Cars</button>
-  <button onclick="openTab('Slots')">Slots</button>
-  <button onclick="openTab('Bookings')">Bookings</button>
-  <button onclick="openTab('Profile')">Profile</button>
 </div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="openTab('dashboard', this)">Dashboard</button>
+  <button class="nav-btn" onclick="openTab('users', this)">Users</button>
+  <button class="nav-btn" onclick="openTab('drivers', this)">Drivers</button>
+  <button class="nav-btn" onclick="openTab('pendingcars', this)">Pending Cars</button>
+  <button class="nav-btn" onclick="openTab('slots', this)">Slots</button>
+  <button class="nav-btn" onclick="openTab('bookings', this)">Bookings</button>
+  <button class="nav-btn" onclick="openTab('profile', this)">Profile</button>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toast" class="toast">Action completed successfully!</div>
 
 <!-- Firebase Scripts -->
 <script type="module">
-  // Firebase imports
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-  import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+  import { getDatabase, ref, onValue, remove, update, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-  // Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
     authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -141,132 +188,150 @@
     messagingSenderId: "298226098137",
     appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
   };
-
-  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  const auth = getAuth(app);
 
-  // Check Admin Login
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      alert("Unauthorized! Redirecting...");
-      window.location.href = "adminlogin.html";
-    }
-  });
-
-  // Navbar Tab Switch
-  function openTab(tabName) {
-    document.querySelectorAll(".tabcontent").forEach(tab => tab.classList.remove("activeTab"));
-    document.getElementById(tabName).classList.add("activeTab");
-    document.querySelectorAll(".navbar button").forEach(btn => btn.classList.remove("active"));
-    event.target.classList.add("active");
+  // Toast display function
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = "toast show";
+    setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
   }
 
-  // Logout Admin
-  function logout() {
-    signOut(auth).then(() => {
-      window.location.href = "adminlogin.html";
-    }).catch((error) => {
-      alert("Error logging out!");
+  // Load summary cards
+  function loadSummary() {
+    Promise.all([
+      getCount('users'),
+      getCount('driverdetails'),
+      getCount('pendingcars'),
+      getCount('bookings')
+    ]).then(([userCount, driverCount, pendingCars, bookings]) => {
+      document.getElementById('summaryCards').innerHTML = `
+        <p>Users: ${userCount}</p>
+        <p>Drivers: ${driverCount}</p>
+        <p>Pending Cars: ${pendingCars}</p>
+        <p>Bookings: ${bookings}</p>
+      `;
     });
   }
 
-  // Load Dashboard Summary
-  onValue(ref(db, 'users'), (snapshot) => {
-    document.getElementById('userCount').innerText = `Users: ${snapshot.size || Object.keys(snapshot.val() || {}).length}`;
-    loadUsers(snapshot.val());
-  });
+  function getCount(node) {
+    return new Promise((resolve) => {
+      const nodeRef = ref(db, node);
+      onValue(nodeRef, (snapshot) => {
+        resolve(snapshot.exists() ? Object.keys(snapshot.val()).length : 0);
+      }, { onlyOnce: true });
+    });
+  }
 
-  onValue(ref(db, 'driverdetails'), (snapshot) => {
-    document.getElementById('driverCount').innerText = `Drivers: ${snapshot.size || Object.keys(snapshot.val() || {}).length}`;
-    loadDrivers(snapshot.val());
-  });
-
-  onValue(ref(db, 'pendingcars'), (snapshot) => {
-    document.getElementById('pendingCarsCount').innerText = `Pending Cars: ${snapshot.size || Object.keys(snapshot.val() || {}).length}`;
-    loadPendingCars(snapshot.val());
-  });
-
-  onValue(ref(db, 'bookings'), (snapshot) => {
-    document.getElementById('totalBookingsCount').innerText = `Total Bookings: ${snapshot.size || Object.keys(snapshot.val() || {}).length}`;
-    loadBookings(snapshot.val());
-  });
-
-  onValue(ref(db, 'availableslots'), (snapshot) => {
-    loadSlots(snapshot.val());
-  });
-
-  // Load Users List
-  function loadUsers(users) {
-    let html = '';
-    if (users) {
-      Object.keys(users).forEach(uid => {
-        html += `<div class="card">UID: ${uid}<br>Email: ${users[uid].email || 'N/A'}</div>`;
+  // Load users
+  function loadUsers() {
+    const usersRef = ref(db, 'users');
+    onValue(usersRef, (snapshot) => {
+      const users = snapshot.val() || {};
+      let html = '<table><tr><th>Name</th><th>Email</th><th>Action</th></tr>';
+      Object.keys(users).forEach(key => {
+        html += `<tr><td>${users[key].name}</td><td>${users[key].email}</td><td><button class="btn delete" onclick="deleteUser('${key}')">Delete</button></td></tr>`;
       });
-    }
-    document.getElementById('usersList').innerHTML = html;
+      html += '</table>';
+      document.getElementById('usersList').innerHTML = html;
+    });
   }
 
-  // Load Drivers List
-  function loadDrivers(drivers) {
-    let html = '';
-    if (drivers) {
-      Object.keys(drivers).forEach(uid => {
-        html += `<div class="card">Driver: ${drivers[uid].name || 'N/A'}<br>Phone: ${drivers[uid].phone || 'N/A'}</div>`;
+  window.deleteUser = function(id) {
+    remove(ref(db, 'users/' + id)).then(() => showToast("User deleted successfully"));
+  }
+
+  // Load drivers
+  function loadDrivers() {
+    const driversRef = ref(db, 'driverdetails');
+    onValue(driversRef, (snapshot) => {
+      const drivers = snapshot.val() || {};
+      let html = '<table><tr><th>Name</th><th>Phone</th><th>Action</th></tr>';
+      Object.keys(drivers).forEach(key => {
+        html += `<tr><td>${drivers[key].name}</td><td>${drivers[key].phone}</td><td><button class="btn delete" onclick="deleteDriver('${key}')">Delete</button></td></tr>`;
       });
-    }
-    document.getElementById('driversList').innerHTML = html;
+      html += '</table>';
+      document.getElementById('driversList').innerHTML = html;
+    });
   }
 
-  // Load Pending Cars
-  function loadPendingCars(cars) {
-    let html = '';
-    if (cars) {
-      Object.keys(cars).forEach(carId => {
-        html += `<div class="card">Model: ${cars[carId].model || 'N/A'}<br><button onclick="approveCar('${carId}')">Approve</button></div>`;
+  window.deleteDriver = function(id) {
+    remove(ref(db, 'driverdetails/' + id)).then(() => showToast("Driver deleted successfully"));
+  }
+
+  // Load pending cars
+  function loadPendingCars() {
+    const carsRef = ref(db, 'pendingcars');
+    onValue(carsRef, (snapshot) => {
+      const cars = snapshot.val() || {};
+      let html = '<table><tr><th>Car</th><th>Action</th></tr>';
+      Object.keys(cars).forEach(key => {
+        html += `<tr><td>${cars[key].car}</td><td><button class="btn approve" onclick="approveCar('${key}')">Approve</button></td></tr>`;
       });
-    }
-    document.getElementById('pendingCarsList').innerHTML = html;
+      html += '</table>';
+      document.getElementById('pendingCarsList').innerHTML = html;
+    });
   }
 
-  // Approve Pending Car
-  function approveCar(carId) {
-    const pendingCarRef = ref(db, `pendingcars/${carId}`);
-    onValue(pendingCarRef, (snapshot) => {
-      const carData = snapshot.val();
-      if (carData) {
-        const carsRef = ref(db, `cars/${carId}`);
-        update(carsRef, carData).then(() => {
-          remove(pendingCarRef);
-          alert("Car approved and moved!");
-        });
-      }
-    }, { onlyOnce: true });
+  window.approveCar = function(id) {
+    update(ref(db, 'pendingcars/' + id), { status: 'approved' }).then(() => showToast("Car approved successfully"));
   }
 
-  // Load Slots
-  function loadSlots(slots) {
-    let html = '';
-    if (slots) {
-      Object.keys(slots).forEach(slotId => {
-        html += `<div class="card">Slot: ${JSON.stringify(slots[slotId])}</div>`;
+  // Load slots
+  function loadSlots() {
+    const slotsRef = ref(db, 'availableslots');
+    onValue(slotsRef, (snapshot) => {
+      const slots = snapshot.val() || {};
+      let html = '<table><tr><th>Slot</th><th>Action</th></tr>';
+      Object.keys(slots).forEach(key => {
+        html += `<tr><td>${slots[key].slot}</td><td><button class="btn delete" onclick="deleteSlot('${key}')">Delete</button></td></tr>`;
       });
-    }
-    document.getElementById('slotsList').innerHTML = html;
+      html += '</table>';
+      document.getElementById('slotsList').innerHTML = html;
+    });
   }
 
-  // Load Bookings
-  function loadBookings(bookings) {
-    let html = '';
-    if (bookings) {
-      Object.keys(bookings).forEach(bookingId => {
-        html += `<div class="card">Booking: ${JSON.stringify(bookings[bookingId])}</div>`;
+  window.deleteSlot = function(id) {
+    remove(ref(db, 'availableslots/' + id)).then(() => showToast("Slot deleted successfully"));
+  }
+
+  // Load bookings
+  function loadBookings() {
+    const bookingsRef = ref(db, 'bookings');
+    onValue(bookingsRef, (snapshot) => {
+      const bookings = snapshot.val() || {};
+      let html = '<table><tr><th>Customer</th><th>Pickup</th><th>Drop-off</th><th>Action</th></tr>';
+      Object.keys(bookings).forEach(key => {
+        html += `<tr><td>${bookings[key].customer}</td><td>${bookings[key].pickup}</td><td>${bookings[key].dropoff}</td><td><button class="btn delete" onclick="deleteBooking('${key}')">Cancel</button></td></tr>`;
       });
-    }
-    document.getElementById('bookingsList').innerHTML = html;
+      html += '</table>';
+      document.getElementById('bookingsList').innerHTML = html;
+    });
   }
 
+  window.deleteBooking = function(id) {
+    remove(ref(db, 'bookings/' + id)).then(() => showToast("Booking cancelled successfully"));
+  }
+
+  function openTab(tabName, button) {
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => tab.classList.remove('active-tab'));
+    document.getElementById(tabName).classList.add('active-tab');
+
+    const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+  }
+
+  // Load all data
+  loadSummary();
+  loadUsers();
+  loadDrivers();
+  loadPendingCars();
+  loadSlots();
+  loadBookings();
 </script>
 
 </body>
