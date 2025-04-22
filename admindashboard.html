@@ -90,11 +90,12 @@
 <!-- Toast -->
 <div id="toast" style="position: fixed; bottom: 30px; right: 30px; background: #333; color: white; padding: 10px 20px; border-radius: 8px; display: none;"></div>
 
-<!-- Firebase + Logic -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
 
+<script>
+  // Firebase setup
   const firebaseConfig = {
     apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
     authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -104,10 +105,10 @@
     messagingSenderId: "298226098137",
     appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
   };
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-  // Tab switching
+  // Navbar tab switching
   document.addEventListener('DOMContentLoaded', function() {
     const tabButtons = document.querySelectorAll('.tab-btn');
     tabButtons.forEach(button => {
@@ -116,22 +117,16 @@
         openTab(tabName);
       });
     });
-
-    function openTab(tabName) {
-      const tabs = document.querySelectorAll('.tab-content');
-      tabs.forEach(tab => { tab.style.display = 'none'; });
-      const selectedTab = document.getElementById(tabName);
-      if (selectedTab) selectedTab.style.display = 'block';
-    }
-
     openTab('dashboard'); // Default tab open
-
-    loadUsers();
-    loadDrivers();
-    loadPendingCars();
-    loadSlots();
-    loadBookings();
+    loadAllData();
   });
+
+  function openTab(tabName) {
+    const tabs = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.style.display = 'none'; });
+    const selectedTab = document.getElementById(tabName);
+    if (selectedTab) selectedTab.style.display = 'block';
+  }
 
   function showToast(message) {
     const toast = document.getElementById('toast');
@@ -140,92 +135,108 @@
     setTimeout(() => { toast.style.display = 'none'; }, 2000);
   }
 
+  function loadAllData() {
+    loadUsers();
+    loadDrivers();
+    loadPendingCars();
+    loadSlots();
+    loadBookings();
+  }
+
   function loadUsers() {
-    const usersRef = ref(db, 'users/');
-    onValue(usersRef, (snapshot) => {
+    const usersRef = db.ref('users/');
+    usersRef.on('value', (snapshot) => {
       const users = snapshot.val();
       const table = document.getElementById('usersTable');
       table.innerHTML = `<tr><th>Name</th><th>Email</th><th>Phone</th></tr>`;
-      for (let id in users) {
-        const user = users[id];
-        table.innerHTML += `<tr><td>${user.name || ''}</td><td>${user.email || ''}</td><td>${user.phone || ''}</td></tr>`;
+      if(users){
+        for (let id in users) {
+          const user = users[id];
+          table.innerHTML += `<tr><td>${user.name || ''}</td><td>${user.email || ''}</td><td>${user.phone || ''}</td></tr>`;
+        }
       }
     });
   }
 
   function loadDrivers() {
-    const driversRef = ref(db, 'drivers/');
-    onValue(driversRef, (snapshot) => {
+    const driversRef = db.ref('drivers/');
+    driversRef.on('value', (snapshot) => {
       const drivers = snapshot.val();
       const table = document.getElementById('driversTable');
       table.innerHTML = `<tr><th>Name</th><th>Email</th><th>Phone</th></tr>`;
-      for (let id in drivers) {
-        const driver = drivers[id];
-        table.innerHTML += `<tr><td>${driver.name || ''}</td><td>${driver.email || ''}</td><td>${driver.phone || ''}</td></tr>`;
+      if(drivers){
+        for (let id in drivers) {
+          const driver = drivers[id];
+          table.innerHTML += `<tr><td>${driver.name || ''}</td><td>${driver.email || ''}</td><td>${driver.phone || ''}</td></tr>`;
+        }
       }
     });
   }
 
   function loadPendingCars() {
-    const pendingCarsRef = ref(db, 'pendingcars/');
-    onValue(pendingCarsRef, (snapshot) => {
+    const pendingRef = db.ref('pendingcars/');
+    pendingRef.on('value', (snapshot) => {
       const cars = snapshot.val();
       const table = document.getElementById('pendingCarsTable');
       table.innerHTML = `<tr><th>Model</th><th>Number</th><th>Actions</th></tr>`;
-      for (let id in cars) {
-        const car = cars[id];
-        table.innerHTML += `
-          <tr>
+      if(cars){
+        for (let id in cars) {
+          const car = cars[id];
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
             <td>${car.model || ''}</td>
             <td>${car.number || ''}</td>
             <td>
-              <button class="action-btn approve-btn" onclick="approveCar('${id}')">Approve</button>
-              <button class="action-btn reject-btn" onclick="rejectCar('${id}')">Reject</button>
+              <button class="action-btn approve-btn">Approve</button>
+              <button class="action-btn reject-btn">Reject</button>
             </td>
-          </tr>`;
+          `;
+          // Attach event listeners
+          tr.querySelector('.approve-btn').addEventListener('click', () => approveCar(id, car));
+          tr.querySelector('.reject-btn').addEventListener('click', () => rejectCar(id));
+          table.appendChild(tr);
+        }
       }
     });
   }
 
-  window.approveCar = function(id) {
-    const pendingRef = ref(db, `pendingcars/${id}`);
-    const approvedRef = ref(db, `cars/${id}`);
-    onValue(pendingRef, (snapshot) => {
-      const car = snapshot.val();
-      update(approvedRef, car);
-      remove(pendingRef);
-      showToast('Car Approved!');
-    }, { onlyOnce: true });
+  function approveCar(id, car) {
+    db.ref(`cars/${id}`).set(car);
+    db.ref(`pendingcars/${id}`).remove();
+    showToast('Car Approved!');
   }
 
-  window.rejectCar = function(id) {
-    const pendingRef = ref(db, `pendingcars/${id}`);
-    remove(pendingRef);
+  function rejectCar(id) {
+    db.ref(`pendingcars/${id}`).remove();
     showToast('Car Rejected!');
   }
 
   function loadSlots() {
-    const slotsRef = ref(db, 'availableslots/');
-    onValue(slotsRef, (snapshot) => {
+    const slotsRef = db.ref('availableslots/');
+    slotsRef.on('value', (snapshot) => {
       const slots = snapshot.val();
       const table = document.getElementById('slotsTable');
       table.innerHTML = `<tr><th>Pickup</th><th>Drop</th><th>Seats</th></tr>`;
-      for (let id in slots) {
-        const slot = slots[id];
-        table.innerHTML += `<tr><td>${slot.pickup || ''}</td><td>${slot.drop || ''}</td><td>${slot.seats || ''}</td></tr>`;
+      if(slots){
+        for (let id in slots) {
+          const slot = slots[id];
+          table.innerHTML += `<tr><td>${slot.pickup || ''}</td><td>${slot.drop || ''}</td><td>${slot.seats || ''}</td></tr>`;
+        }
       }
     });
   }
 
   function loadBookings() {
-    const bookingsRef = ref(db, 'bookings/');
-    onValue(bookingsRef, (snapshot) => {
+    const bookingsRef = db.ref('bookings/');
+    bookingsRef.on('value', (snapshot) => {
       const bookings = snapshot.val();
       const table = document.getElementById('bookingsTable');
-      table.innerHTML = `<tr><th>Customer</th><th>Pickup</th><th>Drop</th><th>Status</th></tr>`;
-      for (let id in bookings) {
-        const booking = bookings[id];
-        table.innerHTML += `<tr><td>${booking.customer || ''}</td><td>${booking.pickup || ''}</td><td>${booking.drop || ''}</td><td>${booking.status || ''}</td></tr>`;
+      table.innerHTML = `<tr><th>Pickup</th><th>Drop</th><th>Date</th></tr>`;
+      if(bookings){
+        for (let id in bookings) {
+          const booking = bookings[id];
+          table.innerHTML += `<tr><td>${booking.pickup || ''}</td><td>${booking.drop || ''}</td><td>${booking.date || ''}</td></tr>`;
+        }
       }
     });
   }
@@ -233,3 +244,4 @@
 
 </body>
 </html>
+
