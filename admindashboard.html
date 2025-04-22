@@ -1,275 +1,235 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f2f5;
-        }
-
-        .navbar {
-            display: flex;
-            justify-content: space-around;
-            background-color: #4CAF50;
-            padding: 10px;
-        }
-
-        .nav-btn {
-            padding: 10px 20px;
-            background-color: #fff;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            color: #333;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-btn:hover {
-            background-color: #ddd;
-        }
-
-        .active {
-            background-color: #2196F3;
-            color: #fff;
-        }
-
-        .tab {
-            display: none;
-            padding: 20px;
-        }
-
-        .active-tab {
-            display: block;
-        }
-
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-
-        .card {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        .card ul {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        .card ul li {
-            background-color: #f9f9f9;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        button {
-            padding: 8px 12px;
-            border-radius: 5px;
-            border: none;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        .toast {
-            visibility: hidden;
-            min-width: 250px;
-            margin-left: -125px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 2px;
-            position: fixed;
-            z-index: 1;
-            left: 50%;
-            bottom: 30px;
-            font-size: 17px;
-            padding: 16px;
-        }
-
-        .toast.show {
-            visibility: visible;
-            animation: fadein 0.5s, fadeout 0.5s 2.5s;
-        }
-
-        @keyframes fadein {
-            from {bottom: 0; opacity: 0;}
-            to {bottom: 30px; opacity: 1;}
-        }
-
-        @keyframes fadeout {
-            from {bottom: 30px; opacity: 1;}
-            to {bottom: 0; opacity: 0;}
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>WaveTravel Admin Dashboard</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      color: #333;
+    }
+    #navbar {
+      background: #fff;
+      padding: 10px;
+      display: flex;
+      justify-content: space-around;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      background: #2575fc;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+    .tab-btn:hover {
+      background: #6a11cb;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px;
+      margin-top: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .action-btn {
+      padding: 5px 10px;
+      margin: 2px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .approve-btn { background: #4CAF50; color: white; }
+    .reject-btn { background: #f44336; color: white; }
+  </style>
 </head>
+
 <body>
-    <!-- Admin Navbar -->
-    <div class="navbar">
-        <button class="nav-btn active" onclick="openTab('users', this)">Users</button>
-        <button class="nav-btn" onclick="openTab('drivers', this)">Drivers</button>
-        <button class="nav-btn" onclick="openTab('pendingCars', this)">Pending Cars</button>
-        <button class="nav-btn" onclick="openTab('availableslots', this)">Available Slots</button>
-        <button class="nav-btn" onclick="openTab('bookings', this)">Bookings</button>
-    </div>
 
-    <!-- Admin Content -->
-    <div id="users" class="tab active-tab">
-        <h2>Users</h2>
-        <div id="user-list" class="card"></div>
-    </div>
+<div id="navbar" class="bottom-navbar">
+  <button class="tab-btn" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="users">Users</button>
+  <button class="tab-btn" data-tab="drivers">Drivers</button>
+  <button class="tab-btn" data-tab="pendingcars">Pending Cars</button>
+  <button class="tab-btn" data-tab="slots">Slots</button>
+  <button class="tab-btn" data-tab="bookings">Bookings</button>
+  <button class="tab-btn" data-tab="profile">Profile</button>
+</div>
 
-    <div id="drivers" class="tab">
-        <h2>Drivers</h2>
-        <div id="driver-list" class="card"></div>
-    </div>
+<div id="dashboard" class="tab-content">Welcome to Admin Dashboard!</div>
+<div id="users" class="tab-content"><h2>Users</h2><table id="usersTable"></table></div>
+<div id="drivers" class="tab-content"><h2>Drivers</h2><table id="driversTable"></table></div>
+<div id="pendingcars" class="tab-content"><h2>Pending Cars</h2><table id="pendingCarsTable"></table></div>
+<div id="slots" class="tab-content"><h2>Slots</h2><table id="slotsTable"></table></div>
+<div id="bookings" class="tab-content"><h2>Bookings</h2><table id="bookingsTable"></table></div>
+<div id="profile" class="tab-content"><h2>Admin Profile</h2>Email: contactwaveride@gmail.com</div>
 
-    <div id="pendingCars" class="tab">
-        <h2>Pending Cars</h2>
-        <div id="pending-cars-list" class="card"></div>
-    </div>
+<!-- Toast -->
+<div id="toast" style="position: fixed; bottom: 30px; right: 30px; background: #333; color: white; padding: 10px 20px; border-radius: 8px; display: none;"></div>
 
-    <div id="availableslots" class="tab">
-        <h2>Available Slots</h2>
-        <div id="slots-list" class="card"></div>
-    </div>
+<!-- Firebase + Logic -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-    <div id="bookings" class="tab">
-        <h2>Bookings</h2>
-        <div id="booking-list" class="card"></div>
-    </div>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-    <!-- Toast Notifications -->
-    <div id="toast" class="toast">Action completed successfully!</div>
+  // Tab switching
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const tabName = button.getAttribute('data-tab');
+        openTab(tabName);
+      });
+    });
 
-    <!-- Firebase Script -->
-    <script type="module">
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-            authDomain: "wavetravel-3c4c4.firebaseapp.com",
-            databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-            projectId: "wavetravel-3c4c4",
-            storageBucket: "wavetravel-3c4c4.firebasestorage.app",
-            messagingSenderId: "298226098137",
-            appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-        };
+    function openTab(tabName) {
+      const tabs = document.querySelectorAll('.tab-content');
+      tabs.forEach(tab => { tab.style.display = 'none'; });
+      const selectedTab = document.getElementById(tabName);
+      if (selectedTab) selectedTab.style.display = 'block';
+    }
 
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    openTab('dashboard'); // Default tab open
 
-        // Tab Switching Functionality
-        function openTab(tabName, button) {
-            // Hide all tabs
-            const tabs = document.getElementsByClassName("tab");
-            for (let i = 0; i < tabs.length; i++) {
-                tabs[i].style.display = "none";
-            }
+    loadUsers();
+    loadDrivers();
+    loadPendingCars();
+    loadSlots();
+    loadBookings();
+  });
 
-            // Remove active class from all buttons
-            const buttons = document.getElementsByClassName("nav-btn");
-            for (let i = 0; i < buttons.length; i++) {
-                buttons[i].classList.remove("active");
-            }
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.innerText = message;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2000);
+  }
 
-            // Show the selected tab and add active class to the clicked button
-            document.getElementById(tabName).style.display = "block";
-            button.classList.add("active");
-        }
+  function loadUsers() {
+    const usersRef = ref(db, 'users/');
+    onValue(usersRef, (snapshot) => {
+      const users = snapshot.val();
+      const table = document.getElementById('usersTable');
+      table.innerHTML = `<tr><th>Name</th><th>Email</th><th>Phone</th></tr>`;
+      for (let id in users) {
+        const user = users[id];
+        table.innerHTML += `<tr><td>${user.name || ''}</td><td>${user.email || ''}</td><td>${user.phone || ''}</td></tr>`;
+      }
+    });
+  }
 
-        // Fetch Users Data from Firebase
-        function fetchUsers() {
-            const usersRef = db.ref("/users");
-            usersRef.on("value", (snapshot) => {
-                const users = snapshot.val();
-                let userHTML = "<ul>";
-                for (const key in users) {
-                    userHTML += `<li>${users[key].name} - ${users[key].email}</li>`;
-                }
-                userHTML += "</ul>";
-                document.getElementById("user-list").innerHTML = userHTML;
-            });
-        }
+  function loadDrivers() {
+    const driversRef = ref(db, 'drivers/');
+    onValue(driversRef, (snapshot) => {
+      const drivers = snapshot.val();
+      const table = document.getElementById('driversTable');
+      table.innerHTML = `<tr><th>Name</th><th>Email</th><th>Phone</th></tr>`;
+      for (let id in drivers) {
+        const driver = drivers[id];
+        table.innerHTML += `<tr><td>${driver.name || ''}</td><td>${driver.email || ''}</td><td>${driver.phone || ''}</td></tr>`;
+      }
+    });
+  }
 
-        // Fetch Pending Cars Data from Firebase
-        function fetchPendingCars() {
-            const carsRef = db.ref("/pendingCars");
-            carsRef.on("value", (snapshot) => {
-                const cars = snapshot.val();
-                let carsHTML = "<ul>";
-                for (const key in cars) {
-                    carsHTML += `
-                        <li>
-                            ${cars[key].carName} - ${cars[key].model}
-                            <button onclick="approveCar('${key}')">Approve</button>
-                            <button onclick="rejectCar('${key}')">Reject</button>
-                        </li>
-                    `;
-                }
-                carsHTML += "</ul>";
-                document.getElementById("pending-cars-list").innerHTML = carsHTML;
-            });
-        }
+  function loadPendingCars() {
+    const pendingCarsRef = ref(db, 'pendingcars/');
+    onValue(pendingCarsRef, (snapshot) => {
+      const cars = snapshot.val();
+      const table = document.getElementById('pendingCarsTable');
+      table.innerHTML = `<tr><th>Model</th><th>Number</th><th>Actions</th></tr>`;
+      for (let id in cars) {
+        const car = cars[id];
+        table.innerHTML += `
+          <tr>
+            <td>${car.model || ''}</td>
+            <td>${car.number || ''}</td>
+            <td>
+              <button class="action-btn approve-btn" onclick="approveCar('${id}')">Approve</button>
+              <button class="action-btn reject-btn" onclick="rejectCar('${id}')">Reject</button>
+            </td>
+          </tr>`;
+      }
+    });
+  }
 
-        // Approve Car and Move to Approved Cars
-        function approveCar(carId) {
-            const carRef = db.ref(`/pendingCars/${carId}`);
-            carRef.once("value", (snapshot) => {
-                const carData = snapshot.val();
-                // Move car data to approved cars
-                db.ref(`/cars/${carId}`).set(carData);
-                // Remove car from pending cars
-                carRef.remove();
-                showToast("Car Approved!");
-            });
-        }
+  window.approveCar = function(id) {
+    const pendingRef = ref(db, `pendingcars/${id}`);
+    const approvedRef = ref(db, `cars/${id}`);
+    onValue(pendingRef, (snapshot) => {
+      const car = snapshot.val();
+      update(approvedRef, car);
+      remove(pendingRef);
+      showToast('Car Approved!');
+    }, { onlyOnce: true });
+  }
 
-        // Reject Car
-        function rejectCar(carId) {
-            const carRef = db.ref(`/pendingCars/${carId}`);
-            carRef.remove();
-            showToast("Car Rejected!");
-        }
+  window.rejectCar = function(id) {
+    const pendingRef = ref(db, `pendingcars/${id}`);
+    remove(pendingRef);
+    showToast('Car Rejected!');
+  }
 
-        // Show Toast Notification
-        function showToast(message) {
-            const toast = document.getElementById("toast");
-            toast.innerText = message;
-            toast.classList.add("show");
-            setTimeout(() => {
-                toast.classList.remove("show");
-            }, 3000);
-        }
+  function loadSlots() {
+    const slotsRef = ref(db, 'availableslots/');
+    onValue(slotsRef, (snapshot) => {
+      const slots = snapshot.val();
+      const table = document.getElementById('slotsTable');
+      table.innerHTML = `<tr><th>Pickup</th><th>Drop</th><th>Seats</th></tr>`;
+      for (let id in slots) {
+        const slot = slots[id];
+        table.innerHTML += `<tr><td>${slot.pickup || ''}</td><td>${slot.drop || ''}</td><td>${slot.seats || ''}</td></tr>`;
+      }
+    });
+  }
 
-        // Initialize Data
-        window.onload = () => {
-            fetchUsers();
-            fetchPendingCars();
-        };
-    </script>
+  function loadBookings() {
+    const bookingsRef = ref(db, 'bookings/');
+    onValue(bookingsRef, (snapshot) => {
+      const bookings = snapshot.val();
+      const table = document.getElementById('bookingsTable');
+      table.innerHTML = `<tr><th>Customer</th><th>Pickup</th><th>Drop</th><th>Status</th></tr>`;
+      for (let id in bookings) {
+        const booking = bookings[id];
+        table.innerHTML += `<tr><td>${booking.customer || ''}</td><td>${booking.pickup || ''}</td><td>${booking.drop || ''}</td><td>${booking.status || ''}</td></tr>`;
+      }
+    });
+  }
+</script>
+
 </body>
 </html>
