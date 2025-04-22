@@ -1,346 +1,273 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Firebase v9 SDK -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
-        import { getDatabase, ref, get, set, update, child } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js';
-        
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-            authDomain: "wavetravel-3c4c4.firebaseapp.com",
-            databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-            projectId: "wavetravel-3c4c4",
-            storageBucket: "wavetravel-3c4c4.firebasestorage.app",
-            messagingSenderId: "298226098137",
-            appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-        };
-        
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-        
-        // Check if admin is logged in
-        
-            
-        });
-
-        // Fetch data and display it
-        async function fetchData() {
-            try {
-                // Fetch Users
-                const usersRef = ref(db, 'users');
-                const usersSnapshot = await get(usersRef);
-                const usersData = usersSnapshot.val();
-                let usersHtml = '';
-                for (const key in usersData) {
-                    usersHtml += `<tr>
-                                    <td>${usersData[key].name}</td>
-                                    <td>${usersData[key].email}</td>
-                                    <td>${usersData[key].phone}</td>
-                                    <td>
-                                        <button class="btn btn-danger" onclick="deleteUser('${key}')">Delete</button>
-                                    </td>
-                                  </tr>`;
-                }
-                document.getElementById('userTable').innerHTML = usersHtml;
-
-                // Fetch Drivers
-                const driversRef = ref(db, 'driverdetails');
-                const driversSnapshot = await get(driversRef);
-                const driversData = driversSnapshot.val();
-                let driversHtml = '';
-                for (const key in driversData) {
-                    driversHtml += `<tr>
-                                        <td>${driversData[key].name}</td>
-                                        <td>${driversData[key].vehicle}</td>
-                                        <td>${driversData[key].status}</td>
-                                        <td>
-                                            <button class="btn btn-success" onclick="approveDriver('${key}')">Approve</button>
-                                            <button class="btn btn-danger" onclick="deleteDriver('${key}')">Delete</button>
-                                        </td>
-                                      </tr>`;
-                }
-                document.getElementById('driverTable').innerHTML = driversHtml;
-
-                // Fetch Pending Cars
-                const pendingCarsRef = ref(db, 'pendingcarapproval');
-                const pendingCarsSnapshot = await get(pendingCarsRef);
-                const pendingCarsData = pendingCarsSnapshot.val();
-                let pendingCarsHtml = '';
-                for (const key in pendingCarsData) {
-                    pendingCarsHtml += `<tr>
-                                            <td>${pendingCarsData[key].vehicle}</td>
-                                            <td>${pendingCarsData[key].driver}</td>
-                                            <td>
-                                                <button class="btn btn-success" onclick="approvePendingCar('${key}')">Approve</button>
-                                                <button class="btn btn-danger" onclick="deletePendingCar('${key}')">Delete</button>
-                                            </td>
-                                          </tr>`;
-                }
-                document.getElementById('pendingCarsTable').innerHTML = pendingCarsHtml;
-
-                // Fetch Slots
-                const slotsRef = ref(db, 'availableslots');
-                const slotsSnapshot = await get(slotsRef);
-                const slotsData = slotsSnapshot.val();
-                let slotsHtml = '';
-                for (const key in slotsData) {
-                    slotsHtml += `<tr>
-                                    <td>${slotsData[key].date}</td>
-                                    <td>${slotsData[key].time}</td>
-                                    <td>${slotsData[key].seats}</td>
-                                    <td>
-                                        <button class="btn btn-danger" onclick="deleteSlot('${key}')">Delete</button>
-                                    </td>
-                                  </tr>`;
-                }
-                document.getElementById('slotsTable').innerHTML = slotsHtml;
-
-                // Fetch Bookings
-                const bookingsRef = ref(db, 'bookings');
-                const bookingsSnapshot = await get(bookingsRef);
-                const bookingsData = bookingsSnapshot.val();
-                let bookingsHtml = '';
-                for (const key in bookingsData) {
-                    bookingsHtml += `<tr>
-                                        <td>${bookingsData[key].pickup}</td>
-                                        <td>${bookingsData[key].dropoff}</td>
-                                        <td>${bookingsData[key].date}</td>
-                                      </tr>`;
-                }
-                document.getElementById('bookingsTable').innerHTML = bookingsHtml;
-            } catch (error) {
-                console.error("Error fetching data: ", error);
-            }
-        }
-
-        // Delete User
-        async function deleteUser(userId) {
-            try {
-                const userRef = ref(db, 'users/' + userId);
-                await set(userRef, null); // Remove user data
-                alert('User deleted successfully!');
-                fetchData(); // Refresh the data
-            } catch (error) {
-                console.error("Error deleting user: ", error);
-            }
-        }
-
-        // Approve Driver
-        async function approveDriver(driverId) {
-            try {
-                const driverRef = ref(db, 'driverdetails/' + driverId);
-                await update(driverRef, { status: 'approved' });
-                alert('Driver approved successfully!');
-                fetchData(); // Refresh the data
-            } catch (error) {
-                console.error("Error approving driver: ", error);
-            }
-        }
-
-        // Delete Driver
-        async function deleteDriver(driverId) {
-            try {
-                const driverRef = ref(db, 'driverdetails/' + driverId);
-                await set(driverRef, null); // Remove driver data
-                alert('Driver deleted successfully!');
-                fetchData(); // Refresh the data
-            } catch (error) {
-                console.error("Error deleting driver: ", error);
-            }
-        }
-
-        // Approve Pending Car
-        async function approvePendingCar(carId) {
-            try {
-                const carRef = ref(db, 'pendingcarapproval/' + carId);
-                const carData = (await get(carRef)).val();
-                await set(ref(db, 'cars/' + carId), carData); // Move data to cars
-                await set(carRef, null); // Remove from pending approval
-                alert('Car approved successfully!');
-                fetchData(); // Refresh the data
-            } catch (error) {
-                console.error("Error approving car: ", error);
-            }
-        }
-
-        // Delete Pending Car
-        async function deletePendingCar(carId) {
-            try {
-                const carRef = ref(db, 'pendingcarapproval/' + carId);
-                await set(carRef, null); // Remove car data
-                alert('Car deleted successfully!');
-                fetchData(); // Refresh the data
-            } catch (error) {
-                console.error("Error deleting car: ", error);
-            }
-        }
-
-        // Delete Slot
-        async function deleteSlot(slotId) {
-            try {
-                const slotRef = ref(db, 'availableslots/' + slotId);
-                await set(slotRef, null); // Remove slot data
-                alert('Slot deleted successfully!');
-                fetchData(); // Refresh the data
-            } catch (error) {
-                console.error("Error deleting slot: ", error);
-            }
-        }
-
-        window.onload = function() {
-            fetchData(); // Fetch and display all data when the page loads
-        };
-    </script>
-
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f6f9;
-        }
-
-        .navbar {
-            background-color: #007BFF;
-            color: white;
-            padding: 10px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            z-index: 10;
-        }
-
-        .navbar a {
-            color: white;
-            margin: 0 15px;
-            font-weight: bold;
-        }
-
-        .navbar a:hover {
-            color: #f4f6f9;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - WaveTravel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Basic Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+    body {
+      background: linear-gradient(to bottom right, #4facfe, #00f2fe);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: #fff;
+    }
+    header {
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    main {
+      flex: 1;
+      padding: 20px;
+    }
+    .tabcontent {
+      display: none;
+      animation: fadeEffect 0.5s;
+    }
+    .activeTab {
+      display: block;
+    }
+    @keyframes fadeEffect {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+    .navbar button {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .navbar button.active {
+      font-weight: bold;
+      text-decoration: underline;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.2);
+      margin-bottom: 15px;
+      padding: 15px;
+      border-radius: 12px;
+    }
+  </style>
 </head>
+
 <body>
 
-    <div class="container my-5">
-        <h1 class="text-center mb-4">Admin Dashboard</h1>
+<header>Admin Dashboard</header>
 
-        <!-- Bootstrap Tabs for Different Data -->
-        <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link active" id="users-tab" data-bs-toggle="tab" href="#users" role="tab">Users</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="drivers-tab" data-bs-toggle="tab" href="#drivers" role="tab">Drivers</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="pendingCars-tab" data-bs-toggle="tab" href="#pendingCars" role="tab">Pending Cars</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="slots-tab" data-bs-toggle="tab" href="#slots" role="tab">Available Slots</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="bookings-tab" data-bs-toggle="tab" href="#bookings" role="tab">Bookings</a>
-            </li>
-        </ul>
+<main>
+  <div id="Dashboard" class="tabcontent activeTab">
+    <h2>Dashboard Summary</h2>
+    <div class="card" id="userCount">Users: Loading...</div>
+    <div class="card" id="driverCount">Drivers: Loading...</div>
+    <div class="card" id="pendingCarsCount">Pending Cars: Loading...</div>
+    <div class="card" id="totalBookingsCount">Total Bookings: Loading...</div>
+  </div>
 
-        <div class="tab-content mt-4" id="dashboardTabsContent">
-            <!-- Users Tab -->
-            <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="users-tab">
-                <h2>Users</h2>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="userTable"></tbody>
-                </table>
-            </div>
+  <div id="Users" class="tabcontent">
+    <h2>All Users</h2>
+    <div id="usersList"></div>
+  </div>
 
-            <!-- Drivers Tab -->
-            <div class="tab-pane fade" id="drivers" role="tabpanel" aria-labelledby="drivers-tab">
-                <h2>Drivers</h2>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Vehicle</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="driverTable"></tbody>
-                </table>
-            </div>
+  <div id="Drivers" class="tabcontent">
+    <h2>All Drivers</h2>
+    <div id="driversList"></div>
+  </div>
 
-            <!-- Pending Cars Tab -->
-            <div class="tab-pane fade" id="pendingCars" role="tabpanel" aria-labelledby="pendingCars-tab">
-                <h2>Pending Cars</h2>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Vehicle</th>
-                            <th>Driver</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pendingCarsTable"></tbody>
-                </table>
-            </div>
+  <div id="PendingCars" class="tabcontent">
+    <h2>Pending Cars</h2>
+    <div id="pendingCarsList"></div>
+  </div>
 
-            <!-- Slots Tab -->
-            <div class="tab-pane fade" id="slots" role="tabpanel" aria-labelledby="slots-tab">
-                <h2>Available Slots</h2>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Seats</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="slotsTable"></tbody>
-                </table>
-            </div>
+  <div id="Slots" class="tabcontent">
+    <h2>Available Slots</h2>
+    <div id="slotsList"></div>
+  </div>
 
-            <!-- Bookings Tab -->
-            <div class="tab-pane fade" id="bookings" role="tabpanel" aria-labelledby="bookings-tab">
-                <h2>Bookings</h2>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Pickup</th>
-                            <th>Dropoff</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bookingsTable"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+  <div id="Bookings" class="tabcontent">
+    <h2>All Bookings</h2>
+    <div id="bookingsList"></div>
+  </div>
 
-    <!-- Navbar -->
-    <div class="navbar">
-        <a href="admin-dashboard.html">Dashboard</a>
-        <a href="logout.html">Logout</a>
-    </div>
+  <div id="Profile" class="tabcontent">
+    <h2>Admin Profile</h2>
+    <button onclick="logout()">Logout</button>
+  </div>
+</main>
 
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
+<div class="navbar">
+  <button onclick="openTab('Dashboard')" class="active">Dashboard</button>
+  <button onclick="openTab('Users')">Users</button>
+  <button onclick="openTab('Drivers')">Drivers</button>
+  <button onclick="openTab('PendingCars')">Pending Cars</button>
+  <button onclick="openTab('Slots')">Slots</button>
+  <button onclick="openTab('Bookings')">Bookings</button>
+  <button onclick="openTab('Profile')">Profile</button>
+</div>
+
+<!-- Firebase Scripts -->
+<script type="module">
+  // Firebase imports
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+  import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+  // Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+
+  // Check Admin Login
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      alert("Unauthorized! Redirecting...");
+      window.location.href = "adminlogin.html";
+    }
+  });
+
+  // Navbar Tab Switch
+  function openTab(tabName) {
+    document.querySelectorAll(".tabcontent").forEach(tab => tab.classList.remove("activeTab"));
+    document.getElementById(tabName).classList.add("activeTab");
+    document.querySelectorAll(".navbar button").forEach(btn => btn.classList.remove("active"));
+    event.target.classList.add("active");
+  }
+
+  // Logout Admin
+  function logout() {
+    signOut(auth).then(() => {
+      window.location.href = "adminlogin.html";
+    }).catch((error) => {
+      alert("Error logging out!");
+    });
+  }
+
+  // Load Dashboard Summary
+  onValue(ref(db, 'users'), (snapshot) => {
+    document.getElementById('userCount').innerText = `Users: ${snapshot.size || Object.keys(snapshot.val() || {}).length}`;
+    loadUsers(snapshot.val());
+  });
+
+  onValue(ref(db, 'driverdetails'), (snapshot) => {
+    document.getElementById('driverCount').innerText = `Drivers: ${snapshot.size || Object.keys(snapshot.val() || {}).length}`;
+    loadDrivers(snapshot.val());
+  });
+
+  onValue(ref(db, 'pendingcars'), (snapshot) => {
+    document.getElementById('pendingCarsCount').innerText = `Pending Cars: ${snapshot.size || Object.keys(snapshot.val() || {}).length}`;
+    loadPendingCars(snapshot.val());
+  });
+
+  onValue(ref(db, 'bookings'), (snapshot) => {
+    document.getElementById('totalBookingsCount').innerText = `Total Bookings: ${snapshot.size || Object.keys(snapshot.val() || {}).length}`;
+    loadBookings(snapshot.val());
+  });
+
+  onValue(ref(db, 'availableslots'), (snapshot) => {
+    loadSlots(snapshot.val());
+  });
+
+  // Load Users List
+  function loadUsers(users) {
+    let html = '';
+    if (users) {
+      Object.keys(users).forEach(uid => {
+        html += `<div class="card">UID: ${uid}<br>Email: ${users[uid].email || 'N/A'}</div>`;
+      });
+    }
+    document.getElementById('usersList').innerHTML = html;
+  }
+
+  // Load Drivers List
+  function loadDrivers(drivers) {
+    let html = '';
+    if (drivers) {
+      Object.keys(drivers).forEach(uid => {
+        html += `<div class="card">Driver: ${drivers[uid].name || 'N/A'}<br>Phone: ${drivers[uid].phone || 'N/A'}</div>`;
+      });
+    }
+    document.getElementById('driversList').innerHTML = html;
+  }
+
+  // Load Pending Cars
+  function loadPendingCars(cars) {
+    let html = '';
+    if (cars) {
+      Object.keys(cars).forEach(carId => {
+        html += `<div class="card">Model: ${cars[carId].model || 'N/A'}<br><button onclick="approveCar('${carId}')">Approve</button></div>`;
+      });
+    }
+    document.getElementById('pendingCarsList').innerHTML = html;
+  }
+
+  // Approve Pending Car
+  function approveCar(carId) {
+    const pendingCarRef = ref(db, `pendingcars/${carId}`);
+    onValue(pendingCarRef, (snapshot) => {
+      const carData = snapshot.val();
+      if (carData) {
+        const carsRef = ref(db, `cars/${carId}`);
+        update(carsRef, carData).then(() => {
+          remove(pendingCarRef);
+          alert("Car approved and moved!");
+        });
+      }
+    }, { onlyOnce: true });
+  }
+
+  // Load Slots
+  function loadSlots(slots) {
+    let html = '';
+    if (slots) {
+      Object.keys(slots).forEach(slotId => {
+        html += `<div class="card">Slot: ${JSON.stringify(slots[slotId])}</div>`;
+      });
+    }
+    document.getElementById('slotsList').innerHTML = html;
+  }
+
+  // Load Bookings
+  function loadBookings(bookings) {
+    let html = '';
+    if (bookings) {
+      Object.keys(bookings).forEach(bookingId => {
+        html += `<div class="card">Booking: ${JSON.stringify(bookings[bookingId])}</div>`;
+      });
+    }
+    document.getElementById('bookingsList').innerHTML = html;
+  }
+
+</script>
+
 </body>
 </html>
