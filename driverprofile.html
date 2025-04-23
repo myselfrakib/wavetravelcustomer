@@ -43,6 +43,11 @@
       font-size: 16px;
     }
 
+    .profile-form input:disabled {
+      background: rgba(255,255,255,0.4);
+      color: #333;
+    }
+
     .profile-form button {
       width: 100%;
       margin-top: 20px;
@@ -99,7 +104,6 @@
       <input type="text" id="name" placeholder="Full Name" required>
       <input type="email" id="email" placeholder="Email" disabled>
       <input type="text" id="phone" placeholder="Phone Number" required>
-      <input type="text" id="vehicle" placeholder="Approved Vehicle" disabled>
       <input type="text" id="address" placeholder="Address" required>
       <button type="submit">Update Profile</button>
     </form>
@@ -126,8 +130,7 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth();
 
@@ -138,7 +141,7 @@
         currentDriverId = user.uid;
         fetchProfile();
       } else {
-        window.location.href = "login.html";
+        window.location.href = "login.html"; // force login if not signed in
       }
     });
 
@@ -150,9 +153,10 @@
           document.getElementById('name').value = data.name || '';
           document.getElementById('email').value = data.email || '';
           document.getElementById('phone').value = data.phone || '';
-          document.getElementById('vehicle').value = data.vehicle || '';
           document.getElementById('address').value = data.address || '';
         }
+      }).catch(error => {
+        console.error('Error fetching profile:', error);
       });
     }
 
