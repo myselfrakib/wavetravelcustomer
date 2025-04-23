@@ -2,8 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Cars - Driver Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Cars</title>
+
+  <!-- Firebase Libraries -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+  </script>
+
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -11,72 +33,127 @@
       padding: 0;
       background: linear-gradient(to right, #8e2de2, #4a00e0);
       color: white;
+      min-height: 100vh;
+      padding-bottom: 70px; /* space for navbar */
     }
-    .navbar {
-      background-color: rgba(0, 0, 0, 0.4);
-      padding: 10px;
+
+    .container {
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 28px;
+    }
+
+    .car-list {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .car-card {
+      background-color: #fff;
+      color: #4a00e0;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .car-card p {
+      margin: 5px 0;
+    }
+
+    button {
+      background-color: #ffd700;
+      color: #4a00e0;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 10px 15px;
+      border-radius: 10px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #ffea00;
+    }
+
+    .form-container {
+      background-color: #fff;
+      color: #4a00e0;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      margin: 20px auto;
+      width: 80%;
+      max-width: 600px;
+    }
+
+    .form-container input, .form-container select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .navbar {
       position: fixed;
       bottom: 0;
       width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 0;
+      z-index: 999;
     }
+
     .navbar a {
       color: #fff;
       text-decoration: none;
-      margin: 0 15px;
       font-weight: bold;
-      font-size: 14px;
-    }
-    .container {
-      padding: 20px;
-      padding-bottom: 80px;
-    }
-    .car-form {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 20px;
+      font-size: 16px;
+      padding: 10px 15px;
       border-radius: 10px;
-      margin-bottom: 30px;
+      transition: background 0.3s, color 0.3s;
     }
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 5px;
+
+    .navbar a:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffd700;
     }
-    button {
-      background-color: #00c6ff;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    .car-list {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 10px;
+
+    @media (max-width: 600px) {
+      .navbar a {
+        font-size: 14px;
+        padding: 8px 10px;
+      }
     }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>My Cars</h2>
+  <h1>My Approved Cars</h1>
 
-  <div class="car-form">
-    <h3>Add a Car</h3>
-    <form id="addCarForm">
-      <input type="text" id="carName" placeholder="Car Name" required>
-      <input type="text" id="carNumber" placeholder="Car Number" required>
-      <input type="number" id="seatCount" placeholder=" Total Number of Seats for Customer" required>
-      <button type="submit">Submit Car for Approval</button>
-    </form>
+  <div class="car-list" id="carList">
+    <!-- List of cars will be displayed here -->
   </div>
 
-  <h3>Your Approved Cars</h3>
-  <div id="approvedCars"></div>
+  <div class="form-container">
+    <h3>Add a New Car</h3>
+    <form id="addCarForm">
+      <input type="text" id="carModel" placeholder="Car Model" required>
+      <input type="text" id="carPlateNumber" placeholder="Car Plate Number" required>
+      <input type="number" id="carSeats" placeholder="Number of Seats" required min="1">
+      <button type="submit">Add Car</button>
+    </form>
+  </div>
 </div>
 
 <div class="navbar">
@@ -87,74 +164,70 @@
   <a href="driverprofile.html">Profile</a>
 </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+<script>
+  let driverId = "";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-    authDomain: "wavetravel-3c4c4.firebaseapp.com",
-    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-    projectId: "wavetravel-3c4c4",
-    storageBucket: "wavetravel-3c4c4.appspot.com",
-    messagingSenderId: "298226098137",
-    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase();
-  const auth = getAuth();
-
-  const addCarForm = document.getElementById('addCarForm');
-  const approvedCarsDiv = document.getElementById('approvedCars');
-
-  onAuthStateChanged(auth, (user) => {
+  auth.onAuthStateChanged((user) => {
     if (user) {
-      const driverId = user.uid;
-
-      // Submit Car
-      addCarForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const carName = document.getElementById('carName').value;
-        const carNumber = document.getElementById('carNumber').value;
-        const seatCount = document.getElementById('seatCount').value;
-
-        const pendingRef = ref(db, `pendingcars/${driverId}`);
-        const newCarRef = push(pendingRef);
-        await set(newCarRef, {
-          carName,
-          carNumber,
-          seatCount,
-          status: "pending"
-        });
-
-        alert("Car submitted for approval!");
-        addCarForm.reset();
-      };
-
-      // Fetch Approved Cars
-      const driverCarsRef = ref(db, `drivercars/${driverId}`);
-      onValue(driverCarsRef, (snapshot) => {
-        approvedCarsDiv.innerHTML = '';
-        snapshot.forEach((childSnapshot) => {
-          const car = childSnapshot.val();
-          const div = document.createElement('div');
-          div.className = 'car-list';
-          div.innerHTML = `
-            <strong>${car.carName}</strong><br>
-            Number: ${car.carNumber}<br>
-            Seats: ${car.seatCount}
-          `;
-          approvedCarsDiv.appendChild(div);
-        });
-      });
-
+      driverId = user.uid;
+      loadApprovedCars(driverId);
     } else {
-      window.location.hre
+      window.location.href = "login.html"; // Redirect to login if not logged in
     }
   });
 
+  function loadApprovedCars(uid) {
+    db.ref('approvedcars/' + uid).once('value').then((snapshot) => {
+      const data = snapshot.val();
+      const carListContainer = document.getElementById('carList');
+      carListContainer.innerHTML = ''; // Clear the list before populating
+
+      if (data) {
+        Object.keys(data).forEach((carId) => {
+          const car = data[carId];
+          const carCard = document.createElement('div');
+          carCard.classList.add('car-card');
+          carCard.innerHTML = `
+            <h3>${car.model}</h3>
+            <p><strong>Plate:</strong> ${car.plateNumber}</p>
+            <p><strong>Seats:</strong> ${car.seats}</p>
+            <button onclick="selectCar('${carId}')">Select for Booking</button>
+          `;
+          carListContainer.appendChild(carCard);
+        });
+      } else {
+        carListContainer.innerHTML = '<p>No cars found. Please add your cars first.</p>';
+      }
+    });
+  }
+
+  function selectCar(carId) {
+    // Store the selected carId for later use in booking slots
+    localStorage.setItem('selectedCarId', carId);
+    window.location.href = "slots.html"; // Redirect to slots page
+  }
+
+  document.getElementById('addCarForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    
+    const model = document.getElementById('carModel').value;
+    const plateNumber = document.getElementById('carPlateNumber').value;
+    const seats = document.getElementById('carSeats').value;
+    
+    const newCar = {
+      model: model,
+      plateNumber: plateNumber,
+      seats: seats,
+    };
+    
+    // Save the car data to the /pendingcars node
+    db.ref('pendingcars/' + driverId).push(newCar).then(() => {
+      alert('Car added to pending approval!');
+      document.getElementById('addCarForm').reset(); // Clear the form after submission
+    }).catch((error) => {
+      alert('Error adding car: ' + error.message);
+    });
+  });
 </script>
 
 </body>
