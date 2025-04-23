@@ -86,7 +86,7 @@
     }
 
     async function loadCars() {
-      const carsRef = ref(db, `drivercars/${currentUserId}`);
+      const carsRef = ref(db, `approvedcars/${currentUserId}`);
       const snapshot = await get(carsRef);
       const carSelect = document.getElementById('car');
 
