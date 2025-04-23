@@ -26,6 +26,7 @@
     const db = getDatabase(app);
 
     let currentUserId = null;
+    let approvedCarsData = {}; // Store approved car details globally
 
     onAuthStateChanged(auth, user => {
       if (user) {
@@ -91,12 +92,12 @@
       const carSelect = document.getElementById('car');
 
       if (snapshot.exists()) {
-        const cars = snapshot.val();
-        Object.keys(cars).forEach(key => {
-          const car = cars[key];
+        approvedCarsData = snapshot.val();
+        Object.keys(approvedCarsData).forEach(key => {
+          const car = approvedCarsData[key];
           const option = document.createElement('option');
-          option.value = car.model || "Unnamed Car";
-          option.innerText = car.model || "Unnamed Car";
+          option.value = key; // store car ID
+          option.innerText = `${car.model} (${car.seats} seats)`;
           carSelect.appendChild(option);
         });
       }
@@ -109,8 +110,21 @@
       const dropoff = document.getElementById('dropoff').value;
       const date = document.getElementById('date').value;
       const time = document.getElementById('time').value;
-      const carModel = document.getElementById('car').value;
-      const seats = document.getElementById('seats').value;
+      const selectedCarId = document.getElementById('car').value;
+      const seats = parseInt(document.getElementById('seats').value);
+
+      if (!approvedCarsData[selectedCarId]) {
+        alert("Invalid car selected.");
+        return;
+      }
+
+      const maxSeats = parseInt(approvedCarsData[selectedCarId].seats);
+      const carModel = approvedCarsData[selectedCarId].model;
+
+      if (seats > maxSeats) {
+        alert(`You cannot set more than ${maxSeats} seats for this car.`);
+        return;
+      }
 
       const slotsRef = ref(db, `availableslots/${currentUserId}`);
       const newSlotRef = push(slotsRef);
@@ -138,7 +152,7 @@
       background: linear-gradient(to right, #8e2de2, #4a00e0);
       color: white;
       min-height: 100vh;
-      padding-bottom: 70px; /* for navbar */
+      padding-bottom: 70px;
     }
 
     .container {
@@ -237,7 +251,7 @@
         <option value="">Select Car</option>
       </select>
 
-      <input type="number" id="seats" placeholder="Available Seats" required min="1" max="6">
+      <input type="number" id="seats" placeholder="Available Seats" required min="1">
 
       <button type="submit">Add Slot</button>
     </form>
@@ -247,10 +261,10 @@
 
   <div class="navbar">
     <a href="driverdashboard.html">Home</a>
-    <a href="mybookings.html">My Bookings</a>
+    <a href="drivermybookings.html">My Bookings</a>
     <a href="slots.html">Slots</a>
     <a href="mycars.html">My Cars</a>
-    <a href="profile.html">Profile</a>
+    <a href="driverprofile.html">Profile</a>
   </div>
 
 </body>
