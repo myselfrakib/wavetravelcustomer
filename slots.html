@@ -1,99 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Driver Slots</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>Create New Slot</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
   <style>
-    body {
-      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-      color: #fff;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .card {
-      background-color: #1e3a5f;
-      border: none;
-      border-radius: 1rem;
-      color: #fff;
-    }
-    .navbar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background-color: #0f2027;
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-    }
-    .navbar a {
-      color: white;
-      text-align: center;
-      font-size: 0.9rem;
-      text-decoration: none;
-    }
-    .navbar a:hover {
-      color: #1abc9c;
-    }
+    body { font-family: Arial, sans-serif; background: #f7f7f7; padding: 20px; }
+    .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 15px; }
+    input, select { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
+    button { margin-top: 20px; padding: 10px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #218838; }
   </style>
 </head>
 <body>
-  <div class="container py-4">
-    <h2 class="text-center mb-4">Add Slot</h2>
-    <div class="card p-3 mb-4">
-      <form id="slotForm">
-        <div class="mb-2">
-          <label class="form-label">Pickup Location</label>
-          <select class="form-select" id="pickup"></select>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Drop-off Location</label>
-          <select class="form-select" id="dropoff"></select>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Car</label>
-          <select class="form-select" id="carSelect"></select>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Date</label>
-          <input type="date" class="form-control" id="date" required />
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Time</label>
-          <input type="time" class="form-control" id="time" required />
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Seats (max based on car)</label>
-          <input type="number" class="form-control" id="seats" required min="1" />
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Add Slot</button>
-      </form>
-    </div>
+  <div class="container">
+    <h2>Create New Slot</h2>
+    <form id="slotForm">
+      <label for="pickup">Pickup Location:</label>
+      <select id="pickup" required></select>
 
-    <div class="mb-3">
-      <input type="text" id="searchInput" class="form-control" placeholder="Search by location, car or date" />
-    </div>
+      <label for="dropoff">Drop-off Location:</label>
+      <select id="dropoff" required></select>
 
-    <h4 class="mb-3">Available Slots</h4>
-    <div id="slotList" class="d-grid gap-2"></div>
+      <label for="date">Date:</label>
+      <input type="date" id="date" required min="<?= date('Y-m-d') ?>">
+
+      <label for="time">Time:</label>
+      <input type="time" id="time" required>
+
+      <label for="car">Select Car:</label>
+      <select id="car" required></select>
+
+      <label for="seats">Available Seats:</label>
+      <input type="number" id="seats" required min="1" max="6">
+
+      <button type="submit">Create Slot</button>
+    </form>
   </div>
 
-  <div class="navbar">
-    <a href="driverdashboard.html">Home</a>
-    <a href="drivermybookings.html">My Bookings</a>
-    <a href="slots.html">Slots</a>
-    <a href="mycars.html">My Cars</a>
-    <a href="driverprofile.html">Profile</a>
-  </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -104,175 +52,82 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase();
-    const auth = getAuth();
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
 
-    const pickupEl = document.getElementById("pickup");
-    const dropoffEl = document.getElementById("dropoff");
-    const carSelect = document.getElementById("carSelect");
-    const seatsInput = document.getElementById("seats");
-    const timeInput = document.getElementById("time");
-    const dateInput = document.getElementById("date");
-    let carSeatMap = {};
+    const pickupSelect = document.getElementById("pickup");
+    const dropoffSelect = document.getElementById("dropoff");
+    const carSelect = document.getElementById("car");
+    const slotForm = document.getElementById("slotForm");
 
-    // Disable past times for today
-    dateInput.addEventListener("change", () => {
-      if (dateInput.value === new Date().toISOString().split('T')[0]) {
-        const now = new Date();
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        timeInput.min = `${hours}:${minutes}`;
+    let driverId = null;
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        driverId = user.uid;
+        await loadLocations();
+        await loadCars(driverId);
       } else {
-        timeInput.removeAttribute("min");
+        alert("Please log in as driver");
+        window.location.href = "/login.html";
       }
     });
 
-    function loadOptions() {
-      const locRef = ref(db, 'locations');
-      onValue(locRef, snapshot => {
-        pickupEl.innerHTML = '';
-        dropoffEl.innerHTML = '';
-        snapshot.forEach(child => {
-          pickupEl.innerHTML += `<option value="${child.val()}">${child.val()}</option>`;
-          dropoffEl.innerHTML += `<option value="${child.val()}">${child.val()}</option>`;
-        });
-      });
-
-      const user = auth.currentUser;
-      const carRef = ref(db, `approvedcars`);
-      onValue(carRef, snapshot => {
-        carSelect.innerHTML = '';
-        carSeatMap = {};
-        snapshot.forEach(child => {
-          const car = child.val();
-          if (car.driverId === user.uid) {
-            carSelect.innerHTML += `<option value="${car.name}">${car.name}</option>`;
-            carSeatMap[car.name] = parseInt(car.seats);
-          }
-        });
+    async function loadLocations() {
+      const locationsRef = db.ref("locations");
+      const snapshot = await locationsRef.once("value");
+      snapshot.forEach(loc => {
+        const name = loc.val().name;
+        const opt = new Option(name, name);
+        pickupSelect.append(opt.cloneNode(true));
+        dropoffSelect.append(opt.cloneNode(true));
       });
     }
 
-    auth.onAuthStateChanged(user => {
-      if (!user) return;
-      loadOptions();
-
-      const slotForm = document.getElementById("slotForm");
-      const searchInput = document.getElementById("searchInput");
-
-      slotForm.addEventListener("submit", async e => {
-        e.preventDefault();
-
-        const date = dateInput.value;
-        const time = timeInput.value;
-        const key = `${date}_${time}_${pickupEl.value}_${dropoffEl.value}_${carSelect.value}`;
-
-        const snapshot = await get(ref(db, `availableslots/${user.uid}`));
-        for (const child of Object.values(snapshot.val() || {})) {
-          if (`${child.date}_${child.time}_${child.pickup}_${child.dropoff}_${child.car}` === key) {
-            alert("Duplicate slot detected. Choose another time or details.");
-            return;
-          }
-        }
-
-        const data = {
-          pickup: pickupEl.value,
-          dropoff: dropoffEl.value,
-          car: carSelect.value,
-          date,
-          time,
-          seats: seatsInput.value,
-          driverId: user.uid
-        };
-
-        if (parseInt(data.seats) > carSeatMap[data.car]) {
-          alert("Seats exceed car capacity.");
-          return;
-        }
-
-        push(ref(db, `availableslots/${user.uid}`), data).then(() => {
-          alert("Slot added.");
-          slotForm.reset();
-        });
+    async function loadCars(driverId) {
+      const carsRef = db.ref("approvedcars/" + driverId);
+      const snapshot = await carsRef.once("value");
+      snapshot.forEach(carSnap => {
+        const car = carSnap.val();
+        const opt = new Option(`${car.model} (${car.plateNumber})`, carSnap.key);
+        carSelect.append(opt);
       });
+    }
 
-      const slotList = document.getElementById("slotList");
+    slotForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-      onValue(ref(db, `availableslots/${user.uid}`), snapshot => {
-        let slots = [];
-        slotList.innerHTML = '';
+      const pickup = pickupSelect.value;
+      const dropoff = dropoffSelect.value;
+      const date = document.getElementById("date").value;
+      const time = document.getElementById("time").value;
+      const carId = carSelect.value;
+      const seats = parseInt(document.getElementById("seats").value);
 
-        snapshot.forEach(child => {
-          slots.push({ id: child.key, ...child.val() });
-        });
+      if (!pickup || !dropoff || !date || !time || !carId || isNaN(seats)) {
+        alert("All fields are required.");
+        return;
+      }
 
-        searchInput.addEventListener("input", () => {
-          const searchTerm = searchInput.value.toLowerCase();
-          renderSlots(slots.filter(slot =>
-            slot.pickup.toLowerCase().includes(searchTerm) ||
-            slot.dropoff.toLowerCase().includes(searchTerm) ||
-            slot.car.toLowerCase().includes(searchTerm) ||
-            slot.date.includes(searchTerm)
-          ));
-        });
+      const slotData = {
+        pickup,
+        dropoff,
+        date,
+        time,
+        carId,
+        seats
+      };
 
-        renderSlots(slots);
-      });
-
-      function renderSlots(slots) {
-        slotList.innerHTML = '';
-        const now = new Date();
-
-        slots.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
-
-        slots.forEach(slot => {
-          const slotTime = new Date(`${slot.date}T${slot.time}`);
-          const statusColor = slotTime > now ? 'text-success' : 'text-secondary';
-
-          slotList.innerHTML += `
-            <div class="card p-2">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <strong class="${statusColor}">${slot.date} ${slot.time}</strong><br />
-                  ${slot.pickup} → ${slot.dropoff} | Car: ${slot.car} | Seats: ${slot.seats}
-                </div>
-                <button class="btn btn-sm btn-danger" onclick="deleteSlot('${user.uid}', '${slot.id}')">Delete</button>
-              </div>
-            </div>
-          `;
-        });
+      try {
+        await db.ref("availableslots/" + driverId).push(slotData);
+        alert("Slot created successfully!");
+        slotForm.reset();
+      } catch (err) {
+        console.error(err);
+        alert("Error creating slot. Try again.");
       }
     });
-     window.onload = () => {
-      generateTimeSlots();
-      populateDropdown('/locations', 'pickup');
-      populateDropdown('/locations', 'dropoff');
-      populateDropdown('/cars', 'car');
-
-    // Populate dropdowns from Firebase
-    function populateDropdown(path, elementId) {
-      const ref = db.ref(path);
-      ref.once('value', (snapshot) => {
-        const select = document.getElementById(elementId);
-        select.innerHTML = ''; // clear existing
-        snapshot.forEach(child => {
-          const option = document.createElement('option');
-          option.value = child.key;
-          option.textContent = child.val().name || child.key;
-          select.appendChild(option);
-        });
-      });
-    }
-
-    window.onload = () => {
-      generateTimeSlots();
-      populateDropdown('/locations', 'pickup');
-      populateDropdown('/locations', 'dropoff');
-      populateDropdown('/cars', 'car');
-        });
-      }
-    }
   </script>
 </body>
 </html>
