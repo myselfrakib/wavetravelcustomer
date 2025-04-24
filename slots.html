@@ -2,17 +2,99 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Create New Slot</title>
+  <title>Create Slot</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f7f7f7; padding: 20px; }
-    .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    label { display: block; margin-top: 15px; }
-    input, select { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
-    button { margin-top: 20px; padding: 10px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #218838; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      color: white;
+      min-height: 100vh;
+      padding-bottom: 70px; /* space for navbar */
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 500px;
+      margin: auto;
+      text-align: center;
+    }
+
+    h2 {
+      margin-top: 20px;
+      font-size: 28px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      text-align: left;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 20px;
+      background: #ffd700;
+      color: #4a00e0;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #ffcc00;
+    }
+
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 0;
+      z-index: 999;
+    }
+
+    .navbar a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 16px;
+      padding: 10px 15px;
+      border-radius: 10px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .navbar a:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffd700;
+    }
+
+    @media (max-width: 600px) {
+      .navbar a {
+        font-size: 14px;
+        padding: 8px 10px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -26,7 +108,7 @@
       <select id="dropoff" required></select>
 
       <label for="date">Date:</label>
-      <input type="date" id="date" required min="<?= date('Y-m-d') ?>">
+      <input type="date" id="date" required>
 
       <label for="time">Time:</label>
       <input type="time" id="time" required>
@@ -39,6 +121,14 @@
 
       <button type="submit">Create Slot</button>
     </form>
+  </div>
+
+  <div class="navbar">
+    <a href="driverdashboard.html">Home</a>
+    <a href="drivermybookings.html">My Orders</a>
+    <a href="driverslots.html">Slots</a>
+    <a href="drivermycars.html">My Cars</a>
+    <a href="driverprofile.html">Profile</a>
   </div>
 
   <script>
