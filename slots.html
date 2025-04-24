@@ -250,10 +250,26 @@
       populateDropdown('/locations', 'dropoff');
       populateDropdown('/cars', 'car');
 
-    window.deleteSlot = (userId, slotId) => {
-      if (confirm("Are you sure you want to delete this slot?")) {
-        import("https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js").then(({ getDatabase, ref, remove }) => {
-          remove(ref(getDatabase(), `availableslots/${userId}/${slotId}`));
+    // Populate dropdowns from Firebase
+    function populateDropdown(path, elementId) {
+      const ref = db.ref(path);
+      ref.once('value', (snapshot) => {
+        const select = document.getElementById(elementId);
+        select.innerHTML = ''; // clear existing
+        snapshot.forEach(child => {
+          const option = document.createElement('option');
+          option.value = child.key;
+          option.textContent = child.val().name || child.key;
+          select.appendChild(option);
+        });
+      });
+    }
+
+    window.onload = () => {
+      generateTimeSlots();
+      populateDropdown('/locations', 'pickup');
+      populateDropdown('/locations', 'dropoff');
+      populateDropdown('/cars', 'car');
         });
       }
     }
