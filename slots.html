@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Add Slot</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Driver Slot Management</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -13,52 +15,60 @@
       min-height: 100vh;
       padding-bottom: 80px;
     }
-
     .container {
       padding: 20px;
     }
-
     h1 {
       font-size: 24px;
+      text-align: center;
       margin-bottom: 20px;
     }
-
     label {
       display: block;
-      margin-top: 10px;
+      margin-top: 15px;
     }
-
-    input, select, button {
+    select, input {
       width: 100%;
       padding: 10px;
-      margin-top: 5px;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
+      margin-top: 5px;
       font-size: 16px;
     }
-
     button {
-      background-color: #ffd700;
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      background: #ffd700;
       color: black;
       font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
       cursor: pointer;
-      margin-top: 20px;
     }
-
-    .slot-item {
-      background-color: rgba(255,255,255,0.1);
-      margin: 10px 0;
-      padding: 10px;
+    .slot-list {
+      margin-top: 30px;
+    }
+    .slot-card {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
       border-radius: 10px;
+      margin-bottom: 15px;
     }
-
-    .slot-item button {
-      background: red;
+    .slot-card p {
+      margin: 5px 0;
+    }
+    .slot-card button {
+      background: #ff4d4d;
       color: white;
-      width: auto;
+      padding: 8px 12px;
       margin-top: 10px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
     }
-
     .navbar {
       position: fixed;
       bottom: 0;
@@ -68,175 +78,166 @@
       display: flex;
       justify-content: space-around;
       align-items: center;
-      padding: 10px 0;
+      padding: 12px 0;
       z-index: 999;
     }
-
     .navbar a {
       color: #fff;
       text-decoration: none;
-      font-weight: bold;
-      font-size: 16px;
-      padding: 10px 15px;
-      border-radius: 10px;
-      transition: background 0.3s, color 0.3s;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-
-    .navbar a:hover {
-      background: rgba(255, 255, 255, 0.2);
-      color: #ffd700;
+    .navbar a i {
+      font-size: 20px;
+      margin-bottom: 5px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Add Available Slot</h1>
-    <form id="slotForm">
-      <label for="pickup">Pickup Location:</label>
-      <select id="pickup" required></select>
+<div class="container">
+  <h1>Add Available Slot</h1>
+  <label for="pickup">Pickup Location</label>
+  <select id="pickup"></select>
 
-      <label for="dropoff">Dropoff Location:</label>
-      <select id="dropoff" required></select>
+  <label for="dropoff">Dropoff Location</label>
+  <select id="dropoff"></select>
 
-      <label for="date">Date:</label>
-      <input type="date" id="date" required min="">
+  <label for="car">Select Car</label>
+  <select id="car"></select>
 
-      <label for="time">Time:</label>
-      <div style="display: flex; gap: 10px;">
-        <select id="hour" required>
-          <option value="">Hour</option>
-          ${[...Array(12).keys()].map(i => `<option value="${i + 1}">${i + 1}</option>`).join('')}
-        </select>
-        <select id="minute" required>
-          <option value="00">00</option>
-          <option value="30">30</option>
-        </select>
-        <select id="ampm" required>
-          <option value="AM">AM</option>
-          <option value="PM">PM</option>
-        </select>
-      </div>
+  <label for="date">Date</label>
+  <input type="date" id="date" min="" />
 
-      <label for="seats">Available Seats (max 6):</label>
-      <input type="number" id="seats" required min="1" max="6">
+  <label for="time">Time</label>
+  <input type="time" id="time" />
 
-      <label for="car">Select Car:</label>
-      <select id="car" required></select>
+  <label for="seats">Available Seats (Max 6)</label>
+  <input type="number" id="seats" min="1" max="6" />
 
-      <button type="submit">Submit Slot</button>
-    </form>
+  <button id="addSlotBtn">Add Slot</button>
 
-    <h2>My Slots</h2>
-    <div id="slotsList"></div>
-  </div>
+  <div class="slot-list" id="slotList"></div>
+</div>
 
-  <div class="navbar">
-    <a href="driverhome.html">Home</a>
-    <a href="drivermybookings.html">My Orders</a>
-    <a href="driverslots.html">Slots</a>
-    <a href="drivermycars.html">My Cars</a>
-    <a href="driverprofile.html">Profile</a>
-  </div>
+<div class="navbar">
+  <a href="driverdashboard.html"><i class="fas fa-home"></i>Home</a>
+  <a href="drivermybookings.html"><i class="fas fa-list"></i>My Bookings</a>
+  <a href="driverslots.html"><i class="fas fa-calendar"></i>Slots</a>
+  <a href="drivercars.html"><i class="fas fa-car"></i>My Cars</a>
+  <a href="driverprofile.html"><i class="fas fa-user"></i>Profile</a>
+</div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const driverId = "2ZNbW7mM71YMFUE18hkveeuyRRJ3";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth();
+  const pickup = document.getElementById("pickup");
+  const dropoff = document.getElementById("dropoff");
+  const car = document.getElementById("car");
+  const date = document.getElementById("date");
+  const time = document.getElementById("time");
+  const seats = document.getElementById("seats");
+  const slotList = document.getElementById("slotList");
 
-    const pickupSelect = document.getElementById("pickup");
-    const dropoffSelect = document.getElementById("dropoff");
-    const carSelect = document.getElementById("car");
-    const slotForm = document.getElementById("slotForm");
-    const slotsList = document.getElementById("slotsList");
+  const today = new Date().toISOString().split("T")[0];
+  date.setAttribute("min", today);
 
-    const today = new Date().toISOString().split("T")[0];
-    document.getElementById("date").min = today;
-
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        const uid = user.uid;
-
-        // Fetch locations
-        onValue(ref(db, "locations"), (snapshot) => {
-          pickupSelect.innerHTML = dropoffSelect.innerHTML = "";
-          snapshot.forEach(child => {
-            const name = child.val().name;
-            pickupSelect.innerHTML += `<option value="${name}">${name}</option>`;
-            dropoffSelect.innerHTML += `<option value="${name}">${name}</option>`;
-          });
-        });
-
-        // Fetch cars
-        onValue(ref(db, `approvedcars/${uid}`), (snapshot) => {
-          carSelect.innerHTML = "";
-          snapshot.forEach(child => {
-            const data = child.val();
-            carSelect.innerHTML += `<option value="${data.model} (${data.plateNumber})">${data.model} (${data.plateNumber})</option>`;
-          });
-        });
-
-        // Handle form submission
-        slotForm.addEventListener("submit", (e) => {
-          e.preventDefault();
-          const pickup = pickupSelect.value;
-          const dropoff = dropoffSelect.value;
-          const date = document.getElementById("date").value;
-          const hour = document.getElementById("hour").value;
-          const minute = document.getElementById("minute").value;
-          const ampm = document.getElementById("ampm").value;
-          const time = `${hour}:${minute} ${ampm}`;
-          const seats = document.getElementById("seats").value;
-          const car = carSelect.value;
-
-          const slotData = { pickup, dropoff, date, time, seats, car };
-          const newSlotRef = push(ref(db, `availableslots/${uid}`));
-          set(newSlotRef, slotData).then(() => {
-            alert("Slot added!");
-            slotForm.reset();
-            document.getElementById("date").min = today;
-          });
-        });
-
-        // Fetch and display existing slots
-        onValue(ref(db, `availableslots/${uid}`), (snapshot) => {
-          slotsList.innerHTML = "";
-          snapshot.forEach(child => {
-            const slot = child.val();
-            const key = child.key;
-            const div = document.createElement("div");
-            div.className = "slot-item";
-            div.innerHTML = `
-              <strong>${slot.pickup} → ${slot.dropoff}</strong><br>
-              Date: ${slot.date} | Time: ${slot.time}<br>
-              Seats: ${slot.seats} | Car: ${slot.car}<br>
-              <button data-key="${key}">Delete</button>
-            `;
-            div.querySelector("button").onclick = () => {
-              remove(ref(db, `availableslots/${uid}/${key}`));
-            };
-            slotsList.appendChild(div);
-          });
-        });
-
-      } else {
-        alert("Please login first.");
-        window.location.href = "driverlogin.html";
-      }
+  function loadDropdownData() {
+    const locRef = ref(db, "locations");
+    onValue(locRef, (snapshot) => {
+      const locations = snapshot.val();
+      pickup.innerHTML = dropoff.innerHTML = "";
+      locations.forEach(loc => {
+        const opt = `<option value="${loc.name}">${loc.name}</option>`;
+        pickup.innerHTML += opt;
+        dropoff.innerHTML += opt;
+      });
     });
-  </script>
+
+    const carsRef = ref(db, `approvedcars/${driverId}`);
+    onValue(carsRef, (snapshot) => {
+      car.innerHTML = "";
+      snapshot.forEach(child => {
+        const data = child.val();
+        car.innerHTML += `<option value="${child.key}">${data.model} (${data.plateNumber})</option>`;
+      });
+    });
+  }
+
+  function loadSlots() {
+    slotList.innerHTML = "";
+    const slotsRef = ref(db, `availableslots/${driverId}`);
+    onValue(slotsRef, (snapshot) => {
+      slotList.innerHTML = "";
+      snapshot.forEach(child => {
+        const s = child.val();
+        const card = document.createElement("div");
+        card.className = "slot-card";
+        card.innerHTML = `
+          <p><strong>${s.pickup}</strong> to <strong>${s.dropoff}</strong></p>
+          <p>Date: ${s.date}, Time: ${convertTo12Hr(s.time)}</p>
+          <p>Seats: ${s.seats}</p>
+          <button onclick="deleteSlot('${child.key}')">Delete</button>
+        `;
+        slotList.appendChild(card);
+      });
+    });
+  }
+
+  function convertTo12Hr(timeStr) {
+    const [hour, minute] = timeStr.split(":");
+    const h = +hour;
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hr = h % 12 || 12;
+    return `${hr}:${minute} ${ampm}`;
+  }
+
+  function addSlot() {
+    const data = {
+      pickup: pickup.value,
+      dropoff: dropoff.value,
+      carId: car.value,
+      date: date.value,
+      time: time.value,
+      seats: seats.value
+    };
+    if (!data.pickup || !data.dropoff || !data.carId || !data.date || !data.time || !data.seats) {
+      alert("All fields are required");
+      return;
+    }
+    push(ref(db, `availableslots/${driverId}`), data).then(() => {
+      alert("Slot added successfully");
+      date.value = time.value = seats.value = "";
+      loadSlots();
+    });
+  }
+
+  window.deleteSlot = function (key) {
+    if (confirm("Are you sure to delete this slot?")) {
+      remove(ref(db, `availableslots/${driverId}/${key}`));
+    }
+  }
+
+  document.getElementById("addSlotBtn").addEventListener("click", addSlot);
+
+  loadDropdownData();
+  loadSlots();
+</script>
 </body>
 </html>
+
