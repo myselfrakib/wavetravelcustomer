@@ -14,25 +14,23 @@
       background: linear-gradient(to right, #8e2de2, #4a00e0);
       color: white;
       min-height: 100vh;
-      padding-bottom: 70px; /* space for navbar */
+      padding-bottom: 130px;
     }
 
     .container {
       padding: 20px;
       max-width: 500px;
       margin: auto;
-      text-align: center;
     }
 
     h2 {
-      margin-top: 20px;
       font-size: 28px;
+      text-align: center;
     }
 
     label {
       display: block;
       margin-top: 15px;
-      text-align: left;
     }
 
     input, select {
@@ -57,8 +55,33 @@
       font-size: 16px;
     }
 
-    button:hover {
-      background: #ffcc00;
+    .slot-list {
+      margin-top: 40px;
+    }
+
+    .slot-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+
+    .slot-card strong {
+      color: #ffd700;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: red;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      font-size: 14px;
+      border-radius: 5px;
+      cursor: pointer;
     }
 
     .navbar {
@@ -88,13 +111,6 @@
       background: rgba(255, 255, 255, 0.2);
       color: #ffd700;
     }
-
-    @media (max-width: 600px) {
-      .navbar a {
-        font-size: 14px;
-        padding: 8px 10px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -121,6 +137,10 @@
 
       <button type="submit">Create Slot</button>
     </form>
+
+    <div class="slot-list" id="slotList">
+      <h3>Available Slots</h3>
+    </div>
   </div>
 
   <div class="navbar">
@@ -150,6 +170,7 @@
     const dropoffSelect = document.getElementById("dropoff");
     const carSelect = document.getElementById("car");
     const slotForm = document.getElementById("slotForm");
+    const slotList = document.getElementById("slotList");
 
     let driverId = null;
 
@@ -158,6 +179,7 @@
         driverId = user.uid;
         await loadLocations();
         await loadCars(driverId);
+        await loadSlots(driverId);
       } else {
         alert("Please log in as driver");
         window.location.href = "/login.html";
@@ -165,8 +187,7 @@
     });
 
     async function loadLocations() {
-      const locationsRef = db.ref("locations");
-      const snapshot = await locationsRef.once("value");
+      const snapshot = await db.ref("locations").once("value");
       snapshot.forEach(loc => {
         const name = loc.val().name;
         const opt = new Option(name, name);
@@ -176,13 +197,36 @@
     }
 
     async function loadCars(driverId) {
-      const carsRef = db.ref("approvedcars/" + driverId);
-      const snapshot = await carsRef.once("value");
+      const snapshot = await db.ref("approvedcars/" + driverId).once("value");
       snapshot.forEach(carSnap => {
         const car = carSnap.val();
         const opt = new Option(`${car.model} (${car.plateNumber})`, carSnap.key);
         carSelect.append(opt);
       });
+    }
+
+    async function loadSlots(driverId) {
+      const snapshot = await db.ref("availableslots/" + driverId).once("value");
+      slotList.innerHTML = "<h3>Available Slots</h3>";
+      snapshot.forEach(slotSnap => {
+        const slot = slotSnap.val();
+        const div = document.createElement("div");
+        div.className = "slot-card";
+        div.innerHTML = `
+          <strong>${slot.pickup} → ${slot.dropoff}</strong><br>
+          Date: ${slot.date}, Time: ${slot.time}<br>
+          Car ID: ${slot.carId}, Seats: ${slot.seats}
+          <button class="delete-btn" onclick="deleteSlot('${slotSnap.key}')">Delete</button>
+        `;
+        slotList.appendChild(div);
+      });
+    }
+
+    async function deleteSlot(slotKey) {
+      if (confirm("Are you sure you want to delete this slot?")) {
+        await db.ref("availableslots/" + driverId + "/" + slotKey).remove();
+        loadSlots(driverId);
+      }
     }
 
     slotForm.addEventListener("submit", async (e) => {
@@ -200,19 +244,13 @@
         return;
       }
 
-      const slotData = {
-        pickup,
-        dropoff,
-        date,
-        time,
-        carId,
-        seats
-      };
+      const slotData = { pickup, dropoff, date, time, carId, seats };
 
       try {
         await db.ref("availableslots/" + driverId).push(slotData);
         alert("Slot created successfully!");
         slotForm.reset();
+        loadSlots(driverId);
       } catch (err) {
         console.error(err);
         alert("Error creating slot. Try again.");
