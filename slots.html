@@ -244,6 +244,11 @@
         });
       }
     });
+     window.onload = () => {
+      generateTimeSlots();
+      populateDropdown('/locations', 'pickup');
+      populateDropdown('/locations', 'dropoff');
+      populateDropdown('/cars', 'car');
 
     window.deleteSlot = (userId, slotId) => {
       if (confirm("Are you sure you want to delete this slot?")) {
