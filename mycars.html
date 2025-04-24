@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Cars - Add Car</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+  <title>My Cars</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -47,19 +47,19 @@
       font-size: 16px;
       cursor: pointer;
     }
-    .car-list {
+    .slot-list {
       margin-top: 30px;
     }
-    .car-card {
+    .slot-card {
       background: rgba(255,255,255,0.1);
       padding: 15px;
       border-radius: 10px;
       margin-bottom: 15px;
     }
-    .car-card p {
+    .slot-card p {
       margin: 5px 0;
     }
-    .car-card button {
+    .slot-card button {
       background: #ff4d4d;
       color: white;
       padding: 8px 12px;
@@ -96,35 +96,28 @@
   </style>
 </head>
 <body>
+
   <div class="container">
-    <h1>Add Your Car Details</h1>
-    
-    <!-- Car Details Form -->
-    <form id="addCarForm">
+    <h1>Add New Car</h1>
+    <form id="carForm">
       <label for="carBrand">Car Brand</label>
-      <input type="text" id="carBrand" required placeholder="Enter Car Brand">
+      <input type="text" id="carBrand" required>
 
-      <label for="carRegNo">Registration Number</label>
-      <input type="text" id="carRegNo" required placeholder="Enter Registration Number">
+      <label for="carReg">Car Registration Number</label>
+      <input type="text" id="carReg" required>
 
-      <label for="ownerName">Owner's Name</label>
-      <input type="text" id="ownerName" required placeholder="Enter Owner's Name">
+      <label for="ownerName">Owner Name</label>
+      <input type="text" id="ownerName" required>
 
-      <label for="availableSeats">Available Seats</label>
-      <select id="availableSeats" required>
-        <option value="">Select Available Seats</option>
-        <option value="2">2</option>
-        <option value="4">4</option>
-        <option value="6">6</option>
-      </select>
+      <label for="seats">Available Seats</label>
+      <input type="number" id="seats" required>
 
       <button type="submit">Submit for Approval</button>
     </form>
-    
-    <!-- Display Approved Cars -->
-    <div class="car-list" id="approvedCars">
-      <h2>Approved Cars</h2>
-      <!-- Dynamically filled with approved cars -->
+
+    <h1>Approved Cars</h1>
+    <div class="slot-list" id="approvedCarsList">
+      <!-- Approved cars will be displayed here -->
     </div>
   </div>
 
@@ -137,12 +130,7 @@
     <a href="driverprofile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
-  <!-- Firebase Script -->
-  <script src="https://www.gstatic.com/firebasejs/9.8.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.8.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.8.1/firebase-auth.js"></script>
-  
-  <script>
+  <script type="module">
     // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -155,57 +143,63 @@
     };
 
     // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-    
-    // Submit Car Details Form
-    document.getElementById("addCarForm").addEventListener("submit", function(e) {
-      e.preventDefault();
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-app.js";
+    import { getDatabase, ref, set, push, get } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-database.js";
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Add car to Firebase
+    document.getElementById("carForm").addEventListener("submit", function(event) {
+      event.preventDefault();
 
       const carBrand = document.getElementById("carBrand").value;
-      const carRegNo = document.getElementById("carRegNo").value;
+      const carReg = document.getElementById("carReg").value;
       const ownerName = document.getElementById("ownerName").value;
-      const availableSeats = document.getElementById("availableSeats").value;
+      const seats = document.getElementById("seats").value;
 
-      const carDetails = {
+      // Create a reference to the "pendingcars" node and push the new car
+      const newCarRef = push(ref(database, "pendingcars"));
+      
+      set(newCarRef, {
         carBrand: carBrand,
-        carRegNo: carRegNo,
+        carReg: carReg,
         ownerName: ownerName,
-        availableSeats: availableSeats,
-        status: "pending"  // Set initial status as pending
-      };
-
-      // Push data to Firebase under 'pendingcars'
-      database.ref('pendingcars').push(carDetails).then(() => {
-        alert("Car details submitted for approval.");
-        document.getElementById("addCarForm").reset();
-      }).catch(error => {
-        console.error("Error adding car:", error);
+        seats: seats
+      }).then(() => {
+        alert("Car submitted for approval!");
+        loadApprovedCars(); // Refresh the list of approved cars
+      }).catch((error) => {
+        alert("Error: " + error.message);
       });
     });
 
-    // Fetch and Display Approved Cars
-    const approvedCarsRef = database.ref('approvedcars');
-    approvedCarsRef.on('value', snapshot => {
-      const cars = snapshot.val();
-      const carList = document.getElementById("approvedCars");
-      carList.innerHTML = "<h2>Approved Cars</h2>";  // Clear previous list
+    // Load approved cars from Firebase
+    function loadApprovedCars() {
+      const approvedCarsRef = ref(database, "approvedcars");
+      get(approvedCarsRef).then((snapshot) => {
+        const approvedCarsList = document.getElementById("approvedCarsList");
+        approvedCarsList.innerHTML = "";
+        snapshot.forEach((childSnapshot) => {
+          const car = childSnapshot.val();
+          const carElement = document.createElement("div");
+          carElement.classList.add("slot-card");
+          carElement.innerHTML = `
+            <p><strong>Car Brand:</strong> ${car.carBrand}</p>
+            <p><strong>Registration Number:</strong> ${car.carReg}</p>
+            <p><strong>Owner:</strong> ${car.ownerName}</p>
+            <p><strong>Available Seats:</strong> ${car.seats}</p>
+          `;
+          approvedCarsList.appendChild(carElement);
+        });
+      }).catch((error) => {
+        console.log("Error loading approved cars: " + error.message);
+      });
+    }
 
-      for (const key in cars) {
-        const car = cars[key];
-        const carCard = document.createElement("div");
-        carCard.classList.add("car-card");
-
-        carCard.innerHTML = `
-          <p><strong>Car Brand:</strong> ${car.carBrand}</p>
-          <p><strong>Registration No:</strong> ${car.carRegNo}</p>
-          <p><strong>Owner:</strong> ${car.ownerName}</p>
-          <p><strong>Available Seats:</strong> ${car.availableSeats}</p>
-        `;
-
-        carList.appendChild(carCard);
-      }
-    });
+    // Load approved cars when page loads
+    loadApprovedCars();
   </script>
+
 </body>
 </html>
