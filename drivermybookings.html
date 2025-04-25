@@ -3,101 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Driver My Bookings</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(to right, #8e2de2, #4a00e0);
-      color: white;
-    }
+  <title>My Bookings</title>
 
-    .navbar {
-      background-color: rgba(0, 0, 0, 0.4);
-      padding: 10px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .navbar a {
-      color: #fff;
-      text-decoration: none;
-      margin: 0 15px;
-      font-weight: bold;
-    }
-
-    .container {
-      padding: 20px;
-    }
-
-    .booking-card {
-      background-color: rgba(0, 0, 0, 0.2);
-      margin: 10px 0;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .booking-card h4 {
-      margin: 0;
-      color: #4e89ae;
-    }
-
-    .booking-card p {
-      margin: 5px 0;
-    }
-
-    .booking-card .confirmed {
-      color: green;
-    }
-
-    .footer {
-      background-color: rgba(0, 0, 0, 0.4);
-      padding: 10px;
-      text-align: center;
-      position: fixed;
-      width: 100%;
-      bottom: 0;
-    }
-
-    .footer a {
-      color: #fff;
-      text-decoration: none;
-      margin: 0 15px;
-      font-weight: bold;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Navbar -->
-  <div class="navbar">
-    <a href="driverdashboard.html">Home</a>
-    <a href="drivermybookings.html">My Bookings</a>
-    <a href="driverprofile.html">Profile</a>
-  </div>
-
-  <div class="container">
-    <h1>Driver My Bookings</h1>
-
-    <div id="bookingList"></div>
-
-  </div>
-
-  <!-- Footer (with Bottom Navbar) -->
-  <div class="footer">
-    <a href="driverdashboard.html">Home</a>
-    <a href="drivermybookings.html">My Bookings</a>
-    <a href="driverslots.html">Slots</a>
-    <a href="driverprofile.html">Profile</a>
-  </div>
-
-  <!-- Firebase SDK and Script -->
+  <!-- Firebase SDK imports -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getDatabase, ref, onValue, remove, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+    // Your Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -108,80 +22,165 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
 
-    // Function to get driver bookings
-    function getDriverBookings() {
-      const userId = "driverUID";  // Replace with actual driver UID
-      const bookingsRef = ref(db, 'bookings/' + userId);
-      
-      get(bookingsRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          const bookings = snapshot.val();
-          displayBookings(bookings);
+    // Get the current user's ID and fetch bookings for that driver
+    let currentUserID = '';
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUserID = user.uid;
+        fetchBookings();
+      } else {
+        console.log('User not logged in');
+      }
+    });
+
+    // Fetch bookings from Firebase for the current driver
+    function fetchBookings() {
+      const bookingRef = ref(database, 'bookings');
+      const bookingQuery = query(bookingRef, orderByChild('driverId'), equalTo(currentUserID));
+
+      onValue(bookingQuery, (snapshot) => {
+        const bookings = snapshot.val();
+        const bookingListElement = document.getElementById('booking-list');
+        bookingListElement.innerHTML = ''; // Clear previous data
+
+        if (bookings) {
+          Object.keys(bookings).forEach((bookingId) => {
+            const booking = bookings[bookingId];
+            const bookingCard = document.createElement('div');
+            bookingCard.classList.add('booking-card');
+
+            bookingCard.innerHTML = `
+              <p><strong>Customer Name:</strong> ${booking.customerName}</p>
+              <p><strong>Phone Number:</strong> ${booking.customerPhone}</p>
+              <p><strong>Pickup:</strong> ${booking.pickupLocation}</p>
+              <p><strong>Dropoff:</strong> ${booking.dropoffLocation}</p>
+              <p><strong>Slot ID:</strong> ${booking.slotId}</p>
+              <button onclick="cancelBooking('${bookingId}')">Cancel Booking</button>
+            `;
+
+            bookingListElement.appendChild(bookingCard);
+          });
         } else {
-          document.getElementById('bookingList').innerHTML = "<p>No bookings available.</p>";
+          bookingListElement.innerHTML = '<p>No bookings found.</p>';
         }
-      }).catch((error) => {
-        console.error("Error getting bookings:", error);
       });
     }
 
-    // Function to display bookings
-    function displayBookings(bookings) {
-      let bookingListHTML = "";
-      const sortedBookings = Object.values(bookings).sort((a, b) => new Date(b.rideDate) - new Date(a.rideDate));
-      
-      sortedBookings.forEach((booking, index) => {
-        const bookingHTML = `
-          <div class="booking-card" onclick="showBookingDetails(${index})">
-            <h4>Booking ${index + 1}</h4>
-            <p><strong>Pickup Location:</strong> ${booking.pickupLocation}</p>
-            <p><strong>Drop-off Location:</strong> ${booking.dropOffLocation}</p>
-            <p><strong>Ride Date & Time:</strong> ${new Date(booking.rideDate).toLocaleString()}</p>
-            <p class="confirmed"><strong>Status:</strong> ${booking.status}</p>
-          </div>
-        `;
-        bookingListHTML += bookingHTML;
-      });
-
-      document.getElementById('bookingList').innerHTML = bookingListHTML;
+    // Cancel booking function
+    function cancelBooking(bookingId) {
+      if (confirm('Are you sure you want to cancel this booking?')) {
+        const bookingRef = ref(database, 'bookings/' + bookingId);
+        remove(bookingRef).then(() => {
+          alert('Booking cancelled successfully.');
+        }).catch((error) => {
+          console.error('Error canceling booking:', error);
+        });
+      }
     }
-
-    // Function to show detailed booking info
-    function showBookingDetails(bookingIndex) {
-      const userId = "driverUID";  // Replace with actual driver UID
-      const bookingsRef = ref(db, 'bookings/' + userId);
-      
-      get(bookingsRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          const bookings = snapshot.val();
-          const bookingDetails = bookings[Object.keys(bookings)[bookingIndex]];
-
-          const detailsHTML = `
-            <div class="booking-card">
-              <h4>Booking ${bookingIndex + 1} - Details</h4>
-              <p><strong>Customer Name:</strong> ${bookingDetails.customerName}</p>
-              <p><strong>Email:</strong> ${bookingDetails.customerEmail}</p>
-              <p><strong>Phone:</strong> ${bookingDetails.customerPhone}</p>
-              <p><strong>Pickup Location:</strong> ${bookingDetails.pickupLocation}</p>
-              <p><strong>Drop-off Location:</strong> ${bookingDetails.dropOffLocation}</p>
-              <p><strong>Ride Date & Time:</strong> ${new Date(bookingDetails.rideDate).toLocaleString()}</p>
-              <p><strong>Status:</strong> ${bookingDetails.status}</p>
-            </div>
-          `;
-
-          document.getElementById('bookingList').innerHTML = detailsHTML;
-        }
-      }).catch((error) => {
-        console.error("Error getting booking details:", error);
-      });
-    }
-
-    // Fetch driver bookings on page load
-    getDriverBookings();
   </script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      color: white;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .booking-list {
+      margin-top: 30px;
+    }
+
+    .booking-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    .booking-card p {
+      margin: 5px 0;
+    }
+
+    .booking-card button {
+      background: #ff4d4d;
+      color: white;
+      padding: 8px 12px;
+      margin-top: 10px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 12px 0;
+      z-index: 999;
+    }
+
+    .navbar a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .navbar a i {
+      font-size: 20px;
+      margin-bottom: 5px;
+    }
+
+    .navbar a:hover {
+      color: #ffd700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>My Bookings</h1>
+
+    <div class="booking-list" id="booking-list"></div>
+  </div>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <a href="driverdashboard.html"><i class="fas fa-home"></i>Home</a>
+    <a href="drivermybookings.html"><i class="fas fa-list"></i>My Bookings</a>
+    <a href="slots.html"><i class="fas fa-calendar"></i>Slots</a>
+    <a href="mycarscars.html"><i class="fas fa-car"></i>My Cars</a>
+    <a href="driverprofile.html"><i class="fas fa-user"></i>Profile</a>
+  </div>
 
 </body>
 </html>
