@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WaveRide Rental Agreement</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.7.0/docx.umd.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #00b4db, #0083b0);
+      color: #fff;
+      padding: 20px;
+    }
+    .container {
+      background-color: #ffffff11;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      backdrop-filter: blur(8px);
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 5px;
+      margin-top: 5px;
+      border: none;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      border: none;
+      background-color: #fff;
+      color: #0083b0;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    h2 {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Rental Agreement Generator</h2>
+    <form id="agreementForm">
+      <label for="owner">Owner Name</label>
+      <input type="text" id="owner" required />
+
+      <label for="rentee">Rentee Name</label>
+      <input type="text" id="rentee" required />
+
+      <label for="start">Start Date & Time</label>
+      <input type="datetime-local" id="start" required />
+
+      <label for="end">End Date & Time</label>
+      <input type="datetime-local" id="end" required />
+
+      <label for="vehicle">Vehicle Registration Number</label>
+      <input type="text" id="vehicle" required />
+
+      <button type="submit">Generate Agreement</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('agreementForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const owner = document.getElementById('owner').value;
+      const rentee = document.getElementById('rentee').value;
+      const start = new Date(document.getElementById('start').value).toLocaleString();
+      const end = new Date(document.getElementById('end').value).toLocaleString();
+      const vehicle = document.getElementById('vehicle').value;
+
+      const { Document, Packer, Paragraph, TextRun } = window.docx;
+
+      const doc = new Document({
+        sections: [{
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({ text: "WaveRide Rental Agreement", bold: true, size: 32 }),
+              ],
+              spacing: { after: 400 },
+            }),
+            new Paragraph(`This rental agreement is made between ${owner} (Owner) and ${rentee} (Rentee).`),
+            new Paragraph(`The Owner agrees to rent their vehicle (Reg. No: ${vehicle}) to the Rentee under the following conditions:`),
+            new Paragraph(""),
+            new Paragraph(`Start Date and Time: ${start}`),
+            new Paragraph(`End Date and Time: ${end}`),
+            new Paragraph(""),
+            new Paragraph("Terms and Conditions:"),
+            new Paragraph("- The Rentee shall be responsible for the vehicle during the rental period."),
+            new Paragraph("- Any damage caused during the rental period will be borne by the Rentee."),
+            new Paragraph("- The vehicle must be returned in the same condition as received."),
+            new Paragraph("- This agreement is binding and governed by applicable local laws."),
+            new Paragraph(""),
+            new Paragraph(`Signed by Owner: ____________________    Date: __________`),
+            new Paragraph(`Signed by Rentee: ____________________   Date: __________`),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `Rental_Agreement_${rentee.replace(/\s+/g, '_')}.docx`;
+      link.click();
+    });
+  </script>
+</body>
+</html>
