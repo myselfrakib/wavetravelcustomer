@@ -112,22 +112,14 @@
     <!-- Profile Card -->
     <div class="profile-card">
       <h2>Your Information</h2>
-      <p><strong>Name:</strong> John Doe</p>
-      <p><strong>Email:</strong> johndoe@example.com</p>
-      <p><strong>Phone:</strong> +1234567890</p>
-      <p><strong>License Number:</strong> ABC12345</p>
-      <p><strong>Vehicle ID:</strong> XYZ-5678</p>
+      <p><strong>Name:</strong> <span id="driver-name">Loading...</span></p>
+      <p><strong>Email:</strong> <span id="driver-email">Loading...</span></p>
+      <p><strong>Phone:</strong> <span id="driver-phone">Loading...</span></p>
+      <p><strong>License Number:</strong> <span id="driver-license">Loading...</span></p>
+      <p><strong>Vehicle ID:</strong> <span id="driver-vehicle-id">Loading...</span></p>
 
-      <!-- Button to Edit Profile (future functionality) -->
-      <button>Edit Profile</button>
-    </div>
-
-    <!-- Vehicle Info (if any) -->
-    <div class="profile-card">
-      <h2>Your Vehicle Information</h2>
-      <p><strong>Vehicle Type:</strong> Sedan</p>
-      <p><strong>Vehicle Registration Number:</strong> ABC-1234</p>
-      <p><strong>Available Seats:</strong> 4</p>
+      <!-- Button to Edit Profile (will be activated once data is loaded) -->
+      <button id="edit-btn">Edit Profile</button>
     </div>
   </div>
 
@@ -143,7 +135,7 @@
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
     // Firebase configuration
     const firebaseConfig = {
@@ -161,22 +153,52 @@
     const database = getDatabase(app);
 
     // Fetch Driver Profile Info from Firebase
-    const driverId = "driver123";  // Replace with dynamic driver ID
-    const driverRef = ref(database, 'drivers/' + driverId);
+    const driverId = "driver123";  // Replace with dynamic driver ID or get from authentication
+    const driverRef = ref(database, 'driverdetails/' + driverId);
+    
+    // Fetch driver details from Firebase
     get(driverRef).then((snapshot) => {
       if (snapshot.exists()) {
         const driverData = snapshot.val();
-        document.querySelector('p strong').nextSibling.textContent = driverData.name;
-        document.querySelectorAll('p')[1].textContent = 'Email: ' + driverData.email;
-        document.querySelectorAll('p')[2].textContent = 'Phone: ' + driverData.phone;
-        document.querySelectorAll('p')[3].textContent = 'License: ' + driverData.license;
-        document.querySelectorAll('p')[4].textContent = 'Vehicle ID: ' + driverData.vehicleId;
+        document.getElementById('driver-name').textContent = driverData.name;
+        document.getElementById('driver-email').textContent = driverData.email;
+        document.getElementById('driver-phone').textContent = driverData.phone;
+        document.getElementById('driver-license').textContent = driverData.license;
+        document.getElementById('driver-vehicle-id').textContent = driverData.vehicleId;
       } else {
         console.log("No data available");
       }
     }).catch((error) => {
       console.error(error);
     });
+
+    // Edit profile button functionality
+    document.getElementById('edit-btn').addEventListener('click', () => {
+      const newName = prompt("Enter your new name:");
+      const newEmail = prompt("Enter your new email:");
+      const newPhone = prompt("Enter your new phone number:");
+      const newLicense = prompt("Enter your new license number:");
+
+      // Update driver details in Firebase
+      if (newName && newEmail && newPhone && newLicense) {
+        set(ref(database, 'driverdetails/' + driverId), {
+          name: newName,
+          email: newEmail,
+          phone: newPhone,
+          license: newLicense,
+          vehicleId: "XYZ-5678"  // Update the vehicle ID if necessary
+        }).then(() => {
+          alert("Profile updated successfully!");
+          // Reload the page or update the UI with new details
+          window.location.reload();
+        }).catch((error) => {
+          alert("Error updating profile: " + error.message);
+        });
+      } else {
+        alert("All fields are required!");
+      }
+    });
+
   </script>
 
 </body>
