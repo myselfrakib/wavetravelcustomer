@@ -3,180 +3,162 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WaveTravel - Book Ride</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <title>Book a Ride - WaveTravel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    body {
-      background: linear-gradient(to right, #00c6ff, #0072ff);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      margin: 0;
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background: linear-gradient(to right, #74ebd5, #ACB6E5); min-height: 100vh; display: flex; flex-direction: column; }
+    .container { flex: 1; padding: 20px; }
+    h1 { text-align: center; color: #fff; margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { color: #333; font-weight: 600; }
+    select, input[type="date"], input[type="time"], button {
+      width: 100%; padding: 12px; border-radius: 10px; border: none; margin-top: 5px;
+      background: #f8f8f8; box-shadow: 0 4px 10px rgba(0,0,0,0.1); outline: none;
     }
-    .card-glass {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      border-radius: 15px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
+    button { background: #0077ff; color: #fff; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    button:hover { background: #005dc1; }
+    .slots { margin-top: 20px; display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+    .slot-card {
+      background: #fff; padding: 15px; border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2); transition: transform 0.3s;
     }
-    .fixed-bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      border-top: 1px solid rgba(255,255,255,0.2);
-    }
-    .fixed-bottom-nav a {
-      color: white;
-      text-decoration: none;
-      text-align: center;
-      font-size: 12px;
-    }
-    .fixed-bottom-nav a i {
-      font-size: 20px;
-      display: block;
-    }
+    .slot-card:hover { transform: scale(1.03); }
+    .navbar { background: #fff; padding: 10px; display: flex; justify-content: space-around; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -3px 10px rgba(0,0,0,0.1); }
+    .navbar a { color: #0077ff; font-size: 16px; text-decoration: none; display: flex; flex-direction: column; align-items: center; }
+    .navbar a i { font-size: 20px; }
+    .no-slots { text-align: center; margin-top: 20px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
   </style>
 </head>
 <body>
 
-<div class="container py-4">
-  <h2 class="text-center text-white mb-4">Book Your Ride</h2>
+<div class="container">
+  <h1>Book Your Ride</h1>
 
-  <div class="card card-glass p-4">
-    <div class="mb-3">
-      <label class="form-label text-white">Pickup Location</label>
-      <select id="pickup" class="form-select"></select>
-    </div>
-    <div class="mb-3">
-      <label class="form-label text-white">Dropoff Location</label>
-      <select id="dropoff" class="form-select"></select>
-    </div>
-    <div class="mb-3">
-      <label class="form-label text-white">Date</label>
-      <input type="date" id="date" class="form-control">
-    </div>
-    <button onclick="searchSlots()" class="btn btn-light w-100">Find Available Slots</button>
+  <div class="form-group">
+    <label for="pickup">Pickup Location</label>
+    <select id="pickup"></select>
   </div>
 
-  <div id="slots" class="mt-4"></div>
+  <div class="form-group">
+    <label for="dropoff">Dropoff Location</label>
+    <select id="dropoff"></select>
+  </div>
+
+  <div class="form-group">
+    <label for="date">Select Date</label>
+    <input type="date" id="date">
+  </div>
+
+  <button onclick="searchSlots()">Search Available Slots</button>
+
+  <div class="slots" id="slots"></div>
 </div>
 
-<!-- Bottom Navbar -->
-<div class="fixed-bottom-nav">
-  <a href="home.html"><i class="bi bi-house-door"></i>Home</a>
-  <a href="book.html"><i class="bi bi-car-front"></i>Book</a>
-  <a href="mybookings.html"><i class="bi bi-list-check"></i>My Bookings</a>
-  <a href="profile.html"><i class="bi bi-person-circle"></i>Profile</a>
+<div class="navbar">
+  <a href="home.html"><i class="fas fa-home"></i><span>Home</span></a>
+  <a href="book.html"><i class="fas fa-car"></i><span>Book</span></a>
+  <a href="mybookings.html"><i class="fas fa-calendar-check"></i><span>Bookings</span></a>
+  <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
 </div>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-  authDomain: "wavetravel-3c4c4.firebaseapp.com",
-  databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-  projectId: "wavetravel-3c4c4",
-  storageBucket: "wavetravel-3c4c4.appspot.com",
-  messagingSenderId: "298226098137",
-  appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-};
-firebase.initializeApp(firebaseConfig);
+  // Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+  firebase.initializeApp(firebaseConfig);
 
-const db = firebase.database();
-const auth = firebase.auth();
-let userData = null;
-
-window.onload = async () => {
-  auth.onAuthStateChanged(async (user) => {
-    if (!user) {
-      alert("You must be logged in.");
-      window.location.href = "index.html";
-    } else {
-      const snapshot = await db.ref('users/' + user.uid).get();
-      userData = snapshot.val();
-      loadLocations();
-    }
-  });
-};
-
-async function loadLocations() {
   const pickup = document.getElementById('pickup');
   const dropoff = document.getElementById('dropoff');
-  const locations = await db.ref('locations').once('value');
-  locations.forEach(loc => {
-    const option1 = document.createElement('option');
-    option1.textContent = loc.val().name;
-    option1.value = loc.val().name;
-    pickup.appendChild(option1);
-
-    const option2 = document.createElement('option');
-    option2.textContent = loc.val().name;
-    option2.value = loc.val().name;
-    dropoff.appendChild(option2);
-  });
-}
-
-async function searchSlots() {
-  const pickup = document.getElementById('pickup').value;
-  const dropoff = document.getElementById('dropoff').value;
-  const date = document.getElementById('date').value;
   const slotsDiv = document.getElementById('slots');
-  slotsDiv.innerHTML = '';
 
-  const slots = await db.ref('availableslots').once('value');
+  function loadLocations() {
+    firebase.database().ref('locations').once('value').then(snapshot => {
+      snapshot.forEach(child => {
+        const option1 = document.createElement('option');
+        option1.value = option1.textContent = child.val().name;
+        pickup.appendChild(option1);
 
-  slots.forEach(userSlot => {
-    userSlot.forEach(slot => {
-      const data = slot.val();
-      if (data.pickup === pickup && data.dropoff === dropoff && data.date === date) {
-        const slotCard = document.createElement('div');
-        slotCard.className = 'card card-glass p-3 mt-3';
-        slotCard.innerHTML = `
-          <h5 class="text-white">Time: ${data.time}</h5>
-          <h6 class="text-white">Seats Available: ${data.seats}</h6>
-          <button onclick="bookSlot('${userSlot.key}', '${slot.key}')" class="btn btn-light w-100 mt-2">Book This Slot</button>
-        `;
-        slotsDiv.appendChild(slotCard);
+        const option2 = document.createElement('option');
+        option2.value = option2.textContent = child.val().name;
+        dropoff.appendChild(option2);
+      });
+    });
+  }
+
+  function searchSlots() {
+    slotsDiv.innerHTML = "";
+    const selectedPickup = pickup.value;
+    const selectedDropoff = dropoff.value;
+    const selectedDate = document.getElementById('date').value;
+
+    firebase.database().ref('availableslots').once('value').then(snapshot => {
+      let slots = [];
+      snapshot.forEach(driverSnap => {
+        driverSnap.forEach(slotSnap => {
+          slots.push({ driverId: driverSnap.key, key: slotSnap.key, ...slotSnap.val() });
+        });
+      });
+
+      let matched = slots.filter(slot => slot.pickup === selectedPickup && slot.dropoff === selectedDropoff && slot.date === selectedDate);
+
+      if (matched.length === 0) {
+        let relaxed = slots.filter(slot => slot.dropoff === selectedDropoff && slot.date === selectedDate);
+        if (relaxed.length > 0) showSlots(relaxed, true);
+        else slotsDiv.innerHTML = `<div class='no-slots'>No slots found.</div>`;
+      } else {
+        showSlots(matched, false);
       }
     });
-  });
-}
+  }
 
-async function bookSlot(driverId, slotId) {
-  const slotSnapshot = await db.ref(`availableslots/${driverId}/${slotId}`).get();
-  const slotData = slotSnapshot.val();
+  function showSlots(slots, relaxed) {
+    slots.forEach(slot => {
+      const card = document.createElement('div');
+      card.className = 'slot-card';
+      card.innerHTML = `
+        <strong>Pickup:</strong> ${slot.pickup}<br>
+        <strong>Dropoff:</strong> ${slot.dropoff}<br>
+        <strong>Date:</strong> ${slot.date}<br>
+        <strong>Time:</strong> ${slot.time}<br>
+        <strong>Seats Available:</strong> ${slot.seats}<br>
+        <button onclick="bookSlot('${slot.driverId}', '${slot.key}')">Book Now</button>
+      `;
+      slotsDiv.appendChild(card);
+    });
+  }
 
-  const driverSnapshot = await db.ref('drivers/' + driverId).get();
-  const driverData = driverSnapshot.val();
+  function bookSlot(driverId, slotKey) {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      alert("Please login first.");
+      return;
+    }
+    const bookingData = {
+      driverId,
+      slotKey,
+      userId: user.uid,
+      status: "Pending",
+      bookedAt: new Date().toISOString()
+    };
+    firebase.database().ref(`bookings/${user.uid}`).push(bookingData)
+      .then(() => alert("Booking Successful!"))
+      .catch(error => alert("Booking Failed: " + error.message));
+  }
 
-  const bookingData = {
-    customerId: auth.currentUser.uid,
-    customerDetails: userData,
-    driverId: driverId,
-    driverDetails: driverData || {},
-    slotDetails: slotData,
-    status: "Booked",
-    timestamp: new Date().toISOString()
-  };
-
-  const newBookingKey = db.ref('bookings').push().key;
-  await db.ref('bookings/' + newBookingKey).set(bookingData);
-
-  alert("Booking Confirmed!");
-  window.location.href = "mybookings.html";
-}
+  loadLocations();
 </script>
 
 </body>
