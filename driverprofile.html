@@ -1,205 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Driver Profile</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
-    /* Global Styles */
     body {
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
-      padding: 0;
-      background: linear-gradient(to right, #8e2de2, #4a00e0);
-      color: white;
-      min-height: 100vh;
-      padding-bottom: 80px;
+      background-color: #f9f9f9;
+      color: #333;
     }
-
-    .container {
-      padding: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      font-size: 24px;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .profile-card {
-      background: rgba(255,255,255,0.1);
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-    }
-
-    .profile-card p {
-      margin: 10px 0;
-    }
-
-    label {
-      display: block;
-      margin-top: 15px;
-    }
-
-    input[type="text"], input[type="email"], input[type="number"] {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      margin-top: 5px;
-      font-size: 16px;
-    }
-
-    button {
-      margin-top: 20px;
-      padding: 12px;
-      width: 100%;
-      background: #ffd700;
-      color: black;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    /* Navbar Styles */
     .navbar {
+      display: flex;
+      justify-content: space-around;
+      background-color: #007bff;
+      padding: 10px 0;
       position: fixed;
       bottom: 0;
       width: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(10px);
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 12px 0;
-      z-index: 999;
+      z-index: 1000;
     }
-
     .navbar a {
-      color: #fff;
+      color: white;
       text-decoration: none;
       font-size: 14px;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
-
-    .navbar a i {
-      font-size: 20px;
-      margin-bottom: 5px;
+    .navbar i {
+      font-size: 18px;
+      margin-bottom: 3px;
     }
-
-    @media (max-width: 768px) {
-      .container {
-        padding: 15px;
-      }
+    .container {
+      padding: 20px;
+      padding-bottom: 80px;
+      max-width: 500px;
+      margin: auto;
+    }
+    h2 {
+      text-align: center;
+      color: #007bff;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      font-weight: 500;
+      margin-bottom: 5px;
+      display: block;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
     }
   </style>
-  <!-- Font Awesome for icons -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body>
 
-  <!-- Container for Profile -->
-  <div class="container">
-    <h1>Driver Profile</h1>
-    
-    <!-- Profile Card -->
-    <div class="profile-card">
-      <h2>Your Information</h2>
-      <p><strong>Name:</strong> <span id="driver-name">Loading...</span></p>
-      <p><strong>Email:</strong> <span id="driver-email">Loading...</span></p>
-      <p><strong>Phone:</strong> <span id="driver-phone">Loading...</span></p>
-      <p><strong>License Number:</strong> <span id="driver-license">Loading...</span></p>
-      <p><strong>Vehicle ID:</strong> <span id="driver-vehicle-id">Loading...</span></p>
-
-      <!-- Button to Edit Profile (will be activated once data is loaded) -->
-      <button id="edit-btn">Edit Profile</button>
-    </div>
+<div class="container">
+  <h2>Driver Profile</h2>
+  <div class="form-group">
+    <label>Name</label>
+    <input type="text" id="name" />
   </div>
-
-  <!-- Navbar -->
-  <div class="navbar">
-    <a href="driverdashboard.html"><i class="fas fa-home"></i>Home</a>
-    <a href="drivermybookings.html"><i class="fas fa-list"></i>My Bookings</a>
-    <a href="slots.html"><i class="fas fa-calendar"></i>Slots</a>
-    <a href="mycars.html"><i class="fas fa-car"></i>My Cars</a>
-    <a href="driverprofile.html"><i class="fas fa-user"></i>Profile</a>
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" id="email" disabled />
   </div>
+  <div class="form-group">
+    <label>Phone</label>
+    <input type="text" id="phone" />
+  </div>
+  <div class="form-group">
+    <label>Address</label>
+    <input type="text" id="address" />
+  </div>
+  <div class="form-group">
+    <label>About</label>
+    <textarea id="about"></textarea>
+  </div>
+  <button onclick="saveProfile()">Save Changes</button>
+</div>
 
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+<div class="navbar">
+  <a href="driverdashboard.html"><i class="fas fa-home"></i>Home</a>
+  <a href="drivermybookings.html"><i class="fas fa-list"></i>Bookings</a>
+  <a href="driverslots.html"><i class="fas fa-calendar-alt"></i>Slots</a>
+  <a href="drivercars.html"><i class="fas fa-car"></i>Cars</a>
+  <a href="driverprofile.html"><i class="fas fa-user"></i>Profile</a>
+</div>
 
-    // Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.firebasestorage.app",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth();
+
+  let driverId = null;
+
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      driverId = user.uid;
+      const profileRef = ref(db, "driverdetails/" + driverId);
+      get(profileRef).then(snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          document.getElementById("name").value = data.name || "";
+          document.getElementById("email").value = data.email || "";
+          document.getElementById("phone").value = data.phone || "";
+          document.getElementById("address").value = data.address || "";
+          document.getElementById("about").value = data.about || "";
+        }
+      });
+    } else {
+      alert("You are not logged in!");
+      window.location.href = "login.html";
+    }
+  });
+
+  window.saveProfile = function() {
+    if (!driverId) return;
+
+    const data = {
+      name: document.getElementById("name").value,
+      phone: document.getElementById("phone").value,
+      address: document.getElementById("address").value,
+      about: document.getElementById("about").value,
+      email: document.getElementById("email").value,
+      driverId: driverId,
+      updatedAt: new Date().toISOString()
     };
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-
-    // Fetch Driver Profile Info from Firebase
-    const driverId = "driver123";  // Replace with dynamic driver ID or get from authentication
-    const driverRef = ref(database, 'driverdetails/' + driverId);
-    
-    // Fetch driver details from Firebase
-    get(driverRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        const driverData = snapshot.val();
-        document.getElementById('driver-name').textContent = driverData.name;
-        document.getElementById('driver-email').textContent = driverData.email;
-        document.getElementById('driver-phone').textContent = driverData.phone;
-        document.getElementById('driver-license').textContent = driverData.license;
-        document.getElementById('driver-vehicle-id').textContent = driverData.vehicleId;
-      } else {
-        console.log("No data available");
-      }
-    }).catch((error) => {
-      console.error(error);
-    });
-
-    // Edit profile button functionality
-    document.getElementById('edit-btn').addEventListener('click', () => {
-      const newName = prompt("Enter your new name:");
-      const newEmail = prompt("Enter your new email:");
-      const newPhone = prompt("Enter your new phone number:");
-      const newLicense = prompt("Enter your new license number:");
-
-      // Update driver details in Firebase
-      if (newName && newEmail && newPhone && newLicense) {
-        set(ref(database, 'driverdetails/' + driverId), {
-          name: newName,
-          email: newEmail,
-          phone: newPhone,
-          license: newLicense,
-          vehicleId: "XYZ-5678"  // Update the vehicle ID if necessary
-        }).then(() => {
-          alert("Profile updated successfully!");
-          // Reload the page or update the UI with new details
-          window.location.reload();
-        }).catch((error) => {
-          alert("Error updating profile: " + error.message);
-        });
-      } else {
-        alert("All fields are required!");
-      }
-    });
-
-  </script>
+    set(ref(db, "driverdetails/" + driverId), data)
+      .then(() => alert("Profile updated successfully!"))
+      .catch(err => alert("Error updating profile: " + err.message));
+  };
+</script>
 
 </body>
 </html>
