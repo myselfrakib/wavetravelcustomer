@@ -13,7 +13,7 @@
     h1 { text-align: center; color: #fff; margin-bottom: 20px; }
     .form-group { margin-bottom: 15px; }
     label { color: #333; font-weight: 600; }
-    select, input[type="date"], input[type="time"], button {
+    select, input[type="date"], input[type="time"], input[type="number"], button {
       width: 100%; padding: 12px; border-radius: 10px; border: none; margin-top: 5px;
       background: #f8f8f8; box-shadow: 0 4px 10px rgba(0,0,0,0.1); outline: none;
     }
@@ -49,6 +49,11 @@
   <div class="form-group">
     <label for="date">Select Date</label>
     <input type="date" id="date">
+  </div>
+
+  <div class="form-group">
+    <label for="seats">Seats Needed</label>
+    <input type="number" id="seats" min="1" placeholder="Enter number of seats">
   </div>
 
   <button onclick="searchSlots()">Search Available Slots</button>
@@ -134,27 +139,49 @@
         <strong>Date:</strong> ${slot.date}<br>
         <strong>Time:</strong> ${slot.time}<br>
         <strong>Seats Available:</strong> ${slot.seats}<br>
-        <button onclick="bookSlot('${slot.driverId}', '${slot.key}')">Book Now</button>
+        <button onclick="bookSlot('${slot.driverId}', '${slot.key}', ${slot.seats})">Book Now</button>
       `;
       slotsDiv.appendChild(card);
     });
   }
 
-  function bookSlot(driverId, slotKey) {
+  function bookSlot(driverId, slotKey, availableSeats) {
     const user = firebase.auth().currentUser;
     if (!user) {
       alert("Please login first.");
       return;
     }
+    const seatsRequested = parseInt(document.getElementById('seats').value);
+    if (!seatsRequested || seatsRequested <= 0) {
+      alert("Please enter a valid number of seats.");
+      return;
+    }
+    if (seatsRequested > availableSeats) {
+      alert("Not enough seats available.");
+      return;
+    }
+
     const bookingData = {
       driverId,
       slotKey,
       userId: user.uid,
+      seatsBooked: seatsRequested,
       status: "Pending",
       bookedAt: new Date().toISOString()
     };
+
+    // Save booking
     firebase.database().ref(`bookings/${user.uid}`).push(bookingData)
-      .then(() => alert("Booking Successful!"))
+      .then(() => {
+        // Update seat count
+        const slotRef = firebase.database().ref(`availableslots/${driverId}/${slotKey}`);
+        slotRef.update({ seats: availableSeats - seatsRequested })
+          .then(() => {
+            alert("Booking Successful!");
+            searchSlots(); // Refresh slots
+          })
+          .catch(error => alert("Failed to update seats: " + error.message));
+      })
       .catch(error => alert("Booking Failed: " + error.message));
   }
 
