@@ -203,7 +203,8 @@ function bookSlot(slotKey, driverId, seatsRequested) {
       slotRef.update({ seats: parseInt(slot.seats) - seatsRequested });
       db.ref(`users/${currentUserId}`).once('value', userSnap => {
         db.ref(`users/${driverId}`).once('value', driverSnap => {
-          db.ref('bookings').push({
+           const bookingRef = firebase.database().ref('/bookings').push();
+            bookingRef.set(bookingData);
             customerId: currentUserId,
             customerName: userSnap.val().name || "",
             customerPhone: userSnap.val().phone || "",
