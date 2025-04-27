@@ -1,186 +1,257 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WaveTravel - My Profile</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Profile - WaveTravel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
+    /* Base Styling */
+    html { font-size: 16px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
     body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #8e2de2, #4a00e0);
-      color: white;
-    }
-
-    header {
+      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      min-height: 100vh;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px 25px;
-      background-color: rgba(0, 0, 0, 0.3);
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 24px;
-    }
-
-    .logout-btn {
-      background-color: #ff6ec4;
-      border: none;
-      padding: 10px 18px;
-      color: white;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
+      flex-direction: column;
+      justify-content: flex-start;
     }
 
     .container {
-      max-width: 500px;
-      margin: 60px auto;
-      background-color: rgba(0, 0, 0, 0.4);
-      padding: 30px;
-      border-radius: 15px;
+      padding: 3rem 2rem;
+      flex: 1;
+      max-width: 1000px;
+      margin: auto;
     }
 
-    .container h2 {
+    h1 {
       text-align: center;
-      margin-bottom: 20px;
+      font-size: 2.5rem;
+      margin-bottom: 2.5rem;
+      color: #fff;
+      font-weight: 600;
     }
 
-    .profile-field {
-      margin-bottom: 15px;
+    /* Profile Card */
+    .profile-card {
+      background-color: #fff;
+      border-radius: 1.5rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      max-width: 900px;
+      margin: auto;
+      position: relative;
     }
 
-    .profile-field label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 5px;
+    .profile-card h3 {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #0077ff;
+      margin-bottom: 1.5rem;
     }
 
-    .profile-field input {
-      width: 100%;
-      padding: 10px;
+    .profile-card p {
+      font-size: 1.2rem;
+      color: #444;
+      margin-bottom: 1.2rem;
+    }
+
+    .profile-card .input-field {
+      padding: 1rem;
+      font-size: 1.1rem;
+      border-radius: 1.2rem;
+      border: 1px solid #ccc;
+      transition: all 0.3s ease;
+    }
+
+    .profile-card .input-field:focus {
+      outline: none;
+      border-color: #0077ff;
+    }
+
+    .profile-card button {
+      padding: 1.2rem 3rem;
+      font-size: 1.3rem;
+      background-color: #0077ff;
+      color: #fff;
+      border-radius: 2rem;
       border: none;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-
-    .update-btn {
-      width: 100%;
-      padding: 12px;
-      background-color: #00c9ff;
-      border: none;
-      color: white;
-      font-weight: bold;
-      font-size: 16px;
-      border-radius: 8px;
       cursor: pointer;
-      margin-top: 15px;
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+    }
+
+    .profile-card button:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+    }
+
+    /* Emergency Contact Styling */
+    .emergency-contact {
+      background-color: #f9f9f9;
+      border-radius: 1.2rem;
+      padding: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .emergency-contact p {
+      font-size: 1.1rem;
+      color: #555;
+    }
+
+    .emergency-contact strong {
+      font-weight: 600;
+      color: #0077ff;
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #0077ff;
+      border-radius: 50%;
+      animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Bottom Navbar Styles */
+    .navbar {
+      background: #333;
+      color: #fff;
+      padding: 1rem 0;
+      display: flex;
+      justify-content: space-evenly;
+      align-items: center;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      border-top-left-radius: 2rem;
+      border-top-right-radius: 2rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .navbar a {
+      text-decoration: none;
+      color: #fff;
+      font-size: 1.2rem;
+      text-align: center;
+      transition: color 0.3s ease;
+    }
+
+    .navbar i {
+      font-size: 1.6rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .navbar a:hover {
+      color: #ff7f50;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .profile-card {
+        padding: 2rem;
+      }
+
+      .profile-card .input-field {
+        font-size: 1rem;
+        padding: 0.8rem;
+      }
+
+      .navbar {
+        flex-direction: row;
+        justify-content: space-evenly;
+        padding: 1rem 0;
+      }
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>My Profile</h1>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </header>
+<!-- Main Content -->
+<div class="container">
+  <h1>Customer Profile</h1>
 
-  <div class="container">
-    <h2>WaveTravel User Details</h2>
+  <!-- Loading Spinner -->
+  <div id="spinner" class="spinner"></div>
 
-    <div class="profile-field">
-      <label>Name</label>
-      <input type="text" id="name" />
+  <!-- Profile Card -->
+  <div class="profile-card" id="profile-card" style="display:none;">
+    <h3>Profile Information</h3>
+    <p><strong>Name:</strong> <span id="customer-name">Loading...</span></p>
+    <p><strong>Email:</strong> <span id="customer-email">Loading...</span></p>
+
+    <div class="emergency-contact">
+      <h3>Emergency Contact</h3>
+      <p><strong>Emergency Contact Number:</strong> <span id="emergency-contact">Not Set</span></p>
     </div>
 
-    <div class="profile-field">
-      <label>Email</label>
-      <input type="email" id="email" />
-    </div>
-
-    <div class="profile-field">
-      <label>Phone</label>
-      <input type="text" id="phone" readonly />
-    </div>
-
-    <button class="update-btn" onclick="updateProfile()">Update Profile</button>
+    <h3>Update Your Profile</h3>
+    <input type="text" class="input-field" id="new-name" placeholder="Enter your name">
+    <input type="email" class="input-field" id="new-email" placeholder="Enter your email">
+    <input type="text" class="input-field" id="new-emergency-contact" placeholder="Enter emergency contact number">
+    <button class="btn-update" onclick="updateProfile()">Update Profile</button>
   </div>
+</div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<!-- Bottom Navbar -->
+<div class="navbar">
+  <a href="home.html"><i class="fas fa-home"></i><br>Home</a>
+  <a href="book.html"><i class="fas fa-car"></i><br>Book</a>
+  <a href="mybookings.html"><i class="fas fa-calendar-check"></i><br>Bookings</a>
+  <a href="profile.html"><i class="fas fa-user"></i><br>Profile</a>
+</div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
-    firebase.initializeApp(firebaseConfig);
+<!-- Firebase Script -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script>
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.firebasestorage.app",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+  firebase.initializeApp(firebaseConfig);
 
-    const phone = localStorage.getItem("userPhone");
-    let userKey = null;
-
-    if (!phone) {
-      alert("Please login first.");
-      window.location.href = "index.html";
+  // Check if the user is logged in
+  firebase.auth().onAuthStateChanged(user => {
+    if (!user) {
+      window.location.href = "index.html"; // Redirect to login page if not logged in
+    } else {
+      // Load customer profile
+      loadCustomerProfile(user.uid);
     }
+  });
 
-    firebase.database().ref("users").orderByChild("phone").equalTo(phone).once("value")
-      .then(snapshot => {
-        if (snapshot.exists()) {
-          const userData = Object.values(snapshot.val())[0];
-          userKey = Object.keys(snapshot.val())[0];
-
-          document.getElementById("name").value = userData.name || '';
-          document.getElementById("email").value = userData.email || '';
-          document.getElementById("phone").value = userData.phone || '';
-        } else {
-          alert("User not found.");
-        }
-      });
-
-    function updateProfile() {
-      const updatedName = document.getElementById("name").value.trim();
-      const updatedEmail = document.getElementById("email").value.trim();
-
-      if (!updatedName || !updatedEmail) {
-        alert("Name and email cannot be empty.");
-        return;
-      }
-
-      if (!userKey) {
-        alert("User record not found.");
-        return;
-      }
-
-      firebase.database().ref("users/" + userKey).update({
-        name: updatedName,
-        email: updatedEmail
-      })
-      .then(() => {
-        alert("Profile updated successfully!");
-      })
-      .catch(err => {
-        alert("Error updating profile: " + err.message);
-      });
-    }
-
-    function logout() {
-      firebase.auth().signOut().then(() => {
-        localStorage.removeItem("userPhone");
-        window.location.href = "index.html";
-      }).catch(err => {
-        alert("Error logging out: " + err.message);
-      });
-    }
-  </script>
-</body>
-</html>
+  // Fetch customer's profile information
+  function loadCustomerProfile(userId) {
+    firebase.database().ref('users/' + userId).once('value')
+    .then(snapshot => {
+      const userName = snapshot.val().name;
+      const userEmail = snapshot.val().email;
+      const emergencyContact = snapshot.val().emergencyContact || "Not Set";
+      
