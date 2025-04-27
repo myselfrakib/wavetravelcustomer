@@ -7,114 +7,34 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    /* Mobile-first base */
-    html { font-size: 16px; }
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
-    body {
-      background: linear-gradient(to right,#74ebd5,#ACB6E5);
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
+    body { background:linear-gradient(to right,#74ebd5,#ACB6E5); min-height:100vh; display:flex; flex-direction:column; }
+    .container { flex:1; padding:20px; }
+    h1 { text-align:center; color:#fff; margin-bottom:20px; }
+    .form-group { margin-bottom:15px; }
+    label { color:#333; font-weight:600; }
+    select,input,button {
+      width:100%; padding:12px; margin-top:5px; border:none; border-radius:10px;
+      background:#f8f8f8; box-shadow:0 4px 10px rgba(0,0,0,0.1); outline:none;
     }
-    .container {
-      width:100%;
-      max-width:600px;
-      margin:0 auto;
-      padding:1rem;
-    }
-    h1 {
-      text-align:center;
-      color:#fff;
-      margin-bottom:1.25rem;
-      font-size:1.75rem;
-    }
-    .form-group {
-      margin-bottom:1rem;
-    }
-    label {
-      display:block;
-      font-weight:600;
-      font-size:1rem;
-      margin-bottom:0.5rem;
-      color:#333;
-    }
-    select, input, button {
-      width:100%;
-      padding:0.75rem;
-      border:none;
-      border-radius:0.625rem;
-      background:#f8f8f8;
-      box-shadow:0 0.25rem 0.625rem rgba(0,0,0,0.1);
-      font-size:1rem;
-      outline:none;
-    }
-    button {
-      background:#0077ff;
-      color:#fff;
-      font-weight:bold;
-      cursor:pointer;
-      transition:background 0.3s;
-      min-height:2.75rem;
-    }
-    button:hover {
-      background:#005dc1;
-    }
-    button:disabled, button[disabled] {
-      background:#ccc;
-      cursor:not-allowed;
-    }
-    .slots {
-      margin-top:1.25rem;
-      display:grid;
-      gap:1rem;
-      grid-template-columns:1fr;
-    }
+    button { background:#0077ff; color:#fff; font-weight:bold; cursor:pointer; transition:0.3s; }
+    button:hover { background:#005dc1; }
+    .slots { margin-top:20px; display:grid; gap:15px; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); }
     .slot-card {
-      background:#fff;
-      padding:1rem;
-      border-radius:1rem;
-      box-shadow:0 0.3125rem 0.9375rem rgba(0,0,0,0.2);
-      transition:transform 0.3s;
+      background:#fff; padding:15px; border-radius:15px;
+      box-shadow:0 5px 15px rgba(0,0,0,0.2); transition:transform 0.3s;
     }
-    .slot-card:hover {
-      transform:scale(1.03);
-    }
+    .slot-card:hover { transform:scale(1.03); }
     .navbar {
-      background:#fff;
-      padding:0.75rem 0;
-      display:flex;
-      justify-content:space-around;
-      border-top-left-radius:1.25rem;
-      border-top-right-radius:1.25rem;
-      box-shadow:0 -0.1875rem 0.625rem rgba(0,0,0,0.1);
+      background:#fff; padding:10px; display:flex; justify-content:space-around;
+      border-top-left-radius:20px; border-top-right-radius:20px;
+      box-shadow:0 -3px 10px rgba(0,0,0,0.1);
     }
-    .navbar a {
-      color:#0077ff;
-      text-decoration:none;
-      font-size:0.875rem;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-    }
-    .navbar a i {
-      font-size:1.25rem;
-      margin-bottom:0.25rem;
-    }
+    .navbar a { color:#0077ff; text-decoration:none; font-size:14px; display:flex; flex-direction:column; align-items:center; }
+    .navbar a i { font-size:20px; }
     .no-slots {
-      text-align:center;
-      margin-top:1.25rem;
-      background:#fff;
-      padding:1rem;
-      border-radius:0.625rem;
-      box-shadow:0 0.25rem 0.625rem rgba(0,0,0,0.2);
-      font-size:1rem;
-    }
-
-    /* Larger screens: show multiple columns */
-    @media(min-width:600px) {
-      .slots {
-        grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));
-      }
+      text-align:center; margin-top:20px; background:#fff; padding:20px;
+      border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.2);
     }
   </style>
 </head>
@@ -189,7 +109,142 @@
     });
   }
 
-  // rest of JS remains unchanged...
+  // --- SEARCH SLOTS ---
+  function searchSlots(){
+    slotsDiv.innerHTML = '';
+    const pu  = pickupEl.value;
+    const dof = dropoffEl.value;
+    const dt  = document.getElementById('date').value;
+    const req = parseInt(seatsEl.value) || 1;
+
+    if(!pu||!dof||!dt) return alert('Select pickup, dropoff & date');
+
+    firebase.database().ref('availableslots').once('value').then(snap=>{
+      let allSlots = [];
+      snap.forEach(driverSnap=>{
+        driverSnap.forEach(slotSnap=>{
+          allSlots.push({
+            driverId: driverSnap.key,
+            slotKey: slotSnap.key,
+            ...slotSnap.val()
+          });
+        });
+      });
+
+      // strict filter
+      let matched = allSlots.filter(s=>s.pickup===pu && s.dropoff===dof && s.date===dt);
+      if(!matched.length){
+        matched = allSlots.filter(s=>s.dropoff===dof && s.date===dt);
+      }
+      if(!matched.length){
+        slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
+        return;
+      }
+      renderSlots(matched, req);
+    });
+  }
+
+  // --- RENDER SLOT CARDS WITH FARE MULTIPLIED ---
+  function renderSlots(slots, reqSeats){
+    slotsDiv.innerHTML = '';
+    slots.forEach(slot=>{
+      if(slot.seats < reqSeats) return; // skip not enough
+
+      // fare per seat = |idx1-idx2|×15×5
+      const idx1 = locationsArr.indexOf(slot.pickup);
+      const idx2 = locationsArr.indexOf(slot.dropoff);
+      const farePerSeat = Math.abs(idx1 - idx2)*1*1;
+      const totalFare   = farePerSeat * reqSeats;
+
+      const btnText = `Book ${reqSeats} for ₹${totalFare}`;
+      const card = document.createElement('div');
+      card.className = 'slot-card';
+      card.innerHTML = `
+        <strong>Pickup:</strong> ${slot.pickup}<br>
+        <strong>Dropoff:</strong> ${slot.dropoff}<br>
+        <strong>Date:</strong> ${slot.date}<br>
+        <strong>Time:</strong> ${slot.time}<br>
+        <strong>Seats Avail:</strong> ${slot.seats}<br>
+        <button onclick="payAndBook(
+          '${slot.driverId}',
+          '${slot.slotKey}',
+          ${slot.seats},
+          ${reqSeats},
+          ${totalFare}
+        )">${btnText}</button>
+      `;
+      slotsDiv.appendChild(card);
+    });
+  }
+
+  // --- PAYMENT & BOOKING ---
+  function payAndBook(driverId, slotKey, avail, reqSeats, fare){
+    const user = firebase.auth().currentUser;
+    if(!user) return alert('Please login first');
+
+    const options = {
+      key: 'rzp_test_yNvRZcnljCWfgr',
+      amount: fare*100,
+      currency: 'INR',
+      name: 'WaveTravel',
+      description: 'Ride Booking',
+      handler: function(res){
+        // update seats
+        firebase.database()
+          .ref(`availableslots/${driverId}/${slotKey}`)
+          .update({ seats: avail - reqSeats });
+
+        // fetch driver & car
+        firebase.database().ref(`driverdetails/${driverId}`)
+          .once('value').then(dsnap=>{
+            const drv = dsnap.val();
+            firebase.database()
+              .ref(`availableslots/${driverId}/${slotKey}/carId`)
+              .once('value').then(csnap=>{
+                const carId = csnap.val();
+                firebase.database().ref(`approvedcars/${driverId}/${carId}`)
+                  .once('value').then(c2snap=>{
+                    const car = c2snap.val();
+                    // booking record
+                    const b = {
+                      customerId: user.uid,
+                      customerName: user.displayName||'',
+                      customerPhone: user.phoneNumber||'',
+                      driverId,
+                      driverName: drv.name,
+                      driverPhone:drv.phone,
+                      carReg: car.carReg,
+                      carBrand:car.carbrand,
+                      pickup: pickupEl.value,
+                      dropoff:dropoffEl.value,
+                      date:document.getElementById('date').value,
+                      time:slot.time,
+                      seatsBooked:reqSeats,
+                      fare,
+                      paymentId:res.razorpay_payment_id,
+                      status:'confirmed',
+                      bookedAt:new Date().toISOString()
+                    };
+                    firebase.database()
+                      .ref(`bookings/${user.uid}`).push(b)
+                      .then(()=>{
+                        alert('Booking Confirmed!');
+                        pickupEl.selectedIndex=0;
+                        dropoffEl.selectedIndex=0;
+                        document.getElementById('date').value='';
+                        seatsEl.value='';
+                        slotsDiv.innerHTML='';
+                        window.location='mybookings.html';
+                      });
+                  });
+              });
+          });
+      }
+    };
+    new Razorpay(options).open();
+  }
+
+  // start
   loadLocations();
 </script>
 </body>
