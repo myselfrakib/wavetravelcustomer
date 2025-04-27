@@ -198,6 +198,7 @@
     <h3>Profile Information</h3>
     <p><strong>Name:</strong> <span id="customer-name">Loading...</span></p>
     <p><strong>Email:</strong> <span id="customer-email">Loading...</span></p>
+    <p><strong>Phone:</strong> <span id="customer-phone">Loading...</span></p>
 
     <div class="emergency-contact">
       <h3>Emergency Contact</h3>
@@ -253,5 +254,50 @@
     .then(snapshot => {
       const userName = snapshot.val().name;
       const userEmail = snapshot.val().email;
+      const userPhone = snapshot.val().phone;
       const emergencyContact = snapshot.val().emergencyContact || "Not Set";
       
+      // Update the UI with fetched data
+      document.getElementById('customer-name').innerText = userName;
+      document.getElementById('customer-email').innerText = userEmail;
+      document.getElementById('customer-phone').innerText = userPhone;
+      document.getElementById('emergency-contact').innerText = emergencyContact;
+      
+      // Hide the loading spinner and show profile card
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('profile-card').style.display = 'block';
+    })
+    .catch(error => {
+      console.error("Error fetching profile data:", error);
+      alert("There was an error loading your profile data.");
+    });
+  }
+
+  // Update customer profile data
+  function updateProfile() {
+    const newName = document.getElementById('new-name').value;
+    const newEmail = document.getElementById('new-email').value;
+    const newEmergencyContact = document.getElementById('new-emergency-contact').value;
+
+    const user = firebase.auth().currentUser;
+    if (user) {
+      const userId = user.uid;
+      firebase.database().ref('users/' + userId).update({
+        name: newName || user.displayName,
+        email: newEmail || user.email,
+        emergencyContact: newEmergencyContact || "Not Set"
+      })
+      .then(() => {
+        alert("Profile updated successfully!");
+        loadCustomerProfile(userId); // Reload the profile with updated data
+      })
+      .catch(error => {
+        console.error("Error updating profile:", error);
+        alert("There was an error updating your profile.");
+      });
+    }
+  }
+</script>
+
+</body>
+</html>
