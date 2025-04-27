@@ -1,182 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Customer Dashboard - WaveTravel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Premium Customer Dashboard - WaveTravel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    /* Mobile-first base */
+    /* Base Styling */
     html { font-size: 16px; }
-    * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
     body {
-      background: linear-gradient(to right,#74ebd5,#ACB6E5);
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-    }
-    .container {
-      width:100%;
-      max-width:600px;
-      margin:0 auto;
-      padding:1rem;
-    }
-    h1 {
-      text-align:center;
-      color:#fff;
-      margin-bottom:1.25rem;
-      font-size:1.75rem;
-    }
-    .greeting {
-      font-size: 1.25rem;
-      margin-bottom: 2rem;
-      color: #fff;
-      text-align: center;
-    }
-    .spinner {
-      display: none;
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top: 4px solid #0077ff;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .card {
-      background: #fff;
-      padding: 1rem;
-      border-radius: 1rem;
-      box-shadow: 0 0.3125rem 0.9375rem rgba(0,0,0,0.2);
-      margin-bottom: 1rem;
-    }
-    .card h3 {
-      font-size: 1.25rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    /* Bottom Navbar */
-    .bottom-navbar {
-      background-color: #fff;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      padding: 0.75rem 0;
-      display: flex;
-      justify-content: space-around;
-      border-top-left-radius: 1.25rem;
-      border-top-right-radius: 1.25rem;
-      box-shadow: 0 -0.1875rem 0.625rem rgba(0,0,0,0.1);
-    }
-    .bottom-navbar a {
-      color: #0077ff;
-      text-decoration: none;
-      font-size: 1rem;
+      background: linear-gradient(to right, #74ebd5, #ACB6E5);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .container {
+      padding: 2rem 1rem;
+      flex: 1;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      color: #fff;
+    }
+
+    .premium-card {
+      background-color: #fff;
+      border-radius: 1.5rem;
+      box-shadow: 0 0 1rem rgba(0, 0, 0, 0.2);
+      margin: 1rem 0;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
       align-items: center;
     }
-    .bottom-navbar a i {
-      font-size: 1.25rem;
-      margin-bottom: 0.25rem;
+
+    .premium-card h3 {
+      font-size: 1.2rem;
+      font-weight: 500;
+    }
+
+    .premium-card p {
+      font-size: 1rem;
+      color: #555;
+    }
+
+    .spinner {
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    /* Navbar Styles */
+    .navbar {
+      background: #333;
+      color: #fff;
+      padding: 1rem 0;
+      display: flex;
+      justify-content: space-around;  /* Align items side by side */
+      align-items: center;
+      border-top-left-radius: 1.5rem;
+      border-top-right-radius: 1.5rem;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar a {
+      text-decoration: none;
+      color: #fff;
+      font-size: 1.2rem;
+      text-align: center;
+    }
+
+    .navbar i {
+      font-size: 1.6rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .navbar a:hover {
+      color: #ff7f50;
+      transition: color 0.3s ease;
+    }
+
+    /* Media Queries */
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .premium-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .navbar {
+        flex-direction: row;
+        justify-content: space-evenly;
+        padding: 1rem 0;
+      }
     }
   </style>
 </head>
 <body>
 
-<!-- Greeting and Loading Spinner -->
+<!-- Main Content -->
 <div class="container">
-  <h1>Customer Dashboard</h1>
+  <h1>Welcome, Customer!</h1>
 
-  <div class="greeting">
-    Hello, <span id="username">Loading...</span>
+  <!-- Display upcoming bookings or "Book Now" prompt -->
+  <div class="premium-card">
+    <div>
+      <h3>Your Upcoming Booking</h3>
+      <p id="no-booking-msg">No upcoming bookings. Book your next ride now!</p>
+    </div>
+    <button style="padding: 1rem; background-color: #0077ff; color: #fff; border-radius: 1rem; border: none;" onclick="window.location.href='book.html'">Book Now</button>
   </div>
 
-  <div class="spinner" id="spinner"></div>
-
-  <div id="bookings"></div>
+  <!-- Spinner when data is loading -->
+  <div class="spinner" id="spinner" style="display: none;">
+    <img src="taxi-spinner.gif" alt="loading..." />
+  </div>
 </div>
 
-<!-- Bottom Navbar (Same as Booking Page) -->
-<div class="bottom-navbar">
-  <a href="home.html"><i class="fas fa-home"></i><span>Home</span></a>
-  <a href="book.html"><i class="fas fa-car"></i><span>Book</span></a>
-  <a href="mybookings.html"><i class="fas fa-calendar-check"></i><span>Bookings</span></a>
-  <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
+<!-- Bottom Navbar -->
+<div class="navbar">
+  <a href="home.html"><i class="fas fa-home"></i><br>Home</a>
+  <a href="book.html"><i class="fas fa-car"></i><br>Book</a>
+  <a href="mybookings.html"><i class="fas fa-calendar-check"></i><br>Bookings</a>
+  <a href="profile.html"><i class="fas fa-user"></i><br>Profile</a>
 </div>
 
-<!-- Firebase -->
+<!-- Firebase Script -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-
 <script>
-  // Initialize Firebase
+  // Firebase configuration using the details you provided
   const firebaseConfig = {
     apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
     authDomain: "wavetravel-3c4c4.firebaseapp.com",
     databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
     projectId: "wavetravel-3c4c4",
-    storageBucket: "wavetravel-3c4c4.appspot.com",
+    storageBucket: "wavetravel-3c4c4.firebasestorage.app",
     messagingSenderId: "298226098137",
     appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
   };
   firebase.initializeApp(firebaseConfig);
 
-  // Firebase Auth to check if user is logged in
+  // Check if the user is logged in
   firebase.auth().onAuthStateChanged(user => {
-    if (user) {
-      // Show user's name and start loading bookings
-      document.getElementById('username').innerText = user.displayName || user.email;
-      loadBookings(user.uid);
+    if (!user) {
+      window.location.href = "index.html"; // Redirect to login page if not logged in
     } else {
-      window.location.href = 'index.html'; // Redirect to login if not logged in
+      // Load customer data
+      loadCustomerBookings(user.uid);
     }
   });
 
-  // Function to load bookings
-  function loadBookings(userId) {
-    const spinner = document.getElementById('spinner');
-    const bookingsDiv = document.getElementById('bookings');
-    spinner.style.display = 'block'; // Show spinner
-
+  // Fetch customer bookings
+  function loadCustomerBookings(userId) {
+    document.getElementById('spinner').style.display = 'block'; // Show spinner
     firebase.database().ref('bookings').orderByChild('userId').equalTo(userId).once('value')
-      .then(snapshot => {
-        spinner.style.display = 'none'; // Hide spinner
-
-        if (snapshot.exists()) {
-          snapshot.forEach(childSnapshot => {
-            const booking = childSnapshot.val();
-            const card = document.createElement('div');
-            card.classList.add('card');
-            card.innerHTML = `
-              <h3>Booking for ${booking.carName}</h3>
-              <p><strong>Driver:</strong> ${booking.driverName}</p>
-              <p><strong>Phone:</strong> ${booking.driverPhone}</p>
-              <p><strong>Date:</strong> ${booking.date}</p>
-              <p><strong>Seats:</strong> ${booking.seats}</p>
-              <p><strong>Status:</strong> ${booking.status}</p>
-            `;
-            bookingsDiv.appendChild(card);
-          });
-        } else {
-          bookingsDiv.innerHTML = <p>No upcoming bookings. <a href="book.html">Book a ride</a> now!</p>;
-        }
-      })
-      .catch(error => {
-        console.error('Error loading bookings:', error);
-        spinner.style.display = 'none'; // Hide spinner on error
-        bookingsDiv.innerHTML = <p>Error loading bookings. Please try again later.</p>;
-      });
+    .then(snapshot => {
+      document.getElementById('spinner').style.display = 'none'; // Hide spinner after data is loaded
+      if (snapshot.exists()) {
+        snapshot.forEach(childSnapshot => {
+          const bookingData = childSnapshot.val();
+          const upcomingBooking = `
+            <div class="premium-card">
+              <div>
+                <h3>Your Upcoming Booking</h3>
+                <p>Pickup: ${bookingData.pickupLocation}</p>
+                <p>Dropoff: ${bookingData.dropoffLocation}</p>
+                <p>Time: ${bookingData.bookingTime}</p>
+              </div>
+            </div>
+          `;
+          document.querySelector('.container').innerHTML += upcomingBooking;
+        });
+      } else {
+        document.getElementById('no-booking-msg').innerText = "No upcoming bookings. Book your ride now!";
+      }
+    });
   }
 </script>
 
