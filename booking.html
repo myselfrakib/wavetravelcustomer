@@ -153,7 +153,7 @@
       // fare per seat = |idx1-idx2|×15×5
       const idx1 = locationsArr.indexOf(slot.pickup);
       const idx2 = locationsArr.indexOf(slot.dropoff);
-      const farePerSeat = Math.abs(idx1 - idx2)*15*5;
+      const farePerSeat = Math.abs(idx1 - idx2)*1*1;
       const totalFare   = farePerSeat * reqSeats;
 
       const btnText = `Book ${reqSeats} for ₹${totalFare}`;
