@@ -12,7 +12,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
 
     body {
-      background-color: #f0f4f8; /* Matching booking page background */
+      background-color: #f0f4f8; /* Consistent with the booking page background */
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -22,7 +22,7 @@
     .container {
       padding: 3rem 2rem;
       flex: 1;
-      max-width: 1000px;
+      max-width: 900px;
       margin: auto;
     }
 
@@ -39,7 +39,7 @@
       background-color: #ffffff;
       border-radius: 1.5rem;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      padding: 3rem;
+      padding: 2rem 3rem;
       display: flex;
       flex-direction: column;
       gap: 2rem;
@@ -89,43 +89,6 @@
     .profile-card button:hover {
       background-color: #0056b3;
       transform: translateY(-2px);
-    }
-
-    /* Emergency Contact Styling */
-    .emergency-contact {
-      background-color: #f9f9f9;
-      border-radius: 1.2rem;
-      padding: 1.5rem;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-    }
-
-    .emergency-contact p {
-      font-size: 1.1rem;
-      color: #555;
-    }
-
-    .emergency-contact strong {
-      font-weight: 600;
-      color: #0077ff;
-    }
-
-    /* Loading Spinner */
-    .spinner {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 50px;
-      height: 50px;
-      border: 6px solid #f3f3f3;
-      border-top: 6px solid #0077ff;
-      border-radius: 50%;
-      animation: spin 2s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
     }
 
     /* Navbar Style */
@@ -190,22 +153,17 @@
 <div class="container">
   <h1>Customer Profile</h1>
 
-  <!-- Loading Spinner -->
-  <div id="spinner" class="spinner"></div>
-
   <!-- Profile Card -->
-  <div class="profile-card" id="profile-card" style="display:none;">
+  <div class="profile-card" id="profile-card">
     <h3>Profile Information</h3>
     <p><strong>Name:</strong> <span id="customer-name">Loading...</span></p>
     <p><strong>Email:</strong> <span id="customer-email">Loading...</span></p>
     <p><strong>Phone:</strong> <span id="customer-phone">Loading...</span></p>
 
-    <div class="emergency-contact">
-      <h3>Emergency Contact</h3>
-      <p><strong>Emergency Contact Number:</strong> <span id="emergency-contact">Not Set</span></p>
-    </div>
+    <h3>Emergency Contact</h3>
+    <p><strong>Emergency Contact Number:</strong> <span id="emergency-contact">Not Set</span></p>
 
-    <h3>Update Your Profile</h3>
+    <h3>Edit Your Profile</h3>
     <input type="text" class="input-field" id="new-name" placeholder="Enter your name">
     <input type="email" class="input-field" id="new-email" placeholder="Enter your email">
     <input type="text" class="input-field" id="new-emergency-contact" placeholder="Enter emergency contact number">
@@ -215,8 +173,8 @@
 
 <!-- Bottom Navbar -->
 <div class="navbar">
-  <a href="customerdashboard.html"><i class="fas fa-home"></i><br>Home</a>
-  <a href="booking.html"><i class="fas fa-car"></i><br>Book</a>
+  <a href="home.html"><i class="fas fa-home"></i><br>Home</a>
+  <a href="book.html"><i class="fas fa-car"></i><br>Book</a>
   <a href="mybookings.html"><i class="fas fa-calendar-check"></i><br>Bookings</a>
   <a href="profile.html"><i class="fas fa-user"></i><br>Profile</a>
 </div>
@@ -243,10 +201,8 @@
     if (!user) {
       window.location.href = "index.html"; // Redirect to login page if not logged in
     } else {
-      document.getElementById("spinner").style.display = "none";
-      document.getElementById("profile-card").style.display = "block";
-      // Fetch user data from Firebase and display it here
       const userId = firebase.auth().currentUser.uid;
+      // Fetch user data from Firebase and display it here
       firebase.database().ref('users/' + userId).once('value').then(snapshot => {
         const userData = snapshot.val();
         if (userData) {
