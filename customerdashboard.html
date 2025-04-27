@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard - WaveTravel</title>
+  <title>Customer Dashboard - WaveTravel</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
@@ -11,7 +11,7 @@
     html { font-size: 16px; }
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
     body {
-      background: linear-gradient(to right, #74ebd5, #ACB6E5);
+      background: linear-gradient(to right,#74ebd5,#ACB6E5);
       min-height:100vh;
       display:flex;
       flex-direction:column;
@@ -25,139 +25,93 @@
     h1 {
       text-align:center;
       color:#fff;
-      margin-bottom:1rem;
+      margin-bottom:1.25rem;
       font-size:1.75rem;
     }
     .greeting {
-      text-align:center;
-      color:#fff;
-      font-size:1.25rem;
-      margin-bottom:1rem;
-    }
-    .cards {
-      display:grid;
-      gap:1rem;
-      grid-template-columns:1fr;
+      font-size: 1.2rem;
+      color: white;
+      margin-bottom: 1rem;
     }
     .card {
-      background:#fff;
-      padding:1rem;
-      border-radius:1rem;
-      box-shadow:0 0.25rem 0.75rem rgba(0,0,0,0.15);
-      transition:all 0.3s ease;
-      animation:fadeIn 0.6s ease both;
+      background: #fff;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 1rem;
+      box-shadow: 0 0.3125rem 0.9375rem rgba(0, 0, 0, 0.2);
     }
-    .card:hover {
-      transform:scale(1.02);
+    .no-booking {
+      text-align: center;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 0.625rem;
+      box-shadow: 0 0.25rem 0.625rem rgba(0, 0, 0, 0.2);
+      font-size: 1rem;
+      display: none;
     }
-    .no-bookings {
-      text-align:center;
-      background:#fff;
-      padding:2rem 1rem;
-      border-radius:1rem;
-      box-shadow:0 0.25rem 0.75rem rgba(0,0,0,0.2);
-      margin-top:2rem;
-    }
-    .no-bookings img {
-      width:80%;
-      max-width:300px;
-      margin:0 auto 1rem;
-      display:block;
-    }
-    .no-bookings p {
-      font-size:1.1rem;
-      margin-bottom:1rem;
-      color:#333;
-    }
-    .no-bookings a {
-      display:inline-block;
-      background:#0077ff;
-      color:#fff;
-      padding:0.75rem 1.5rem;
-      border-radius:2rem;
-      font-weight:bold;
-      text-decoration:none;
-      margin-top:0.5rem;
-      transition:background 0.3s;
-    }
-    .no-bookings a:hover {
-      background:#005dc1;
-    }
+    /* Matching the booking page navbar style */
     .navbar {
-      background:#fff;
-      padding:0.75rem 0;
-      display:flex;
-      justify-content:space-around;
-      border-top-left-radius:1.25rem;
-      border-top-right-radius:1.25rem;
-      box-shadow:0 -0.1875rem 0.625rem rgba(0,0,0,0.1);
-      position:fixed;
-      bottom:0;
-      width:100%;
-      max-width:600px;
-      left:50%;
-      transform:translateX(-50%);
+      background: #fff;
+      padding: 0.75rem 0;
+      display: flex;
+      justify-content: space-around;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      box-shadow: 0 -0.1875rem 0.625rem rgba(0, 0, 0, 0.1);
+      border-top-left-radius: 1.25rem;
+      border-top-right-radius: 1.25rem;
     }
     .navbar a {
-      color:#0077ff;
-      text-decoration:none;
-      font-size:0.875rem;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
+      color: #0077ff;
+      text-decoration: none;
+      font-size: 0.875rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .navbar a i {
-      font-size:1.25rem;
-      margin-bottom:0.25rem;
+      font-size: 1.25rem;
+      margin-bottom: 0.25rem;
     }
-    @keyframes fadeIn {
-      0% { opacity:0; transform:translateY(10px); }
-      100% { opacity:1; transform:translateY(0); }
+    /* For toast */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.5s ease;
     }
-    .loader {
-      border:5px solid #f3f3f3;
-      border-top:5px solid #0077ff;
-      border-radius:50%;
-      width:40px;
-      height:40px;
-      animation:spin 1s linear infinite;
-      margin:2rem auto;
-    }
-    @keyframes spin {
-      0% { transform:rotate(0deg); }
-      100% { transform:rotate(360deg); }
+    .toast.show {
+      opacity: 1;
     }
   </style>
 </head>
-
 <body>
 
 <div class="container">
-  <h1>Welcome</h1>
-  <div class="greeting" id="greeting">Loading...</div>
+  <h1>Customer Dashboard</h1>
+  <p id="greeting" class="greeting">Loading...</p>
 
-  <div id="loader" class="loader"></div>
-
-  <div class="cards" id="cards" style="display:none;"></div>
-
-  <div class="no-bookings" id="nobooking" style="display:none;">
-    <img src="https://assets10.lottiefiles.com/packages/lf20_jy4s0b.json" alt="No Bookings">
-    <p>No upcoming rides! Plan your journey today.</p>
-    <a href="book.html">Book a Ride</a>
+  <div id="noBooking" class="no-booking">
+    <p>No upcoming bookings. <a href="book.html">Book now</a></p>
   </div>
+
+  <div id="cards" style="display:none;"></div>
 </div>
 
-<div class="navbar">
-  <a href="home.html"><i class="fas fa-home"></i><span>Home</span></a>
-  <a href="book.html"><i class="fas fa-car"></i><span>Book</span></a>
-  <a href="mybookings.html"><i class="fas fa-calendar-check"></i><span>Bookings</span></a>
-  <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
-</div>
-
-<!-- Firebase Scripts -->
+<!-- Firebase and Razorpay scripts -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
   // Initialize Firebase
@@ -172,23 +126,23 @@
   };
   firebase.initializeApp(firebaseConfig);
 
+  // DOM Elements
   const greetingEl = document.getElementById('greeting');
   const cardsEl = document.getElementById('cards');
-  const noBookingEl = document.getElementById('nobooking');
-  const loader = document.getElementById('loader');
+  const noBookingEl = document.getElementById('noBooking');
 
-  firebase.auth().onAuthStateChanged(user=>{
-    if(user){
-      firebase.database().ref('users/'+user.uid).once('value').then(snapshot=>{
+  // Check if the user is logged in
+  firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+      firebase.database().ref('users/' + user.uid).once('value').then(snapshot => {
         const userData = snapshot.val();
-        greetingEl.innerText = Hi ${userData.name || 'Traveler'}, Welcome back!;
+        greetingEl.innerText = `Hi ${userData.name || 'Traveler'}, Welcome back!`;
       });
 
-      firebase.database().ref('bookings').orderByChild('userid').equalTo(user.uid).once('value').then(snapshot=>{
-        loader.style.display = 'none';
-        if(snapshot.exists()){
+      firebase.database().ref('bookings').orderByChild('userid').equalTo(user.uid).once('value').then(snapshot => {
+        if (snapshot.exists()) {
           cardsEl.style.display = 'grid';
-          snapshot.forEach(bookingSnap=>{
+          snapshot.forEach(bookingSnap => {
             const booking = bookingSnap.val();
             const card = document.createElement('div');
             card.className = 'card';
@@ -205,12 +159,36 @@
           noBookingEl.style.display = 'block';
         }
       });
-
     } else {
-      window.location.href = "login.html";
+      // User is not logged in
+      showToast('Session expired, please login again.');
+      setTimeout(() => {
+        window.location.href = "index.html";
+      }, 1500); // 1.5 seconds delay
     }
   });
+
+  // Toast message function
+  function showToast(message) {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.classList.add('show'); }, 100);
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => { document.body.removeChild(toast); }, 500);
+    }, 1200);
+  }
 </script>
+
+<!-- Bottom navbar (same as booking page) -->
+<div class="navbar">
+  <a href="home.html"><i class="fas fa-home"></i><span>Home</span></a>
+  <a href="book.html"><i class="fas fa-car"></i><span>Book</span></a>
+  <a href="mybookings.html"><i class="fas fa-calendar-check"></i><span>Bookings</span></a>
+  <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
+</div>
 
 </body>
 </html>
