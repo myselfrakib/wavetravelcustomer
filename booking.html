@@ -204,7 +204,7 @@ function bookSlot(slotKey, driverId, seatsRequested) {
       db.ref(`users/${currentUserId}`).once('value', userSnap => {
         db.ref(`users/${driverId}`).once('value', driverSnap => {
            const bookingRef = firebase.database().ref('/bookings').push();
-            bookingRef.set(bookingData);
+         
             customerId: currentUserId,
             customerName: userSnap.val().name || "",
             customerPhone: userSnap.val().phone || "",
