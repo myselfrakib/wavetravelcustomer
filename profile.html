@@ -12,7 +12,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
 
     body {
-      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      background-color: #f0f4f8; /* Matching booking page background */
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -30,13 +30,13 @@
       text-align: center;
       font-size: 2.5rem;
       margin-bottom: 2.5rem;
-      color: #fff;
+      color: #0077ff;
       font-weight: 600;
     }
 
     /* Profile Card */
     .profile-card {
-      background-color: #fff;
+      background-color: #ffffff;
       border-radius: 1.5rem;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
       padding: 3rem;
@@ -128,10 +128,10 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* Bottom Navbar Styles */
+    /* Navbar Style */
     .navbar {
-      background: #333;
-      color: #fff;
+      background-color: #fff; /* White background */
+      color: #0077ff;
       padding: 1rem 0;
       display: flex;
       justify-content: space-evenly;
@@ -139,14 +139,14 @@
       position: fixed;
       bottom: 0;
       width: 100%;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
       border-top-left-radius: 2rem;
       border-top-right-radius: 2rem;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
 
     .navbar a {
       text-decoration: none;
-      color: #fff;
+      color: #0077ff;
       font-size: 1.2rem;
       text-align: center;
       transition: color 0.3s ease;
@@ -215,8 +215,8 @@
 
 <!-- Bottom Navbar -->
 <div class="navbar">
-  <a href="home.html"><i class="fas fa-home"></i><br>Home</a>
-  <a href="book.html"><i class="fas fa-car"></i><br>Book</a>
+  <a href="customerdashboard.html"><i class="fas fa-home"></i><br>Home</a>
+  <a href="booking.html"><i class="fas fa-car"></i><br>Book</a>
   <a href="mybookings.html"><i class="fas fa-calendar-check"></i><br>Bookings</a>
   <a href="profile.html"><i class="fas fa-user"></i><br>Profile</a>
 </div>
@@ -243,59 +243,41 @@
     if (!user) {
       window.location.href = "index.html"; // Redirect to login page if not logged in
     } else {
-      // Load customer profile
-      loadCustomerProfile(user.uid);
+      document.getElementById("spinner").style.display = "none";
+      document.getElementById("profile-card").style.display = "block";
+      // Fetch user data from Firebase and display it here
+      const userId = firebase.auth().currentUser.uid;
+      firebase.database().ref('users/' + userId).once('value').then(snapshot => {
+        const userData = snapshot.val();
+        if (userData) {
+          document.getElementById("customer-name").textContent = userData.name || "Not Set";
+          document.getElementById("customer-email").textContent = userData.email || "Not Set";
+          document.getElementById("customer-phone").textContent = userData.phone || "Not Set";
+          document.getElementById("emergency-contact").textContent = userData.emergencyContact || "Not Set";
+        }
+      });
     }
   });
 
-  // Fetch customer's profile information
-  function loadCustomerProfile(userId) {
-    firebase.database().ref('users/' + userId).once('value')
-    .then(snapshot => {
-      const userName = snapshot.val().name;
-      const userEmail = snapshot.val().email;
-      const userPhone = snapshot.val().phone;
-      const emergencyContact = snapshot.val().emergencyContact || "Not Set";
-      
-      // Update the UI with fetched data
-      document.getElementById('customer-name').innerText = userName;
-      document.getElementById('customer-email').innerText = userEmail;
-      document.getElementById('customer-phone').innerText = userPhone;
-      document.getElementById('emergency-contact').innerText = emergencyContact;
-      
-      // Hide the loading spinner and show profile card
-      document.getElementById('spinner').style.display = 'none';
-      document.getElementById('profile-card').style.display = 'block';
-    })
-    .catch(error => {
-      console.error("Error fetching profile data:", error);
-      alert("There was an error loading your profile data.");
-    });
-  }
-
-  // Update customer profile data
+  // Update profile function
   function updateProfile() {
-    const newName = document.getElementById('new-name').value;
-    const newEmail = document.getElementById('new-email').value;
-    const newEmergencyContact = document.getElementById('new-emergency-contact').value;
+    const newName = document.getElementById("new-name").value;
+    const newEmail = document.getElementById("new-email").value;
+    const newEmergencyContact = document.getElementById("new-emergency-contact").value;
 
-    const user = firebase.auth().currentUser;
-    if (user) {
-      const userId = user.uid;
-      firebase.database().ref('users/' + userId).update({
-        name: newName || user.displayName,
-        email: newEmail || user.email,
-        emergencyContact: newEmergencyContact || "Not Set"
-      })
-      .then(() => {
-        alert("Profile updated successfully!");
-        loadCustomerProfile(userId); // Reload the profile with updated data
-      })
-      .catch(error => {
-        console.error("Error updating profile:", error);
-        alert("There was an error updating your profile.");
-      });
-    }
+    const userId = firebase.auth().currentUser.uid;
+
+    // Update user data in Firebase
+    firebase.database().ref('users/' + userId).update({
+      name: newName,
+      email: newEmail,
+      emergencyContact: newEmergencyContact
+    }).then(() => {
+      alert("Profile updated successfully!");
+      location.reload(); // Refresh the page to show updated data
+    }).catch(error => {
+      alert("Error updating profile: " + error.message);
+    });
   }
 </script>
 
