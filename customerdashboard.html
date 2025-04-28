@@ -1,156 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard - WaveTravel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <!-- Font Awesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Styles -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Customer Dashboard - WaveTravel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to bottom right, #f0f8ff, #e6f7ff);
-      padding-bottom: 80px; /* for navbar space */
-    }
-
-    #loader {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #ffffff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-
-    #content {
-      display: none;
-      padding: 1rem;
-    }
-
-    .greeting {
-      font-size: 1.5rem;
-      font-weight: bold;
-      margin-bottom: 20px;
-      color: #333;
-      text-align: center;
-    }
-
-    .booking-card {
-      background: white;
-      border-radius: 15px;
-      padding: 15px;
-      margin-bottom: 15px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-
-    .no-booking {
-      text-align: center;
-      margin-top: 50px;
-    }
-
-    .no-booking h2 {
-      color: #333;
-    }
-
-    .no-booking p {
-      color: #666;
-      margin-bottom: 20px;
-    }
-
-    .no-booking a {
-      text-decoration: none;
-      background: #007bff;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 25px;
-    }
-
-    /* Bottom Navbar */
-    .bottom-navbar {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      background: #ffffff;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 0.7rem 0;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-      z-index: 999;
-      border-top-left-radius: 15px;
-      border-top-right-radius: 15px;
-    }
-
-    .nav-item {
-      color: #555;
-      text-decoration: none;
-      font-size: 0.8rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .nav-item i {
-      font-size: 1.5rem;
-      margin-bottom: 5px;
-    }
-
-    .nav-item:hover {
-      color: #007bff;
-      transition: all 0.3s ease;
-    }
-
-    .nav-item.active {
-      color: #007bff;
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background: linear-gradient(to right, #74ebd5, #ACB6E5); min-height: 100vh; display: flex; flex-direction: column; }
+    .container { flex: 1; padding: 20px; }
+    h1 { text-align: center; color: #fff; margin-bottom: 20px; }
+    .card { background: #fff; padding: 20px; margin-top: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); }
+    .card h2 { color: #0077ff; margin-bottom: 15px; }
+    .card .item { margin-bottom: 10px; color: #555; }
+    .navbar { background: #fff; padding: 10px; display: flex; justify-content: space-around; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.1); }
+    .navbar a { color: #0077ff; text-decoration: none; font-size: 14px; display: flex; flex-direction: column; align-items: center; }
+    .navbar a i { font-size: 20px; }
+    .dashboard-stats { display: flex; justify-content: space-between; margin-top: 30px; flex-wrap: wrap; }
+    .stat-card { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); width: 48%; margin-bottom: 15px; text-align: center; }
+    .stat-card h3 { color: #0077ff; margin-bottom: 10px; }
+    .stat-card p { font-size: 18px; font-weight: bold; color: #333; }
+    #recentActivityList { list-style-type: none; padding: 0; }
+    #recentActivityList li { padding: 10px; border-bottom: 1px solid #ddd; }
+    
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+      .dashboard-stats {
+        flex-direction: column;
+        align-items: center;
+      }
+      .stat-card {
+        width: 80%;
+      }
     }
   </style>
 </head>
-
 <body>
 
-<!-- Spinner -->
-<div id="loader">
-  <img src="https://cdn-icons-png.flaticon.com/512/2936/2936715.png" alt="Loading..." width="120">
+<div class="container">
+  <h1>Welcome to Your Dashboard</h1>
+
+  <!-- Dashboard Stats -->
+  <div class="dashboard-stats">
+    <div class="stat-card">
+      <h3>Upcoming Bookings</h3>
+      <p id="upcomingBookingsCount">Loading...</p>
+    </div>
+    <div class="stat-card">
+      <h3>Past Bookings</h3>
+      <p id="pastBookingsCount">Loading...</p>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="card" id="recentActivityCard">
+    <h2>Recent Activity</h2>
+    <ul id="recentActivityList"></ul>
+  </div>
 </div>
 
-<!-- Content -->
-<div id="content">
-  <div class="greeting" id="greeting">Hello, Customer!</div>
-  <div id="bookingList"></div>
+<!-- Bottom Navbar -->
+<div class="navbar">
+  <a href="customerdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
+  <a href="book.html"><i class="fas fa-car"></i><span>Book</span></a>
+  <a href="mybookings.html"><i class="fas fa-calendar-check"></i><span>Bookings</span></a>
+  <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
 </div>
 
-<!-- Bottom Navbar (Exactly like booking page) -->
-<nav class="bottom-navbar">
-  <a href="booking.html" class="nav-item active">
-    <i class="fas fa-home"></i>
-    <span>Home</span>
-  </a>
-  <a href="mybookings.html" class="nav-item">
-    <i class="fas fa-book"></i>
-    <span>My Bookings</span>
-  </a>
-  <a href="profile.html" class="nav-item">
-    <i class="fas fa-user"></i>
-    <span>Profile</span>
-  </a>
-  
-  
-</nav>
+<!-- Firebase Integration -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
-
-<!-- Firebase Script -->
 <script>
+  // Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
     authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -160,58 +84,70 @@
     messagingSenderId: "298226098137",
     appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
   };
-
+  
+  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.database();
 
-  auth.onAuthStateChanged(user => {
-    if (!user) {
-      window.location.href = "index.html";
-    } else {
-      loadDashboard(user);
-    }
-  });
+  // Elements
+  const upcomingBookingsCountEl = document.getElementById("upcomingBookingsCount");
+  const pastBookingsCountEl = document.getElementById("pastBookingsCount");
+  const recentActivityListEl = document.getElementById("recentActivityList");
 
-  function loadDashboard(user) {
-    const greetingEl = document.getElementById('greeting');
-    const bookingList = document.getElementById('bookingList');
+  // Get the current user's UID
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert("Please log in to view your dashboard.");
+    window.location.href = "login.html";
+  }
 
-    // Fetch Name
-    db.ref('users/' + user.uid).once('value').then(snapshot => {
-      const username = snapshot.val()?.name || "Customer";
-      greetingEl.innerHTML = `Hello, ${username}!`;
-    });
+  const userId = user.uid;
 
-    // Fetch Bookings
-    db.ref('bookings/').orderByChild('uid').equalTo(user.uid).once('value', snapshot => {
-      document.getElementById('loader').style.display = "none";
-      document.getElementById('content').style.display = "block";
+  // Fetch bookings and calculate stats
+  function loadDashboardData() {
+    const bookingsRef = firebase.database().ref(bookings/${userId});
+    
+    // Get all bookings
+    bookingsRef.once("value", snapshot => {
+      const bookings = snapshot.val();
+      let upcomingBookings = 0;
+      let pastBookings = 0;
+      let recentActivity = [];
 
-      if (!snapshot.exists()) {
-        bookingList.innerHTML = `
-          <div class="no-booking">
-            <h2>No Upcoming Bookings</h2>
-            <p>Book your next trip now!</p>
-            <a href="booking.html">Book Now</a>
-          </div>
-        `;
+      for (let bookingId in bookings) {
+        const booking = bookings[bookingId];
+        const bookingDate = new Date(booking.date);
+        const today = new Date();
+        
+        // Count upcoming and past bookings
+        if (bookingDate > today) {
+          upcomingBookings++;
+        } else {
+          pastBookings++;
+        }
+
+        // Collect recent activity
+        recentActivity.push(`
+          <li>
+            <strong>Booking:</strong> ${booking.pickup} to ${booking.dropoff} on ${booking.date} at ${booking.time} - ₹${booking.fare}
+          </li>
+        `);
+      }
+
+      // Update the dashboard with the stats
+      upcomingBookingsCountEl.textContent = upcomingBookings;
+      pastBookingsCountEl.textContent = pastBookings;
+
+      // Display recent activity
+      if (recentActivity.length > 0) {
+        recentActivityListEl.innerHTML = recentActivity.join('');
       } else {
-        snapshot.forEach(bookingSnap => {
-          const booking = bookingSnap.val();
-          const bookingCard = document.createElement('div');
-          bookingCard.className = 'booking-card';
-          bookingCard.innerHTML = `
-            <h3>${booking.pickup} ➔ ${booking.drop}</h3>
-            <p>Date: ${booking.date} | Time: ${booking.time}</p>
-            <p>Seats: ${booking.seats}</p>
-            <p>Status: <strong>${booking.status || "Confirmed"}</strong></p>
-          `;
-          bookingList.appendChild(bookingCard);
-        });
+        recentActivityListEl.innerHTML = "<li>No recent activity found.</li>";
       }
     });
   }
+
+  // Initialize the dashboard
+  loadDashboardData();
 </script>
 
 </body>
