@@ -1,240 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Customer Profile - WaveTravel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>User Profile - WaveTravel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    /* Base Styling */
-    html { font-size: 16px; }
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background: linear-gradient(to right, #74ebd5, #ACB6E5); min-height: 100vh; display: flex; flex-direction: column; }
+    .container { flex: 1; padding: 20px; }
+    h1 { text-align: center; color: #fff; margin-bottom: 20px; }
+    .card { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); }
+    .card h2 { color: #0077ff; margin-bottom: 15px; }
+    .card .item { margin-bottom: 10px; color: #555; font-size: 16px; }
+    .input-field { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd; font-size: 14px; }
+    .button { background-color: #0077ff; color: #fff; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-size: 16px; width: 100%; margin-top: 20px; }
+    .button:hover { background-color: #005bb5; }
+    .navbar { background: #fff; padding: 10px; display: flex; justify-content: space-around; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.1); }
+    .navbar a { color: #0077ff; text-decoration: none; font-size: 14px; display: flex; flex-direction: column; align-items: center; }
+    .navbar a i { font-size: 20px; }
 
-    body {
-      background-color: #f0f4f8; /* Consistent with the booking page background */
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-    }
-
-    .container {
-      padding: 3rem 2rem;
-      flex: 1;
-      max-width: 900px;
-      margin: auto;
-    }
-
-    h1 {
-      text-align: center;
-      font-size: 2.5rem;
-      margin-bottom: 2.5rem;
-      color: #0077ff;
-      font-weight: 600;
-    }
-
-    /* Profile Card */
-    .profile-card {
-      background-color: #ffffff;
-      border-radius: 1.5rem;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      padding: 2rem 3rem;
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-      max-width: 900px;
-      margin: auto;
-      position: relative;
-    }
-
-    .profile-card h3 {
-      font-size: 2rem;
-      font-weight: 600;
-      color: #0077ff;
-      margin-bottom: 1.5rem;
-    }
-
-    .profile-card p {
-      font-size: 1.2rem;
-      color: #444;
-      margin-bottom: 1.2rem;
-    }
-
-    .profile-card .input-field {
-      padding: 1rem;
-      font-size: 1.1rem;
-      border-radius: 1.2rem;
-      border: 1px solid #ccc;
-      transition: all 0.3s ease;
-    }
-
-    .profile-card .input-field:focus {
-      outline: none;
-      border-color: #0077ff;
-    }
-
-    .profile-card button {
-      padding: 1.2rem 3rem;
-      font-size: 1.3rem;
-      background-color: #0077ff;
-      color: #fff;
-      border-radius: 2rem;
-      border: none;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin-top: 1rem;
-    }
-
-    .profile-card button:hover {
-      background-color: #0056b3;
-      transform: translateY(-2px);
-    }
-
-    /* Navbar Style */
-    .navbar {
-      background-color: #fff; /* White background */
-      color: #0077ff;
-      padding: 1rem 0;
-      display: flex;
-      justify-content: space-evenly;
-      align-items: center;
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-      border-top-left-radius: 2rem;
-      border-top-right-radius: 2rem;
-    }
-
-    .navbar a {
-      text-decoration: none;
-      color: #0077ff;
-      font-size: 1.2rem;
-      text-align: center;
-      transition: color 0.3s ease;
-    }
-
-    .navbar i {
-      font-size: 1.6rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .navbar a:hover {
-      color: #ff7f50;
-    }
-
-    /* Mobile Responsiveness */
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 2rem;
-      }
-
-      .profile-card {
-        padding: 2rem;
-      }
-
-      .profile-card .input-field {
-        font-size: 1rem;
-        padding: 0.8rem;
-      }
-
-      .navbar {
-        flex-direction: row;
-        justify-content: space-evenly;
-        padding: 1rem 0;
-      }
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+      .container { padding: 10px; }
+      .input-field { padding: 8px; font-size: 14px; }
+      .button { font-size: 14px; padding: 8px 15px; }
     }
   </style>
 </head>
 <body>
 
-<!-- Main Content -->
 <div class="container">
-  <h1>Customer Profile</h1>
+  <h1>User Profile</h1>
 
   <!-- Profile Card -->
-  <div class="profile-card" id="profile-card">
-    <h3>Profile Information</h3>
-    <p><strong>Name:</strong> <span id="customer-name">Loading...</span></p>
-    <p><strong>Email:</strong> <span id="customer-email">Loading...</span></p>
-    <p><strong>Phone:</strong> <span id="customer-phone">Loading...</span></p>
-
-    <h3>Emergency Contact</h3>
-    <p><strong>Emergency Contact Number:</strong> <span id="emergency-contact">Not Set</span></p>
-
-    <h3>Edit Your Profile</h3>
-    <input type="text" class="input-field" id="new-name" placeholder="Enter your name">
-    <input type="email" class="input-field" id="new-email" placeholder="Enter your email">
-    <input type="text" class="input-field" id="new-emergency-contact" placeholder="Enter emergency contact number">
-    <button class="btn-update" onclick="updateProfile()">Update Profile</button>
+  <div class="card" id="profileCard">
+    <h2>Your Details</h2>
+    <div id="userDetails">
+      <p class="item">Name: <span id="userName">Loading...</span></p>
+      <p class="item">Email: <span id="userEmail">Loading...</span></p>
+      <p class="item">Phone: <span id="userPhone">Loading...</span></p>
+    </div>
+    <div id="editProfileForm" style="display: none;">
+      <input type="text" id="editName" class="input-field" placeholder="Name"/>
+      <input type="email" id="editEmail" class="input-field" placeholder="Email"/>
+      <input type="text" id="editPhone" class="input-field" placeholder="Phone"/>
+      <button class="button" id="saveChanges">Save Changes</button>
+    </div>
+    <button class="button" id="editProfileBtn">Edit Profile</button>
+    <button class="button" id="logoutBtn" style="margin-top: 20px;">Logout</button>
   </div>
 </div>
 
 <!-- Bottom Navbar -->
 <div class="navbar">
-  <a href="home.html"><i class="fas fa-home"></i><br>Home</a>
-  <a href="book.html"><i class="fas fa-car"></i><br>Book</a>
-  <a href="mybookings.html"><i class="fas fa-calendar-check"></i><br>Bookings</a>
-  <a href="profile.html"><i class="fas fa-user"></i><br>Profile</a>
+  <a href="customerdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
+  <a href="book.html"><i class="fas fa-car"></i><span>Book</span></a>
+  <a href="mybookings.html"><i class="fas fa-calendar-check"></i><span>Bookings</span></a>
+  <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
 </div>
 
-<!-- Firebase Script -->
+<!-- Firebase Integration -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
 <script>
-  // Firebase configuration
+  // Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
     authDomain: "wavetravel-3c4c4.firebaseapp.com",
     databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
     projectId: "wavetravel-3c4c4",
-    storageBucket: "wavetravel-3c4c4.firebasestorage.app",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
     messagingSenderId: "298226098137",
     appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
   };
+  
+  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
 
-  // Check if the user is logged in
-  firebase.auth().onAuthStateChanged(user => {
-    if (!user) {
-      window.location.href = "index.html"; // Redirect to login page if not logged in
-    } else {
-      const userId = firebase.auth().currentUser.uid;
-      // Fetch user data from Firebase and display it here
-      firebase.database().ref('users/' + userId).once('value').then(snapshot => {
-        const userData = snapshot.val();
-        if (userData) {
-          document.getElementById("customer-name").textContent = userData.name || "Not Set";
-          document.getElementById("customer-email").textContent = userData.email || "Not Set";
-          document.getElementById("customer-phone").textContent = userData.phone || "Not Set";
-          document.getElementById("emergency-contact").textContent = userData.emergencyContact || "Not Set";
-        }
-      });
-    }
-  });
+  // Elements
+  const userNameEl = document.getElementById("userName");
+  const userEmailEl = document.getElementById("userEmail");
+  const userPhoneEl = document.getElementById("userPhone");
+  const editProfileBtn = document.getElementById("editProfileBtn");
+  const editProfileForm = document.getElementById("editProfileForm");
+  const saveChangesBtn = document.getElementById("saveChanges");
+  const logoutBtn = document.getElementById("logoutBtn");
 
-  // Update profile function
-  function updateProfile() {
-    const newName = document.getElementById("new-name").value;
-    const newEmail = document.getElementById("new-email").value;
-    const newEmergencyContact = document.getElementById("new-emergency-contact").value;
+  // Get the current user's UID
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert("Please log in to view your profile.");
+    window.location.href = "login.html";
+  }
 
-    const userId = firebase.auth().currentUser.uid;
+  const userId = user.uid;
 
-    // Update user data in Firebase
-    firebase.database().ref('users/' + userId).update({
-      name: newName,
-      email: newEmail,
-      emergencyContact: newEmergencyContact
-    }).then(() => {
-      alert("Profile updated successfully!");
-      location.reload(); // Refresh the page to show updated data
-    }).catch(error => {
-      alert("Error updating profile: " + error.message);
+  // Fetch user profile data
+  function loadUserProfile() {
+    const userRef = firebase.database().ref(users/${userId});
+    
+    userRef.once("value", snapshot => {
+      const userData = snapshot.val();
+      if (userData) {
+        userNameEl.textContent = userData.name || "Not Available";
+        userEmailEl.textContent = userData.email || "Not Available";
+        userPhoneEl.textContent = userData.phone || "Not Available";
+      }
     });
   }
+
+  // Edit Profile Mode
+  editProfileBtn.addEventListener("click", () => {
+    // Show the edit profile form
+    editProfileForm.style.display = "block";
+    document.getElementById("editName").value = userNameEl.textContent;
+    document.getElementById("editEmail").value = userEmailEl.textContent;
+    document.getElementById("editPhone").value = userPhoneEl.textContent;
+    
+    // Hide the view profile info
+    document.getElementById("userDetails").style.display = "none";
+    editProfileBtn.style.display = "none";
+  });
+
+  // Save Changes
+  saveChangesBtn.addEventListener("click", () => {
+    const newName = document.getElementById("editName").value;
+    const newEmail = document.getElementById("editEmail").value;
+    const newPhone = document.getElementById("editPhone").value;
+    
+    const userRef = firebase.database().ref(users/${userId});
+    userRef.update({
+      name: newName,
+      email: newEmail,
+      phone: newPhone
+    }).then(() => {
+      alert("Profile updated successfully!");
+      // Update the profile page with the new values
+      userNameEl.textContent = newName;
+      userEmailEl.textContent = newEmail;
+      userPhoneEl.textContent = newPhone;
+      
+      // Switch back to view mode
+      document.getElementById("userDetails").style.display = "block";
+      editProfileBtn.style.display = "inline-block";
+      editProfileForm.style.display = "none";
+    }).catch((error) => {
+      alert("Error updating profile: " + error.message);
+    });
+  });
+
+  // Logout Functionality
+  logoutBtn.addEventListener("click", () => {
+    firebase.auth().signOut().then(() => {
+      window.location.href = "login.html";
+    }).catch((error) => {
+      alert("Error logging out: " + error.message);
+    });
+  });
+
+  // Initialize the profile page
+  loadUserProfile();
 </script>
 
 </body>
