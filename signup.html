@@ -24,12 +24,12 @@
       max-width: 400px;
     }
 
-    h2 {
+    h2, h3 {
       text-align: center;
       margin-bottom: 20px;
     }
 
-    input, select {
+    input, button {
       width: 100%;
       padding: 12px;
       margin: 10px 0;
@@ -39,14 +39,9 @@
     }
 
     button {
-      width: 100%;
-      padding: 12px;
       background-color: #ff6ec4;
-      border: none;
       color: white;
       font-weight: bold;
-      font-size: 16px;
-      border-radius: 8px;
       cursor: pointer;
     }
 
@@ -68,24 +63,12 @@
 <body>
   <div class="container">
     <h2>WaveTravel</h2>
-    <center><h3>Create Account</h3></center>
-
+    <h3>Create Account</h3>
     <input type="text" id="name" placeholder="Full Name" />
     <input type="email" id="email" placeholder="Email Address" />
-    
-    <select id="countryCode">
-      <option value="+91" selected>🇮🇳 +91</option>
-      <option value="+1">🇺🇸 +1</option>
-      <option value="+44">🇬🇧 +44</option>
-      <option value="+61">🇦🇺 +61</option>
-      <option value="+880">🇧🇩 +880</option>
-    </select>
-    
     <input type="text" id="phone" placeholder="Phone Number" />
     <input type="password" id="password" placeholder="Password" />
-    
-    <button onclick="register()">Sign Up</button>
-
+    <button id="signupBtn">Sign Up</button>
     <div class="login-link">
       Already have an account? <a href="index.html">Login here</a>
     </div>
@@ -97,6 +80,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
   <script>
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -107,48 +91,50 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.database();
 
-    function register() {
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const phone = document.getElementById('phone').value.trim();
+    // Sign-up handler
+    document.getElementById('signupBtn').addEventListener('click', async () => {
+      const name     = document.getElementById('name').value.trim();
+      const email    = document.getElementById('email').value.trim();
+      const phone    = document.getElementById('phone').value.trim();
       const password = document.getElementById('password').value;
-      const countryCode = document.getElementById('countryCode').value;
-      const fullPhone = countryCode + phone;
 
+      // Validate inputs
       if (!name || !email || !phone || !password) {
-        alert("All fields are required.");
+        alert('Please fill in all fields.');
         return;
       }
-
       if (!/^\d{10}$/.test(phone)) {
-        alert("Enter a valid 10-digit phone number.");
+        alert('Enter a valid 10-digit phone number.');
         return;
       }
 
-      const userRef = db.ref("users/" + fullPhone);
+      try {
+        // Create user in Firebase Authentication
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const uid = userCredential.user.uid;
 
-      userRef.once("value").then(snapshot => {
-        if (snapshot.exists()) {
-          alert("User with this phone number already exists.");
-        } else {
-          userRef.set({
-            name,
-            email,
-            phone: fullPhone,
-            password,
-            role: "customer"
-          }).then(() => {
-            alert("Account created successfully!");
-            window.location.href = "index.html";
-          }).catch(err => {
-            alert("Signup error: " + err.message);
-          });
-        }
-      });
-    }
+        // Save user details in Realtime Database under /users/{uid}
+        await db.ref('users/' + uid).set({
+          name:  name,
+          email: email,
+          phone: phone,
+          role:  'customer'
+        });
+
+        alert('Account created successfully!');
+        // Redirect to login page
+        window.location.href = 'index.html';
+
+      } catch (error) {
+        console.error('Signup error:', error);
+        alert('Error: ' + error.message);
+      }
+    });
   </script>
 </body>
 </html>
