@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Cars</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <style>
+    /* Base Styles */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .container {
+      flex: 1;
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin-top: 6px;
+      font-size: 1rem;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      background: #ffd700;
+      color: #000;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    /* Slot List */
+    .slot-list {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .slot-card {
+      background: rgba(255,255,255,0.1);
+      padding: 16px;
+      border-radius: 10px;
+    }
+    .slot-card p {
+      margin: 6px 0;
+      font-size: 0.9rem;
+    }
+    .slot-card button {
+      background: #ff4d4d;
+      color: white;
+      padding: 8px 12px;
+      margin-top: 10px;
+      font-size: 0.85rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    /* Navbar */
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 0;
+      z-index: 1000;
+    }
+    .navbar a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .navbar a i {
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+    }
+    /* Responsive Tweaks */
+    @media (min-width: 768px) {
+      .container { padding: 24px; }
+      h1 { font-size: 2rem; }
+      input, select, button { font-size: 1.1rem; }
+      .slot-card p { font-size: 1rem; }
+      .navbar a { font-size: 0.85rem; }
+      .navbar a i { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Add New Car</h1>
+    <form id="carForm">
+      <label for="carBrand">Car Brand</label>
+      <input type="text" id="carBrand" placeholder="e.g., Toyota" required />
+
+      <label for="carReg">Registration Number</label>
+      <input type="text" id="carReg" placeholder="e.g., ABC-1234" required />
+
+      <label for="ownerName">Owner Name</label>
+      <input type="text" id="ownerName" placeholder="e.g., John Doe" required />
+
+      <label for="seats">Available Seats</label>
+      <input type="number" id="seats" min="1" placeholder="e.g., 4" required />
+
+      <button type="submit">Submit for Approval</button>
+    </form>
+
+    <h1>Approved Cars</h1>
+    <div class="slot-list" id="approvedCarsList">
+      <!-- Approved cars will be injected here -->
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="drivermybookings.html"><i class="fas fa-list"></i><span>My Bookings</span></a>
+    <a href="slots.html"><i class="fas fa-calendar"></i><span>Slots</span></a>
+    <a href="mycars.html"><i class="fas fa-car"></i><span>My Cars</span></a>
+    <a href="driverprofile.html"><i class="fas fa-user"></i><span>Profile</span></a>
+  </nav>
+
+  <script type="module">
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.firebasestorage.app",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-app.js";
+    import { getDatabase, ref, set, push, get } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-database.js";
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Submit new car
+    document.getElementById("carForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const carData = {
+        carBrand: document.getElementById("carBrand").value.trim(),
+        carReg: document.getElementById("carReg").value.trim(),
+        ownerName: document.getElementById("ownerName").value.trim(),
+        seats: document.getElementById("seats").value.trim()
+      };
+      try {
+        const newRef = push(ref(database, "pendingcars"));
+        await set(newRef, carData);
+        alert("Car submitted for approval!");
+        loadApprovedCars();
+      } catch (error) {
+        alert("Error: " + error.message);
+      }
+    });
+
+    // Load approved cars
+    async function loadApprovedCars() {
+      try {
+        const snapshot = await get(ref(database, "approvedcars"));
+        const list = document.getElementById("approvedCarsList");
+        list.innerHTML = '';
+        snapshot.forEach(child => {
+          const car = child.val();
+          const card = document.createElement('div');
+          card.className = 'slot-card';
+          card.innerHTML = `
+            <p><strong>Brand:</strong> ${car.carBrand}</p>
+            <p><strong>Reg No.:</strong> ${car.carReg}</p>
+            <p><strong>Owner:</strong> ${car.ownerName}</p>
+            <p><strong>Seats:</strong> ${car.seats}</p>
+            <button onclick="removeCar('${child.key}')">Remove</button>
+          `;
+          list.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Load error', err);
+      }
+    }
+
+    // Optional: remove car from approved list
+    async function removeCar(key) {
+      try {
+        await set(ref(database, `approvedcars/${key}`), null);
+        loadApprovedCars();
+      } catch (err) {
+        console.error('Remove error', err);
+      }
+    }
+
+    // Initial load
+    loadApprovedCars();
+  </script>
+</body>
+</html>
