@@ -8,8 +8,7 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       background: linear-gradient(to right, #8e2de2, #4a00e0);
       color: white;
       min-height: 100vh;
@@ -149,7 +148,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+  import { getDatabase, ref, push, get, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -175,126 +174,118 @@
   const ampm = document.getElementById("ampm");
   const seats = document.getElementById("seats");
   const slotList = document.getElementById("slotList");
+  const addBtn = document.getElementById("addSlotBtn");
 
+  // Populate hour/minute selectors
   for (let i = 1; i <= 12; i++) {
-    hour.innerHTML += `<option value="${i}">${i}</option>`;
+    hour.innerHTML += `<option>${i}</option>`;
   }
   for (let i = 0; i < 60; i += 5) {
     const val = i.toString().padStart(2, '0');
-    minute.innerHTML += `<option value="${val}">${val}</option>`;
+    minute.innerHTML += `<option>${val}</option>`;
   }
 
+  // Default date to today
   const today = new Date();
-  const yyyyMMdd = today.toISOString().split("T")[0];
-  date.value = yyyyMMdd;
-  date.setAttribute("min", yyyyMMdd);
+  const iso = today.toISOString().split("T")[0];
+  date.min = date.value = iso;
 
-  function convertTo12Hr(timeStr) {
-    const [hour, minute] = timeStr.split(":");
-    const h = +hour;
-    const ampm = h >= 12 ? "PM" : "AM";
-    const hr = h % 12 || 12;
-    return `${hr}:${minute} ${ampm}`;
+  function to24(h, m, ap) {
+    let hh = parseInt(h, 10);
+    if (ap === "PM" && hh < 12) hh += 12;
+    if (ap === "AM" && hh === 12) hh = 0;
+    return `${hh.toString().padStart(2, '0')}:${m}`;
+  }
+  function fmt12(t) {
+    let [hh, mm] = t.split(":").map(Number);
+    const ap = hh >= 12 ? "PM" : "AM";
+    hh = hh % 12 || 12;
+    return `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')} ${ap}`;
   }
 
-  function loadDropdownData() {
-    const locRef = ref(db, "locations");
-    onValue(locRef, (snapshot) => {
-      const locations = snapshot.val();
-      pickup.innerHTML = dropoff.innerHTML = "";
-      if (locations) {
-        locations.forEach(loc => {
-          const opt = `<option value="${loc.name}">${loc.name}</option>`;
-          pickup.innerHTML += opt;
-          dropoff.innerHTML += opt;
-        });
-      }
+  function loadLocations() {
+    onValue(ref(db, "locations"), snap => {
+      const locs = snap.val() || [];
+      let opts = "";
+      locs.forEach(l => opts += `<option>${l.name}</option>`);
+      pickup.innerHTML = dropoff.innerHTML = opts;
     });
   }
 
-  function loadSlots(driverId) {
-    slotList.innerHTML = "";
-    const slotsRef = ref(db, `availableslots/${driverId}`);
-    onValue(slotsRef, (snapshot) => {
-      slotList.innerHTML = "";
-      let count = 1;
-      snapshot.forEach(child => {
-        const s = child.val();
-        const card = document.createElement("div");
-        card.className = "slot-card";
-        card.innerHTML = `
-          <p><strong>Sl No. ${count}</strong></p>
-          <p><strong>${s.pickup}</strong> to <strong>${s.dropoff}</strong></p>
-          <p>Date: ${s.date}, Time: ${convertTo12Hr(s.time)}</p>
-          <p>Seats: ${s.seats}</p>
-          <button onclick="deleteSlot('${child.key}', '${driverId}')">Delete</button>
-        `;
-        slotList.appendChild(card);
-        count++;
+  function loadSlots(uid) {
+    onValue(ref(db, `availableslots/${uid}`), snap => {
+      let cnt = 1, html = "";
+      snap.forEach(ch => {
+        const s = ch.val();
+        html += `
+          <div class="slot-card">
+            <p><strong>Sl No. ${cnt++}</strong></p>
+            <p><strong>${s.pickup}</strong> ➝ <strong>${s.dropoff}</strong></p>
+            <p>Date: ${s.date}, Time: ${fmt12(s.time)}</p>
+            <p>Seats: ${s.seats}</p>
+            <button onclick="remove(ref(db,'availableslots/${uid}/${ch.key}'))">Delete</button>
+          </div>`;
       });
+      slotList.innerHTML = html;
     });
   }
 
-  function convertTo24Hr(h, m, ampmVal) {
-    h = parseInt(h);
-    if (ampmVal === "PM" && h < 12) h += 12;
-    if (ampmVal === "AM" && h === 12) h = 0;
-    return `${h.toString().padStart(2, '0')}:${m}`;
-  }
-
-  function addSlot(driverId) {
-    const time24 = convertTo24Hr(hour.value, minute.value, ampm.value);
-    const data = {
-      pickup: pickup.value,
-      dropoff: dropoff.value,
-      carId: car.value,
-      date: date.value,
-      time: time24,
-      seats: seats.value
-    };
-    if (!data.pickup || !data.dropoff || !data.carId || !data.date || !data.time || !data.seats) {
-      alert("All fields are required");
-      return;
+  onAuthStateChanged(auth, user => {
+    if (!user) {
+      alert("Please log in.");
+      return window.location.href = "login.html";
     }
-    push(ref(db, `availableslots/${driverId}`), data).then(() => {
-      alert("Slot added successfully");
-      seats.value = "";
-    });
-  }
+    const uid = user.uid;
+    loadLocations();
+    loadSlots(uid);
 
-  window.deleteSlot = function (key, driverId) {
-    if (confirm("Are you sure to delete this slot?")) {
-      remove(ref(db, `availableslots/${driverId}/${key}`));
-    }
-  };
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      const driverId = user.uid;
-      loadDropdownData();
-      loadSlots(driverId);
-
-      const carsRef = ref(db, "approvedcars");
-      onValue(carsRef, (snapshot) => {
-        car.innerHTML = "";
-        let found = false;
-        snapshot.forEach(child => {
-          const data = child.val();
-          if (data.driverId === driverId) {
-            found = true;
-            car.innerHTML += `<option value="${child.key}">${data.carBrand} (${data.carReg})</option>`;
-          }
-        });
-        if (!found) {
-          car.innerHTML = `<option disabled selected>No approved car found</option>`;
+    // Load only this driver's approved cars
+    onValue(ref(db, "approvedcars"), snap => {
+      let opts = "", found = false;
+      snap.forEach(ch => {
+        const d = ch.val();
+        if (d.driverId === uid) {
+          found = true;
+          opts += `<option value="${ch.key}">${d.carBrand} (${d.carReg})</option>`;
         }
       });
+      car.innerHTML = found ? opts : `<option disabled>No approved cars</option>`;
+    });
 
-      document.getElementById("addSlotBtn").addEventListener("click", () => addSlot(driverId));
-    } else {
-      alert("You must be logged in as a driver to access this page.");
-      window.location.href = "index.html";
-    }
+    addBtn.onclick = async () => {
+      const cid = car.value,
+            pu = pickup.value,
+            dr = dropoff.value,
+            dt = date.value,
+            h  = hour.value,
+            mi = minute.value,
+            ap = ampm.value,
+            st = seats.value;
+      if (!cid||!pu||!dr||!dt||!h||!mi||!ap||!st) {
+        return alert("All fields are required");
+      }
+
+      // fetch approved car details
+      const carSnap = await get(ref(db, `approvedcars/${cid}`));
+      const cd = carSnap.val() || {};
+
+      const t24 = to24(h, mi, ap);
+      const slotData = {
+        pickup: pu,
+        dropoff: dr,
+        date: dt,
+        time: t24,
+        seats: st,
+        driverName: cd.driverName || "",
+        driverNumber: cd.driverNumber || "",
+        carBrand: cd.carBrand || "",
+        carReg: cd.carReg || ""
+      };
+
+      await push(ref(db, `availableslots/${uid}`), slotData);
+      alert("Slot added successfully");
+      seats.value = "";
+    };
   });
 </script>
 </body>
