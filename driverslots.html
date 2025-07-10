@@ -97,6 +97,10 @@
       font-size: 1.2rem;
       margin-bottom: 2px;
     }
+    .time-select-group {
+      display: flex;
+      gap: 10px;
+    }
   </style>
 </head>
 <body>
@@ -117,8 +121,15 @@
   <label for="date">Date</label>
   <input type="date" id="date"/>
 
-  <label for="time">Time</label>
-  <input type="time" id="time"/>
+  <label>Time</label>
+  <div class="time-select-group">
+    <select id="hour"></select>
+    <select id="minute"></select>
+    <select id="ampm">
+      <option value="AM">AM</option>
+      <option value="PM">PM</option>
+    </select>
+  </div>
 
   <label for="seats">Available Seats (Max 6)</label>
   <input type="number" id="seats" min="1" max="6" />
@@ -159,17 +170,26 @@
   const dropoff = document.getElementById("dropoff");
   const car = document.getElementById("car");
   const date = document.getElementById("date");
-  const time = document.getElementById("time");
+  const hour = document.getElementById("hour");
+  const minute = document.getElementById("minute");
+  const ampm = document.getElementById("ampm");
   const seats = document.getElementById("seats");
   const slotList = document.getElementById("slotList");
 
-  // Set today's date and time
+  // Populate hour/minute dropdowns
+  for (let i = 1; i <= 12; i++) {
+    hour.innerHTML += `<option value="${i}">${i}</option>`;
+  }
+  for (let i = 0; i < 60; i += 5) {
+    const val = i.toString().padStart(2, '0');
+    minute.innerHTML += `<option value="${val}">${val}</option>`;
+  }
+
+  // Set today's date
   const today = new Date();
   const yyyyMMdd = today.toISOString().split("T")[0];
   date.value = yyyyMMdd;
   date.setAttribute("min", yyyyMMdd);
-  const pad = n => n.toString().padStart(2, '0');
-  time.value = `${pad(today.getHours())}:${pad(today.getMinutes())}`;
 
   function convertTo12Hr(timeStr) {
     const [hour, minute] = timeStr.split(":");
@@ -214,13 +234,21 @@
     });
   }
 
+  function convertTo24Hr(h, m, ampmVal) {
+    h = parseInt(h);
+    if (ampmVal === "PM" && h < 12) h += 12;
+    if (ampmVal === "AM" && h === 12) h = 0;
+    return `${h.toString().padStart(2, '0')}:${m}`;
+  }
+
   function addSlot(driverId) {
+    const time24 = convertTo24Hr(hour.value, minute.value, ampm.value);
     const data = {
       pickup: pickup.value,
       dropoff: dropoff.value,
       carId: car.value,
       date: date.value,
-      time: time.value,
+      time: time24,
       seats: seats.value
     };
     if (!data.pickup || !data.dropoff || !data.carId || !data.date || !data.time || !data.seats) {
@@ -265,7 +293,7 @@
       document.getElementById("addSlotBtn").addEventListener("click", () => addSlot(driverId));
     } else {
       alert("You must be logged in as a driver to access this page.");
-      window.location.href = "login.html"; // redirect to login
+      window.location.href = "login.html";
     }
   });
 </script>
