@@ -137,7 +137,6 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
   import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -151,7 +150,8 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  const auth = getAuth(app);
+
+  const driverId = "2ZNbW7mM71YMFUE18hkveeuyRRJ3"; // Replace with actual dynamic driver ID after auth
 
   const pickup = document.getElementById("pickup");
   const dropoff = document.getElementById("dropoff");
@@ -161,11 +161,11 @@
   const seats = document.getElementById("seats");
   const slotList = document.getElementById("slotList");
 
+  // Set today's date and time defaults
   const today = new Date();
   const yyyyMMdd = today.toISOString().split("T")[0];
   date.value = yyyyMMdd;
   date.setAttribute("min", yyyyMMdd);
-
   const pad = n => n.toString().padStart(2, '0');
   const now = `${pad(today.getHours())}:${pad(today.getMinutes())}`;
   time.value = now;
@@ -178,7 +178,7 @@
     return `${hr}:${minute} ${ampm}`;
   }
 
-  function loadDropdownData(driverId) {
+  function loadDropdownData() {
     const locRef = ref(db, "locations");
     onValue(locRef, (snapshot) => {
       const locations = snapshot.val();
@@ -196,13 +196,13 @@
       snapshot.forEach(child => {
         const data = child.val();
         if (data.driverId === driverId) {
-          car.innerHTML += `<option value="${child.key}">${data.carBrand} (${data.carReg})</option>`;
+          car.innerHTML += `<option value="${child.key}">${data.carBrand}</option>`;
         }
       });
     });
   }
 
-  function loadSlots(driverId) {
+  function loadSlots() {
     slotList.innerHTML = "";
     const slotsRef = ref(db, `availableslots/${driverId}`);
     onValue(slotsRef, (snapshot) => {
@@ -215,14 +215,14 @@
           <p><strong>${s.pickup}</strong> to <strong>${s.dropoff}</strong></p>
           <p>Date: ${s.date}, Time: ${convertTo12Hr(s.time)}</p>
           <p>Seats: ${s.seats}</p>
-          <button onclick="deleteSlot('${driverId}', '${child.key}')">Delete</button>
+          <button onclick="deleteSlot('${child.key}')">Delete</button>
         `;
         slotList.appendChild(card);
       });
     });
   }
 
-  function addSlot(driverId) {
+  function addSlot() {
     const data = {
       pickup: pickup.value,
       dropoff: dropoff.value,
@@ -238,27 +238,20 @@
     push(ref(db, `availableslots/${driverId}`), data).then(() => {
       alert("Slot added successfully");
       seats.value = "";
-      loadSlots(driverId);
+      loadSlots();
     });
   }
 
-  window.deleteSlot = function (driverId, key) {
+  window.deleteSlot = function (key) {
     if (confirm("Are you sure to delete this slot?")) {
       remove(ref(db, `availableslots/${driverId}/${key}`));
     }
   }
 
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      const driverId = user.uid;
-      loadDropdownData(driverId);
-      loadSlots(driverId);
-      document.getElementById("addSlotBtn").addEventListener("click", () => addSlot(driverId));
-    } else {
-      alert("Please log in to manage your slots.");
-      window.location.href = "driverlogin.html"; // redirect to login
-    }
-  });
+  document.getElementById("addSlotBtn").addEventListener("click", addSlot);
+
+  loadDropdownData();
+  loadSlots();
 </script>
 </body>
 </html>
