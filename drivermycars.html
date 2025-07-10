@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Cars</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
   <style>
-    /* Base Styles */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -15,73 +14,72 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding-bottom: 60px; /* ensure content sits above navbar */
+      padding-bottom: 60px;
+      font-size: 0.85rem;
     }
     .container {
       flex: 1;
-      padding: 16px;
+      padding: 12px;
       max-width: 600px;
       margin: 0 auto;
       width: 100%;
     }
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       text-align: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     label {
       display: block;
-      margin-top: 12px;
-      font-size: 0.9rem;
+      margin-top: 10px;
+      font-size: 0.85rem;
     }
     input, select {
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       border: none;
-      border-radius: 8px;
-      margin-top: 6px;
-      font-size: 1rem;
+      border-radius: 6px;
+      margin-top: 5px;
+      font-size: 0.9rem;
     }
     button {
       display: block;
       width: 100%;
-      padding: 12px;
-      margin-top: 20px;
+      padding: 10px;
+      margin-top: 16px;
       background: #ffd700;
       color: #000;
       font-weight: bold;
       border: none;
-      border-radius: 8px;
-      font-size: 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
       cursor: pointer;
     }
-    /* Slot List */
     .slot-list {
-      margin-top: 24px;
+      margin-top: 20px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
     .slot-card {
       background: rgba(255,255,255,0.1);
-      padding: 16px;
-      border-radius: 10px;
+      padding: 14px;
+      border-radius: 8px;
     }
     .slot-card p {
-      margin: 6px 0;
-      font-size: 0.9rem;
+      margin: 4px 0;
+      font-size: 0.85rem;
     }
     .slot-card button {
       background: #ff4d4d;
       color: white;
-      padding: 8px 12px;
-      margin-top: 10px;
-      font-size: 0.85rem;
+      padding: 6px 10px;
+      margin-top: 8px;
+      font-size: 0.75rem;
       border: none;
       border-radius: 6px;
       cursor: pointer;
     }
-    /* Navbar */
     .navbar {
       position: fixed;
       bottom: 0;
@@ -99,23 +97,22 @@
     .navbar a {
       color: #fff;
       text-decoration: none;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
     .navbar a i {
-      font-size: 1.2rem;
+      font-size: 1rem;
       margin-bottom: 2px;
     }
-    /* Responsive Tweaks */
     @media (min-width: 768px) {
-      .container { padding: 24px; }
-      h1 { font-size: 2rem; }
-      input, select, button { font-size: 1.1rem; }
-      .slot-card p { font-size: 1rem; }
-      .navbar a { font-size: 0.85rem; }
-      .navbar a i { font-size: 1.4rem; }
+      .container { padding: 20px; }
+      h1 { font-size: 1.7rem; }
+      input, select, button { font-size: 1rem; }
+      .slot-card p { font-size: 0.95rem; }
+      .navbar a { font-size: 0.8rem; }
+      .navbar a i { font-size: 1.3rem; }
     }
   </style>
 </head>
@@ -132,6 +129,12 @@
       <label for="ownerName">Owner Name</label>
       <input type="text" id="ownerName" placeholder="e.g., John Doe" required />
 
+      <label for="driverName">Driver Name</label>
+      <input type="text" id="driverName" placeholder="e.g., Alex Smith" required />
+
+      <label for="driverNumber">Driver Number</label>
+      <input type="tel" id="driverNumber" placeholder="e.g., 9876543210" required />
+
       <label for="seats">Available Seats</label>
       <input type="number" id="seats" min="1" placeholder="e.g., 4" required />
 
@@ -139,12 +142,9 @@
     </form>
 
     <h1>Approved Cars</h1>
-    <div class="slot-list" id="approvedCarsList">
-      <!-- Approved cars will be injected here -->
-    </div>
+    <div class="slot-list" id="approvedCarsList"></div>
   </div>
 
-  <!-- Navbar -->
   <nav class="navbar">
     <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
     <a href="drivermybookings.html"><i class="fas fa-list"></i><span>My Bookings</span></a>
@@ -154,7 +154,6 @@
   </nav>
 
   <script type="module">
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -171,13 +170,14 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    // Submit new car
     document.getElementById("carForm").addEventListener("submit", async event => {
       event.preventDefault();
       const carData = {
         carBrand: document.getElementById("carBrand").value.trim(),
         carReg: document.getElementById("carReg").value.trim(),
         ownerName: document.getElementById("ownerName").value.trim(),
+        driverName: document.getElementById("driverName").value.trim(),
+        driverNumber: document.getElementById("driverNumber").value.trim(),
         seats: document.getElementById("seats").value.trim()
       };
       try {
@@ -190,7 +190,6 @@
       }
     });
 
-    // Load approved cars
     async function loadApprovedCars() {
       try {
         const snapshot = await get(ref(database, "approvedcars"));
@@ -204,6 +203,8 @@
             <p><strong>Brand:</strong> ${car.carBrand}</p>
             <p><strong>Reg No.:</strong> ${car.carReg}</p>
             <p><strong>Owner:</strong> ${car.ownerName}</p>
+            <p><strong>Driver:</strong> ${car.driverName}</p>
+            <p><strong>Contact:</strong> ${car.driverNumber}</p>
             <p><strong>Seats:</strong> ${car.seats}</p>
             <button onclick="removeCar('${child.key}')">Remove</button>
           `;
@@ -214,7 +215,6 @@
       }
     }
 
-    // Optional: remove car from approved list
     async function removeCar(key) {
       try {
         await set(ref(database, `approvedcars/${key}`), null);
@@ -224,7 +224,6 @@
       }
     }
 
-    // Initial load
     loadApprovedCars();
   </script>
 </body>
