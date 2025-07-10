@@ -188,7 +188,7 @@
       const snapshot = await get(itemRef);
       if (snapshot.exists()) {
         const itemData = snapshot.val();
-        // Implement editing logic here.
+        // Placeholder: edit logic could be implemented here
       }
     }
 
@@ -197,8 +197,14 @@
       const carSnapshot = await get(carRef);
       if (carSnapshot.exists()) {
         const carData = carSnapshot.val();
-        // Move data from pending cars to approved cars.
-        await set(ref(db, `/approvedcars/${key}`), carData);
+
+        // Preserve driverId and move data
+        const approvedData = {
+          ...carData,
+          driverId: carData.driverId || null
+        };
+
+        await set(ref(db, `/approvedcars/${key}`), approvedData);
         await remove(ref(db, `/pendingcars/${key}`));
         alert('Car approved.');
         openTab('pending-cars');
