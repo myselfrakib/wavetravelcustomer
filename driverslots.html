@@ -6,296 +6,186 @@
   <title>Driver Slot Management</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(to right, #8e2de2, #4a00e0);
-      color: white;
-      min-height: 100vh;
-      padding-bottom: 80px;
-    }
-    .container {
-      padding: 16px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    h1 {
-      font-size: 1.5rem;
-      text-align: center;
-      margin-bottom: 16px;
-    }
-    label {
-      display: block;
-      margin-top: 12px;
-      font-size: 0.9rem;
-    }
-    select, input {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      margin-top: 6px;
-      font-size: 1rem;
-    }
-    button {
-      margin-top: 20px;
-      padding: 12px;
-      width: 100%;
-      background: #ffd700;
-      color: black;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    .slot-list {
-      margin-top: 24px;
-    }
-    .slot-card {
-      background: rgba(255,255,255,0.1);
-      padding: 16px;
-      border-radius: 10px;
-      margin-bottom: 15px;
-    }
-    .slot-card p {
-      margin: 6px 0;
-      font-size: 0.9rem;
-    }
-    .slot-card button {
-      background: #ff4d4d;
-      color: white;
-      padding: 8px 12px;
-      margin-top: 10px;
-      font-size: 0.85rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .navbar {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(10px);
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 12px 0;
-      z-index: 999;
-    }
-    .navbar a {
-      color: #fff;
-      text-decoration: none;
-      font-size: 0.75rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .navbar a i {
-      font-size: 1.2rem;
-      margin-bottom: 2px;
-    }
-    .time-select-group {
-      display: flex;
-      gap: 10px;
-    }
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0;
+      background: linear-gradient(to right, #8e2de2, #4a00e0); color: white;
+      min-height: 100vh; padding-bottom: 80px; }
+    .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; text-align: center; margin-bottom: 16px; }
+    label { display: block; margin-top: 12px; font-size: 0.9rem; }
+    select, input { width: 100%; padding: 10px; border: none; border-radius: 8px;
+      margin-top: 6px; font-size: 1rem; }
+    button { margin-top: 20px; padding: 12px; width: 100%; background: #ffd700;
+      color: black; font-weight: bold; border: none; border-radius: 8px;
+      font-size: 1rem; cursor: pointer; }
+    .slot-list { margin-top: 24px; }
+    .slot-card { background: rgba(255,255,255,0.1); padding: 16px;
+      border-radius: 10px; margin-bottom: 15px; }
+    .slot-card p { margin: 6px 0; font-size: 0.9rem; }
+    .slot-card button { background: #ff4d4d; color: white; padding: 8px 12px;
+      margin-top: 10px; font-size: 0.85rem; border: none; border-radius: 6px;
+      cursor: pointer; }
+    .navbar { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px); display: flex; justify-content: space-around;
+      align-items: center; padding: 12px 0; z-index: 999; }
+    .navbar a { color: #fff; text-decoration: none; font-size: 0.75rem;
+      display: flex; flex-direction: column; align-items: center; }
+    .navbar a i { font-size: 1.2rem; margin-bottom: 2px; }
+    .time-select-group { display: flex; gap: 10px; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>Add Available Slot</h1>
+  <div class="container">
+    <h1>Add Available Slot</h1>
 
-  <label for="pickup">Pickup Location</label>
-  <select id="pickup"></select>
+    <label for="pickup">Pickup Location</label>
+    <select id="pickup"></select>
 
-  <label for="dropoff">Dropoff Location</label>
-  <select id="dropoff"></select>
+    <label for="dropoff">Dropoff Location</label>
+    <select id="dropoff"></select>
 
-  <label for="car">Select Car</label>
-  <select id="car">
-    <option disabled selected>Loading...</option>
-  </select>
+    <label for="car">Select Car</label>
+    <select id="car"><option disabled selected>Loading...</option></select>
 
-  <label for="date">Date</label>
-  <input type="date" id="date"/>
+    <label for="date">Date</label>
+    <input type="date" id="date"/>
 
-  <label>Time</label>
-  <div class="time-select-group">
-    <select id="hour"></select>
-    <select id="minute"></select>
-    <select id="ampm">
-      <option value="AM">AM</option>
-      <option value="PM">PM</option>
-    </select>
+    <label>Time</label>
+    <div class="time-select-group">
+      <select id="hour"></select>
+      <select id="minute"></select>
+      <select id="ampm">
+        <option>AM</option><option>PM</option>
+      </select>
+    </div>
+
+    <label for="seats">Available Seats (Max 6)</label>
+    <input type="number" id="seats" min="1" max="6"/>
+
+    <button id="addSlotBtn">Add Slot</button>
+
+    <div class="slot-list" id="slotList"></div>
   </div>
 
-  <label for="seats">Available Seats (Max 6)</label>
-  <input type="number" id="seats" min="1" max="6" />
+  <div class="navbar">
+    <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="drivermybookings.html"><i class="fas fa-list"></i><span>My Bookings</span></a>
+    <a href="driverslots.html"><i class="fas fa-calendar"></i><span>Slots</span></a>
+    <a href="drivermycars.html"><i class="fas fa-car"></i><span>My Cars</span></a>
+    <a href="driverprofile.html"><i class="fas fa-user"></i><span>Profile</span></a>
+  </div>
 
-  <button id="addSlotBtn">Add Slot</button>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, push, get, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
-  <div class="slot-list" id="slotList"></div>
-</div>
-
-<div class="navbar">
-  <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
-  <a href="drivermybookings.html"><i class="fas fa-list"></i><span>My Bookings</span></a>
-  <a href="driverslots.html"><i class="fas fa-calendar"></i><span>Slots</span></a>
-  <a href="drivermycars.html"><i class="fas fa-car"></i><span>My Cars</span></a>
-  <a href="driverprofile.html"><i class="fas fa-user"></i><span>Profile</span></a>
-</div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-    authDomain: "wavetravel-3c4c4.firebaseapp.com",
-    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-    projectId: "wavetravel-3c4c4",
-    storageBucket: "wavetravel-3c4c4.appspot.com",
-    messagingSenderId: "298226098137",
-    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const auth = getAuth();
-
-  const pickup = document.getElementById("pickup");
-  const dropoff = document.getElementById("dropoff");
-  const car = document.getElementById("car");
-  const date = document.getElementById("date");
-  const hour = document.getElementById("hour");
-  const minute = document.getElementById("minute");
-  const ampm = document.getElementById("ampm");
-  const seats = document.getElementById("seats");
-  const slotList = document.getElementById("slotList");
-
-  for (let i = 1; i <= 12; i++) {
-    hour.innerHTML += `<option value="${i}">${i}</option>`;
-  }
-  for (let i = 0; i < 60; i += 5) {
-    const val = i.toString().padStart(2, '0');
-    minute.innerHTML += `<option value="${val}">${val}</option>`;
-  }
-
-  const today = new Date();
-  const yyyyMMdd = today.toISOString().split("T")[0];
-  date.value = yyyyMMdd;
-  date.setAttribute("min", yyyyMMdd);
-
-  function convertTo12Hr(timeStr) {
-    const [hour, minute] = timeStr.split(":");
-    const h = +hour;
-    const ampm = h >= 12 ? "PM" : "AM";
-    const hr = h % 12 || 12;
-    return `${hr}:${minute} ${ampm}`;
-  }
-
-  function loadDropdownData() {
-    const locRef = ref(db, "locations");
-    onValue(locRef, (snapshot) => {
-      const locations = snapshot.val();
-      pickup.innerHTML = dropoff.innerHTML = "";
-      if (locations) {
-        locations.forEach(loc => {
-          const opt = `<option value="${loc.name}">${loc.name}</option>`;
-          pickup.innerHTML += opt;
-          dropoff.innerHTML += opt;
-        });
-      }
-    });
-  }
-
-  function loadSlots(driverId) {
-    slotList.innerHTML = "";
-    const slotsRef = ref(db, `availableslots/${driverId}`);
-    onValue(slotsRef, (snapshot) => {
-      slotList.innerHTML = "";
-      let count = 1;
-      snapshot.forEach(child => {
-        const s = child.val();
-        const card = document.createElement("div");
-        card.className = "slot-card";
-        card.innerHTML = `
-          <p><strong>Sl No. ${count}</strong></p>
-          <p><strong>${s.pickup}</strong> to <strong>${s.dropoff}</strong></p>
-          <p>Date: ${s.date}, Time: ${convertTo12Hr(s.time)}</p>
-          <p>Seats: ${s.seats}</p>
-          <button onclick="deleteSlot('${child.key}', '${driverId}')">Delete</button>
-        `;
-        slotList.appendChild(card);
-        count++;
-      });
-    });
-  }
-
-  function convertTo24Hr(h, m, ampmVal) {
-    h = parseInt(h);
-    if (ampmVal === "PM" && h < 12) h += 12;
-    if (ampmVal === "AM" && h === 12) h = 0;
-    return `${h.toString().padStart(2, '0')}:${m}`;
-  }
-
-  function addSlot(driverId) {
-    const time24 = convertTo24Hr(hour.value, minute.value, ampm.value);
-    const data = {
-      pickup: pickup.value,
-      dropoff: dropoff.value,
-      carId: car.value,
-      date: date.value,
-      time: time24,
-      seats: seats.value
+    const firebaseConfig = {
+      apiKey: "...", authDomain: "...", databaseURL: "...",
+      projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..."
     };
-    if (!data.pickup || !data.dropoff || !data.carId || !data.date || !data.time || !data.seats) {
-      alert("All fields are required");
-      return;
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth();
+
+    // DOM refs
+    const pickup = document.getElementById("pickup");
+    const dropoff = document.getElementById("dropoff");
+    const car = document.getElementById("car");
+    const date = document.getElementById("date");
+    const hour = document.getElementById("hour");
+    const minute = document.getElementById("minute");
+    const ampm = document.getElementById("ampm");
+    const seats = document.getElementById("seats");
+    const slotList = document.getElementById("slotList");
+    const addBtn = document.getElementById("addSlotBtn");
+
+    // Populate hour/minute
+    for (let i=1;i<=12;i++) hour.innerHTML += `<option>${i}</option>`;
+    for (let i=0;i<60;i+=5){
+      const v=i.toString().padStart(2,'0');
+      minute.innerHTML += `<option>${v}</option>`;
     }
-    push(ref(db, `availableslots/${driverId}`), data).then(() => {
-      alert("Slot added successfully");
-      seats.value = "";
-    });
-  }
 
-  window.deleteSlot = function (key, driverId) {
-    if (confirm("Are you sure to delete this slot?")) {
-      remove(ref(db, `availableslots/${driverId}/${key}`));
+    // Date default
+    const today = new Date();
+    const iso = today.toISOString().split("T")[0];
+    date.min = date.value = iso;
+
+    function to24(h,m,ap){
+      h=parseInt(h);
+      if(ap==='PM'&&h<12) h+=12;
+      if(ap==='AM'&&h===12) h=0;
+      return `${h.toString().padStart(2,'0')}:${m}`;
     }
-  };
+    function fmt12(t){
+      let [h,m]=t.split(":").map(Number);
+      const ap=h>=12?'PM':'AM';
+      h=h%12||12;
+      return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')} ${ap}`;
+    }
 
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      const driverId = user.uid;
-      loadDropdownData();
-      loadSlots(driverId);
+    function loadLoc(){
+      onValue(ref(db,"locations"),snap=>{
+        const locs=snap.val()||[];
+        let o="";
+        locs.forEach(l=> o+=`<option>${l.name}</option>`);
+        pickup.innerHTML=dropoff.innerHTML=o;
+      });
+    }
 
-      const carsRef = ref(db, "approvedcars");
-      onValue(carsRef, (snapshot) => {
-        car.innerHTML = "";
-        let found = false;
-        snapshot.forEach(child => {
-          const data = child.val();
-          if (data.driverId === driverId) {
-            found = true;
-            car.innerHTML += `<option value="${child.key}">${data.carBrand} (${data.carReg})</option>`;
+    function loadSlots(uid){
+      onValue(ref(db,`availableslots/${uid}`),snap=>{
+        let cnt=1, html="";
+        snap.forEach(ch=>{
+          const s=ch.val();
+          html+=`
+            <div class="slot-card">
+              <p><strong>Sl No. ${cnt++}</strong></p>
+              <p><strong>${s.pickup}</strong> ➝ <strong>${s.dropoff}</strong></p>
+              <p>Date: ${s.date}, Time: ${fmt12(s.time)}</p>
+              <p>Seats: ${s.seats}</p>
+              <button onclick="remove(ref(db,'availableslots/${uid}/${ch.key}'))">Delete</button>
+            </div>`;
+        });
+        slotList.innerHTML=html;
+      });
+    }
+
+    onAuthStateChanged(auth,user=>{
+      if(!user) return location.href="login.html";
+      const uid=user.uid;
+      loadLoc(); loadSlots(uid);
+
+      // load cars
+      onValue(ref(db,"approvedcars"),snap=>{
+        let o="", found=false;
+        snap.forEach(ch=>{
+          const d=ch.val();
+          if(d.driverId===uid){
+            found=true;
+            o+=`<option value="${ch.key}">${d.carBrand}</option>`;
           }
         });
-        if (!found) {
-          car.innerHTML = `<option disabled selected>No approved car found</option>`;
-        }
+        car.innerHTML= found? o : `<option disabled>No approved cars</option>`;
       });
 
-      document.getElementById("addSlotBtn").addEventListener("click", () => addSlot(driverId));
-    } else {
-      alert("You must be logged in as a driver to access this page.");
-      window.location.href = "index.html";
-    }
-  });
-</script>
+      addBtn.onclick= async ()=>{
+        const cid=car.value, pu=pickup.value, dr=dropoff.value,
+              dt=date.value, h=hour.value, mi=minute.value, ap=ampm.value,
+              st=seats.value;
+        if(!cid||!pu||!dr||!dt||!h||!mi||!ap||!st) return alert("Fill all fields");
+        // fetch car details
+        const csnap=await get(ref(db,`approvedcars/${cid}`));
+        const cdata=csnap.val()||{};
+        const time24=to24(h,mi,ap);
+        const slot = { pickup:pu, dropoff:dr, date:dt, time:time24, seats:st,
+                       driverName:cdata.driverName||"", driverNumber:cdata.driverNumber||"",
+                       carBrand:cdata.carBrand||"" };
+        await push(ref(db,`availableslots/${uid}`),slot);
+        alert("Slot added successfully");
+        seats.value="";
+      };
+    });
+  </script>
 </body>
 </html>
