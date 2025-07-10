@@ -16,24 +16,27 @@
       padding-bottom: 80px;
     }
     .container {
-      padding: 20px;
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
     }
     h1 {
-      font-size: 24px;
+      font-size: 1.5rem;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     label {
       display: block;
-      margin-top: 15px;
+      margin-top: 12px;
+      font-size: 0.9rem;
     }
     select, input {
       width: 100%;
       padding: 10px;
       border: none;
       border-radius: 8px;
-      margin-top: 5px;
-      font-size: 16px;
+      margin-top: 6px;
+      font-size: 1rem;
     }
     button {
       margin-top: 20px;
@@ -44,27 +47,28 @@
       font-weight: bold;
       border: none;
       border-radius: 8px;
-      font-size: 16px;
+      font-size: 1rem;
       cursor: pointer;
     }
     .slot-list {
-      margin-top: 30px;
+      margin-top: 24px;
     }
     .slot-card {
       background: rgba(255,255,255,0.1);
-      padding: 15px;
+      padding: 16px;
       border-radius: 10px;
       margin-bottom: 15px;
     }
     .slot-card p {
-      margin: 5px 0;
+      margin: 6px 0;
+      font-size: 0.9rem;
     }
     .slot-card button {
       background: #ff4d4d;
       color: white;
       padding: 8px 12px;
       margin-top: 10px;
-      font-size: 14px;
+      font-size: 0.85rem;
       border: none;
       border-radius: 6px;
       cursor: pointer;
@@ -84,20 +88,21 @@
     .navbar a {
       color: #fff;
       text-decoration: none;
-      font-size: 14px;
+      font-size: 0.75rem;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
     .navbar a i {
-      font-size: 20px;
-      margin-bottom: 5px;
+      font-size: 1.2rem;
+      margin-bottom: 2px;
     }
   </style>
 </head>
 <body>
 <div class="container">
   <h1>Add Available Slot</h1>
+
   <label for="pickup">Pickup Location</label>
   <select id="pickup"></select>
 
@@ -108,10 +113,10 @@
   <select id="car"></select>
 
   <label for="date">Date</label>
-  <input type="date" id="date" min="" />
+  <input type="date" id="date"/>
 
   <label for="time">Time</label>
-  <input type="time" id="time" />
+  <input type="time" id="time"/>
 
   <label for="seats">Available Seats (Max 6)</label>
   <input type="number" id="seats" min="1" max="6" />
@@ -122,11 +127,11 @@
 </div>
 
 <div class="navbar">
-  <a href="driverdashboard.html"><i class="fas fa-home"></i>Home</a>
-  <a href="drivermybookings.html"><i class="fas fa-list"></i>My Bookings</a>
-  <a href="driverslots.html"><i class="fas fa-calendar"></i>Slots</a>
-  <a href="drivermycars.html"><i class="fas fa-car"></i>My Cars</a>
-  <a href="driverprofile.html"><i class="fas fa-user"></i>Profile</a>
+  <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
+  <a href="drivermybookings.html"><i class="fas fa-list"></i><span>My Bookings</span></a>
+  <a href="driverslots.html"><i class="fas fa-calendar"></i><span>Slots</span></a>
+  <a href="drivermycars.html"><i class="fas fa-car"></i><span>My Cars</span></a>
+  <a href="driverprofile.html"><i class="fas fa-user"></i><span>Profile</span></a>
 </div>
 
 <script type="module">
@@ -142,9 +147,10 @@
     messagingSenderId: "298226098137",
     appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
   };
+
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  const driverId = "2ZNbW7mM71YMFUE18hkveeuyRRJ3";
+  const driverId = "2ZNbW7mM71YMFUE18hkveeuyRRJ3"; // Adjust if dynamic
 
   const pickup = document.getElementById("pickup");
   const dropoff = document.getElementById("dropoff");
@@ -154,8 +160,24 @@
   const seats = document.getElementById("seats");
   const slotList = document.getElementById("slotList");
 
-  const today = new Date().toISOString().split("T")[0];
-  date.setAttribute("min", today);
+  // Set today's date
+  const today = new Date();
+  const yyyyMMdd = today.toISOString().split("T")[0];
+  date.value = yyyyMMdd;
+  date.setAttribute("min", yyyyMMdd);
+
+  // Set current time in 24hr format
+  const pad = n => n.toString().padStart(2, '0');
+  const now = `${pad(today.getHours())}:${pad(today.getMinutes())}`;
+  time.value = now;
+
+  function convertTo12Hr(timeStr) {
+    const [hour, minute] = timeStr.split(":");
+    const h = +hour;
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hr = h % 12 || 12;
+    return `${hr}:${minute} ${ampm}`;
+  }
 
   function loadDropdownData() {
     const locRef = ref(db, "locations");
@@ -169,12 +191,15 @@
       });
     });
 
-    const carsRef = ref(db, `approvedcars/${driverId}`);
+    const carsRef = ref(db, `approvedcars`);
     onValue(carsRef, (snapshot) => {
       car.innerHTML = "";
       snapshot.forEach(child => {
         const data = child.val();
-        car.innerHTML += `<option value="${child.key}">${data.model} (${data.plateNumber})</option>`;
+        // Match only this driver's cars
+        if (data.driverId === driverId) {
+          car.innerHTML += `<option value="${child.key}">${data.carBrand} (${data.carReg})</option>`;
+        }
       });
     });
   }
@@ -199,14 +224,6 @@
     });
   }
 
-  function convertTo12Hr(timeStr) {
-    const [hour, minute] = timeStr.split(":");
-    const h = +hour;
-    const ampm = h >= 12 ? "PM" : "AM";
-    const hr = h % 12 || 12;
-    return `${hr}:${minute} ${ampm}`;
-  }
-
   function addSlot() {
     const data = {
       pickup: pickup.value,
@@ -222,7 +239,7 @@
     }
     push(ref(db, `availableslots/${driverId}`), data).then(() => {
       alert("Slot added successfully");
-      date.value = time.value = seats.value = "";
+      seats.value = "";
       loadSlots();
     });
   }
@@ -240,4 +257,3 @@
 </script>
 </body>
 </html>
-
