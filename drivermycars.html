@@ -188,7 +188,7 @@
         loadApprovedCars();
       } else {
         alert("You must be logged in to submit cars.");
-        window.location.href = "login.html"; // redirect if not logged in
+        window.location.href = "login.html";
       }
     });
 
@@ -206,7 +206,7 @@
         driverName: document.getElementById("driverName").value.trim(),
         driverNumber: document.getElementById("driverNumber").value.trim(),
         seats: document.getElementById("seats").value.trim(),
-        driverId: currentUser.uid // Include driver ID
+        driverId: currentUser.uid
       };
 
       try {
@@ -225,11 +225,13 @@
         const snapshot = await get(ref(database, "approvedcars"));
         const list = document.getElementById("approvedCarsList");
         list.innerHTML = '';
+        let slNo = 1;
         snapshot.forEach(child => {
           const car = child.val();
           const card = document.createElement('div');
           card.className = 'slot-card';
           card.innerHTML = `
+            <p><strong>Sl No.:</strong> ${slNo++}</p>
             <p><strong>Brand:</strong> ${car.carBrand}</p>
             <p><strong>Reg No.:</strong> ${car.carReg}</p>
             <p><strong>Owner:</strong> ${car.ownerName}</p>
