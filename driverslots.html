@@ -8,11 +8,8 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
       background: linear-gradient(to right, #8e2de2, #4a00e0);
       color: white;
-      min-height: 100vh;
       padding-bottom: 80px;
     }
     .container {
@@ -110,7 +107,9 @@
   <select id="dropoff"></select>
 
   <label for="car">Select Car</label>
-  <select id="car"></select>
+  <select id="car">
+    <option disabled selected>Loading cars...</option>
+  </select>
 
   <label for="date">Date</label>
   <input type="date" id="date"/>
@@ -151,7 +150,7 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  const driverId = "2ZNbW7mM71YMFUE18hkveeuyRRJ3"; // Replace with actual dynamic driver ID after auth
+  const driverId = "2ZNbW7mM71YMFUE18hkveeuyRRJ3"; // Replace this with dynamic auth ID in production
 
   const pickup = document.getElementById("pickup");
   const dropoff = document.getElementById("dropoff");
@@ -161,14 +160,12 @@
   const seats = document.getElementById("seats");
   const slotList = document.getElementById("slotList");
 
-  // Set today's date and time defaults
+  // Set today's date and time
   const today = new Date();
-  const yyyyMMdd = today.toISOString().split("T")[0];
-  date.value = yyyyMMdd;
-  date.setAttribute("min", yyyyMMdd);
+  date.value = today.toISOString().split("T")[0];
+  date.min = date.value;
   const pad = n => n.toString().padStart(2, '0');
-  const now = `${pad(today.getHours())}:${pad(today.getMinutes())}`;
-  time.value = now;
+  time.value = `${pad(today.getHours())}:${pad(today.getMinutes())}`;
 
   function convertTo12Hr(timeStr) {
     const [hour, minute] = timeStr.split(":");
@@ -179,26 +176,36 @@
   }
 
   function loadDropdownData() {
+    // Load locations
     const locRef = ref(db, "locations");
     onValue(locRef, (snapshot) => {
       const locations = snapshot.val();
       pickup.innerHTML = dropoff.innerHTML = "";
-      locations.forEach(loc => {
+      locations?.forEach(loc => {
         const opt = `<option value="${loc.name}">${loc.name}</option>`;
         pickup.innerHTML += opt;
         dropoff.innerHTML += opt;
       });
     });
 
+    // Load cars for the driver
     const carsRef = ref(db, `approvedcars`);
     onValue(carsRef, (snapshot) => {
       car.innerHTML = "";
+      let found = false;
       snapshot.forEach(child => {
         const data = child.val();
         if (data.driverId === driverId) {
-          car.innerHTML += `<option value="${child.key}">${data.carBrand}</option>`;
+          found = true;
+          const option = document.createElement("option");
+          option.value = child.key;
+          option.textContent = data.carBrand;
+          car.appendChild(option);
         }
       });
+      if (!found) {
+        car.innerHTML = `<option disabled selected>No cars approved</option>`;
+      }
     });
   }
 
@@ -243,7 +250,7 @@
   }
 
   window.deleteSlot = function (key) {
-    if (confirm("Are you sure to delete this slot?")) {
+    if (confirm("Are you sure you want to delete this slot?")) {
       remove(ref(db, `availableslots/${driverId}/${key}`));
     }
   }
