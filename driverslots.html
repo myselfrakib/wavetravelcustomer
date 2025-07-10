@@ -177,12 +177,10 @@
   const addBtn = document.getElementById("addSlotBtn");
 
   // Populate hour/minute selectors
-  for (let i = 1; i <= 12; i++) {
-    hour.innerHTML += `<option>${i}</option>`;
-  }
+  for (let i = 1; i <= 12; i++) hour.innerHTML += `<option>${i}</option>`;
   for (let i = 0; i < 60; i += 5) {
-    const val = i.toString().padStart(2, '0');
-    minute.innerHTML += `<option>${val}</option>`;
+    const v = i.toString().padStart(2, '0');
+    minute.innerHTML += `<option>${v}</option>`;
   }
 
   // Default date to today
@@ -202,6 +200,9 @@
     hh = hh % 12 || 12;
     return `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')} ${ap}`;
   }
+
+  // placeholder for driverId in outer scope
+  let driverId = "";
 
   function loadLocations() {
     onValue(ref(db, "locations"), snap => {
@@ -223,28 +224,36 @@
             <p><strong>${s.pickup}</strong> ➝ <strong>${s.dropoff}</strong></p>
             <p>Date: ${s.date}, Time: ${fmt12(s.time)}</p>
             <p>Seats: ${s.seats}</p>
-            <button onclick="remove(ref(db,'availableslots/${uid}/${ch.key}'))">Delete</button>
+            <button onclick="deleteSlot('${ch.key}')">Delete</button>
           </div>`;
       });
       slotList.innerHTML = html;
     });
   }
 
+  // global deleteSlot function
+  window.deleteSlot = function(key) {
+    if (!driverId) return;
+    if (confirm("Are you sure to delete this slot?")) {
+      remove(ref(db, `availableslots/${driverId}/${key}`));
+    }
+  };
+
   onAuthStateChanged(auth, user => {
     if (!user) {
       alert("Please log in.");
       return window.location.href = "login.html";
     }
-    const uid = user.uid;
+    driverId = user.uid;
     loadLocations();
-    loadSlots(uid);
+    loadSlots(driverId);
 
-    // Load only this driver's approved cars
+    // Load approved cars
     onValue(ref(db, "approvedcars"), snap => {
       let opts = "", found = false;
       snap.forEach(ch => {
         const d = ch.val();
-        if (d.driverId === uid) {
+        if (d.driverId === driverId) {
           found = true;
           opts += `<option value="${ch.key}">${d.carBrand} (${d.carReg})</option>`;
         }
@@ -282,7 +291,7 @@
         carReg: cd.carReg || ""
       };
 
-      await push(ref(db, `availableslots/${uid}`), slotData);
+      await push(ref(db, `availableslots/${driverId}`), slotData);
       alert("Slot added successfully");
       seats.value = "";
     };
