@@ -1,112 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Book a Ride - WaveTravel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+    :root {
+      --primary: #0077ff;
+      --light: #f8f8f8;
+      --dark: #333;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
     body {
-      background:linear-gradient(to right,#74ebd5,#ACB6E5);
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
+      background: linear-gradient(to right, #74ebd5, #ACB6E5);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     .container {
-      flex:1;
-      padding:15px;
-      max-width:600px;
-      margin:0 auto;
+      flex: 1;
+      padding: 20px;
+      padding-bottom: 100px; /* Ensure content isn't hidden behind navbar */
     }
     h1 {
-      text-align:center;
-      color:#fff;
-      margin:20px 0;
-      font-size:1.8rem;
+      text-align: center;
+      color: #fff;
+      font-size: 24px;
+      margin-bottom: 20px;
     }
     .form-group {
-      margin-bottom:15px;
+      margin-bottom: 15px;
     }
     label {
-      color:#333;
-      font-weight:600;
-      font-size:0.9rem;
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--dark);
     }
-    select, input, button {
-      width:100%;
-      padding:12px;
-      margin-top:5px;
-      border:none;
-      border-radius:10px;
-      background:#f8f8f8;
-      box-shadow:0 4px 10px rgba(0,0,0,0.1);
-      outline:none;
-      font-size:1rem;
+    select, input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      background: var(--light);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-size: 16px;
     }
     button {
-      background:#0077ff;
-      color:#fff;
-      font-weight:bold;
-      cursor:pointer;
-      transition:0.3s;
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: bold;
+      font-size: 16px;
+      border: none;
+      border-radius: 12px;
+      margin-top: 10px;
+      cursor: pointer;
+      transition: 0.3s;
     }
     button:hover {
-      background:#005dc1;
+      background: #005dc1;
     }
     .slots {
-      margin-top:20px;
-      display:grid;
-      gap:15px;
-      grid-template-columns:1fr;
+      margin-top: 20px;
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
     }
     .slot-card {
-      background:#fff;
-      padding:15px;
-      border-radius:15px;
-      box-shadow:0 5px 15px rgba(0,0,0,0.2);
-      transition:transform 0.3s;
+      background: #fff;
+      padding: 16px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
-    .slot-card:hover {
-      transform:scale(1.02);
+    .slot-card strong {
+      color: var(--dark);
     }
-    .navbar {
-      position:fixed;
-      bottom:0;
-      width:100%;
-      background:#fff;
-      padding:8px 0;
-      display:flex;
-      justify-content:space-around;
-      border-top-left-radius:15px;
-      border-top-right-radius:15px;
-      box-shadow:0 -3px 10px rgba(0,0,0,0.1);
-    }
-    .navbar a {
-      color:#0077ff;
-      text-decoration:none;
-      font-size:12px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-    }
-    .navbar a i {
-      font-size:18px;
+    .slot-card button {
+      margin-top: 10px;
+      background: #28a745;
     }
     .no-slots {
-      text-align:center;
-      margin-top:20px;
-      background:#fff;
-      padding:20px;
-      border-radius:10px;
-      box-shadow:0 4px 10px rgba(0,0,0,0.2);
-      font-size:1rem;
+      text-align: center;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      font-weight: bold;
+      color: var(--dark);
+    }
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      border-top: 1px solid #ccc;
+      box-shadow: 0 -3px 10px rgba(0,0,0,0.1);
+    }
+    .navbar a {
+      text-align: center;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 12px;
+    }
+    .navbar a i {
+      display: block;
+      font-size: 20px;
     }
 
-    @media(min-width: 480px){
+    @media (min-width: 600px) {
       .slots {
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
       }
     }
   </style>
@@ -130,7 +145,7 @@
   </div>
   <div class="form-group">
     <label for="seats">Seats Needed</label>
-    <input type="number" id="seats" min="1" placeholder="Enter number of seats"/>
+    <input type="number" id="seats" min="1" placeholder="Enter seats"/>
   </div>
 
   <button onclick="searchSlots()">Search Available Slots</button>
@@ -144,7 +159,6 @@
   <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
 </div>
 
-<!-- Firebase & Razorpay -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -186,7 +200,10 @@
     const dt = document.getElementById('date').value;
     const req = parseInt(seatsEl.value) || 1;
 
-    if (!pu || !dof || !dt) return alert('Select pickup, dropoff & date');
+    if (!pu || !dof || !dt) return alert('Please fill all fields');
+
+    const puIdx = locationsArr.indexOf(pu);
+    const doIdx = locationsArr.indexOf(dof);
 
     firebase.database().ref('availableslots').once('value').then(snap => {
       let allSlots = [];
@@ -202,12 +219,17 @@
 
       let matched = allSlots.filter(s => s.pickup === pu && s.dropoff === dof && s.date === dt);
       if (!matched.length) {
-        matched = allSlots.filter(s => s.dropoff === dof && s.date === dt);
+        matched = allSlots.filter(s => {
+          const sDoIdx = locationsArr.indexOf(s.dropoff);
+          return sDoIdx === doIdx && s.date === dt;
+        });
       }
+
       if (!matched.length) {
         slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
         return;
       }
+
       renderSlots(matched, req);
     });
   }
@@ -219,10 +241,9 @@
 
       const idx1 = locationsArr.indexOf(slot.pickup);
       const idx2 = locationsArr.indexOf(slot.dropoff);
-      const farePerSeat = Math.abs(idx1 - idx2) * 1 * 1;
+      const farePerSeat = Math.abs(idx1 - idx2) * 1;
       const totalFare = farePerSeat * reqSeats;
 
-      const btnText = `Book ${reqSeats} for ₹${totalFare}`;
       const card = document.createElement('div');
       card.className = 'slot-card';
       card.innerHTML = `
@@ -230,8 +251,14 @@
         <strong>Dropoff:</strong> ${slot.dropoff}<br>
         <strong>Date:</strong> ${slot.date}<br>
         <strong>Time:</strong> ${slot.time}<br>
-        <strong>Seats Avail:</strong> ${slot.seats}<br><br>
-        <button onclick="payAndBook('${slot.driverId}','${slot.slotKey}',${slot.seats},${reqSeats},${totalFare})">${btnText}</button>
+        <strong>Seats Available:</strong> ${slot.seats}<br>
+        <button onclick="payAndBook(
+          '${slot.driverId}',
+          '${slot.slotKey}',
+          ${slot.seats},
+          ${reqSeats},
+          ${totalFare}
+        )">Book ${reqSeats} for ₹${totalFare}</button>
       `;
       slotsDiv.appendChild(card);
     });
@@ -248,48 +275,39 @@
       name: 'WaveTravel',
       description: 'Ride Booking',
       handler: function (res) {
-        firebase.database().ref(`availableslots/${driverId}/${slotKey}`)
-          .update({ seats: avail - reqSeats });
+        firebase.database().ref(`availableslots/${driverId}/${slotKey}`).update({ seats: avail - reqSeats });
 
         firebase.database().ref(`driverdetails/${driverId}`).once('value').then(dsnap => {
           const drv = dsnap.val();
-          firebase.database().ref(`availableslots/${driverId}/${slotKey}/carId`)
-            .once('value').then(csnap => {
-              const carId = csnap.val();
-              firebase.database().ref(`approvedcars/${driverId}/${carId}`)
-                .once('value').then(c2snap => {
-                  const car = c2snap.val();
-                  const b = {
-                    customerId: user.uid,
-                    customerName: user.displayName || '',
-                    customerPhone: user.phoneNumber || '',
-                    driverId,
-                    driverName: drv.name,
-                    driverPhone: drv.phone,
-                    carReg: car.carReg,
-                    carBrand: car.carbrand,
-                    pickup: pickupEl.value,
-                    dropoff: dropoffEl.value,
-                    date: document.getElementById('date').value,
-                    time: slot.time,
-                    seatsBooked: reqSeats,
-                    fare,
-                    paymentId: res.razorpay_payment_id,
-                    status: 'confirmed',
-                    bookedAt: new Date().toISOString()
-                  };
-                  firebase.database().ref(`bookings/${user.uid}`).push(b)
-                    .then(() => {
-                      alert('Booking Confirmed!');
-                      pickupEl.selectedIndex = 0;
-                      dropoffEl.selectedIndex = 0;
-                      document.getElementById('date').value = '';
-                      seatsEl.value = '';
-                      slotsDiv.innerHTML = '';
-                      window.location = 'mybookings.html';
-                    });
-                });
+          firebase.database().ref(`availableslots/${driverId}/${slotKey}/carId`).once('value').then(csnap => {
+            const carId = csnap.val();
+            firebase.database().ref(`approvedcars/${driverId}/${carId}`).once('value').then(c2snap => {
+              const car = c2snap.val();
+              const b = {
+                customerId: user.uid,
+                customerName: user.displayName || '',
+                customerPhone: user.phoneNumber || '',
+                driverId,
+                driverName: drv.name,
+                driverPhone: drv.phone,
+                carReg: car.carReg,
+                carBrand: car.carbrand,
+                pickup: pickupEl.value,
+                dropoff: dropoffEl.value,
+                date: document.getElementById('date').value,
+                time: slot.time,
+                seatsBooked: reqSeats,
+                fare,
+                paymentId: res.razorpay_payment_id,
+                status: 'confirmed',
+                bookedAt: new Date().toISOString()
+              };
+              firebase.database().ref(`bookings/${user.uid}`).push(b).then(() => {
+                alert('Booking Confirmed!');
+                window.location = 'mybookings.html';
+              });
             });
+          });
         });
       }
     };
