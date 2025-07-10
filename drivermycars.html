@@ -177,32 +177,46 @@
 
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
-    const auth = getAuth();
+    const auth = getAuth(app);
+
+    let currentUser = null;
 
     onAuthStateChanged(auth, user => {
       if (user) {
-        document.getElementById("carForm").addEventListener("submit", async event => {
-          event.preventDefault();
-          const carData = {
-            userId: user.uid, // ✅ include user ID
-            carBrand: document.getElementById("carBrand").value.trim(),
-            carReg: document.getElementById("carReg").value.trim(),
-            ownerName: document.getElementById("ownerName").value.trim(),
-            driverName: document.getElementById("driverName").value.trim(),
-            driverNumber: document.getElementById("driverNumber").value.trim(),
-            seats: document.getElementById("seats").value.trim()
-          };
-          try {
-            const newRef = push(ref(database, "pendingcars"));
-            await set(newRef, carData);
-            alert("Car submitted for approval!");
-            loadApprovedCars();
-          } catch (error) {
-            alert("Error: " + error.message);
-          }
-        });
+        currentUser = user;
+        console.log("Logged in as:", user.uid);
+        loadApprovedCars();
       } else {
-        alert("Please log in to submit your car.");
+        alert("You must be logged in to submit cars.");
+        window.location.href = "login.html"; // redirect if not logged in
+      }
+    });
+
+    document.getElementById("carForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!currentUser) {
+        alert("User not logged in.");
+        return;
+      }
+
+      const carData = {
+        carBrand: document.getElementById("carBrand").value.trim(),
+        carReg: document.getElementById("carReg").value.trim(),
+        ownerName: document.getElementById("ownerName").value.trim(),
+        driverName: document.getElementById("driverName").value.trim(),
+        driverNumber: document.getElementById("driverNumber").value.trim(),
+        seats: document.getElementById("seats").value.trim(),
+        driverId: currentUser.uid // Include driver ID
+      };
+
+      try {
+        const newRef = push(ref(database, "pendingcars"));
+        await set(newRef, carData);
+        alert("Car submitted for approval!");
+        document.getElementById("carForm").reset();
+        loadApprovedCars();
+      } catch (error) {
+        alert("Error: " + error.message);
       }
     });
 
@@ -241,8 +255,6 @@
     }
 
     window.removeCar = removeCar;
-
-    loadApprovedCars();
   </script>
 </body>
 </html>
