@@ -1,301 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Driver Slot Management</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <title>Book a Ride - WaveTravel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
+    :root {
+      --primary: #0077ff;
+      --light: #f8f8f8;
+      --dark: #333;
+      --success: #28a745;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
-      background: linear-gradient(to right, #8e2de2, #4a00e0);
-      color: white;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #74ebd5, #ACB6E5);
+      display: flex;
+      flex-direction: column;
       min-height: 100vh;
-      padding-bottom: 80px;
+      color: var(--dark);
     }
     .container {
-      padding: 16px;
+      flex: 1;
       max-width: 600px;
+      width: 100%;
       margin: 0 auto;
+      padding: 16px;
+      padding-bottom: 100px; /* ensure above navbar */
     }
     h1 {
       font-size: 1.5rem;
       text-align: center;
-      margin-bottom: 16px;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+    .form-group {
+      margin-bottom: 1rem;
     }
     label {
       display: block;
-      margin-top: 12px;
-      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
     }
     select, input {
       width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      margin-top: 6px;
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 0.5rem;
+      background: #fff;
       font-size: 1rem;
     }
     button {
-      margin-top: 20px;
-      padding: 12px;
+      display: block;
       width: 100%;
-      background: #ffd700;
-      color: black;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
+      padding: 0.75rem;
+      margin-top: 0.75rem;
+      background: var(--primary);
+      color: #fff;
       font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 0.5rem;
       cursor: pointer;
+      transition: background 0.2s;
     }
-    .slot-list {
-      margin-top: 24px;
+    button:hover {
+      background: #005dc1;
+    }
+    .slots {
+      margin-top: 1rem;
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1fr;
     }
     .slot-card {
-      background: rgba(255,255,255,0.1);
-      padding: 16px;
-      border-radius: 10px;
-      margin-bottom: 15px;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .slot-card p {
-      margin: 6px 0;
-      font-size: 0.9rem;
+    .slot-card strong {
+      display: inline-block;
+      width: 4.5rem;
     }
     .slot-card button {
-      background: #ff4d4d;
-      color: white;
-      padding: 8px 12px;
-      margin-top: 10px;
-      font-size: 0.85rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      width: auto;
+      margin-top: 0.75rem;
+      background: var(--success);
+      padding: 0.5rem 1rem;
+    }
+    .no-slots {
+      text-align: center;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-weight: 600;
     }
     .navbar {
       position: fixed;
       bottom: 0;
+      left: 0;
       width: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(10px);
+      background: #fff;
+      border-top: 1px solid #ddd;
       display: flex;
       justify-content: space-around;
-      align-items: center;
-      padding: 12px 0;
-      z-index: 999;
+      padding: 0.5rem 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
     }
     .navbar a {
-      color: #fff;
+      color: var(--primary);
       text-decoration: none;
       font-size: 0.75rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      text-align: center;
     }
     .navbar a i {
-      font-size: 1.2rem;
-      margin-bottom: 2px;
+      font-size: 1.25rem;
+      display: block;
+      margin-bottom: 0.25rem;
     }
-    .time-select-group {
-      display: flex;
-      gap: 10px;
+
+    @media (min-width: 600px) {
+      .slots {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>Add Available Slot</h1>
 
-  <label for="pickup">Pickup Location</label>
-  <select id="pickup"></select>
+  <div class="container">
+    <h1>Book Your Ride</h1>
 
-  <label for="dropoff">Dropoff Location</label>
-  <select id="dropoff"></select>
+    <div class="form-group">
+      <label for="pickup">Pickup Location</label>
+      <select id="pickup">
+        <option value="">Select Pickup</option>
+      </select>
+    </div>
 
-  <label for="car">Select Car</label>
-  <select id="car">
-    <option disabled selected>Loading...</option>
-  </select>
+    <div class="form-group">
+      <label for="dropoff">Dropoff Location</label>
+      <select id="dropoff">
+        <option value="">Select Dropoff</option>
+      </select>
+    </div>
 
-  <label for="date">Date</label>
-  <input type="date" id="date"/>
+    <div class="form-group">
+      <label for="date">Select Date</label>
+      <input type="date" id="date"/>
+    </div>
 
-  <label>Time</label>
-  <div class="time-select-group">
-    <select id="hour"></select>
-    <select id="minute"></select>
-    <select id="ampm">
-      <option value="AM">AM</option>
-      <option value="PM">PM</option>
-    </select>
+    <div class="form-group">
+      <label for="seats">Seats Needed</label>
+      <input type="number" id="seats" min="1" placeholder="Enter seats"/>
+    </div>
+
+    <button onclick="searchSlots()">Search Available Slots</button>
+    <div class="slots" id="slots"></div>
   </div>
 
-  <label for="seats">Available Seats (Max 6)</label>
-  <input type="number" id="seats" min="1" max="6" />
+  <div class="navbar">
+    <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
+    <a href="book.html"><i class="fas fa-car"></i>Book</a>
+    <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
+    <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
+  </div>
 
-  <button id="addSlotBtn">Add Slot</button>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-  <div class="slot-list" id="slotList"></div>
-</div>
-
-<div class="navbar">
-  <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
-  <a href="drivermybookings.html"><i class="fas fa-list"></i><span>My Bookings</span></a>
-  <a href="driverslots.html"><i class="fas fa-calendar"></i><span>Slots</span></a>
-  <a href="drivermycars.html"><i class="fas fa-car"></i><span>My Cars</span></a>
-  <a href="driverprofile.html"><i class="fas fa-user"></i><span>Profile</span></a>
-</div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-    authDomain: "wavetravel-3c4c4.firebaseapp.com",
-    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-    projectId: "wavetravel-3c4c4",
-    storageBucket: "wavetravel-3c4c4.appspot.com",
-    messagingSenderId: "298226098137",
-    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const auth = getAuth();
-
-  const pickup = document.getElementById("pickup");
-  const dropoff = document.getElementById("dropoff");
-  const car = document.getElementById("car");
-  const date = document.getElementById("date");
-  const hour = document.getElementById("hour");
-  const minute = document.getElementById("minute");
-  const ampm = document.getElementById("ampm");
-  const seats = document.getElementById("seats");
-  const slotList = document.getElementById("slotList");
-
-  for (let i = 1; i <= 12; i++) {
-    hour.innerHTML += `<option value="${i}">${i}</option>`;
-  }
-  for (let i = 0; i < 60; i += 5) {
-    const val = i.toString().padStart(2, '0');
-    minute.innerHTML += `<option value="${val}">${val}</option>`;
-  }
-
-  const today = new Date();
-  const yyyyMMdd = today.toISOString().split("T")[0];
-  date.value = yyyyMMdd;
-  date.setAttribute("min", yyyyMMdd);
-
-  function convertTo12Hr(timeStr) {
-    const [hour, minute] = timeStr.split(":");
-    const h = +hour;
-    const ampm = h >= 12 ? "PM" : "AM";
-    const hr = h % 12 || 12;
-    return `${hr}:${minute} ${ampm}`;
-  }
-
-  function loadDropdownData() {
-    const locRef = ref(db, "locations");
-    onValue(locRef, (snapshot) => {
-      const locations = snapshot.val();
-      pickup.innerHTML = dropoff.innerHTML = "";
-      if (locations) {
-        locations.forEach(loc => {
-          const opt = `<option value="${loc.name}">${loc.name}</option>`;
-          pickup.innerHTML += opt;
-          dropoff.innerHTML += opt;
-        });
-      }
-    });
-  }
-
-  function loadSlots(driverId) {
-    slotList.innerHTML = "";
-    const slotsRef = ref(db, `availableslots/${driverId}`);
-    onValue(slotsRef, (snapshot) => {
-      slotList.innerHTML = "";
-      let count = 1;
-      snapshot.forEach(child => {
-        const s = child.val();
-        const card = document.createElement("div");
-        card.className = "slot-card";
-        card.innerHTML = `
-          <p><strong>Sl No. ${count}</strong></p>
-          <p><strong>${s.pickup}</strong> to <strong>${s.dropoff}</strong></p>
-          <p>Date: ${s.date}, Time: ${convertTo12Hr(s.time)}</p>
-          <p>Seats: ${s.seats}</p>
-          <button onclick="deleteSlot('${child.key}', '${driverId}')">Delete</button>
-        `;
-        slotList.appendChild(card);
-        count++;
-      });
-    });
-  }
-
-  function convertTo24Hr(h, m, ampmVal) {
-    h = parseInt(h);
-    if (ampmVal === "PM" && h < 12) h += 12;
-    if (ampmVal === "AM" && h === 12) h = 0;
-    return `${h.toString().padStart(2, '0')}:${m}`;
-  }
-
-  function addSlot(driverId) {
-    const time24 = convertTo24Hr(hour.value, minute.value, ampm.value);
-    const data = {
-      pickup: pickup.value,
-      dropoff: dropoff.value,
-      carId: car.value,
-      date: date.value,
-      time: time24,
-      seats: seats.value
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-    if (!data.pickup || !data.dropoff || !data.carId || !data.date || !data.time || !data.seats) {
-      alert("All fields are required");
-      return;
-    }
-    push(ref(db, `availableslots/${driverId}`), data).then(() => {
-      alert("Slot added successfully");
-      seats.value = "";
-    });
-  }
+    firebase.initializeApp(firebaseConfig);
 
-  window.deleteSlot = function (key, driverId) {
-    if (confirm("Are you sure to delete this slot?")) {
-      remove(ref(db, `availableslots/${driverId}/${key}`));
-    }
-  };
+    const pickupEl = document.getElementById('pickup');
+    const dropoffEl = document.getElementById('dropoff');
+    const slotsDiv = document.getElementById('slots');
+    const seatsEl = document.getElementById('seats');
+    let locationsArr = [];
 
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      const driverId = user.uid;
-      loadDropdownData();
-      loadSlots(driverId);
-
-      const carsRef = ref(db, "approvedcars");
-      onValue(carsRef, (snapshot) => {
-        car.innerHTML = "";
-        let found = false;
-        snapshot.forEach(child => {
-          const data = child.val();
-          if (data.driverId === driverId) {
-            found = true;
-            car.innerHTML += `<option value="${child.key}">${data.carBrand} (${data.carReg})</option>`;
-          }
+    function loadLocations() {
+      firebase.database().ref('locations').once('value').then(snap => {
+        snap.forEach(child => {
+          const name = child.val().name;
+          locationsArr.push(name);
+          pickupEl.innerHTML += `<option value="${name}">${name}</option>`;
+          dropoffEl.innerHTML += `<option value="${name}">${name}</option>`;
         });
-        if (!found) {
-          car.innerHTML = `<option disabled selected>No approved car found</option>`;
-        }
       });
-
-      document.getElementById("addSlotBtn").addEventListener("click", () => addSlot(driverId));
-    } else {
-      alert("You must be logged in as a driver to access this page.");
-      window.location.href = "login.html";
     }
-  });
-</script>
+
+    function searchSlots() {
+      slotsDiv.innerHTML = '';
+      const pu = pickupEl.value;
+      const dof = dropoffEl.value;
+      const dt = document.getElementById('date').value;
+      const req = parseInt(seatsEl.value) || 1;
+      if (!pu || !dof || !dt) return alert('Please fill all fields');
+
+      const puIdx = locationsArr.indexOf(pu);
+      const doIdx = locationsArr.indexOf(dof);
+
+      firebase.database().ref('availableslots').once('value').then(snap => {
+        let allSlots = [];
+        snap.forEach(driverSnap => {
+          driverSnap.forEach(slotSnap => {
+            allSlots.push({
+              driverId: driverSnap.key,
+              slotKey: slotSnap.key,
+              ...slotSnap.val()
+            });
+          });
+        });
+
+        // exact match then dropoff-index fallback
+        let matched = allSlots.filter(s => s.pickup === pu && s.dropoff === dof && s.date === dt);
+        if (!matched.length) {
+          matched = allSlots.filter(s => locationsArr.indexOf(s.dropoff) === doIdx && s.date === dt);
+        }
+        if (!matched.length) {
+          slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
+          return;
+        }
+        renderSlots(matched, req);
+      });
+    }
+
+    function renderSlots(slots, reqSeats) {
+      slotsDiv.innerHTML = '';
+      slots.forEach(slot => {
+        if (slot.seats < reqSeats) return;
+
+        const idx1 = locationsArr.indexOf(slot.pickup);
+        const idx2 = locationsArr.indexOf(slot.dropoff);
+        const totalFare = Math.abs(idx1 - idx2) * reqSeats;
+
+        const card = document.createElement('div');
+        card.className = 'slot-card';
+        card.innerHTML = `
+          <div><strong>Pickup:</strong> ${slot.pickup}</div>
+          <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
+          <div><strong>Date:</strong> ${slot.date}</div>
+          <div><strong>Time:</strong> ${slot.time}</div>
+          <div><strong>Seats:</strong> ${slot.seats}</div>
+          <button onclick="payAndBook('${slot.driverId}','${slot.slotKey}',${slot.seats},${reqSeats},${totalFare})">
+            Book ${reqSeats} for ₹${totalFare}
+          </button>
+        `;
+        slotsDiv.appendChild(card);
+      });
+    }
+
+    function payAndBook(driverId, slotKey, avail, reqSeats, fare) {
+      const user = firebase.auth().currentUser;
+      if (!user) return alert('Please login first');
+
+      const options = {
+        key: 'rzp_live_8MB8YIbjtlmfy1',
+        amount: fare * 100,
+        currency: 'INR',
+        name: 'WaveTravel',
+        description: 'Ride Booking',
+        handler: function(res) {
+          firebase.database().ref(`availableslots/${driverId}/${slotKey}`)
+            .update({ seats: avail - reqSeats });
+
+          firebase.database().ref(`driverdetails/${driverId}`).once('value').then(dsnap => {
+            const drv = dsnap.val();
+            firebase.database().ref(`availableslots/${driverId}/${slotKey}/carId`).once('value').then(csnap => {
+              const carId = csnap.val();
+              firebase.database().ref(`approvedcars/${driverId}/${carId}`).once('value').then(c2snap => {
+                const car = c2snap.val();
+                const booking = {
+                  customerId: user.uid,
+                  customerName: user.displayName||'',
+                  customerPhone: user.phoneNumber||'',
+                  driverId,
+                  driverName: drv.name,
+                  driverPhone: drv.phone,
+                  carReg: car.carReg,
+                  carBrand: car.carbrand,
+                  pickup: pickupEl.value,
+                  dropoff: dropoffEl.value,
+                  date: document.getElementById('date').value,
+                  time: slot.time,
+                  seatsBooked: reqSeats,
+                  fare,
+                  paymentId: res.razorpay_payment_id,
+                  status: 'confirmed',
+                  bookedAt: new Date().toISOString()
+                };
+                firebase.database().ref(`bookings/${user.uid}`).push(booking)
+                  .then(() => window.location = 'mybookings.html');
+              });
+            });
+          });
+        }
+      };
+      new Razorpay(options).open();
+    }
+
+    loadLocations();
+  </script>
 </body>
 </html>
