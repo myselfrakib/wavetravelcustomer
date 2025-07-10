@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checkout – WaveTravel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --primary: #0077ff;
+      --light: #f8f8f8;
+      --dark: #333;
+    }
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body {
+      font-family:'Poppins',sans-serif;
+      background:linear-gradient(to right,#74ebd5,#ACB6E5);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    .container {
+      flex:1;
+      max-width:600px;
+      width:100%;
+      margin:0 auto;
+      padding:16px;
+      padding-bottom:100px; /* for navbar */
+      color:var(--dark);
+    }
+    h1 {
+      text-align:center;
+      font-size:1.5rem;
+      margin-bottom:1rem;
+      color:#fff;
+    }
+    .summary-card {
+      background:#fff;
+      border-radius:8px;
+      padding:16px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom:1rem;
+    }
+    .summary-card div {
+      margin-bottom:8px;
+      font-size:1rem;
+    }
+    .summary-card strong {
+      display:inline-block;
+      width:120px;
+    }
+    button {
+      width:100%;
+      padding:12px;
+      background:var(--primary);
+      color:#fff;
+      font-size:1rem;
+      font-weight:600;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      transition:background .2s;
+    }
+    button:hover {
+      background:#005dc1;
+    }
+    .navbar {
+      position:fixed;
+      bottom:0; left:0; width:100%;
+      background:#fff;
+      border-top:1px solid #ddd;
+      display:flex;
+      justify-content:space-around;
+      padding:8px 0;
+      box-shadow:0 -2px 8px rgba(0,0,0,0.1);
+    }
+    .navbar a {
+      color:var(--primary);
+      text-decoration:none;
+      font-size:0.75rem;
+      text-align:center;
+    }
+    .navbar a i {
+      font-size:1.25rem;
+      display:block;
+      margin-bottom:4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Confirm & Pay</h1>
+    <div id="summary" class="summary-card">
+      <!-- JS will fill this in -->
+    </div>
+    <button id="payBtn">Pay & Book</button>
+  </div>
+
+  <div class="navbar">
+    <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
+    <a href="book.html"><i class="fas fa-car"></i>Book</a>
+    <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
+    <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
+  </div>
+
+  <!-- Firebase & Razorpay -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <script>
+    // --- Firebase init ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    const summaryEl = document.getElementById('summary');
+    const payBtn     = document.getElementById('payBtn');
+
+    // Retrieve the booking details passed from booking page
+    const booking = JSON.parse(localStorage.getItem('selectedBooking') || '{}');
+    if (!booking.name) {
+      summaryEl.innerHTML = '<div>Please select a slot first.</div>';
+      payBtn.disabled = true;
+    } else {
+      // Show summary
+      summaryEl.innerHTML = `
+        <div><strong>Vehicle:</strong> ${booking.name}</div>
+        <div><strong>Pickup:</strong> ${new Date(booking.pickup).toLocaleString()}</div>
+        <div><strong>Dropoff:</strong> ${new Date(booking.dropoff).toLocaleString()}</div>
+        <div><strong>Duration:</strong> ${booking.duration} hrs</div>
+        <div><strong>Fare:</strong> ₹${booking.fare}</div>
+      `;
+    }
+
+    payBtn.addEventListener('click', () => {
+      auth.onAuthStateChanged(user => {
+        if (!user) return alert('Please login first.');
+        // configure Razorpay
+        const options = {
+          key: 'rzp_live_8MB8YIbjtlmfy1',
+          amount: booking.fare * 100,
+          currency: 'INR',
+          name: 'WaveTravel',
+          description: 'Ride Booking',
+          handler: function(res) {
+            // on success, write booking to Firebase
+            const record = {
+              ...booking,
+              paymentId: res.razorpay_payment_id,
+              customerId: user.uid,
+              bookedAt: new Date().toISOString(),
+              status: 'confirmed'
+            };
+            db.ref(`bookings/${user.uid}`).push(record)
+              .then(() => {
+                alert('Payment successful & booking confirmed!');
+                localStorage.removeItem('selectedBooking');
+                window.location = 'mybookings.html';
+              });
+          }
+        };
+        new Razorpay(options).open();
+      });
+    });
+  </script>
+</body>
+</html>
