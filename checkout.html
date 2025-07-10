@@ -11,7 +11,7 @@
       --primary: #0077ff;
       --dark: #333;
     }
-    * { box-sizing: border-box; margin:0; padding:0; }
+    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
     body {
       font-family:'Poppins',sans-serif;
       background:linear-gradient(to right,#74ebd5,#ACB6E5);
@@ -153,12 +153,11 @@
     const payBtn    = document.getElementById('payBtn');
     const termsChk  = document.getElementById('termsChk');
 
-    // Helper: format YYYY-MM-DD → DD/MM/YYYY
+    // Helpers
     function formatDate(d) {
       const [y,m,dd] = d.split('-');
       return `${dd}/${m}/${y}`;
     }
-    // Helper: format "HH:MM" → "h:MM AM/PM"
     function formatTime(t) {
       let [h,mm] = t.split(':').map(Number);
       const suffix = h >= 12 ? 'PM' : 'AM';
@@ -166,11 +165,13 @@
       return `${h}:${mm.toString().padStart(2,'0')} ${suffix}`;
     }
 
-    // Load booking draft
+    // Load booking from localStorage
     const booking = JSON.parse(localStorage.getItem('selectedBooking') || '{}');
+
     if (!booking.driverId) {
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
     } else {
+      // Display all fields
       summaryEl.innerHTML = `
         <div><strong>Pickup:</strong> ${booking.pickup}</div>
         <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
@@ -178,18 +179,24 @@
         <div><strong>Time:</strong> ${formatTime(booking.time)}</div>
         <div><strong>Seats:</strong> ${booking.seatsRequested}</div>
         <div><strong>Fare:</strong> ₹${booking.fare}</div>
+        <div><strong>Car:</strong> ${booking.carBrand} (${booking.carReg})</div>
+        <div><strong>Driver:</strong> ${booking.driverName} (${booking.driverNumber})</div>
       `;
     }
 
-    // Enable when T&C checked and booking exists
+    // Enable Pay button only when T&C are checked and booking valid
     termsChk.addEventListener('change', () => {
       payBtn.disabled = !(termsChk.checked && booking.driverId);
     });
 
     payBtn.addEventListener('click', () => {
       auth.onAuthStateChanged(user => {
-        if (!user) return alert('Please login first.');
+        if (!user) {
+          alert('Please login first.');
+          return;
+        }
 
+        // Razorpay options
         const options = {
           key: 'rzp_test_NMB6jz5XK0G48R',
           amount: booking.fare * 100,
@@ -197,7 +204,7 @@
           name: 'WaveTravel',
           description: 'Ride Booking',
           handler(res) {
-            // After payment, decrement seats
+            // 1) Decrement slot seats
             const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
             slotRef.transaction(current => {
               if (current && current.seats != null) {
@@ -206,7 +213,7 @@
               }
               return current;
             }).then(() => {
-              // Then write booking record
+              // 2) Push full booking under /bookings
               const record = {
                 ...booking,
                 paymentId: res.razorpay_payment_id,
@@ -216,14 +223,18 @@
                 bookedAt: new Date().toISOString(),
                 status: 'confirmed'
               };
-              return db.ref(`bookings/${user.uid}`).push(record);
+              return db.ref('bookings').push(record);
             }).then(() => {
               alert('Payment successful & booking confirmed!');
               localStorage.removeItem('selectedBooking');
               window.location = 'mybookings.html';
+            }).catch(err => {
+              console.error(err);
+              alert('Error during booking. Please try again.');
             });
           }
         };
+
         new Razorpay(options).open();
       });
     });
