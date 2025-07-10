@@ -176,7 +176,6 @@
   const seats = document.getElementById("seats");
   const slotList = document.getElementById("slotList");
 
-  // Populate hour/minute dropdowns
   for (let i = 1; i <= 12; i++) {
     hour.innerHTML += `<option value="${i}">${i}</option>`;
   }
@@ -185,7 +184,6 @@
     minute.innerHTML += `<option value="${val}">${val}</option>`;
   }
 
-  // Set today's date
   const today = new Date();
   const yyyyMMdd = today.toISOString().split("T")[0];
   date.value = yyyyMMdd;
@@ -219,17 +217,20 @@
     const slotsRef = ref(db, `availableslots/${driverId}`);
     onValue(slotsRef, (snapshot) => {
       slotList.innerHTML = "";
+      let count = 1;
       snapshot.forEach(child => {
         const s = child.val();
         const card = document.createElement("div");
         card.className = "slot-card";
         card.innerHTML = `
+          <p><strong>Sl No. ${count}</strong></p>
           <p><strong>${s.pickup}</strong> to <strong>${s.dropoff}</strong></p>
           <p>Date: ${s.date}, Time: ${convertTo12Hr(s.time)}</p>
           <p>Seats: ${s.seats}</p>
           <button onclick="deleteSlot('${child.key}', '${driverId}')">Delete</button>
         `;
         slotList.appendChild(card);
+        count++;
       });
     });
   }
@@ -273,7 +274,6 @@
       loadDropdownData();
       loadSlots(driverId);
 
-      // Load only approved cars for this driver
       const carsRef = ref(db, "approvedcars");
       onValue(carsRef, (snapshot) => {
         car.innerHTML = "";
