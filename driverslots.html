@@ -53,9 +53,7 @@
     <div class="time-select-group">
       <select id="hour"></select>
       <select id="minute"></select>
-      <select id="ampm">
-        <option>AM</option><option>PM</option>
-      </select>
+      <select id="ampm"><option>AM</option><option>PM</option></select>
     </div>
 
     <label for="seats">Available Seats (Max 6)</label>
@@ -80,14 +78,20 @@
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
     const firebaseConfig = {
-      apiKey: "...", authDomain: "...", databaseURL: "...",
-      projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..."
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      // ← changed here to the classic firebaseio.com endpoint:
+      databaseURL: "https://wavetravel-3c4c4.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth();
 
-    // DOM refs
     const pickup = document.getElementById("pickup");
     const dropoff = document.getElementById("dropoff");
     const car = document.getElementById("car");
@@ -99,11 +103,11 @@
     const slotList = document.getElementById("slotList");
     const addBtn = document.getElementById("addSlotBtn");
 
-    // Populate hour/minute
-    for (let i=1;i<=12;i++) hour.innerHTML += `<option>${i}</option>`;
-    for (let i=0;i<60;i+=5){
-      const v=i.toString().padStart(2,'0');
-      minute.innerHTML += `<option>${v}</option>`;
+    // Populate time selectors
+    for (let i = 1; i <= 12; i++) hour.innerHTML += `<option>${i}</option>`;
+    for (let i = 0; i < 60; i += 5) {
+      const val = i.toString().padStart(2, '0');
+      minute.innerHTML += `<option>${val}</option>`;
     }
 
     // Date default
@@ -112,24 +116,24 @@
     date.min = date.value = iso;
 
     function to24(h,m,ap){
-      h=parseInt(h);
-      if(ap==='PM'&&h<12) h+=12;
-      if(ap==='AM'&&h===12) h=0;
+      h = parseInt(h,10);
+      if (ap==='PM'&&h<12) h+=12;
+      if (ap==='AM'&&h===12) h=0;
       return `${h.toString().padStart(2,'0')}:${m}`;
     }
     function fmt12(t){
-      let [h,m]=t.split(":").map(Number);
-      const ap=h>=12?'PM':'AM';
-      h=h%12||12;
+      let [h,m]=t.split(':').map(Number);
+      const ap = h>=12?'PM':'AM';
+      h = h%12||12;
       return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')} ${ap}`;
     }
 
     function loadLoc(){
       onValue(ref(db,"locations"),snap=>{
         const locs=snap.val()||[];
-        let o="";
-        locs.forEach(l=> o+=`<option>${l.name}</option>`);
-        pickup.innerHTML=dropoff.innerHTML=o;
+        let opts="";
+        locs.forEach(l=> opts+=`<option>${l.name}</option>`);
+        pickup.innerHTML = dropoff.innerHTML = opts;
       });
     }
 
@@ -141,7 +145,7 @@
           html+=`
             <div class="slot-card">
               <p><strong>Sl No. ${cnt++}</strong></p>
-              <p><strong>${s.pickup}</strong> ➝ <strong>${s.dropoff}</strong></p>
+              <p><strong>${s.pickup}</strong> → <strong>${s.dropoff}</strong></p>
               <p>Date: ${s.date}, Time: ${fmt12(s.time)}</p>
               <p>Seats: ${s.seats}</p>
               <button onclick="remove(ref(db,'availableslots/${uid}/${ch.key}'))">Delete</button>
@@ -156,31 +160,33 @@
       const uid=user.uid;
       loadLoc(); loadSlots(uid);
 
-      // load cars
+      // load approved cars
       onValue(ref(db,"approvedcars"),snap=>{
         let o="", found=false;
         snap.forEach(ch=>{
           const d=ch.val();
           if(d.driverId===uid){
             found=true;
-            o+=`<option value="${ch.key}">${d.carBrand}</option>`;
+            o+=`<option value="${ch.key}">${d.carBrand} (${d.carReg})</option>`;
           }
         });
-        car.innerHTML= found? o : `<option disabled>No approved cars</option>`;
+        car.innerHTML=found?o:`<option disabled>No approved cars</option>`;
       });
 
-      addBtn.onclick= async ()=>{
+      addBtn.onclick=async()=>{
         const cid=car.value, pu=pickup.value, dr=dropoff.value,
               dt=date.value, h=hour.value, mi=minute.value, ap=ampm.value,
               st=seats.value;
         if(!cid||!pu||!dr||!dt||!h||!mi||!ap||!st) return alert("Fill all fields");
         // fetch car details
-        const csnap=await get(ref(db,`approvedcars/${cid}`));
-        const cdata=csnap.val()||{};
-        const time24=to24(h,mi,ap);
-        const slot = { pickup:pu, dropoff:dr, date:dt, time:time24, seats:st,
-                       driverName:cdata.driverName||"", driverNumber:cdata.driverNumber||"",
-                       carBrand:cdata.carBrand||"" };
+        const csnap = await get(ref(db,`approvedcars/${cid}`));
+        const cd = csnap.val()||{};
+        const t24 = to24(h,mi,ap);
+        const slot = {
+          pickup: pu, dropoff: dr, date: dt, time: t24, seats: st,
+          driverName: cd.driverName||"", driverNumber: cd.driverNumber||"",
+          carBrand: cd.carBrand||""
+        };
         await push(ref(db,`availableslots/${uid}`),slot);
         alert("Slot added successfully");
         seats.value="";
