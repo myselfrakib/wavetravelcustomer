@@ -19,6 +19,7 @@
       min-height:100vh;
       display:flex;
       flex-direction:column;
+      color: var(--dark);
     }
     .container {
       flex:1;
@@ -27,13 +28,12 @@
       margin:0 auto;
       padding:16px;
       padding-bottom:100px; /* for navbar */
-      color:var(--dark);
     }
     h1 {
       text-align:center;
+      color:#fff;
       font-size:1.5rem;
       margin-bottom:1rem;
-      color:#fff;
     }
     .summary-card {
       background:#fff;
@@ -93,7 +93,7 @@
   <div class="container">
     <h1>Confirm & Pay</h1>
     <div id="summary" class="summary-card">
-      <!-- JS will fill this in -->
+      <!-- Populated by JS -->
     </div>
     <button id="payBtn">Pay & Book</button>
   </div>
@@ -112,7 +112,7 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <script>
-    // --- Firebase init ---
+    // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -123,24 +123,25 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const db   = firebase.database();
     const auth = firebase.auth();
 
     const summaryEl = document.getElementById('summary');
-    const payBtn     = document.getElementById('payBtn');
+    const payBtn    = document.getElementById('payBtn');
 
-    // Retrieve the booking details passed from booking page
+    // Load booking draft
     const booking = JSON.parse(localStorage.getItem('selectedBooking') || '{}');
-    if (!booking.name) {
+    if (!booking.driverId) {
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
       payBtn.disabled = true;
     } else {
-      // Show summary
+      // Display summary
       summaryEl.innerHTML = `
-        <div><strong>Vehicle:</strong> ${booking.name}</div>
-        <div><strong>Pickup:</strong> ${new Date(booking.pickup).toLocaleString()}</div>
-        <div><strong>Dropoff:</strong> ${new Date(booking.dropoff).toLocaleString()}</div>
-        <div><strong>Duration:</strong> ${booking.duration} hrs</div>
+        <div><strong>Pickup:</strong> ${booking.pickup}</div>
+        <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
+        <div><strong>Date:</strong> ${booking.date}</div>
+        <div><strong>Time:</strong> ${booking.time}</div>
+        <div><strong>Seats:</strong> ${booking.seatsRequested}</div>
         <div><strong>Fare:</strong> ₹${booking.fare}</div>
       `;
     }
@@ -148,7 +149,8 @@
     payBtn.addEventListener('click', () => {
       auth.onAuthStateChanged(user => {
         if (!user) return alert('Please login first.');
-        // configure Razorpay
+
+        // Razorpay options
         const options = {
           key: 'rzp_live_8MB8YIbjtlmfy1',
           amount: booking.fare * 100,
@@ -156,11 +158,13 @@
           name: 'WaveTravel',
           description: 'Ride Booking',
           handler: function(res) {
-            // on success, write booking to Firebase
+            // On payment success, create booking record
             const record = {
               ...booking,
               paymentId: res.razorpay_payment_id,
               customerId: user.uid,
+              customerName: user.displayName || '',
+              customerPhone: user.phoneNumber || '',
               bookedAt: new Date().toISOString(),
               status: 'confirmed'
             };
