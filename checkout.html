@@ -50,6 +50,20 @@
       display:inline-block;
       width:120px;
     }
+    .terms {
+      margin: 16px 0;
+      display: flex;
+      align-items: center;
+    }
+    .terms input {
+      margin-right: 8px;
+      width: 16px;
+      height: 16px;
+    }
+    .terms label {
+      font-size: 0.9rem;
+      color: #fff;
+    }
     button {
       width:100%;
       padding:12px;
@@ -62,7 +76,11 @@
       cursor:pointer;
       transition:background .2s;
     }
-    button:hover {
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) {
       background:#005dc1;
     }
     .navbar {
@@ -95,7 +113,13 @@
     <div id="summary" class="summary-card">
       <!-- Populated by JS -->
     </div>
-    <button id="payBtn">Pay & Book</button>
+
+    <div class="terms">
+      <input type="checkbox" id="termsChk"/>
+      <label for="termsChk">I agree to the <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms & Conditions</a></label>
+    </div>
+
+    <button id="payBtn" disabled>Pay & Book</button>
   </div>
 
   <div class="navbar">
@@ -128,12 +152,12 @@
 
     const summaryEl = document.getElementById('summary');
     const payBtn    = document.getElementById('payBtn');
+    const termsChk  = document.getElementById('termsChk');
 
     // Load booking draft
     const booking = JSON.parse(localStorage.getItem('selectedBooking') || '{}');
     if (!booking.driverId) {
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
-      payBtn.disabled = true;
     } else {
       // Display summary
       summaryEl.innerHTML = `
@@ -146,34 +170,48 @@
       `;
     }
 
+    // Enable button only if T&C checked AND booking exists
+    termsChk.addEventListener('change', () => {
+      payBtn.disabled = !(termsChk.checked && booking.driverId);
+    });
+
     payBtn.addEventListener('click', () => {
       auth.onAuthStateChanged(user => {
         if (!user) return alert('Please login first.');
 
-        // Razorpay options
+        // launch Razorpay first
         const options = {
           key: 'rzp_live_omDNDSL8gmUBCZ',
           amount: booking.fare * 100,
           currency: 'INR',
           name: 'WaveTravel',
           description: 'Ride Booking',
-          handler: function(res) {
-            // On payment success, create booking record
-            const record = {
-              ...booking,
-              paymentId: res.razorpay_payment_id,
-              customerId: user.uid,
-              customerName: user.displayName || '',
-              customerPhone: user.phoneNumber || '',
-              bookedAt: new Date().toISOString(),
-              status: 'confirmed'
-            };
-            db.ref(`bookings/${user.uid}`).push(record)
-              .then(() => {
-                alert('Payment successful & booking confirmed!');
-                localStorage.removeItem('selectedBooking');
-                window.location = 'mybookings.html';
-              });
+          handler(res) {
+            // payment succeeded → now decrement seats
+            const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+            slotRef.transaction(current => {
+              if (current && current.seats != null) {
+                const left = parseInt(current.seats, 10) - booking.seatsRequested;
+                return { ...current, seats: left < 0 ? 0 : left };
+              }
+              return current;
+            }).then(() => {
+              // finally write booking record
+              const record = {
+                ...booking,
+                paymentId: res.razorpay_payment_id,
+                customerId: user.uid,
+                customerName: user.displayName || '',
+                customerPhone: user.phoneNumber || '',
+                bookedAt: new Date().toISOString(),
+                status: 'confirmed'
+              };
+              return db.ref(`bookings/${user.uid}`).push(record);
+            }).then(() => {
+              alert('Payment successful & booking confirmed!');
+              localStorage.removeItem('selectedBooking');
+              window.location = 'mybookings.html';
+            });
           }
         };
         new Razorpay(options).open();
