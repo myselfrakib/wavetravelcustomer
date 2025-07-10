@@ -161,6 +161,9 @@
   </nav>
 
   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-app.js";
+    import { getDatabase, ref, set, push, get } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-database.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -170,9 +173,6 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-app.js";
-    import { getDatabase, ref, set, push, get } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-database.js";
 
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
@@ -230,6 +230,9 @@
         console.error('Remove error', err);
       }
     }
+
+    // Make removeCar accessible globally
+    window.removeCar = removeCar;
 
     loadApprovedCars();
   </script>
