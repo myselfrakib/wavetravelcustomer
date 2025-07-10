@@ -163,37 +163,46 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-app.js";
     import { getDatabase, ref, set, push, get } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
       databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
       projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.firebasestorage.app",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
+    const auth = getAuth();
 
-    document.getElementById("carForm").addEventListener("submit", async event => {
-      event.preventDefault();
-      const carData = {
-        carBrand: document.getElementById("carBrand").value.trim(),
-        carReg: document.getElementById("carReg").value.trim(),
-        ownerName: document.getElementById("ownerName").value.trim(),
-        driverName: document.getElementById("driverName").value.trim(),
-        driverNumber: document.getElementById("driverNumber").value.trim(),
-        seats: document.getElementById("seats").value.trim()
-      };
-      try {
-        const newRef = push(ref(database, "pendingcars"));
-        await set(newRef, carData);
-        alert("Car submitted for approval!");
-        loadApprovedCars();
-      } catch (error) {
-        alert("Error: " + error.message);
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        document.getElementById("carForm").addEventListener("submit", async event => {
+          event.preventDefault();
+          const carData = {
+            userId: user.uid, // ✅ include user ID
+            carBrand: document.getElementById("carBrand").value.trim(),
+            carReg: document.getElementById("carReg").value.trim(),
+            ownerName: document.getElementById("ownerName").value.trim(),
+            driverName: document.getElementById("driverName").value.trim(),
+            driverNumber: document.getElementById("driverNumber").value.trim(),
+            seats: document.getElementById("seats").value.trim()
+          };
+          try {
+            const newRef = push(ref(database, "pendingcars"));
+            await set(newRef, carData);
+            alert("Car submitted for approval!");
+            loadApprovedCars();
+          } catch (error) {
+            alert("Error: " + error.message);
+          }
+        });
+      } else {
+        alert("Please log in to submit your car.");
       }
     });
 
@@ -231,7 +240,6 @@
       }
     }
 
-    // Make removeCar accessible globally
     window.removeCar = removeCar;
 
     loadApprovedCars();
