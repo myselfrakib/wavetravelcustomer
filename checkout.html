@@ -7,10 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    :root {
-      --primary: #0077ff;
-      --dark: #333;
-    }
+    :root { --primary: #0077ff; --dark: #333; }
     *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
     body {
       font-family:'Poppins',sans-serif;
@@ -41,28 +38,15 @@
       box-shadow:0 2px 8px rgba(0,0,0,0.1);
       margin-bottom:1rem;
     }
-    .summary-card div {
-      margin-bottom:8px;
-      font-size:1rem;
-    }
-    .summary-card strong {
-      display:inline-block;
-      width:120px;
-    }
+    .summary-card div { margin-bottom:8px; font-size:1rem; }
+    .summary-card strong { display:inline-block; width:120px; }
     .terms {
       margin:16px 0;
       display:flex;
       align-items:center;
     }
-    .terms input {
-      margin-right:8px;
-      width:16px;
-      height:16px;
-    }
-    .terms label {
-      font-size:0.9rem;
-      color:#fff;
-    }
+    .terms input { margin-right:8px; width:16px; height:16px; }
+    .terms label { font-size:0.9rem; color:#fff; }
     button {
       width:100%;
       padding:12px;
@@ -79,9 +63,7 @@
       background:#aaa;
       cursor:not-allowed;
     }
-    button:hover:not(:disabled) {
-      background:#005dc1;
-    }
+    button:hover:not(:disabled) { background:#005dc1; }
     .navbar {
       position:fixed;
       bottom:0; left:0; width:100%;
@@ -171,7 +153,7 @@
     if (!booking.driverId) {
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
     } else {
-      // Display all fields
+      // Only show pickup, dropoff, date, time, seats, fare
       summaryEl.innerHTML = `
         <div><strong>Pickup:</strong> ${booking.pickup}</div>
         <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
@@ -179,8 +161,6 @@
         <div><strong>Time:</strong> ${formatTime(booking.time)}</div>
         <div><strong>Seats:</strong> ${booking.seatsRequested}</div>
         <div><strong>Fare:</strong> ₹${booking.fare}</div>
-        <div><strong>Car:</strong> ${booking.carBrand} (${booking.carReg})</div>
-        <div><strong>Driver:</strong> ${booking.driverName} (${booking.driverNumber})</div>
       `;
     }
 
