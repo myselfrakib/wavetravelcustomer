@@ -9,7 +9,6 @@
   <style>
     :root {
       --primary: #0077ff;
-      --light: #f8f8f8;
       --dark: #333;
     }
     * { box-sizing: border-box; margin:0; padding:0; }
@@ -27,7 +26,7 @@
       width:100%;
       margin:0 auto;
       padding:16px;
-      padding-bottom:100px; /* for navbar */
+      padding-bottom:100px;
     }
     h1 {
       text-align:center;
@@ -51,18 +50,18 @@
       width:120px;
     }
     .terms {
-      margin: 16px 0;
-      display: flex;
-      align-items: center;
+      margin:16px 0;
+      display:flex;
+      align-items:center;
     }
     .terms input {
-      margin-right: 8px;
-      width: 16px;
-      height: 16px;
+      margin-right:8px;
+      width:16px;
+      height:16px;
     }
     .terms label {
-      font-size: 0.9rem;
-      color: #fff;
+      font-size:0.9rem;
+      color:#fff;
     }
     button {
       width:100%;
@@ -77,8 +76,8 @@
       transition:background .2s;
     }
     button:disabled {
-      background: #aaa;
-      cursor: not-allowed;
+      background:#aaa;
+      cursor:not-allowed;
     }
     button:hover:not(:disabled) {
       background:#005dc1;
@@ -109,17 +108,17 @@
 <body>
 
   <div class="container">
-    <h1>Confirm & Pay</h1>
+    <h1>Confirm &amp; Pay</h1>
     <div id="summary" class="summary-card">
       <!-- Populated by JS -->
     </div>
 
     <div class="terms">
       <input type="checkbox" id="termsChk"/>
-      <label for="termsChk">I agree to the <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms & Conditions</a></label>
+      <label for="termsChk">I agree to the <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a></label>
     </div>
 
-    <button id="payBtn" disabled>Pay & Book</button>
+    <button id="payBtn" disabled>Pay &amp; Book</button>
   </div>
 
   <div class="navbar">
@@ -154,23 +153,35 @@
     const payBtn    = document.getElementById('payBtn');
     const termsChk  = document.getElementById('termsChk');
 
+    // Helper: format YYYY-MM-DD → DD/MM/YYYY
+    function formatDate(d) {
+      const [y,m,dd] = d.split('-');
+      return `${dd}/${m}/${y}`;
+    }
+    // Helper: format "HH:MM" → "h:MM AM/PM"
+    function formatTime(t) {
+      let [h,mm] = t.split(':').map(Number);
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${mm.toString().padStart(2,'0')} ${suffix}`;
+    }
+
     // Load booking draft
     const booking = JSON.parse(localStorage.getItem('selectedBooking') || '{}');
     if (!booking.driverId) {
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
     } else {
-      // Display summary
       summaryEl.innerHTML = `
         <div><strong>Pickup:</strong> ${booking.pickup}</div>
         <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
-        <div><strong>Date:</strong> ${booking.date}</div>
-        <div><strong>Time:</strong> ${booking.time}</div>
+        <div><strong>Date:</strong> ${formatDate(booking.date)}</div>
+        <div><strong>Time:</strong> ${formatTime(booking.time)}</div>
         <div><strong>Seats:</strong> ${booking.seatsRequested}</div>
         <div><strong>Fare:</strong> ₹${booking.fare}</div>
       `;
     }
 
-    // Enable button only if T&C checked AND booking exists
+    // Enable when T&C checked and booking exists
     termsChk.addEventListener('change', () => {
       payBtn.disabled = !(termsChk.checked && booking.driverId);
     });
@@ -179,7 +190,6 @@
       auth.onAuthStateChanged(user => {
         if (!user) return alert('Please login first.');
 
-        // launch Razorpay first
         const options = {
           key: 'rzp_live_omDNDSL8gmUBCZ',
           amount: booking.fare * 100,
@@ -187,16 +197,16 @@
           name: 'WaveTravel',
           description: 'Ride Booking',
           handler(res) {
-            // payment succeeded → now decrement seats
+            // After payment, decrement seats
             const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
             slotRef.transaction(current => {
               if (current && current.seats != null) {
-                const left = parseInt(current.seats, 10) - booking.seatsRequested;
+                const left = parseInt(current.seats,10) - booking.seatsRequested;
                 return { ...current, seats: left < 0 ? 0 : left };
               }
               return current;
             }).then(() => {
-              // finally write booking record
+              // Then write booking record
               const record = {
                 ...booking,
                 paymentId: res.razorpay_payment_id,
