@@ -8,8 +8,11 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
       background: linear-gradient(to right, #8e2de2, #4a00e0);
       color: white;
+      min-height: 100vh;
       padding-bottom: 80px;
     }
     .container {
@@ -108,7 +111,7 @@
 
   <label for="car">Select Car</label>
   <select id="car">
-    <option disabled selected>Loading cars...</option>
+    <option disabled selected>Loading...</option>
   </select>
 
   <label for="date">Date</label>
@@ -136,6 +139,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
   import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -149,8 +153,7 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-
-  const driverId = "2ZNbW7mM71YMFUE18hkveeuyRRJ3"; // Replace this with dynamic auth ID in production
+  const auth = getAuth();
 
   const pickup = document.getElementById("pickup");
   const dropoff = document.getElementById("dropoff");
@@ -162,8 +165,9 @@
 
   // Set today's date and time
   const today = new Date();
-  date.value = today.toISOString().split("T")[0];
-  date.min = date.value;
+  const yyyyMMdd = today.toISOString().split("T")[0];
+  date.value = yyyyMMdd;
+  date.setAttribute("min", yyyyMMdd);
   const pad = n => n.toString().padStart(2, '0');
   time.value = `${pad(today.getHours())}:${pad(today.getMinutes())}`;
 
@@ -176,40 +180,21 @@
   }
 
   function loadDropdownData() {
-    // Load locations
     const locRef = ref(db, "locations");
     onValue(locRef, (snapshot) => {
       const locations = snapshot.val();
       pickup.innerHTML = dropoff.innerHTML = "";
-      locations?.forEach(loc => {
-        const opt = `<option value="${loc.name}">${loc.name}</option>`;
-        pickup.innerHTML += opt;
-        dropoff.innerHTML += opt;
-      });
-    });
-
-    // Load cars for the driver
-    const carsRef = ref(db, `approvedcars`);
-    onValue(carsRef, (snapshot) => {
-      car.innerHTML = "";
-      let found = false;
-      snapshot.forEach(child => {
-        const data = child.val();
-        if (data.driverId === driverId) {
-          found = true;
-          const option = document.createElement("option");
-          option.value = child.key;
-          option.textContent = data.carBrand;
-          car.appendChild(option);
-        }
-      });
-      if (!found) {
-        car.innerHTML = `<option disabled selected>No cars approved</option>`;
+      if (locations) {
+        locations.forEach(loc => {
+          const opt = `<option value="${loc.name}">${loc.name}</option>`;
+          pickup.innerHTML += opt;
+          dropoff.innerHTML += opt;
+        });
       }
     });
   }
 
-  function loadSlots() {
+  function loadSlots(driverId) {
     slotList.innerHTML = "";
     const slotsRef = ref(db, `availableslots/${driverId}`);
     onValue(slotsRef, (snapshot) => {
@@ -222,14 +207,14 @@
           <p><strong>${s.pickup}</strong> to <strong>${s.dropoff}</strong></p>
           <p>Date: ${s.date}, Time: ${convertTo12Hr(s.time)}</p>
           <p>Seats: ${s.seats}</p>
-          <button onclick="deleteSlot('${child.key}')">Delete</button>
+          <button onclick="deleteSlot('${child.key}', '${driverId}')">Delete</button>
         `;
         slotList.appendChild(card);
       });
     });
   }
 
-  function addSlot() {
+  function addSlot(driverId) {
     const data = {
       pickup: pickup.value,
       dropoff: dropoff.value,
@@ -245,20 +230,44 @@
     push(ref(db, `availableslots/${driverId}`), data).then(() => {
       alert("Slot added successfully");
       seats.value = "";
-      loadSlots();
     });
   }
 
-  window.deleteSlot = function (key) {
-    if (confirm("Are you sure you want to delete this slot?")) {
+  window.deleteSlot = function (key, driverId) {
+    if (confirm("Are you sure to delete this slot?")) {
       remove(ref(db, `availableslots/${driverId}/${key}`));
     }
-  }
+  };
 
-  document.getElementById("addSlotBtn").addEventListener("click", addSlot);
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      const driverId = user.uid;
+      loadDropdownData();
+      loadSlots(driverId);
 
-  loadDropdownData();
-  loadSlots();
+      // Load only approved cars for this driver
+      const carsRef = ref(db, "approvedcars");
+      onValue(carsRef, (snapshot) => {
+        car.innerHTML = "";
+        let found = false;
+        snapshot.forEach(child => {
+          const data = child.val();
+          if (data.driverId === driverId) {
+            found = true;
+            car.innerHTML += `<option value="${child.key}">${data.carBrand} (${data.carReg})</option>`;
+          }
+        });
+        if (!found) {
+          car.innerHTML = `<option disabled selected>No approved car found</option>`;
+        }
+      });
+
+      document.getElementById("addSlotBtn").addEventListener("click", () => addSlot(driverId));
+    } else {
+      alert("You must be logged in as a driver to access this page.");
+      window.location.href = "login.html"; // redirect to login
+    }
+  });
 </script>
 </body>
 </html>
