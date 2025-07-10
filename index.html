@@ -53,6 +53,21 @@
       font-size: 15px;
       cursor: pointer;
     }
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -125,6 +140,7 @@
       if (!/^\d{10}$/.test(phone)) {
         return alert('Enter a valid 10‑digit phone number.');
       }
+
       // Check in /users for that phone
       try {
         const snapshot = await db
@@ -140,8 +156,11 @@
         return alert('Error verifying number. Try again later.');
       }
 
-      // Send OTP
+      // Show spinner
+      const originalText = sendBtn.textContent;
+      sendBtn.innerHTML = 'Sending... <div class="spinner"></div>';
       sendBtn.disabled = true;
+
       try {
         confirmationResult = await auth.signInWithPhoneNumber(
           codeSelect.value + phone,
@@ -150,10 +169,11 @@
         alert('OTP sent!');
         otpInput.style.display   = 'block';
         verifyBtn.style.display  = 'block';
+        sendBtn.style.display    = 'none'; // Remove send button after OTP sent
       } catch (err) {
         console.error('Error sending OTP', err);
         alert('Failed to send OTP: ' + err.message);
-      } finally {
+        sendBtn.innerHTML = originalText;
         sendBtn.disabled = false;
       }
     });
@@ -169,7 +189,6 @@
         const userPhone = result.user.phoneNumber;
         localStorage.setItem('userPhone', userPhone);
 
-        // Admin detection example:
         if (userPhone === '+919907738066') {
           alert('Admin login successful!');
           location.href = 'admindashboard.html';
