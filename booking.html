@@ -138,8 +138,16 @@
     const dateEl    = document.getElementById('date');
     const seatsEl   = document.getElementById('seats');
     const slotsDiv  = document.getElementById('slots');
-
     const locationIndexMap = {};
+
+    // Redirect to login if not authenticated
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = 'login.html';
+      } else {
+        loadLocations();
+      }
+    });
 
     function loadLocations() {
       db.ref('locations').once('value').then(snap => {
@@ -156,7 +164,6 @@
       });
     }
 
-    // Convert "HH:MM" to "h:MM AM/PM"
     function formatTime24to12(time24) {
       const [hourStr, minute] = time24.split(':');
       let hour = parseInt(hourStr, 10);
@@ -165,7 +172,6 @@
       return `${hour}:${minute} ${period}`;
     }
 
-    // Convert "YYYY-MM-DD" to "DD/MM/YYYY"
     function formatDateISOtoDMY(isoDate) {
       const [year, month, day] = isoDate.split('-');
       return `${day}/${month}/${year}`;
@@ -269,8 +275,6 @@
         });
       });
     }
-
-    loadLocations();
   </script>
 </body>
 </html>
