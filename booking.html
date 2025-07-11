@@ -156,6 +156,7 @@
       });
     }
 
+    // Convert "HH:MM" to "h:MM AM/PM"
     function formatTime24to12(time24) {
       const [hourStr, minute] = time24.split(':');
       let hour = parseInt(hourStr, 10);
@@ -164,6 +165,7 @@
       return `${hour}:${minute} ${period}`;
     }
 
+    // Convert "YYYY-MM-DD" to "DD/MM/YYYY"
     function formatDateISOtoDMY(isoDate) {
       const [year, month, day] = isoDate.split('-');
       return `${day}/${month}/${year}`;
@@ -175,33 +177,26 @@
       const dof = dropoffEl.value;
       const dt  = dateEl.value;
       const req = parseInt(seatsEl.value, 10) || 1;
+      if (!pu || !dof || !dt) return alert('Please fill all fields');
 
-      if (!pu || !dof || !dt) {
-        return alert('Please fill all fields');
-      }
-
-      const doIdx = locationIndexMap[dof] || 0;
+      const idx = locationIndexMap[dof] || 0;
 
       db.ref('availableslots').once('value').then(snap => {
         const all = [];
-        snap.forEach(driverSnap => {
-          driverSnap.forEach(slotSnap => {
-            all.push({
-              driverId: driverSnap.key,
-              slotKey:  slotSnap.key,
-              ...slotSnap.val()
-            });
-          });
-        });
-
-        let matched = all.filter(s =>
-          s.pickup === pu && s.dropoff === dof && s.date === dt
+        snap.forEach(driverSnap =>
+          driverSnap.forEach(slotSnap =>
+            all.push({ driverId: driverSnap.key, slotKey: slotSnap.key, ...slotSnap.val() })
+          )
         );
+
+        // exact matches
+        let matched = all.filter(s => s.pickup === pu && s.dropoff === dof && s.date === dt);
+
+        // fallback
         if (!matched.length) {
-          matched = all.filter(s =>
-            s.date === dt && locationIndexMap[s.dropoff] === doIdx
-          );
+          matched = all.filter(s => s.date === dt && locationIndexMap[s.dropoff] === idx);
         }
+
         if (!matched.length) {
           slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
         } else {
@@ -218,22 +213,18 @@
           return;
         }
 
-        // Fetch user profile once
-        db.ref(`users/${user.uid}`).once('value').then(profileSnap => {
-          const profile = profileSnap.val() || {};
-          const custName  = profile.name || '';
-          const custPhone = profile.phone || '';
+        // fetch this user's profile
+        db.ref(`users/${user.uid}`).once('value').then(snap => {
+          const profile = snap.val() || {};
+          const customerName  = profile.name  || '';
+          const customerPhone = profile.phone || '';
 
           slots.forEach((slot, idx) => {
             const avail = parseInt(slot.seats, 10);
             if (avail < reqSeats) return;
-
             const puIdx = locationIndexMap[slot.pickup] || 0;
             const doIdx = locationIndexMap[slot.dropoff] || 0;
             const fare  = Math.abs(puIdx - doIdx) * reqSeats;
-
-            const displayTime = formatTime24to12(slot.time);
-            const displayDate = formatDateISOtoDMY(slot.date);
 
             const card = document.createElement('div');
             card.className = 'slot-card';
@@ -241,8 +232,8 @@
               <div class="slot-card-header">Sl. No. ${idx + 1}</div>
               <div><strong>Pickup:</strong> ${slot.pickup}</div>
               <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
-              <div><strong>Date:</strong> ${displayDate}</div>
-              <div><strong>Time:</strong> ${displayTime}</div>
+              <div><strong>Date:</strong> ${formatDateISOtoDMY(slot.date)}</div>
+              <div><strong>Leave Time:</strong> ${formatTime24to12(slot.time)}</div>
               <div><strong>Seats:</strong> ${avail}</div>
               <button id="bookBtn${idx}">
                 Book ${reqSeats} for ₹${fare}
@@ -262,8 +253,8 @@
                 seatsAvailable: avail,
                 fare:           fare,
                 customerId:     user.uid,
-                customerName:   custName,
-                customerPhone:  custPhone,
+                customerName,      // from /users/<uid>/name
+                customerPhone,     // from /users/<uid>/phone
                 carBrand:       slot.carBrand     || '',
                 carReg:         slot.carReg       || '',
                 driverName:     slot.driverName   || '',
