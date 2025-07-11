@@ -37,7 +37,7 @@
     .booking-card h3 {
       margin-bottom:8px;
       font-size:1rem;
-      color:var(--dark,#333);
+      color:#333;
     }
     .booking-card p {
       font-size:0.9rem;
@@ -52,6 +52,10 @@
       border-radius:6px;
       cursor:pointer;
       font-size:0.85rem;
+    }
+    .booking-card .call-btn {
+      background:#28a745;
+      margin-left:8px;
     }
     .navbar {
       position:fixed;
@@ -139,7 +143,8 @@
       ref.on('value', snap => {
         const data = snap.val();
         if (!data) {
-          bookingsContainer.innerHTML = '<p style="color:#fff;text-align:center;">No bookings found.</p>';
+          bookingsContainer.innerHTML = 
+            '<p style="color:#fff;text-align:center;">No bookings found.</p>';
           return;
         }
         let html = '';
@@ -151,33 +156,29 @@
               <p><strong>Dropoff:</strong> ${b.dropoff}</p>
               <p><strong>Date:</strong> ${formatDate(b.date)}</p>
               <p><strong>Time:</strong> ${formatTime24to12(b.time)}</p>
-              <p><strong>Seats:</strong> ${b.seatsBooked}</p>
+              <p><strong>Seats:</strong> ${b.seatsRequested}</p>
               <p><strong>Fare:</strong> ₹${b.fare}</p>
-              <p><strong>Status:</strong> ${b.status}</p>
-              <button onclick="cancelBooking('${key}', ${b.seatsBooked})">Cancel Booking</button>
-            </div>
-          `;
+              <p><strong>Car:</strong> ${b.carBrand} (${b.carReg})</p>
+              <p><strong>Driver:</strong> ${b.driverName}</p>
+              <div>
+                <button onclick="cancelBooking('${key}')">Cancel Booking</button>
+                <button class="call-btn" onclick="window.location='tel:${b.driverNumber}'">
+                  <i class="fas fa-phone"></i> Call Driver
+                </button>
+              </div>
+            </div>`;
         });
         bookingsContainer.innerHTML = html;
       });
     });
 
     // Cancel Booking (optionally restore seats)
-    function cancelBooking(bookingId, seatsBooked) {
+    function cancelBooking(bookingId) {
       if (!confirm('Cancel this booking?')) return;
       const user = auth.currentUser;
-      // remove the booking
-      db.ref(`bookings/${user.uid}/${bookingId}`).remove()
-        .then(() => {
-          alert('Booking cancelled');
-          // Optionally, restore seats:
-          // const slot = JSON.parse(localStorage.getItem('selectedBooking'));
-          // const slotRef = db.ref(`availableslots/${slot.driverId}/${slot.slotKey}`);
-          // slotRef.transaction(cur => {
-          //   if (cur && cur.seats!=null) return {...cur, seats: parseInt(cur.seats)+seatsBooked};
-          //   return cur;
-          // });
-        })
+      db.ref(`bookings/${user.uid}/${bookingId}`)
+        .remove()
+        .then(() => alert('Booking cancelled'))
         .catch(err => alert('Error: '+err.message));
     }
   </script>
