@@ -186,21 +186,27 @@
       editBtn.style.display  = show ? "none" : "";
     }
 
+    // Wait for auth
     auth.onAuthStateChanged(user => {
       if (!user) {
         alert("Please log in to view your profile.");
-        return window.location = "index.html";
+        return window.location = "login.html";
       }
       const uid = user.uid;
       const userRef = db.ref(`users/${uid}`);
 
-      // Load and listen for changes
-      userRef.on("value", snap => {
-        const data = snap.val() || {};
-        userNameEl.textContent  = data.name  || "Not set";
-        userEmailEl.textContent = data.email || "Not set";
-        userPhoneEl.textContent = data.phone || "Not set";
-      });
+      // Fetch once
+      userRef.once("value")
+        .then(snapshot => {
+          const data = snapshot.val() || {};
+          userNameEl.textContent  = data.name  || "Not set";
+          userEmailEl.textContent = data.email || "Not set";
+          userPhoneEl.textContent = data.phone || "Not set";
+        })
+        .catch(err => {
+          console.error("Fetch profile failed:", err);
+          userNameEl.textContent = userEmailEl.textContent = userPhoneEl.textContent = "Error";
+        });
 
       // Edit
       editBtn.addEventListener("click", () => {
@@ -220,9 +226,16 @@
         userRef.update(updates)
           .then(() => {
             alert("Profile updated!");
+            // Refresh view
+            userNameEl.textContent  = updates.name;
+            userEmailEl.textContent = updates.email;
+            userPhoneEl.textContent = updates.phone;
             toggleEdit(false);
           })
-          .catch(err => alert("Update failed: " + err.message));
+          .catch(err => {
+            console.error("Update failed:", err);
+            alert("Update failed: " + err.message);
+          });
       });
 
       // Logout
