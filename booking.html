@@ -156,7 +156,6 @@
       });
     }
 
-    // Convert "HH:MM" to "h:MM AM/PM"
     function formatTime24to12(time24) {
       const [hourStr, minute] = time24.split(':');
       let hour = parseInt(hourStr, 10);
@@ -165,7 +164,6 @@
       return `${hour}:${minute} ${period}`;
     }
 
-    // Convert "YYYY-MM-DD" to "DD/MM/YYYY"
     function formatDateISOtoDMY(isoDate) {
       const [year, month, day] = isoDate.split('-');
       return `${day}/${month}/${year}`;
@@ -189,10 +187,7 @@
           )
         );
 
-        // exact matches
         let matched = all.filter(s => s.pickup === pu && s.dropoff === dof && s.date === dt);
-
-        // fallback
         if (!matched.length) {
           matched = all.filter(s => s.date === dt && locationIndexMap[s.dropoff] === idx);
         }
@@ -213,7 +208,7 @@
           return;
         }
 
-        // fetch this user's profile
+        // Load profile from /users/{uid}
         db.ref(`users/${user.uid}`).once('value').then(snap => {
           const profile = snap.val() || {};
           const customerName  = profile.name  || '';
@@ -253,8 +248,8 @@
                 seatsAvailable: avail,
                 fare:           fare,
                 customerId:     user.uid,
-                customerName,      // from /users/<uid>/name
-                customerPhone,     // from /users/<uid>/phone
+                customerName,      // from /users/{uid}/name
+                customerPhone,     // from /users/{uid}/phone
                 carBrand:       slot.carBrand     || '',
                 carReg:         slot.carReg       || '',
                 driverName:     slot.driverName   || '',
