@@ -156,7 +156,6 @@
       });
     }
 
-    // Convert "HH:MM" to "h:MM AM/PM"
     function formatTime24to12(time24) {
       const [hourStr, minute] = time24.split(':');
       let hour = parseInt(hourStr, 10);
@@ -165,7 +164,6 @@
       return `${hour}:${minute} ${period}`;
     }
 
-    // Convert "YYYY-MM-DD" to "DD/MM/YYYY"
     function formatDateISOtoDMY(isoDate) {
       const [year, month, day] = isoDate.split('-');
       return `${day}/${month}/${year}`;
@@ -219,52 +217,61 @@
           alert('Please login first');
           return;
         }
-        slots.forEach((slot, idx) => {
-          const avail = parseInt(slot.seats, 10);
-          if (avail < reqSeats) return;
-          const puIdx = locationIndexMap[slot.pickup] || 0;
-          const doIdx = locationIndexMap[slot.dropoff] || 0;
-          const fare  = Math.abs(puIdx - doIdx) * reqSeats;
 
-          const displayTime = formatTime24to12(slot.time);
-          const displayDate = formatDateISOtoDMY(slot.date);
+        // Fetch user profile once
+        db.ref(`users/${user.uid}`).once('value').then(profileSnap => {
+          const profile = profileSnap.val() || {};
+          const custName  = profile.name || '';
+          const custPhone = profile.phone || '';
 
-          const card = document.createElement('div');
-          card.className = 'slot-card';
-          card.innerHTML = `
-            <div class="slot-card-header">Sl. No. ${idx + 1}</div>
-            <div><strong>Pickup:</strong> ${slot.pickup}</div>
-            <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
-            <div><strong>Date:</strong> ${displayDate}</div>
-            <div><strong>Leave Time:</strong> ${displayTime}</div>
-            <div><strong>Seats:</strong> ${avail}</div>
-            <button id="bookBtn${idx}">
-              Book ${reqSeats} for ₹${fare}
-            </button>
-          `;
-          slotsDiv.appendChild(card);
+          slots.forEach((slot, idx) => {
+            const avail = parseInt(slot.seats, 10);
+            if (avail < reqSeats) return;
 
-          document.getElementById(`bookBtn${idx}`).addEventListener('click', () => {
-            const bookingData = {
-              driverId:       slot.driverId,
-              slotKey:        slot.slotKey,
-              pickup:         slot.pickup,
-              dropoff:        slot.dropoff,
-              date:           slot.date,
-              time:           slot.time,
-              seatsRequested: reqSeats,
-              seatsAvailable: avail,
-              fare:           fare,
-              customerId:     user.uid,
-              customerName:   user.displayName  || '',
-              customerPhone:  user.phoneNumber  || '',
-              carBrand:       slot.carBrand     || '',
-              carReg:         slot.carReg       || '',
-              driverName:     slot.driverName   || '',
-              driverNumber:   slot.driverNumber || ''
-            };
-            localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
-            window.location.href = 'checkout.html';
+            const puIdx = locationIndexMap[slot.pickup] || 0;
+            const doIdx = locationIndexMap[slot.dropoff] || 0;
+            const fare  = Math.abs(puIdx - doIdx) * reqSeats;
+
+            const displayTime = formatTime24to12(slot.time);
+            const displayDate = formatDateISOtoDMY(slot.date);
+
+            const card = document.createElement('div');
+            card.className = 'slot-card';
+            card.innerHTML = `
+              <div class="slot-card-header">Sl. No. ${idx + 1}</div>
+              <div><strong>Pickup:</strong> ${slot.pickup}</div>
+              <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
+              <div><strong>Date:</strong> ${displayDate}</div>
+              <div><strong>Time:</strong> ${displayTime}</div>
+              <div><strong>Seats:</strong> ${avail}</div>
+              <button id="bookBtn${idx}">
+                Book ${reqSeats} for ₹${fare}
+              </button>
+            `;
+            slotsDiv.appendChild(card);
+
+            document.getElementById(`bookBtn${idx}`).addEventListener('click', () => {
+              const bookingData = {
+                driverId:       slot.driverId,
+                slotKey:        slot.slotKey,
+                pickup:         slot.pickup,
+                dropoff:        slot.dropoff,
+                date:           slot.date,
+                time:           slot.time,
+                seatsRequested: reqSeats,
+                seatsAvailable: avail,
+                fare:           fare,
+                customerId:     user.uid,
+                customerName:   custName,
+                customerPhone:  custPhone,
+                carBrand:       slot.carBrand     || '',
+                carReg:         slot.carReg       || '',
+                driverName:     slot.driverName   || '',
+                driverNumber:   slot.driverNumber || ''
+              };
+              localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
+              window.location.href = 'checkout.html';
+            });
           });
         });
       });
