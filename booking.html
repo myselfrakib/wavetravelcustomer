@@ -165,6 +165,12 @@
       return `${hour}:${minute} ${period}`;
     }
 
+    // Convert "YYYY-MM-DD" to "DD/MM/YYYY"
+    function formatDateISOtoDMY(isoDate) {
+      const [year, month, day] = isoDate.split('-');
+      return `${day}/${month}/${year}`;
+    }
+
     function searchSlots() {
       slotsDiv.innerHTML = '';
       const pu  = pickupEl.value;
@@ -220,8 +226,8 @@
           const doIdx = locationIndexMap[slot.dropoff] || 0;
           const fare  = Math.abs(puIdx - doIdx) * reqSeats;
 
-          // Format time to 12-hour
           const displayTime = formatTime24to12(slot.time);
+          const displayDate = formatDateISOtoDMY(slot.date);
 
           const card = document.createElement('div');
           card.className = 'slot-card';
@@ -229,7 +235,7 @@
             <div class="slot-card-header">Sl. No. ${idx + 1}</div>
             <div><strong>Pickup:</strong> ${slot.pickup}</div>
             <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
-            <div><strong>Date:</strong> ${slot.date}</div>
+            <div><strong>Date:</strong> ${displayDate}</div>
             <div><strong>Time:</strong> ${displayTime}</div>
             <div><strong>Seats:</strong> ${avail}</div>
             <button id="bookBtn${idx}">
