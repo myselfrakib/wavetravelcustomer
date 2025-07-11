@@ -47,12 +47,6 @@
     .slots {
       margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;
     }
-    .notice {
-      text-align: center; padding: 0.75rem; background: #fff3cd;
-      border-radius: 0.5rem; color: #856404;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      font-weight: 500;
-    }
     .slot-card {
       background: #fff; padding: 1rem; border-radius: 0.75rem;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -164,16 +158,16 @@
 
     // Convert "HH:MM" to "h:MM AM/PM"
     function formatTime24to12(time24) {
-      const [h, m] = time24.split(':');
-      let hour = parseInt(h, 10);
+      const [hourStr, minute] = time24.split(':');
+      let hour = parseInt(hourStr, 10);
       const period = hour >= 12 ? 'PM' : 'AM';
       hour = hour % 12 === 0 ? 12 : hour % 12;
-      return `${hour}:${m} ${period}`;
+      return `${hour}:${minute} ${period}`;
     }
 
     // Convert "YYYY-MM-DD" to "DD/MM/YYYY"
-    function formatDateISOtoDMY(iso) {
-      const [year, month, day] = iso.split('-');
+    function formatDateISOtoDMY(isoDate) {
+      const [year, month, day] = isoDate.split('-');
       return `${day}/${month}/${year}`;
     }
 
@@ -183,72 +177,93 @@
       const dof = dropoffEl.value;
       const dt  = dateEl.value;
       const req = parseInt(seatsEl.value, 10) || 1;
-      if (!pu || !dof || !dt) return alert('Please fill all fields');
+
+      if (!pu || !dof || !dt) {
+        return alert('Please fill all fields');
+      }
+
+      const doIdx = locationIndexMap[dof] || 0;
 
       db.ref('availableslots').once('value').then(snap => {
         const all = [];
-        snap.forEach(driverSnap =>
-          driverSnap.forEach(slotSnap =>
-            all.push({ driverId: driverSnap.key, slotKey: slotSnap.key, ...slotSnap.val() })
-          )
+        snap.forEach(driverSnap => {
+          driverSnap.forEach(slotSnap => {
+            all.push({
+              driverId: driverSnap.key,
+              slotKey:  slotSnap.key,
+              ...slotSnap.val()
+            });
+          });
+        });
+
+        let matched = all.filter(s =>
+          s.pickup === pu && s.dropoff === dof && s.date === dt
         );
-
-        // 1) exact matches
-        const exact = all.filter(s => s.pickup===pu && s.dropoff===dof && s.date===dt);
-        if (exact.length) {
-          return renderSlots(exact, req);
+        if (!matched.length) {
+          matched = all.filter(s =>
+            s.date === dt && locationIndexMap[s.dropoff] === doIdx
+          );
         }
-
-        // 2) fallback alternatives
-        const idx = locationIndexMap[dof]||0;
-        const alt = all.filter(s => s.date===dt && locationIndexMap[s.dropoff]===idx);
-        if (alt.length) {
-          slotsDiv.innerHTML = `<div class="notice">No ride found for the same pickup and dropoff location on the selected date but here are some alternatives</div>`;
-          return renderSlots(alt, req);
+        if (!matched.length) {
+          slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
+        } else {
+          renderSlots(matched, req);
         }
-
-        // 3) no slots
-        slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
       });
     }
 
     function renderSlots(slots, reqSeats) {
+      slotsDiv.innerHTML = '';
       auth.onAuthStateChanged(user => {
-        if (!user) return alert('Please login first');
-        slots.forEach((slot, i) => {
+        if (!user) {
+          alert('Please login first');
+          return;
+        }
+        slots.forEach((slot, idx) => {
           const avail = parseInt(slot.seats, 10);
           if (avail < reqSeats) return;
-          const puIdx = locationIndexMap[slot.pickup]||0;
-          const doIdx = locationIndexMap[slot.dropoff]||0;
+          const puIdx = locationIndexMap[slot.pickup] || 0;
+          const doIdx = locationIndexMap[slot.dropoff] || 0;
           const fare  = Math.abs(puIdx - doIdx) * reqSeats;
+
+          const displayTime = formatTime24to12(slot.time);
+          const displayDate = formatDateISOtoDMY(slot.date);
 
           const card = document.createElement('div');
           card.className = 'slot-card';
           card.innerHTML = `
-            <div class="slot-card-header">Sl. No. ${i+1}</div>
+            <div class="slot-card-header">Sl. No. ${idx + 1}</div>
             <div><strong>Pickup:</strong> ${slot.pickup}</div>
             <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
-            <div><strong>Date:</strong> ${formatDateISOtoDMY(slot.date)}</div>
-            <div><strong>Time:</strong> ${formatTime24to12(slot.time)}</div>
+            <div><strong>Date:</strong> ${displayDate}</div>
+            <div><strong>Time:</strong> ${displayTime}</div>
             <div><strong>Seats:</strong> ${avail}</div>
-            <button id="bookBtn${i}">
+            <button id="bookBtn${idx}">
               Book ${reqSeats} for ₹${fare}
             </button>
           `;
           slotsDiv.appendChild(card);
 
-          document.getElementById(`bookBtn${i}`).addEventListener('click', () => {
-            const booking = {
-              driverId: slot.driverId, slotKey: slot.slotKey,
-              pickup: slot.pickup, dropoff: slot.dropoff,
-              date: slot.date, time: slot.time,
-              seatsRequested: reqSeats, seatsAvailable: avail,
-              fare, customerId: user.uid,
-              customerName: user.displayName||'', customerPhone: user.phoneNumber||'',
-              carBrand: slot.carBrand||'', carReg: slot.carReg||'',
-              driverName: slot.driverName||'', driverNumber: slot.driverNumber||''
+          document.getElementById(`bookBtn${idx}`).addEventListener('click', () => {
+            const bookingData = {
+              driverId:       slot.driverId,
+              slotKey:        slot.slotKey,
+              pickup:         slot.pickup,
+              dropoff:        slot.dropoff,
+              date:           slot.date,
+              time:           slot.time,
+              seatsRequested: reqSeats,
+              seatsAvailable: avail,
+              fare:           fare,
+              customerId:     user.uid,
+              customerName:   user.displayName  || '',
+              customerPhone:  user.phoneNumber  || '',
+              carBrand:       slot.carBrand     || '',
+              carReg:         slot.carReg       || '',
+              driverName:     slot.driverName   || '',
+              driverNumber:   slot.driverNumber || ''
             };
-            localStorage.setItem('selectedBooking', JSON.stringify(booking));
+            localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
             window.location.href = 'checkout.html';
           });
         });
