@@ -110,12 +110,13 @@
     <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
+  <!-- Firebase & Razorpay -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
-    // Firebase init
+    // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -126,7 +127,8 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database(), auth = firebase.auth();
+    const db   = firebase.database();
+    const auth = firebase.auth();
 
     const summaryEl = document.getElementById('summary');
     const payBtn    = document.getElementById('payBtn');
@@ -149,14 +151,14 @@
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
       payBtn.disabled = true;
     } else {
-      // Wait for auth, then fetch profile to display name/phone
+      // Wait for auth, then fetch user id, then name & phone, then render
       auth.onAuthStateChanged(async user => {
         if (!user) {
           alert('Please login first.');
           window.location = 'login.html';
           return;
         }
-        // Fetch profile
+        // Fetch name & phone from /users/{uid}
         const snap = await db.ref(`users/${user.uid}`).once('value');
         const profile = snap.val() || {};
         const name  = profile.name  || '—';
@@ -173,9 +175,9 @@
           <div><strong>Seats:</strong> ${booking.seatsRequested}</div>
           <div><strong>Fare:</strong> ₹${booking.fare}</div>
         `;
-        // Enable pay only once profile loaded
+        // Enable pay only when terms checked
         termsChk.addEventListener('change', () => {
-          payBtn.disabled = !(termsChk.checked);
+          payBtn.disabled = !termsChk.checked;
         });
         payBtn.disabled = true;
       });
@@ -184,7 +186,6 @@
     payBtn.addEventListener('click', () => {
       auth.onAuthStateChanged(user => {
         if (!user) return;
-        // Razorpay flow (unchanged)…
         const options = {
           key: 'rzp_test_NMB6jz5XK0G48R',
           amount: booking.fare * 100,
@@ -197,7 +198,7 @@
               const left = parseInt(cur.seats,10) - booking.seatsRequested;
               return { ...cur, seats: left<0?0:left };
             }).then(() => {
-              return db.ref(`bookings`).push({
+              return db.ref('bookings').push({
                 ...booking,
                 paymentId: res.razorpay_payment_id,
                 bookedAt: new Date().toISOString(),
