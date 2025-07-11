@@ -154,6 +154,8 @@
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
     } else {
       summaryEl.innerHTML = `
+        <div><strong>Name:</strong> ${booking.customerName}</div>
+        <div><strong>Phone:</strong> ${booking.customerPhone}</div>
         <div><strong>Pickup:</strong> ${booking.pickup}</div>
         <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
         <div><strong>Date:</strong> ${formatDate(booking.date)}</div>
@@ -175,7 +177,7 @@
           return;
         }
 
-        // First fetch current user's name & phone from /users/{uid}
+        // Fetch current user's name & phone from /users/{uid}
         db.ref(`users/${user.uid}`).once('value').then(snapshot => {
           const profile = snapshot.val() || {};
           const customerName  = profile.name  || '';
