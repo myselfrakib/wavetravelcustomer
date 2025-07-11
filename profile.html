@@ -31,7 +31,7 @@
       width: 100%;
       margin: 0 auto;
       padding: 16px;
-      padding-bottom: 100px; /* Leave room for navbar */
+      padding-bottom: 100px; /* leave room for navbar */
     }
     h1 {
       text-align: center;
@@ -152,11 +152,11 @@
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
-    // Firebase config & init
+    // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -167,10 +167,10 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const auth = firebase.auth();
 
-    // Elements
+    const auth = firebase.auth();
+    const db   = firebase.database();
+
     const userNameEl  = document.getElementById("userName");
     const userEmailEl = document.getElementById("userEmail");
     const userPhoneEl = document.getElementById("userPhone");
@@ -186,7 +186,6 @@
       editBtn.style.display  = show ? "none" : "";
     }
 
-    // Wait for auth
     auth.onAuthStateChanged(user => {
       if (!user) {
         alert("Please log in to view your profile.");
@@ -195,7 +194,7 @@
       const uid = user.uid;
       const userRef = db.ref(`users/${uid}`);
 
-      // Fetch once
+      // Fetch profile
       userRef.once("value")
         .then(snapshot => {
           const data = snapshot.val() || {};
@@ -226,7 +225,6 @@
         userRef.update(updates)
           .then(() => {
             alert("Profile updated!");
-            // Refresh view
             userNameEl.textContent  = updates.name;
             userEmailEl.textContent = updates.email;
             userPhoneEl.textContent = updates.phone;
