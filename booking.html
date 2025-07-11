@@ -156,6 +156,15 @@
       });
     }
 
+    // Convert "HH:MM" to "h:MM AM/PM"
+    function formatTime24to12(time24) {
+      const [hourStr, minute] = time24.split(':');
+      let hour = parseInt(hourStr, 10);
+      const period = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12 === 0 ? 12 : hour % 12;
+      return `${hour}:${minute} ${period}`;
+    }
+
     function searchSlots() {
       slotsDiv.innerHTML = '';
       const pu  = pickupEl.value;
@@ -207,9 +216,12 @@
         slots.forEach((slot, idx) => {
           const avail = parseInt(slot.seats, 10);
           if (avail < reqSeats) return;
-          const puIdx = locationIndexMap[slot.pickup]||0;
-          const doIdx = locationIndexMap[slot.dropoff]||0;
+          const puIdx = locationIndexMap[slot.pickup] || 0;
+          const doIdx = locationIndexMap[slot.dropoff] || 0;
           const fare  = Math.abs(puIdx - doIdx) * reqSeats;
+
+          // Format time to 12-hour
+          const displayTime = formatTime24to12(slot.time);
 
           const card = document.createElement('div');
           card.className = 'slot-card';
@@ -218,7 +230,7 @@
             <div><strong>Pickup:</strong> ${slot.pickup}</div>
             <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
             <div><strong>Date:</strong> ${slot.date}</div>
-            <div><strong>Time:</strong> ${slot.time}</div>
+            <div><strong>Time:</strong> ${displayTime}</div>
             <div><strong>Seats:</strong> ${avail}</div>
             <button id="bookBtn${idx}">
               Book ${reqSeats} for ₹${fare}
@@ -240,7 +252,6 @@
               customerId:     user.uid,
               customerName:   user.displayName  || '',
               customerPhone:  user.phoneNumber  || '',
-              // New fields from slot:
               carBrand:       slot.carBrand     || '',
               carReg:         slot.carReg       || '',
               driverName:     slot.driverName   || '',
