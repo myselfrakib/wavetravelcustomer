@@ -140,7 +140,7 @@
     const slotsDiv  = document.getElementById('slots');
     const locationIndexMap = {};
 
-    // Redirect to login if not authenticated
+    // Enforce login before anything else
     auth.onAuthStateChanged(user => {
       if (!user) {
         window.location.href = 'login.html';
@@ -183,11 +183,9 @@
       const dof = dropoffEl.value;
       const dt  = dateEl.value;
       const req = parseInt(seatsEl.value, 10) || 1;
-
       if (!pu || !dof || !dt) {
         return alert('Please fill all fields');
       }
-
       const doIdx = locationIndexMap[dof] || 0;
 
       db.ref('availableslots').once('value').then(snap => {
@@ -250,7 +248,11 @@
           `;
           slotsDiv.appendChild(card);
 
-          document.getElementById(`bookBtn${idx}`).addEventListener('click', () => {
+          document.getElementById(`bookBtn${idx}`).addEventListener('click', async () => {
+            // fetch name & phone from /users/{uid}
+            const profileSnap = await db.ref(`users/${user.uid}`).once('value');
+            const profile     = profileSnap.val() || {};
+
             const bookingData = {
               driverId:       slot.driverId,
               slotKey:        slot.slotKey,
@@ -262,8 +264,8 @@
               seatsAvailable: avail,
               fare:           fare,
               customerId:     user.uid,
-              customerName:   user.displayName  || '',
-              customerPhone:  user.phoneNumber  || '',
+              customerName:   profile.name  || '',
+              customerPhone:  profile.phone || '',
               carBrand:       slot.carBrand     || '',
               carReg:         slot.carReg       || '',
               driverName:     slot.driverName   || '',
