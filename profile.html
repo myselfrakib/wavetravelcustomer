@@ -14,103 +14,63 @@
     }
     *, *::before, *::after {
       box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
     }
     body {
       font-family: 'Poppins', sans-serif;
       background: linear-gradient(to right, #74ebd5, #ACB6E5);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
+      display: flex; flex-direction: column; min-height: 100vh;
       color: var(--dark-text);
     }
     .container {
-      flex: 1;
-      max-width: 600px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 16px;
-      padding-bottom: 100px; /* leave room for navbar */
+      flex: 1; max-width: 600px; width: 100%;
+      margin: 0 auto; padding: 16px; padding-bottom: 100px;
     }
     h1 {
-      text-align: center;
-      color: #fff;
-      margin-bottom: 16px;
-      font-size: 1.5rem;
+      text-align: center; color: #fff;
+      margin-bottom: 16px; font-size: 1.5rem;
     }
     .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background: #fff; border-radius: 12px;
+      padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .card h2 {
-      color: var(--primary);
-      margin-bottom: 12px;
-      font-size: 1.25rem;
-      text-align: center;
+      color: var(--primary); margin-bottom: 12px;
+      font-size: 1.25rem; text-align: center;
     }
     .item {
-      margin-bottom: 12px;
-      font-size: 1rem;
-      display: flex;
-      justify-content: space-between;
+      margin-bottom: 12px; font-size: 1rem;
+      display: flex; justify-content: space-between;
     }
-    .item span {
-      font-weight: 500;
-    }
+    .item span { font-weight: 500; }
     .input-field {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      width: 100%; padding: 12px; margin-bottom: 12px;
+      border-radius: 8px; border: 1px solid #ccc;
       font-size: 1rem;
     }
     .button {
-      width: 100%;
-      padding: 14px;
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
+      width: 100%; padding: 14px; background: var(--primary);
+      color: #fff; border: none; border-radius: 8px;
+      font-size: 1rem; font-weight: 600; cursor: pointer;
       transition: background 0.2s;
     }
-    .button:hover {
-      background: #005bb5;
-    }
+    .button:hover { background: #005bb5; }
     .actions {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      display: flex; flex-direction: column; gap: 12px;
       margin-top: 16px;
     }
     .navbar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: #fff;
-      border-top: 1px solid #ddd;
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background: #fff; border-top: 1px solid #ddd;
+      display: flex; justify-content: space-around;
+      padding: 10px 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
     }
     .navbar a {
-      text-decoration: none;
-      color: var(--primary);
-      font-size: 0.75rem;
-      text-align: center;
+      text-decoration: none; color: var(--primary);
+      font-size: 0.75rem; text-align: center;
     }
     .navbar a i {
-      display: block;
-      font-size: 1.25rem;
-      margin-bottom: 4px;
+      display: block; font-size: 1.25rem; margin-bottom: 4px;
     }
   </style>
 </head>
@@ -121,14 +81,12 @@
     <div class="card">
       <h2>Your Details</h2>
 
-      <!-- View Mode -->
       <div id="viewMode">
         <div class="item"><strong>Name:</strong><span id="userName">Loading...</span></div>
         <div class="item"><strong>Email:</strong><span id="userEmail">Loading...</span></div>
         <div class="item"><strong>Phone:</strong><span id="userPhone">Loading...</span></div>
       </div>
 
-      <!-- Edit Mode -->
       <div id="editMode" style="display:none;">
         <input type="text" id="editName" class="input-field" placeholder="Name"/>
         <input type="email" id="editEmail" class="input-field" placeholder="Email"/>
@@ -150,7 +108,6 @@
     <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -171,6 +128,7 @@
     const auth = firebase.auth();
     const db   = firebase.database();
 
+    // Elements
     const userNameEl  = document.getElementById("userName");
     const userEmailEl = document.getElementById("userEmail");
     const userPhoneEl = document.getElementById("userPhone");
@@ -191,23 +149,17 @@
         alert("Please log in to view your profile.");
         return window.location = "login.html";
       }
-      const uid = user.uid;
-      const userRef = db.ref(`users/${uid}`);
 
-      // Fetch profile
-      userRef.once("value")
-        .then(snapshot => {
-          const data = snapshot.val() || {};
-          userNameEl.textContent  = data.name  || "Not set";
-          userEmailEl.textContent = data.email || "Not set";
-          userPhoneEl.textContent = data.phone || "Not set";
-        })
-        .catch(err => {
-          console.error("Fetch profile failed:", err);
-          userNameEl.textContent = userEmailEl.textContent = userPhoneEl.textContent = "Error";
-        });
+      const userRef = db.ref(`users/${user.uid}`);
 
-      // Edit
+      // Real‑time listener
+      userRef.on("value", snap => {
+        const data = snap.val() || {};
+        userNameEl.textContent  = data.name  || "Not set";
+        userEmailEl.textContent = data.email || "Not set";
+        userPhoneEl.textContent = data.phone || "Not set";
+      });
+
       editBtn.addEventListener("click", () => {
         toggleEdit(true);
         document.getElementById("editName").value  = userNameEl.textContent;
@@ -215,7 +167,6 @@
         document.getElementById("editPhone").value = userPhoneEl.textContent;
       });
 
-      // Save
       saveBtn.addEventListener("click", () => {
         const updates = {
           name:  document.getElementById("editName").value,
@@ -225,9 +176,6 @@
         userRef.update(updates)
           .then(() => {
             alert("Profile updated!");
-            userNameEl.textContent  = updates.name;
-            userEmailEl.textContent = updates.email;
-            userPhoneEl.textContent = updates.phone;
             toggleEdit(false);
           })
           .catch(err => {
@@ -236,7 +184,6 @@
           });
       });
 
-      // Logout
       logoutBtn.addEventListener("click", () => {
         auth.signOut().then(() => window.location = "login.html");
       });
