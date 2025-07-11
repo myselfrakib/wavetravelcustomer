@@ -9,109 +9,103 @@
   <style>
     :root {
       --primary: #0077ff;
-      --light-bg: #f8f8f8;
-      --dark-bg: #333;
-      --text: #333;
+      --light: #f8f8f8;
+      --dark: #333;
       --success: #28a745;
-    }
-    [data-theme='dark'] {
-      --light-bg: #333;
-      --dark-bg: #f8f8f8;
-      --text: #f8f8f8;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Poppins', sans-serif;
-      background: var(--light-bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .theme-toggle {
-      position: fixed; top: 1rem; right: 1rem;
-      background: var(--primary); color: #fff; border:none;
-      padding: 0.5rem; border-radius:0.25rem; cursor:pointer;
+      background: linear-gradient(to right, #74ebd5, #ACB6E5);
+      display: flex; flex-direction: column; min-height: 100vh;
+      color: var(--dark);
     }
     .container {
       flex: 1; max-width: 600px; width: 100%;
-      margin: 2rem auto; padding: 0 1rem;
+      margin: 0 auto; padding: 16px; padding-bottom: 100px;
     }
     h1 {
-      text-align: center; margin-bottom: 1rem;
+      font-size: 1.5rem; text-align: center; margin-bottom: 1rem;
+      color: #fff;
     }
     .form-group { margin-bottom: 1rem; }
-    label { display: block; margin-bottom: 0.5rem; }
+    label {
+      display: block; margin-bottom: 0.5rem; font-weight: 600;
+    }
     select, input {
-      width: 100%; padding: 0.75rem; border:1px solid #ccc;
-      border-radius:0.5rem; font-size:1rem;
+      width: 100%; padding: 0.75rem; border: 1px solid #ccc;
+      border-radius: 0.5rem; background: #fff; font-size: 1rem;
     }
-    #searchBtn {
-      width:100%; padding:0.75rem; background:var(--primary);
-      color:#fff; border:none; border-radius:0.5rem;
-      font-weight:600; cursor:pointer; opacity:0.5;
+    button {
+      display: block; width: 100%; padding: 0.75rem;
+      margin-top: 0.75rem; background: var(--primary);
+      color: #fff; font-size: 1rem; font-weight: 600;
+      border: none; border-radius: 0.5rem; cursor: pointer;
+      transition: background 0.2s;
     }
-    #searchBtn.enabled { opacity:1; }
-    #slots {
-      margin-top:1rem; min-height:200px;
-    }
-    .spinner {
-      text-align:center; padding:2rem;
-    }
-    .no-slots, .notice {
-      text-align:center; padding:1rem; margin-top:1rem;
-      background:#fff3cd; border:1px solid #ffeeba; border-radius:0.5rem;
+    button:hover { background: #005dc1; }
+    .slots {
+      margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;
     }
     .slot-card {
-      background:#fff; padding:1rem; border-radius:0.75rem;
-      box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:1rem;
+      background: #fff; padding: 1rem; border-radius: 0.75rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .slot-card-header { font-weight:bold; margin-bottom:0.5rem; }
+    .slot-card-header { font-weight: bold; margin-bottom: 0.5rem; }
+    .slot-card strong { display: inline-block; width: 4.5rem; }
     .slot-card button {
-      margin-top:0.5rem; background:var(--success); color:#fff;
-      padding:0.5rem 1rem; border:none; border-radius:0.5rem; cursor:pointer;
+      width: auto; margin-top: 0.75rem; background: var(--success);
+      padding: 0.5rem 1rem; border: none; border-radius: 0.5rem;
+      color: #fff; cursor: pointer;
+    }
+    .no-slots {
+      text-align: center; padding: 1rem; background: #fff;
+      border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-weight: 600;
     }
     .navbar {
-      position:fixed; bottom:0; left:0; width:100%; background:#fff;
-      border-top:1px solid #ddd; display:flex; justify-content:space-around;
-      padding:0.5rem 0;
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background: #fff; border-top: 1px solid #ddd;
+      display: flex; justify-content: space-around; padding: 0.5rem 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
     }
-    .navbar a { color:var(--primary); font-size:0.75rem; text-align:center; }
-    .navbar a i { display:block; font-size:1.25rem; }
+    .navbar a {
+      color: var(--primary); text-decoration: none;
+      font-size: 0.75rem; text-align: center;
+    }
+    .navbar a i {
+      font-size: 1.25rem; display: block; margin-bottom: 0.25rem;
+    }
   </style>
 </head>
-<body data-theme="light">
-
-  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-    🌙
-  </button>
+<body>
 
   <div class="container">
     <h1>Book Your Ride</h1>
 
     <div class="form-group">
       <label for="pickup">Pickup Location</label>
-      <select id="pickup" required><option value="">Select Pickup</option></select>
+      <select id="pickup"><option value="">Select Pickup</option></select>
     </div>
 
     <div class="form-group">
       <label for="dropoff">Dropoff Location</label>
-      <select id="dropoff" required><option value="">Select Dropoff</option></select>
+      <select id="dropoff"><option value="">Select Dropoff</option></select>
     </div>
 
     <div class="form-group">
       <label for="date">Select Date</label>
-      <input type="date" id="date" required/>
+      <input type="date" id="date"/>
     </div>
 
     <div class="form-group">
       <label for="seats">Seats Needed</label>
-      <input type="number" id="seats" min="1" placeholder="1" required/>
+      <input type="number" id="seats" min="1" placeholder="Enter seats"/>
     </div>
 
-    <button id="searchBtn" disabled>Search Available Slots</button>
+    <button onclick="searchSlots()">Search Available Slots</button>
 
-    <div id="slots" aria-live="polite"></div>
+    <div class="slots" id="slots"></div>
   </div>
 
   <div class="navbar">
@@ -124,157 +118,159 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
   <script>
-    // ---- Firebase Init ----
-    const firebaseConfig = { /* your config */ };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database(), auth = firebase.auth();
+    const db   = firebase.database();
+    const auth = firebase.auth();
 
-    // ---- Theming ----
-    const themeToggle = document.getElementById('themeToggle');
-    themeToggle.addEventListener('click', () => {
-      const body = document.body;
-      const next = body.dataset.theme === 'light' ? 'dark' : 'light';
-      body.dataset.theme = next;
-      themeToggle.textContent = next === 'light' ? '🌙' : '☀️';
-    });
+    const pickupEl  = document.getElementById('pickup');
+    const dropoffEl = document.getElementById('dropoff');
+    const dateEl    = document.getElementById('date');
+    const seatsEl   = document.getElementById('seats');
+    const slotsDiv  = document.getElementById('slots');
 
-    // ---- Utils ----
-    function debounce(fn, ms=300) {
-      let t;
-      return (...args) => {
-        clearTimeout(t);
-        t = setTimeout(()=>fn(...args), ms);
-      };
+    const locationIndexMap = {};
+
+    function loadLocations() {
+      db.ref('locations').once('value').then(snap => {
+        let puOpts = '<option value="">Select Pickup</option>',
+            doOpts = '<option value="">Select Dropoff</option>';
+        snap.forEach(child => {
+          const loc = child.val();
+          locationIndexMap[loc.name] = loc.index;
+          puOpts += `<option value="${loc.name}">${loc.name}</option>`;
+          doOpts += `<option value="${loc.name}">${loc.name}</option>`;
+        });
+        pickupEl.innerHTML  = puOpts;
+        dropoffEl.innerHTML = doOpts;
+      });
     }
-    function formatTime24to12(time) {
-      let [h, m] = time.split(':').map(Number);
-      const suf = h>=12?'PM':'AM';
-      h = h%12||12;
-      return `${h}:${m.toString().padStart(2,'0')} ${suf}`;
+
+    // Convert "HH:MM" to "h:MM AM/PM"
+    function formatTime24to12(time24) {
+      const [hourStr, minute] = time24.split(':');
+      let hour = parseInt(hourStr, 10);
+      const period = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12 === 0 ? 12 : hour % 12;
+      return `${hour}:${minute} ${period}`;
     }
-    function formatDateDMY(iso) {
-      const [y,m,d] = iso.split('-');
-      return `${d}/${m}/${y}`;
+
+    // Convert "YYYY-MM-DD" to "DD/MM/YYYY"
+    function formatDateISOtoDMY(isoDate) {
+      const [year, month, day] = isoDate.split('-');
+      return `${day}/${month}/${year}`;
     }
-    // cache locations 5m
-    async function loadLocations() {
-      const key = 'wavetravel-locs';
-      const now = Date.now();
-      let data = JSON.parse(localStorage.getItem(key)||'{}');
-      if (!data.time || now - data.time > 300_000) {
-        try {
-          const snap = await db.ref('locations').once('value');
-          const arr = [];
-          snap.forEach(ch=>arr.push(ch.val()));
-          data = { time: now, arr };
-          localStorage.setItem(key, JSON.stringify(data));
-        } catch(e) {
-          alert('Failed to load locations.');
-          return [];
-        }
+
+    function searchSlots() {
+      slotsDiv.innerHTML = '';
+      const pu  = pickupEl.value;
+      const dof = dropoffEl.value;
+      const dt  = dateEl.value;
+      const req = parseInt(seatsEl.value, 10) || 1;
+
+      if (!pu || !dof || !dt) {
+        return alert('Please fill all fields');
       }
-      return data.arr;
+
+      const doIdx = locationIndexMap[dof] || 0;
+
+      db.ref('availableslots').once('value').then(snap => {
+        const all = [];
+        snap.forEach(driverSnap => {
+          driverSnap.forEach(slotSnap => {
+            all.push({
+              driverId: driverSnap.key,
+              slotKey:  slotSnap.key,
+              ...slotSnap.val()
+            });
+          });
+        });
+
+        let matched = all.filter(s =>
+          s.pickup === pu && s.dropoff === dof && s.date === dt
+        );
+        if (!matched.length) {
+          matched = all.filter(s =>
+            s.date === dt && locationIndexMap[s.dropoff] === doIdx
+          );
+        }
+        if (!matched.length) {
+          slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
+        } else {
+          renderSlots(matched, req);
+        }
+      });
     }
 
-    // ---- Main ----
-    (async function init(){
-      // Auth guard
-      auth.onAuthStateChanged(user=>{
-        if(!user) location='login.html';
-      });
+    function renderSlots(slots, reqSeats) {
+      slotsDiv.innerHTML = '';
+      auth.onAuthStateChanged(user => {
+        if (!user) {
+          alert('Please login first');
+          return;
+        }
+        slots.forEach((slot, idx) => {
+          const avail = parseInt(slot.seats, 10);
+          if (avail < reqSeats) return;
+          const puIdx = locationIndexMap[slot.pickup] || 0;
+          const doIdx = locationIndexMap[slot.dropoff] || 0;
+          const fare  = Math.abs(puIdx - doIdx) * reqSeats;
 
-      const pickupEl = document.getElementById('pickup'),
-            dropoffEl= document.getElementById('dropoff'),
-            dateEl   = document.getElementById('date'),
-            seatsEl  = document.getElementById('seats'),
-            searchBtn= document.getElementById('searchBtn'),
-            slotsDiv = document.getElementById('slots');
+          const displayTime = formatTime24to12(slot.time);
+          const displayDate = formatDateISOtoDMY(slot.date);
 
-      const locs = await loadLocations();
-      locs.forEach(l=>{
-        const opt = `<option value="${l.name}">${l.name}</option>`;
-        pickupEl.insertAdjacentHTML('beforeend', opt);
-        dropoffEl.insertAdjacentHTML('beforeend', opt);
-      });
+          const card = document.createElement('div');
+          card.className = 'slot-card';
+          card.innerHTML = `
+            <div class="slot-card-header">Sl. No. ${idx + 1}</div>
+            <div><strong>Pickup:</strong> ${slot.pickup}</div>
+            <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
+            <div><strong>Date:</strong> ${displayDate}</div>
+            <div><strong>Time:</strong> ${displayTime}</div>
+            <div><strong>Seats:</strong> ${avail}</div>
+            <button id="bookBtn${idx}">
+              Book ${reqSeats} for ₹${fare}
+            </button>
+          `;
+          slotsDiv.appendChild(card);
 
-      // Enable search when valid
-      [pickupEl,dropoffEl,dateEl,seatsEl].forEach(el=>
-        el.addEventListener('input', ()=>{
-          const ok = pickupEl.value && dropoffEl.value && dateEl.value && seatsEl.value>0;
-          searchBtn.disabled = !ok;
-          searchBtn.classList.toggle('enabled', ok);
-        })
-      );
-
-      async function doSearch(){
-        slotsDiv.innerHTML = '<div class="spinner">Loading…</div>';
-        const pu = pickupEl.value, dof = dropoffEl.value, dt = dateEl.value;
-        const req = +seatsEl.value;
-        try {
-          // Query by date index
-          const snap = await db.ref('availableslots')
-            .orderByChild('date').equalTo(dt).once('value');
-          const all = [];
-          snap.forEach(drv=>{
-            drv.forEach(s=> all.push({ driverId:drv.key, slotKey:s.key, ...s.val() }));
-          });
-          // exact
-          let matched = all.filter(s=>s.pickup===pu && s.dropoff===dof);
-          // fallback
-          if(!matched.length){
-            const idxMap = Object.fromEntries(locs.map(l=>[l.name,l.index]));
-            const idx = idxMap[dof];
-            matched = all.filter(s=>idxMap[s.dropoff]===idx);
-            if(matched.length){
-              slotsDiv.innerHTML = '<div class="notice">No exact match; here are alternatives:</div>';
-            }
-          }
-          if(!matched.length){
-            slotsDiv.innerHTML = '<div class="no-slots">No slots found.</div>';
-            return;
-          }
-          // render
-          slotsDiv.innerHTML = '';
-          const profileSnap = await db.ref(`users/${auth.currentUser.uid}`).once('value');
-          const prof = profileSnap.val()||{};
-          matched.forEach((slot,i)=>{
-            const avail = +slot.seats;
-            if(avail<req) return;
-            const puIdx = locs.find(l=>l.name===slot.pickup)?.index||0;
-            const doIdx = locs.find(l=>l.name===slot.dropoff)?.index||0;
-            const fare = Math.abs(puIdx-doIdx)*req;
-            const card = document.createElement('div');
-            card.className='slot-card';
-            card.innerHTML=`
-              <div class="slot-card-header">Sl. No. ${i+1}</div>
-              <div><strong>Pickup:</strong> ${slot.pickup}</div>
-              <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
-              <div><strong>Date:</strong> ${formatDateDMY(slot.date)}</div>
-              <div><strong>Time:</strong> ${formatTime24to12(slot.time)}</div>
-              <div><strong>Seats:</strong> ${avail}</div>
-              <button>Book ${req} for ₹${fare}</button>
-            `;
-            card.querySelector('button').onclick = ()=>{
-              const bk = {
-                ...slot, seatsRequested:req, fare,
-                customerId: auth.currentUser.uid,
-                customerName: prof.name||'', customerPhone: prof.phone||''
-              };
-              localStorage.setItem('selectedBooking', JSON.stringify(bk));
-              location='checkout.html';
+          document.getElementById(`bookBtn${idx}`).addEventListener('click', () => {
+            const bookingData = {
+              driverId:       slot.driverId,
+              slotKey:        slot.slotKey,
+              pickup:         slot.pickup,
+              dropoff:        slot.dropoff,
+              date:           slot.date,
+              time:           slot.time,
+              seatsRequested: reqSeats,
+              seatsAvailable: avail,
+              fare:           fare,
+              customerId:     user.uid,
+              customerName:   user.displayName  || '',
+              customerPhone:  user.phoneNumber  || '',
+              carBrand:       slot.carBrand     || '',
+              carReg:         slot.carReg       || '',
+              driverName:     slot.driverName   || '',
+              driverNumber:   slot.driverNumber || ''
             };
-            slotsDiv.appendChild(card);
+            localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
+            window.location.href = 'checkout.html';
           });
-        } catch(err){
-          console.error(err);
-          slotsDiv.innerHTML = '<div class="no-slots">Error loading slots.</div>';
-        }
-      }
+        });
+      });
+    }
 
-      const searchSlots = debounce(doSearch, 500);
-      searchBtn.addEventListener('click', searchSlots);
-    })();
+    loadLocations();
   </script>
 </body>
 </html>
