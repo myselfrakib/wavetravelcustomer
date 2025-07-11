@@ -153,7 +153,6 @@
     if (!booking.driverId) {
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
     } else {
-      // Only show pickup, dropoff, date, time, seats, fare
       summaryEl.innerHTML = `
         <div><strong>Pickup:</strong> ${booking.pickup}</div>
         <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
@@ -176,46 +175,56 @@
           return;
         }
 
-        // Razorpay options
-        const options = {
-          key: 'rzp_test_NMB6jz5XK0G48R',
-          amount: booking.fare * 100,
-          currency: 'INR',
-          name: 'WaveTravel',
-          description: 'Ride Booking',
-          handler(res) {
-            // 1) Decrement slot seats
-            const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
-            slotRef.transaction(current => {
-              if (current && current.seats != null) {
-                const left = parseInt(current.seats,10) - booking.seatsRequested;
-                return { ...current, seats: left < 0 ? 0 : left };
-              }
-              return current;
-            }).then(() => {
-              // 2) Push full booking under /bookings
-              const record = {
-                ...booking,
-                paymentId: res.razorpay_payment_id,
-                customerId: user.uid,
-                customerName: user.displayName || '',
-                customerPhone: user.phoneNumber || '',
-                bookedAt: new Date().toISOString(),
-                status: 'confirmed'
-              };
-              return db.ref('bookings').push(record);
-            }).then(() => {
-              alert('Payment successful & booking confirmed!');
-              localStorage.removeItem('selectedBooking');
-              window.location = 'mybookings.html';
-            }).catch(err => {
-              console.error(err);
-              alert('Error during booking. Please try again.');
-            });
-          }
-        };
+        // First fetch current user's name & phone from /users/{uid}
+        db.ref(`users/${user.uid}`).once('value').then(snapshot => {
+          const profile = snapshot.val() || {};
+          const customerName  = profile.name  || '';
+          const customerPhone = profile.phone || '';
 
-        new Razorpay(options).open();
+          // Razorpay options
+          const options = {
+            key: 'rzp_test_NMB6jz5XK0G48R',
+            amount: booking.fare * 100,
+            currency: 'INR',
+            name: 'WaveTravel',
+            description: 'Ride Booking',
+            handler(res) {
+              // 1) Decrement slot seats
+              const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+              slotRef.transaction(current => {
+                if (current && current.seats != null) {
+                  const left = parseInt(current.seats,10) - booking.seatsRequested;
+                  return { ...current, seats: left < 0 ? 0 : left };
+                }
+                return current;
+              }).then(() => {
+                // 2) Push full booking under /bookings
+                const record = {
+                  ...booking,
+                  paymentId: res.razorpay_payment_id,
+                  customerId: user.uid,
+                  customerName,
+                  customerPhone,
+                  bookedAt: new Date().toISOString(),
+                  status: 'confirmed'
+                };
+                return db.ref('bookings').push(record);
+              }).then(() => {
+                alert('Payment successful & booking confirmed!');
+                localStorage.removeItem('selectedBooking');
+                window.location = 'mybookings.html';
+              }).catch(err => {
+                console.error(err);
+                alert('Error during booking. Please try again.');
+              });
+            }
+          };
+
+          new Razorpay(options).open();
+        }).catch(err => {
+          console.error('Failed to load user profile:', err);
+          alert('Unable to retrieve your profile. Please try again.');
+        });
       });
     });
   </script>
