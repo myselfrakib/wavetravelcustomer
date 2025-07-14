@@ -93,9 +93,17 @@
     <table id="pending-table" class="display responsive nowrap" style="width:100%;display:none">
       <thead>
         <tr>
-          <th>SL</th><th>Car ID</th><th>Brand</th><th>Reg No</th>
-          <th>Driver ID</th><th>Driver Name</th><th>Phone</th><th>Owner</th>
-          <th>Seats</th><th>Submitted At</th><th>Actions</th>
+          <th>SL</th>
+          <th>Car ID</th>
+          <th>Car Brand</th>
+          <th>Car Reg</th>
+          <th>Driver ID</th>
+          <th>Driver Name</th>
+          <th>Driver Number</th>
+          <th>Owner Name</th>
+          <th>Seats</th>
+          <th>Submitted At</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -272,9 +280,17 @@
       let i=1;
       if(snap.exists()) for(const [cid,c] of Object.entries(snap.val())){
         tables['pending-table'].row.add([
-          i++, cid, c.carBrand||'', c.carReg||'', c.driverId||'', c.driverName||'',
-          c.driverNumber||'', c.ownerName||'', c.seats||'', c.submittedAt||'',
-          `<button onclick="approveCar('${cid}')">Approve</button>
+          i++,
+          cid,
+          c.carBrand||'',
+          c.carReg||'',
+          c.driverId||'',
+          c.driverName||'',
+          c.driverNumber||'',
+          c.ownerName||'',
+          c.seats||'',
+          c.submittedAt||'',
+          `<button onclick="approveCar('${cid}')">Approve</button> 
            <button onclick="deletePending('${cid}')">Delete</button>`
         ]).draw(false);
       }
@@ -289,8 +305,14 @@
       if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
         for(const [cid,c] of Object.entries(cars)){
           tables['approved-table'].row.add([
-            i++, c.driverName||'', c.driverNumber||'', cid, c.carBrand||'', c.carReg||'',
-            c.ownerName||'', c.seats||'',
+            i++,
+            c.driverName||'',
+            c.driverNumber||'',
+            cid,
+            c.carBrand||'',
+            c.carReg||'',
+            c.ownerName||'',
+            c.seats||'',
             `<button onclick="deleteApproved('${did}','${cid}')">Delete</button>`
           ]).draw(false);
         }
@@ -324,8 +346,15 @@
       let i=1;
       if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())){
         tables['bookings-table'].row.add([
-          i++, bid, b.customerName||'', b.vehicle||'', b.pickup||'', b.dropoff||'', 
-          b.duration||'', b.fare||'', b.status||'',
+          i++,
+          bid,
+          b.customerName||'',
+          b.vehicle||'',
+          b.pickup||'',
+          b.dropoff||'',
+          b.duration||'',
+          b.fare||'',
+          b.status||'',
           `<button onclick="deleteBooking('${bid}')">Delete</button>`
         ]).draw(false);
       }
