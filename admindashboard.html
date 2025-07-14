@@ -82,18 +82,19 @@
       openTab('pending-cars');
     }
 
-    // Generic list fetch with serial numbers (Users, Drivers, Pending Cars, Bookings, Profile)
+    // Generic list fetch with SL # (Users, Drivers, Bookings, Profile)
     async function fetchList(path, containerId){
       const con = document.getElementById(containerId);
       showLoading(con);
+
       try {
         const snap = await get(ref(db, path));
         if (!snap.exists()) {
           con.innerHTML = 'No data.';
           return;
         }
-        con.innerHTML = '';
         let serial = 1;
+        con.innerHTML = '';
         for (const [k, v] of Object.entries(snap.val())) {
           const card = document.createElement('div');
           card.className = 'card';
@@ -111,10 +112,53 @@
       }
     }
 
-    // Approved Cars (grouped by driver) with serial numbers per driver-card
+    // Pending Cars: custom so we can show SL #, all fields, Approve & Delete
+    async function fetchPendingCars(){
+      const con = document.getElementById('pending-list');
+      showLoading(con);
+
+      try {
+        const snap = await get(ref(db, 'pendingcars'));
+        if (!snap.exists()) {
+          con.innerHTML = 'No pending cars.';
+          return;
+        }
+        let serial = 1;
+        con.innerHTML = '';
+        for (const [key, car] of Object.entries(snap.val())) {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          let html = `<div><strong>SL #${serial++}</strong></div>`;
+          html += `<div><strong>Car ID:</strong> ${key}</div>`;
+          html += `
+            <div><strong>Brand:</strong> ${car.carBrand}</div>
+            <div><strong>Reg:</strong> ${car.carReg}</div>
+            <div><strong>Driver ID:</strong> ${car.driverId}</div>
+            <div><strong>Driver Name:</strong> ${car.driverName}</div>
+            <div><strong>Driver Number:</strong> ${car.driverNumber}</div>
+            <div><strong>Owner Name:</strong> ${car.ownerName}</div>
+            <div><strong>Seats:</strong> ${car.seats}</div>
+            <div><strong>Submitted At:</strong> ${car.submittedAt}</div>
+          `;
+          html += `
+            <button class="approve-btn" onclick="approveCar('${key}')">Approve</button>
+            <button class="delete-btn"  onclick="deleteNode('pendingcars','${key}')">Delete</button>
+          `;
+
+          card.innerHTML = html;
+          con.appendChild(card);
+        }
+      } catch (e) {
+        con.innerHTML = 'Error loading.';
+      }
+    }
+
+    // Approved Cars (grouped by driver) with SL #
     async function fetchApprovedCars(){
       const con = document.getElementById('approved-list');
       showLoading(con);
+
       try {
         const snap = await get(ref(db, 'approvedcars'));
         if (!snap.exists()) {
@@ -123,15 +167,18 @@
         }
         con.innerHTML = '';
         let serial = 1;
+
         for (const [driverId, cars] of Object.entries(snap.val())) {
           const dSnap = await get(ref(db, `driverdetails/${driverId}`));
           const d = dSnap.exists() ? dSnap.val() : { name:'Unknown', phone:'-' };
 
           const card = document.createElement('div');
           card.className = 'card';
+
           let html = `<div><strong>SL #${serial++}</strong></div>`;
           html += `<div><strong>Driver:</strong> ${d.name} (${d.phone})</div>`;
           html += `<div><strong>Approved Cars:</strong></div>`;
+
           for (const [carId, car] of Object.entries(cars)) {
             html += `<div style="margin-left:1rem; margin-bottom:.5rem">
               <strong>Car ID:</strong> ${carId}<br/>
@@ -142,6 +189,7 @@
               <button class="delete-btn" onclick="deleteApprovedCar('${driverId}','${carId}')">Delete</button>
             </div>`;
           }
+
           const sSnap = await get(ref(db, `availableslots/${driverId}`));
           if (sSnap.exists()) {
             html += `<div><strong>Slots:</strong></div>`;
@@ -149,6 +197,7 @@
               html += `<div style="margin-left:1rem">• ${slot.pickup}→${slot.dropoff} on ${slot.date} @ ${slot.time}</div>`;
             }
           }
+
           card.innerHTML = html;
           con.appendChild(card);
         }
@@ -157,10 +206,11 @@
       }
     }
 
-    // Slots: one card per slot, with serial number + driver info + slotId + details
+    // Slots: one card per slot, with SL # + driver info + slotId + details
     async function fetchSlots(){
       const con = document.getElementById('slots-list');
       showLoading(con);
+
       try {
         const snap = await get(ref(db, 'availableslots'));
         if (!snap.exists()) {
@@ -169,12 +219,15 @@
         }
         con.innerHTML = '';
         let serial = 1;
+
         for (const [driverId, slots] of Object.entries(snap.val())) {
           const dSnap = await get(ref(db, `driverdetails/${driverId}`));
           const d = dSnap.exists() ? dSnap.val() : { name:'Unknown', phone:'-' };
+
           for (const [slotId, slot] of Object.entries(slots)) {
             const card = document.createElement('div');
             card.className = 'card';
+
             let html = `
               <div><strong>SL #${serial++}</strong></div>
               <div><strong>Driver:</strong> ${d.name} (${d.phone})</div>
@@ -186,6 +239,7 @@
                       onclick="deleteNode('availableslots/${driverId}','${slotId}')">
                 Delete
               </button>`;
+
             card.innerHTML = html;
             con.appendChild(card);
           }
@@ -204,7 +258,7 @@
       switch(name){
         case 'users':         fetchList('users','users-list'); break;
         case 'drivers':       fetchList('driverdetails','drivers-list'); break;
-        case 'pending-cars':  fetchList('pendingcars','pending-list'); break;
+        case 'pending-cars':  fetchPendingCars(); break;
         case 'approved-cars': fetchApprovedCars(); break;
         case 'slots':         fetchSlots(); break;
         case 'bookings':      fetchList('bookings','bookings-list'); break;
