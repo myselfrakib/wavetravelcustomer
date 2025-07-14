@@ -186,105 +186,113 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // Expose to global
-    window.logout  = () => signOut(auth).then(()=>location.href='adminlogin.html');
+    // Expose global actions
+    window.logout = () => signOut(auth).then(()=>location.href='adminlogin.html');
 
-    // Tab switch + data loaders
-    window.openTab = function(name){
-      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-      document.getElementById(`${name}-tab`).classList.add('active');
-      switch(name){
-        case 'users':         loadUsers();     break;
-        case 'drivers':       loadDrivers();   break;
-        case 'pending-cars':  loadPending();   break;
-        case 'approved-cars': loadApproved();  break;
-        case 'slots':         loadSlots();     break;
-        case 'bookings':      loadBookings();  break;
-        case 'profile':       loadProfile();   break;
-      }
+    window.deleteUser      = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
+    window.deleteDriver    = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
+    window.deletePending   = async cid => { await remove(ref(db,`pendingcars/${cid}`)); loadPending(); };
+    window.deleteApproved  = async (did,cid) => { await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); };
+    window.deleteSlot      = async (did,sid) => { await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); };
+    window.deleteBooking   = async bid => { await remove(ref(db,`bookings/${bid}`)); loadBookings(); };
+
+    window.approveCar = async cid => {
+      const snap = await get(ref(db,`pendingcars/${cid}`));
+      const car  = snap.val();
+      if (!car) return;
+      await set(ref(db,`approvedcars/${car.driverId}/${cid}`), car);
+      await remove(ref(db,`pendingcars/${cid}`));
+      loadPending();
     };
 
-    // DataTable handles
+    // Tab switching
+    window.openTab = name => {
+      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+      document.getElementById(`${name}-tab`).classList.add('active');
+      ({
+        'users':         loadUsers,
+        'drivers':       loadDrivers,
+        'pending-cars':  loadPending,
+        'approved-cars': loadApproved,
+        'slots':         loadSlots,
+        'bookings':      loadBookings,
+        'profile':       loadProfile
+      })[name]();
+    };
+
+    // DataTable init/clear
     const tables = {};
-    function initTable(id, colsNoSort=[]){
+    function initTable(id,noSortCols=[]){
       if(!tables[id]){
         tables[id] = $(`#${id}`).DataTable({
           responsive:true,
           dom:'Bfltip',
           buttons:['copy','csv','print'],
-          columnDefs: colsNoSort.map(n=>({ orderable:false, targets:n }))
+          columnDefs: noSortCols.map(c=>({ orderable:false, targets:c }))
         });
       } else {
         tables[id].clear().draw();
       }
     }
 
-    // Loaders (very similar to before, just drawing into DataTables)...
+    // Loaders
     async function loadUsers(){
       $('#users-table').hide(); $('#users-loading').show();
-      initTable('users-table', [7]);
+      initTable('users-table',[7]);
       const snap = await get(ref(db,'users'));
-      if(snap.exists()){
-        let i=1;
-        for(const [uid,u] of Object.entries(snap.val())){
-          tables['users-table'].row.add([
-            i++, uid, u.name||'', u.email||'', u.phone||'', u.address||'', u.createdOn||'',
-            `<button onclick="remove(ref(db,'users/${uid}'))">Delete</button>`
-          ]).draw(false);
-        }
+      let i=1;
+      if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())){
+        tables['users-table'].row.add([
+          i++, uid, u.name||'', u.email||'', u.phone||'', u.address||'', u.createdOn||'',
+          `<button onclick="deleteUser('${uid}')">Delete</button>`
+        ]).draw(false);
       }
       $('#users-loading').hide(); $('#users-table').show();
     }
 
     async function loadDrivers(){
       $('#drivers-table').hide(); $('#drivers-loading').show();
-      initTable('drivers-table', [5]);
+      initTable('drivers-table',[5]);
       const snap = await get(ref(db,'driverdetails'));
-      if(snap.exists()){
-        let i=1;
-        for(const [did,d] of Object.entries(snap.val())){
-          const vc = d.vehicles? Object.keys(d.vehicles).length:0;
-          tables['drivers-table'].row.add([
-            i++, did, d.name||'', d.phone||'', vc,
-            `<button onclick="remove(ref(db,'driverdetails/${did}'))">Delete</button>`
-          ]).draw(false);
-        }
+      let i=1;
+      if(snap.exists()) for(const [did,d] of Object.entries(snap.val())){
+        const vc = d.vehicles?Object.keys(d.vehicles).length:0;
+        tables['drivers-table'].row.add([
+          i++, did, d.name||'', d.phone||'', vc,
+          `<button onclick="deleteDriver('${did}')">Delete</button>`
+        ]).draw(false);
       }
       $('#drivers-loading').hide(); $('#drivers-table').show();
     }
 
     async function loadPending(){
       $('#pending-table').hide(); $('#pending-loading').show();
-      initTable('pending-table', [10]);
+      initTable('pending-table',[10]);
       const snap = await get(ref(db,'pendingcars'));
-      if(snap.exists()){
-        let i=1;
-        for(const [cid,c] of Object.entries(snap.val())){
-          tables['pending-table'].row.add([
-            i++, cid, c.carBrand||'', c.carReg||'', c.driverId||'', c.driverName||'',
-            c.driverNumber||'', c.ownerName||'', c.seats||'', c.submittedAt||'',
-            `<button onclick="approve('${cid}')">Approve</button>
-             <button onclick="remove(ref(db,'pendingcars/${cid}'))">Delete</button>`
-          ]).draw(false);
-        }
+      let i=1;
+      if(snap.exists()) for(const [cid,c] of Object.entries(snap.val())){
+        tables['pending-table'].row.add([
+          i++, cid, c.carBrand||'', c.carReg||'', c.driverId||'', c.driverName||'',
+          c.driverNumber||'', c.ownerName||'', c.seats||'', c.submittedAt||'',
+          `<button onclick="approveCar('${cid}')">Approve</button>
+           <button onclick="deletePending('${cid}')">Delete</button>`
+        ]).draw(false);
       }
       $('#pending-loading').hide(); $('#pending-table').show();
     }
 
     async function loadApproved(){
       $('#approved-table').hide(); $('#approved-loading').show();
-      initTable('approved-table', [8]);
+      initTable('approved-table',[8]);
       const snap = await get(ref(db,'approvedcars'));
-      if(snap.exists()){
-        let i=1;
-        for(const [did,cars] of Object.entries(snap.val())){
-          for(const [cid,c] of Object.entries(cars)){
-            tables['approved-table'].row.add([
-              i++, c.driverName||'', c.driverNumber||'', cid, c.carBrand||'', c.carReg||'',
-              c.ownerName||'', c.seats||'',
-              `<button onclick="remove(ref(db,'approvedcars/${did}/${cid}'))">Delete</button>`
-            ]).draw(false);
-          }
+      let i=1;
+      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
+        for(const [cid,c] of Object.entries(cars)){
+          tables['approved-table'].row.add([
+            i++, c.driverName||'', c.driverNumber||'', cid, c.carBrand||'', c.carReg||'',
+            c.ownerName||'', c.seats||'',
+            `<button onclick="deleteApproved('${did}','${cid}')">Delete</button>`
+          ]).draw(false);
         }
       }
       $('#approved-loading').hide(); $('#approved-table').show();
@@ -292,20 +300,18 @@
 
     async function loadSlots(){
       $('#slots-table').hide(); $('#slots-loading').show();
-      initTable('slots-table', [9]);
+      initTable('slots-table',[9]);
       const snap = await get(ref(db,'availableslots'));
-      if(snap.exists()){
-        let i=1;
-        for(const [did,slots] of Object.entries(snap.val())){
-          const dSnap = await get(ref(db,`driverdetails/${did}`));
-          const d = dSnap.exists()?dSnap.val():{};
-          for(const [sid,s] of Object.entries(slots)){
-            tables['slots-table'].row.add([
-              i++, d.name||'', d.phone||'', sid, s.pickup||'', s.dropoff||'',
-              s.date||'', s.time||'', s.seats||'',
-              `<button onclick="remove(ref(db,'availableslots/${did}/${sid}'))">Delete</button>`
-            ]).draw(false);
-          }
+      let i=1;
+      if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())){
+        const dSnap = await get(ref(db,`driverdetails/${did}`));
+        const d = dSnap.exists()?dSnap.val():{};
+        for(const [sid,s] of Object.entries(slots)){
+          tables['slots-table'].row.add([
+            i++, d.name||'', d.phone||'', sid, s.pickup||'', s.dropoff||'',
+            s.date||'', s.time||'', s.seats||'',
+            `<button onclick="deleteSlot('${did}','${sid}')">Delete</button>`
+          ]).draw(false);
         }
       }
       $('#slots-loading').hide(); $('#slots-table').show();
@@ -313,17 +319,15 @@
 
     async function loadBookings(){
       $('#bookings-table').hide(); $('#bookings-loading').show();
-      initTable('bookings-table', [9]);
+      initTable('bookings-table',[9]);
       const snap = await get(ref(db,'bookings'));
-      if(snap.exists()){
-        let i=1;
-        for(const [bid,b] of Object.entries(snap.val())){
-          tables['bookings-table'].row.add([
-            i++, bid, b.customerName||'', b.vehicle||'', b.pickup||'', b.dropoff||'',
-            b.duration||'', b.fare||'', b.status||'',
-            `<button onclick="remove(ref(db,'bookings/${bid}'))">Delete</button>`
-          ]).draw(false);
-        }
+      let i=1;
+      if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())){
+        tables['bookings-table'].row.add([
+          i++, bid, b.customerName||'', b.vehicle||'', b.pickup||'', b.dropoff||'', 
+          b.duration||'', b.fare||'', b.status||'',
+          `<button onclick="deleteBooking('${bid}')">Delete</button>`
+        ]).draw(false);
       }
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
@@ -334,30 +338,22 @@
       const user = auth.currentUser;
       if(user){
         const snap = await get(ref(db,`admins/${user.uid}`));
-        if(snap.exists()){
-          for(const [k,v] of Object.entries(snap.val())){
-            tables['profile-table'].row.add([k,v]).draw(false);
-          }
+        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())){
+          tables['profile-table'].row.add([k,v]).draw(false);
         }
       }
       $('#profile-loading').hide(); $('#profile-table').show();
     }
 
-    // helper to approve a pending car
-    window.approve = async cid=>{
-      const {val} = await get(ref(db,`pendingcars/${cid}`));
-      await set(ref(db,`approvedcars/${val.driverId}/${cid}`),val);
-      await remove(ref(db,`pendingcars/${cid}`));
-      loadPending();
-    };
-
-    // initial tab
-    onAuthStateChanged(auth,user=>{
-      if(!user) return location.href='adminlogin.html';
+    // Kick off on auth
+    onAuthStateChanged(auth, user => {
+      if (!user) return location.href='adminlogin.html';
       get(ref(db,`admins/${user.uid}`)).then(s=>{
-        if(!s.exists()||s.val().role!=='superadmin'){
+        if (!s.exists() || s.val().role!=='superadmin') {
           alert('Not authorized'); signOut(auth);
-        } else openTab('users');
+        } else {
+          openTab('users');
+        }
       });
     });
   </script>
