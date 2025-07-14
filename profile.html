@@ -129,22 +129,24 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    const app  = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
+    const app    = initializeApp(firebaseConfig);
+    const auth   = getAuth(app);
+    const db     = getDatabase(app);
 
-    const nameEl  = document.getElementById("userName");
-    const emailEl = document.getElementById("userEmail");
-    const phoneEl = document.getElementById("userPhone");
-    const logoutBtn = document.getElementById("logoutBtn");
+    const nameEl   = document.getElementById("userName");
+    const emailEl  = document.getElementById("userEmail");
+    const phoneEl  = document.getElementById("userPhone");
+    const logoutEl = document.getElementById("logoutBtn");
 
     onAuthStateChanged(auth, async user => {
       if (!user) {
         window.location = "login.html";
         return;
       }
+      console.log("Logged in UID:", user.uid);
       try {
         const snap = await get(ref(db, `users/${user.uid}`));
+        console.log("Profile snapshot:", snap.val());
         const data = snap.val() || {};
         nameEl.textContent  = data.name  || "Not available";
         emailEl.textContent = data.email || user.email || "Not available";
@@ -155,7 +157,7 @@
       }
     });
 
-    logoutBtn.addEventListener("click", e => {
+    logoutEl.addEventListener("click", e => {
       e.preventDefault();
       signOut(auth).then(() => window.location = "login.html");
     });
