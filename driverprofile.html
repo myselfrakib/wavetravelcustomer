@@ -50,8 +50,7 @@
     }
     .navbar {
       position: fixed;
-      bottom: 0;
-      width: 100%;
+      bottom: 0; left: 0; width: 100%;
       background: white;
       border-top: 1px solid #ccc;
       display: flex;
@@ -83,6 +82,10 @@
       <div id="driverId" class="value">Loading…</div>
     </div>
     <div class="field">
+      <div class="label">Created At</div>
+      <div id="createdAt" class="value">Loading…</div>
+    </div>
+    <div class="field">
       <div class="label">Name</div>
       <div id="name" class="value">Loading…</div>
     </div>
@@ -93,14 +96,6 @@
     <div class="field">
       <div class="label">Phone</div>
       <div id="phone" class="value">Loading…</div>
-    </div>
-    <div class="field">
-      <div class="label">Address</div>
-      <div id="address" class="value">Loading…</div>
-    </div>
-    <div class="field">
-      <div class="label">About</div>
-      <div id="about" class="value" style="min-height:80px;">Loading…</div>
     </div>
   </div>
 
@@ -127,17 +122,15 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    // Initialize
-    const app    = initializeApp(firebaseConfig);
-    const db     = getDatabase(app);
-    const auth   = getAuth(app);
+    const app  = initializeApp(firebaseConfig);
+    const db   = getDatabase(app);
+    const auth = getAuth(app);
 
     const driverIdEl = document.getElementById('driverId');
-    const nameEl     = document.getElementById('name');
-    const emailEl    = document.getElementById('email');
-    const phoneEl    = document.getElementById('phone');
-    const addressEl  = document.getElementById('address');
-    const aboutEl    = document.getElementById('about');
+    const createdAtEl = document.getElementById('createdAt');
+    const nameEl    = document.getElementById('name');
+    const emailEl   = document.getElementById('email');
+    const phoneEl   = document.getElementById('phone');
 
     onAuthStateChanged(auth, user => {
       if (!user) {
@@ -145,28 +138,24 @@
         return;
       }
       const driverId = user.uid;
-      driverIdEl.textContent = driverId;
-
       get(ref(db, `driverdetails/${driverId}`))
         .then(snap => {
           if (!snap.exists()) {
-            nameEl.textContent = emailEl.textContent =
-            phoneEl.textContent = addressEl.textContent =
-            aboutEl.textContent = 'No profile data';
+            const msg = 'No profile data';
+            [driverIdEl, createdAtEl, nameEl, emailEl, phoneEl].forEach(el => el.textContent = msg);
             return;
           }
           const d = snap.val();
+          driverIdEl.textContent = d.driverId || 'N/A';
+          createdAtEl.textContent = d.createdAt || 'N/A';
           nameEl.textContent    = d.name    || 'N/A';
           emailEl.textContent   = d.email   || 'N/A';
           phoneEl.textContent   = d.phone   || 'N/A';
-          addressEl.textContent = d.address || 'N/A';
-          aboutEl.textContent   = d.about   || 'N/A';
         })
         .catch(err => {
           console.error(err);
-          nameEl.textContent = emailEl.textContent =
-          phoneEl.textContent = addressEl.textContent =
-          aboutEl.textContent = 'Error loading';
+          const msg = 'Error loading';
+          [driverIdEl, createdAtEl, nameEl, emailEl, phoneEl].forEach(el => el.textContent = msg);
         });
     });
   </script>
