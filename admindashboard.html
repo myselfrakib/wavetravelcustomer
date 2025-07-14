@@ -3,60 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Admin Dashboard – WaveTravel</title>
+  <title>WaveTravel Admin Dashboard</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(to right,#2c3e50,#3498db);
-      color: white;
-      margin: 0; padding: 0;
-    }
-    .navbar {
-      background: #1f2c3f;
-      padding: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .navbar button {
-      background: #3498db;
-      border: none;
-      padding: 0.5rem 1rem;
-      color: white;
-      cursor: pointer;
-      border-radius: 4px;
-      flex-grow: 1;
-    }
-    .tab-pane {
-      display: none;
-      padding: 1rem;
-    }
-    .tab-pane.active { display: block; }
-    .card {
-      background: #ffffff11;
-      padding: 1rem;
-      margin: 0.5rem 0;
-      border-radius: 8px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.2);
-    }
-    .card button {
-      margin-top: 0.5rem;
-      margin-right: 0.5rem;
-      padding: 0.3rem 0.8rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .edit-btn { background: #f39c12; }
-    .delete-btn { background: #e74c3c; }
-    .approve-btn { background: #2ecc71; }
-    .logout-btn { background: #e74c3c; }
-    .loading {
-      text-align: center;
-      margin-top: 2rem;
-      font-size: 1.2rem;
-      color: #ffd700;
-    }
+    body { font-family:Arial,sans-serif; margin:0; background:linear-gradient(to right,#2c3e50,#3498db); color:#fff }
+    .navbar { display:flex; flex-wrap:wrap; background:#1f2c3f; padding:1rem; gap:.5rem }
+    .navbar button { flex:1; padding:.5rem 1rem; border:none; border-radius:4px; background:#3498db; color:#fff; cursor:pointer }
+    .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px) }
+    .tab-pane.active { display:block }
+    .card { background:rgba(255,255,255,0.1); margin:.5rem 0; padding:1rem; border-radius:8px; }
+    .card button { margin:.5rem .5rem 0 0; padding:.3rem .8rem; border:none; border-radius:4px; cursor:pointer }
+    .delete-btn { background:#e74c3c }
+    .approve-btn{ background:#2ecc71 }
+    .loading { text-align:center; margin-top:2rem; color:#ffd700 }
+    .logout-btn { background:#e74c3c }
   </style>
 </head>
 <body>
@@ -65,36 +24,32 @@
     <button onclick="openTab('users')">Users</button>
     <button onclick="openTab('drivers')">Drivers</button>
     <button onclick="openTab('pending-cars')">Pending Cars</button>
+    <button onclick="openTab('approved-cars')">Approved Cars</button>
     <button onclick="openTab('slots')">Slots</button>
     <button onclick="openTab('bookings')">Bookings</button>
     <button onclick="openTab('profile')">Profile</button>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 
-  <div id="users-tab" class="tab-pane"><h2>Users</h2><div id="users-list"></div></div>
-  <div id="drivers-tab" class="tab-pane"><h2>Drivers</h2><div id="drivers-list"></div></div>
-  <div id="pending-cars-tab" class="tab-pane"><h2>Pending Cars</h2><div id="pending-cars-list"></div></div>
-  <div id="slots-tab" class="tab-pane"><h2>Slots</h2><div id="slots-list"></div></div>
-  <div id="bookings-tab" class="tab-pane"><h2>Bookings</h2><div id="bookings-list"></div></div>
-  <div id="profile-tab" class="tab-pane"><h2>Admin Profile</h2><div id="profile-details"></div></div>
+  <div id="users-tab"         class="tab-pane"><h2>Users</h2><div id="users-list"></div></div>
+  <div id="drivers-tab"       class="tab-pane"><h2>Drivers</h2><div id="drivers-list"></div></div>
+  <div id="pending-cars-tab"  class="tab-pane"><h2>Pending Cars</h2><div id="pending-list"></div></div>
+  <div id="approved-cars-tab" class="tab-pane"><h2>Approved Cars</h2><div id="approved-list"></div></div>
+  <div id="slots-tab"         class="tab-pane"><h2>Slots</h2><div id="slots-list"></div></div>
+  <div id="bookings-tab"      class="tab-pane"><h2>Bookings</h2><div id="bookings-list"></div></div>
+  <div id="profile-tab"       class="tab-pane"><h2>My Profile</h2><div id="profile-details"></div></div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import {
-      getAuth,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+      getAuth, onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
     import {
-      getDatabase,
-      ref,
-      get,
-      remove,
-      set
-    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+      getDatabase, ref, get, remove, set
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
-    // -- Firebase setup --
-    const firebaseConfig = {
+    // -- Config & init --
+    const cfg = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
       databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
@@ -103,101 +58,121 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-    const app  = initializeApp(firebaseConfig);
+    const app  = initializeApp(cfg);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    let currentTab = '';
-
-    // Protect this page: redirect if not signed in
-    onAuthStateChanged(auth, user => {
-      if (!user) {
-        window.location.href = 'adminlogin.html';
-      } else {
-        openTab('users');
-      }
-    });
-
-    // Tab navigation
-    window.openTab = function(tabName) {
-      currentTab = tabName;
-      document.querySelectorAll('.tab-pane').forEach(t => t.classList.remove('active'));
-      document.getElementById(`${tabName}-tab`).classList.add('active');
-
-      // fetch appropriate data
-      if (tabName === 'users')         fetchData('users',         'users-list');
-      if (tabName === 'drivers')       fetchData('drivers',       'drivers-list');
-      if (tabName === 'pending-cars')  fetchData('pendingcars',   'pending-cars-list', true);
-      if (tabName === 'slots')         fetchData('availableslots','slots-list');
-      if (tabName === 'bookings')      fetchData('bookings',      'bookings-list');
-      if (tabName === 'profile')       fetchData('admins/' + auth.currentUser.uid,'profile-details', false, true);
-    };
-
-    // Generic fetcher
-    async function fetchData(path, containerId, showApprove=false, singleItem=false) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = '<div class="loading">Loading…</div>';
-
-      try {
-        const snap = await get(ref(db, path));
-        if (!snap.exists()) {
-          container.innerHTML = 'No data.';
-          return;
-        }
-        const data = snap.val();
-
-        let html = '';
-        if (singleItem) {
-          html = `<div class="card">${Object.entries(data).map(([k,v])=>`<strong>${k}:</strong> ${v}`).join('<br/>')}</div>`;
-        } else {
-          for (const [key, item] of Object.entries(data)) {
-            html += `<div class="card">
-                       <strong>ID:</strong> ${key}<br/>
-                       ${Object.entries(item).map(([k,v])=>`<strong>${k}:</strong> ${v}`).join('<br/>')}
-                       <div>`;
-            html += `<button class="edit-btn" onclick="editItem('${path}','${key}')">Edit</button>`;
-            html += `<button class="delete-btn" onclick="deleteItem('${path}','${key}')">Delete</button>`;
-            if (showApprove) {
-              html += `<button class="approve-btn" onclick="approveCar('${key}')">Approve</button>`;
-            }
-            html += `</div></div>`;
-          }
-        }
-
-        container.innerHTML = html;
-      } catch (err) {
-        console.error('Fetch error:', err);
-        container.innerHTML = 'Error loading data.';
-      }
-    }
-
-    // Delete node
-    window.deleteItem = async (path, key) => {
-      if (!confirm('Delete this item?')) return;
+    // -- Helpers --
+    function showLoading(el){ el.innerHTML='<div class="loading">Loading…</div>' }
+    async function deleteNode(path,key){
+      if(!confirm('Delete?'))return;
       await remove(ref(db, `${path}/${key}`));
-      openTab(currentTab);
-    };
-
-    // Approve a pending car
-    window.approveCar = async key => {
-      const carSnap = await get(ref(db, `pendingcars/${key}`));
-      const car    = carSnap.val();
+      openTab(activeTab);
+    }
+    async function approveCar(key){
+      const snap = await get(ref(db, `pendingcars/${key}`));
+      const car  = snap.val();
       await set(ref(db, `approvedcars/${key}`), car);
       await remove(ref(db, `pendingcars/${key}`));
       openTab('pending-cars');
+    }
+
+    // -- Generic fetch for simple lists --
+    async function fetchList(path, containerId){
+      const con = document.getElementById(containerId);
+      showLoading(con);
+      try {
+        const snap = await get(ref(db, path));
+        if(!snap.exists()){ con.innerHTML='No data.'; return; }
+        con.innerHTML = '';
+        for(const [k,v] of Object.entries(snap.val())){
+          const card = document.createElement('div'); card.className='card';
+          let html = `<div><strong>ID:</strong> ${k}</div>` +
+                     Object.entries(v).map(([f,val])=>`<div><strong>${f}:</strong> ${val}</div>`).join('');
+          html += `<button class="delete-btn" onclick="deleteNode('${path}','${k}')">Delete</button>`;
+          card.innerHTML = html;
+          con.appendChild(card);
+        }
+      } catch(e){
+        con.innerHTML='Error loading.';
+      }
+    }
+
+    // -- Approved Cars: with driverdetails & slots --
+    async function fetchApprovedCars(){
+      const con = document.getElementById('approved-list');
+      showLoading(con);
+      try {
+        const snap = await get(ref(db,'approvedcars'));
+        if(!snap.exists()){ con.innerHTML='No approved cars.'; return; }
+        con.innerHTML = '';
+        for(const [k,car] of Object.entries(snap.val())){
+          const card = document.createElement('div'); card.className='card';
+          // Car info
+          let html = `<div><strong>Car ID:</strong> ${k}</div>` +
+                     `<div><strong>Brand:</strong> ${car.carBrand}</div>` +
+                     `<div><strong>Reg:</strong> ${car.carReg}</div>`;
+          // Driver details
+          const dSnap = await get(ref(db, `driverdetails/${car.driverId}`));
+          if(dSnap.exists()){
+            const d = dSnap.val();
+            html += `<div class="mt-2"><strong>Driver:</strong> ${d.name} (${d.phone})</div>`;
+          }
+          // That driver's slots
+          const slotsSnap = await get(ref(db, `availableslots/${car.driverId}`));
+          if(slotsSnap.exists()){
+            html += `<div class="mt-2"><strong>Slots:</strong></div>`;
+            for(const [slotKey, slot] of Object.entries(slotsSnap.val())){
+              html += `<div style="margin-left:1rem">
+                • ${slot.pickup}→${slot.dropoff} on ${slot.date} @ ${slot.time}
+              </div>`;
+            }
+          }
+          // Controls
+          html += `<div class="mt-2">
+            <button class="delete-btn" onclick="deleteNode('approvedcars','${k}')">Delete</button>
+          </div>`;
+          card.innerHTML = html;
+          con.appendChild(card);
+        }
+      } catch(e){
+        con.innerHTML='Error loading.';
+      }
+    }
+
+    // -- Tab logic --
+    let activeTab='users';
+    window.openTab = function(name){
+      activeTab = name;
+      document.querySelectorAll('.tab-pane').forEach(el=>el.classList.remove('active'));
+      document.getElementById(`${name}-tab`).classList.add('active');
+      switch(name){
+        case 'users':         fetchList('users','users-list'); break;
+        case 'drivers':       fetchList('driverdetails','drivers-list'); break;
+        case 'pending-cars':  fetchList('pendingcars','pending-list'); break;
+        case 'approved-cars': fetchApprovedCars(); break;
+        case 'slots':         fetchList('availableslots','slots-list'); break;
+        case 'bookings':      fetchList('bookings','bookings-list'); break;
+        case 'profile':
+          fetchList(`admins/${auth.currentUser.uid}`,'profile-details',true);
+          break;
+      }
     };
 
-    // (Placeholder) Edit logic
-    window.editItem = (path,key) => {
-      alert('Edit not implemented yet!');
-    };
+    // -- Sign out --
+    window.logout = ()=> signOut(auth).then(()=>location.href='adminlogin.html');
 
-    // Logout
-    window.logout = () => {
-      signOut(auth).then(() => {
-        window.location.href = 'adminlogin.html';
+    // -- Auth guard + superadmin check --
+    onAuthStateChanged(auth,user=>{
+      if(!user) return location.href='adminlogin.html';
+      get(ref(db,`admins/${user.uid}`)).then(s=>{
+        if(!s.exists()||s.val().role!=='superadmin'){
+          alert('Not authorized'); signOut(auth);
+        } else {
+          openTab('users');
+        }
       });
-    };
+    });
   </script>
 </body>
 </html>
