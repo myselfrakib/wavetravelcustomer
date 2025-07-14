@@ -46,43 +46,30 @@
       font-size: 1rem;
       display: flex; justify-content: space-between;
     }
-    .field span:first-child {
-      font-weight: 600;
-    }
-    .loading {
-      font-style: italic;
-      color: #666;
-    }
+    .field span:first-child { font-weight: 600; }
+    .loading { font-style: italic; color: #666; }
     .logout {
       display: block;
       margin-top: 16px;
-      width: 100%;
-      padding: 12px;
+      width: 100%; padding: 12px;
       background: var(--primary);
-      color: #fff;
-      text-align: center;
-      border-radius: 8px;
-      text-decoration: none;
+      color: #fff; text-align: center;
+      border-radius: 8px; text-decoration: none;
       font-weight: 600;
     }
     .navbar {
-      position: fixed;
-      bottom: 0; left: 0; width: 100%;
-      background: #fff;
-      border-top: 1px solid #ddd;
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background: #fff; border-top: 1px solid #ddd;
       display: flex; justify-content: space-around;
       padding: 8px 0;
       box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
     }
     .navbar a {
-      color: var(--primary);
-      text-decoration: none;
-      font-size: 0.75rem;
-      text-align: center;
+      color: var(--primary); text-decoration: none;
+      font-size: 0.75rem; text-align: center;
     }
     .navbar a i {
-      display: block;
-      font-size: 1.25rem;
+      display: block; font-size: 1.25rem;
       margin-bottom: 4px;
     }
   </style>
@@ -92,16 +79,13 @@
     <div class="card">
       <h1>Your Profile</h1>
       <div class="field">
-        <span>Name:</span>
-        <span id="userName" class="loading">Loading…</span>
+        <span>Name:</span><span id="userName" class="loading">Loading…</span>
       </div>
       <div class="field">
-        <span>Email:</span>
-        <span id="userEmail" class="loading">Loading…</span>
+        <span>Email:</span><span id="userEmail" class="loading">Loading…</span>
       </div>
       <div class="field">
-        <span>Phone:</span>
-        <span id="userPhone" class="loading">Loading…</span>
+        <span>Phone:</span><span id="userPhone" class="loading">Loading…</span>
       </div>
       <a href="#" id="logoutBtn" class="logout">Logout</a>
     </div>
@@ -116,9 +100,19 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import {
+      getDatabase,
+      ref,
+      get,
+      set
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
+    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -129,12 +123,12 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    // Initialize Firebase
-    const app    = initializeApp(firebaseConfig);
-    const auth   = getAuth(app);
-    const db     = getDatabase(app);
+    // Initialize services
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
 
-    // UI Elements
+    // UI refs
     const nameEl   = document.getElementById("userName");
     const emailEl  = document.getElementById("userEmail");
     const phoneEl  = document.getElementById("userPhone");
@@ -142,34 +136,44 @@
 
     onAuthStateChanged(auth, async user => {
       if (!user) {
-        window.location = "index.html";
+        window.location = "login.html";
         return;
       }
       console.log("Logged in UID:", user.uid);
 
+      // Attempt to read existing profile
+      const userRef = ref(db, `users/${user.uid}`);
       try {
-        const snap = await get(ref(db,`users/${user.uid}`));
-        console.log("Profile snapshot:", snap.val());
-        const data = snap.val();
-        if (data) {
-          nameEl.textContent  = data.name;
-          emailEl.textContent = data.email;
-          phoneEl.textContent = data.phone;
-        } else {
-          // Fallback to Auth data if DB node missing
-          nameEl.textContent  = user.displayName || "Not set";
-          emailEl.textContent = user.email || "Not set";
-          phoneEl.textContent = user.phoneNumber || "Not set";
+        const snap = await get(userRef);
+        let data = snap.val();
+
+        if (!data) {
+          // Seed profile node if missing
+          data = {
+            name: user.displayName || "",
+            email: user.email || "",
+            phone: user.phoneNumber || "",
+            role: "customer"
+          };
+          await set(userRef, data);
+          console.log("Seeded profile:", data);
         }
+
+        // Display it
+        nameEl.textContent  = data.name  || "Not set";
+        emailEl.textContent = data.email || "Not set";
+        phoneEl.textContent = data.phone || "Not set";
+
       } catch (e) {
-        console.error("Error fetching profile:", e);
+        console.error("Error loading profile:", e);
         nameEl.textContent = emailEl.textContent = phoneEl.textContent = "Error";
       }
     });
 
+    // Logout handler
     logoutEl.addEventListener("click", e => {
       e.preventDefault();
-      signOut(auth).then(() => window.location = "index.html");
+      signOut(auth).then(() => window.location = "login.html");
     });
   </script>
 </body>
