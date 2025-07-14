@@ -142,27 +142,27 @@
       editBtn.style.display  = show ? "none" : "";
     }
 
-    auth.onAuthStateChanged(async user => {
+    auth.onAuthStateChanged(user => {
       if (!user) {
         alert("Please log in to view your profile.");
         window.location = "login.html";
         return;
       }
 
-      // Fetch once
-      try {
-        const snap = await db.ref(`users/${user.uid}`).once("value");
-        const data = snap.val() || {};
-        console.log("Profile data:", data);
-        userNameEl.textContent  = data.name  || "Not set";
-        userEmailEl.textContent = data.email || "Not set";
-        userPhoneEl.textContent = data.phone || "Not set";
-      } catch (err) {
-        console.error("Error reading profile:", err);
-        alert("Could not load your profile. Try again later.");
-      }
+      const userRef = db.ref(`users/${user.uid}`);
 
-      // Edit button
+      // Real‑time listener
+      userRef.on("value", snapshot => {
+        const data = snapshot.val();
+        console.log("Profile data from DB:", data);
+        userNameEl.textContent  = data?.name  || "Not set";
+        userEmailEl.textContent = data?.email || "Not set";
+        userPhoneEl.textContent = data?.phone || "Not set";
+      }, err => {
+        console.error("Failed to read profile:", err);
+        alert("Error loading profile. Check console for details.");
+      });
+
       editBtn.addEventListener("click", () => {
         toggleEdit(true);
         document.getElementById("editName").value  = userNameEl.textContent;
@@ -170,7 +170,6 @@
         document.getElementById("editPhone").value = userPhoneEl.textContent;
       });
 
-      // Save updates
       saveBtn.addEventListener("click", async () => {
         const updates = {
           name:  document.getElementById("editName").value,
@@ -178,13 +177,9 @@
           phone: document.getElementById("editPhone").value
         };
         try {
-          await db.ref(`users/${user.uid}`).update(updates);
+          await userRef.update(updates);
           alert("Profile updated!");
           toggleEdit(false);
-          // reflect immediately
-          userNameEl.textContent  = updates.name;
-          userEmailEl.textContent = updates.email;
-          userPhoneEl.textContent = updates.phone;
         } catch (err) {
           console.error("Update failed:", err);
           alert("Update failed: " + err.message);
