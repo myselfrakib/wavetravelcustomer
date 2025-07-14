@@ -18,16 +18,21 @@
       font-family: 'Poppins', sans-serif;
       background: var(--bg-gradient);
       min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
+      display: flex; flex-direction: column;
       color: var(--dark-text);
+    }
+    .container {
+      flex: 1;
+      max-width: 400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 16px;
     }
     .card {
       background: var(--card-bg);
       border-radius: 12px;
       padding: 24px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
       text-align: left;
     }
     .card h1 {
@@ -60,25 +65,54 @@
       text-decoration: none;
       font-weight: 600;
     }
+    .navbar {
+      position: fixed;
+      bottom: 0; left: 0; width: 100%;
+      background: #fff;
+      border-top: 1px solid #ddd;
+      display: flex; justify-content: space-around;
+      padding: 8px 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+    }
+    .navbar a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+    .navbar a i {
+      display: block;
+      font-size: 1.25rem;
+      margin-bottom: 4px;
+    }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h1>Your Profile</h1>
-    <div class="field">
-      <span>Name:</span>
-      <span id="userName" class="loading">Loading…</span>
+  <div class="container">
+    <div class="card">
+      <h1>Your Profile</h1>
+      <div class="field">
+        <span>Name:</span>
+        <span id="userName" class="loading">Loading…</span>
+      </div>
+      <div class="field">
+        <span>Email:</span>
+        <span id="userEmail" class="loading">Loading…</span>
+      </div>
+      <div class="field">
+        <span>Phone:</span>
+        <span id="userPhone" class="loading">Loading…</span>
+      </div>
+      <a href="#" id="logoutBtn" class="logout">Logout</a>
     </div>
-    <div class="field">
-      <span>Email:</span>
-      <span id="userEmail" class="loading">Loading…</span>
-    </div>
-    <div class="field">
-      <span>Phone:</span>
-      <span id="userPhone" class="loading">Loading…</span>
-    </div>
-    <a href="login.html" id="logoutBtn" class="logout">Logout</a>
+  </div>
+
+  <div class="navbar">
+    <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
+    <a href="booking.html"><i class="fas fa-car"></i>Book</a>
+    <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
+    <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -105,10 +139,10 @@
     const userPhoneEl = document.getElementById("userPhone");
     const logoutBtn   = document.getElementById("logoutBtn");
 
-    // Redirect to login if not authenticated, otherwise fetch profile
     auth.onAuthStateChanged(user => {
       if (!user) {
-        return window.location = "login.html";
+        window.location = "login.html";
+        return;
       }
       db.ref(`users/${user.uid}`).once("value")
         .then(snapshot => {
@@ -123,7 +157,6 @@
         });
     });
 
-    // Logout
     logoutBtn.addEventListener("click", e => {
       e.preventDefault();
       auth.signOut().then(() => window.location = "login.html");
