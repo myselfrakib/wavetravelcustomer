@@ -41,14 +41,9 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import {
-      getAuth, onAuthStateChanged, signOut
-    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import {
-      getDatabase, ref, get, remove, set
-    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getDatabase, ref, get, remove, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
-    // -- Config & init --
     const cfg = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -58,26 +53,33 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
+
     const app  = initializeApp(cfg);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // -- Helpers --
     function showLoading(el){ el.innerHTML='<div class="loading">Loading…</div>' }
+
     async function deleteNode(path,key){
-      if(!confirm('Delete?'))return;
+      if(!confirm('Delete?')) return;
       await remove(ref(db, `${path}/${key}`));
       openTab(activeTab);
     }
+
+    async function deleteApprovedCar(driverId, carId){
+      if(!confirm('Delete this approved car?')) return;
+      await remove(ref(db, `approvedcars/${driverId}/${carId}`));
+      openTab('approved-cars');
+    }
+
     async function approveCar(key){
       const snap = await get(ref(db, `pendingcars/${key}`));
       const car  = snap.val();
-      await set(ref(db, `approvedcars/${key}`), car);
+      await set(ref(db, `approvedcars/${car.driverId}/${key}`), car);
       await remove(ref(db, `pendingcars/${key}`));
       openTab('pending-cars');
     }
 
-    // -- Generic fetch for simple lists --
     async function fetchList(path, containerId){
       const con = document.getElementById(containerId);
       showLoading(con);
@@ -98,7 +100,6 @@
       }
     }
 
-    // -- Approved Cars: with driverdetails & slots --
     async function fetchApprovedCars(){
       const con = document.getElementById('approved-list');
       showLoading(con);
@@ -106,41 +107,42 @@
         const snap = await get(ref(db,'approvedcars'));
         if(!snap.exists()){ con.innerHTML='No approved cars.'; return; }
         con.innerHTML = '';
-        for(const [k,car] of Object.entries(snap.val())){
+        for(const [driverId, cars] of Object.entries(snap.val())){
+          const driverSnap = await get(ref(db, `driverdetails/${driverId}`));
+          const driver = driverSnap.exists() ? driverSnap.val() : { name:'Unknown', phone:'-' };
           const card = document.createElement('div'); card.className='card';
-          // Car info
-          let html = `<div><strong>Car ID:</strong> ${k}</div>` +
-                     `<div><strong>Brand:</strong> ${car.carBrand}</div>` +
-                     `<div><strong>Reg:</strong> ${car.carReg}</div>`;
-          // Driver details
-          const dSnap = await get(ref(db, `driverdetails/${car.driverId}`));
-          if(dSnap.exists()){
-            const d = dSnap.val();
-            html += `<div class="mt-2"><strong>Driver:</strong> ${d.name} (${d.phone})</div>`;
+          let html = `<div><strong>Driver:</strong> ${driver.name} (${driver.phone})</div>`;
+
+          html += `<div><strong>Approved Cars:</strong></div>`;
+          for(const [carId, car] of Object.entries(cars)){
+            html += `<div style="margin-left:1rem; margin-bottom:.5rem">
+              <strong>Car ID:</strong> ${carId}<br/>
+              <strong>Brand:</strong> ${car.carBrand}<br/>
+              <strong>Reg:</strong> ${car.carReg}<br/>
+              <strong>Owner:</strong> ${car.ownerName}<br/>
+              <strong>Seats:</strong> ${car.seats}<br/>
+              <button class="delete-btn" onclick="deleteApprovedCar('${driverId}','${carId}')">Delete</button>
+            </div>`;
           }
-          // That driver's slots
-          const slotsSnap = await get(ref(db, `availableslots/${car.driverId}`));
-          if(slotsSnap.exists()){
-            html += `<div class="mt-2"><strong>Slots:</strong></div>`;
-            for(const [slotKey, slot] of Object.entries(slotsSnap.val())){
+
+          const slotSnap = await get(ref(db, `availableslots/${driverId}`));
+          if(slotSnap.exists()){
+            html += `<div><strong>Slots:</strong></div>`;
+            for(const [slotKey, slot] of Object.entries(slotSnap.val())){
               html += `<div style="margin-left:1rem">
                 • ${slot.pickup}→${slot.dropoff} on ${slot.date} @ ${slot.time}
               </div>`;
             }
           }
-          // Controls
-          html += `<div class="mt-2">
-            <button class="delete-btn" onclick="deleteNode('approvedcars','${k}')">Delete</button>
-          </div>`;
+
           card.innerHTML = html;
           con.appendChild(card);
         }
       } catch(e){
-        con.innerHTML='Error loading.';
+        con.innerHTML = 'Error loading.';
       }
     }
 
-    // -- Tab logic --
     let activeTab='users';
     window.openTab = function(name){
       activeTab = name;
@@ -153,16 +155,12 @@
         case 'approved-cars': fetchApprovedCars(); break;
         case 'slots':         fetchList('availableslots','slots-list'); break;
         case 'bookings':      fetchList('bookings','bookings-list'); break;
-        case 'profile':
-          fetchList(`admins/${auth.currentUser.uid}`,'profile-details',true);
-          break;
+        case 'profile':       fetchList(`admins/${auth.currentUser.uid}`,'profile-details',true); break;
       }
     };
 
-    // -- Sign out --
     window.logout = ()=> signOut(auth).then(()=>location.href='adminlogin.html');
 
-    // -- Auth guard + superadmin check --
     onAuthStateChanged(auth,user=>{
       if(!user) return location.href='adminlogin.html';
       get(ref(db,`admins/${user.uid}`)).then(s=>{
