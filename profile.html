@@ -88,7 +88,6 @@
   </style>
 </head>
 <body>
-
   <div class="container">
     <div class="card">
       <h1>Your Profile</h1>
@@ -115,11 +114,11 @@
     <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script>
-    // Initialize Firebase
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -129,39 +128,37 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-    firebase.initializeApp(firebaseConfig);
 
-    const auth = firebase.auth();
-    const db   = firebase.database();
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
 
-    const userNameEl  = document.getElementById("userName");
-    const userEmailEl = document.getElementById("userEmail");
-    const userPhoneEl = document.getElementById("userPhone");
-    const logoutBtn   = document.getElementById("logoutBtn");
+    const nameEl  = document.getElementById("userName");
+    const emailEl = document.getElementById("userEmail");
+    const phoneEl = document.getElementById("userPhone");
+    const logoutBtn = document.getElementById("logoutBtn");
 
-    auth.onAuthStateChanged(user => {
+    onAuthStateChanged(auth, async user => {
       if (!user) {
         window.location = "login.html";
         return;
       }
-      db.ref(`users/${user.uid}`).once("value")
-        .then(snapshot => {
-          const data = snapshot.val() || {};
-          userNameEl.textContent  = data.name  || "Not available";
-          userEmailEl.textContent = data.email || user.email || "Not available";
-          userPhoneEl.textContent = data.phone || "Not available";
-        })
-        .catch(err => {
-          console.error("Error loading profile:", err);
-          userNameEl.textContent = userEmailEl.textContent = userPhoneEl.textContent = "Error";
-        });
+      try {
+        const snap = await get(ref(db, `users/${user.uid}`));
+        const data = snap.val() || {};
+        nameEl.textContent  = data.name  || "Not available";
+        emailEl.textContent = data.email || user.email || "Not available";
+        phoneEl.textContent = data.phone || "Not available";
+      } catch (e) {
+        console.error("Error fetching profile:", e);
+        nameEl.textContent = emailEl.textContent = phoneEl.textContent = "Error";
+      }
     });
 
     logoutBtn.addEventListener("click", e => {
       e.preventDefault();
-      auth.signOut().then(() => window.location = "login.html");
+      signOut(auth).then(() => window.location = "login.html");
     });
   </script>
 </body>
 </html>
-
