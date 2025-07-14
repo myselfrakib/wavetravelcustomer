@@ -105,7 +105,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
   <script>
-    // -- Initialize Firebase --
+    // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -119,13 +119,15 @@
     const auth = firebase.auth();
     const db   = firebase.database();
 
-    // reCAPTCHA
+    // Setup invisible reCAPTCHA
     window.onload = () => {
       window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
         'recaptcha-container',
         { size: 'invisible' }
       );
-      recaptchaVerifier.render();
+      window.recaptchaVerifier.render().catch(err =>
+        console.error("reCAPTCHA render failed:", err)
+      );
     };
 
     let confirmationResult = null;
@@ -162,14 +164,14 @@
       sendBtn.disabled = true;
 
       try {
-        confirmationResult = await auth.signInWithPhoneNumber(
+        confirmationResult = await firebase.auth().signInWithPhoneNumber(
           codeSelect.value + phone,
           window.recaptchaVerifier
         );
         alert('OTP sent!');
         otpInput.style.display   = 'block';
         verifyBtn.style.display  = 'block';
-        sendBtn.style.display    = 'none'; // Remove send button after OTP sent
+        sendBtn.style.display    = 'none';
       } catch (err) {
         console.error('Error sending OTP', err);
         alert('Failed to send OTP: ' + err.message);
@@ -186,9 +188,19 @@
       verifyBtn.disabled = true;
       try {
         const result = await confirmationResult.confirm(otp);
-        const userPhone = result.user.phoneNumber;
-        localStorage.setItem('userPhone', userPhone);
+        const user = result.user;
 
+        // If this is a newly created phone user, cancel it
+        const { creationTime, lastSignInTime } = user.metadata;
+        if (creationTime === lastSignInTime) {
+          // No existing account—sign out and block
+          await auth.signOut();
+          return alert('No account exists for this number.');
+        }
+
+        // Successful sign‑in of existing user
+        const userPhone = user.phoneNumber;
+        localStorage.setItem('userPhone', userPhone);
         if (userPhone === '+919907738066') {
           alert('Admin login successful!');
           location.href = 'admindashboard.html';
