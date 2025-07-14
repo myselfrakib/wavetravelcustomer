@@ -91,9 +91,7 @@
 
   <div class="container">
     <h1>Confirm &amp; Pay</h1>
-    <div id="summary" class="summary-card">
-      Loading booking…
-    </div>
+    <div id="summary" class="summary-card">Loading booking…</div>
 
     <div class="terms">
       <input type="checkbox" id="termsChk"/>
@@ -145,7 +143,6 @@
       return `${h}:${mm.toString().padStart(2,'0')} ${suffix}`;
     }
 
-    // Load booking from localStorage
     const booking = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
     if (!booking) {
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
@@ -163,6 +160,7 @@
         const name  = profile.name  || '—';
         const phone = profile.phone || '—';
 
+        // Render updated booking summary with name & phone
         summaryEl.innerHTML = `
           <div><strong>Name:</strong> ${name}</div>
           <div><strong>Phone:</strong> ${phone}</div>
@@ -190,7 +188,7 @@
               const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
               slotRef.transaction(cur => {
                 const left = parseInt(cur.seats,10) - booking.seatsRequested;
-                return { ...cur, seats: left<0?0:left };
+                return { ...cur, seats: left < 0 ? 0 : left };
               }).then(() => {
                 return db.ref('bookings').push({
                   ...booking,
