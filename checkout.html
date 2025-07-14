@@ -91,9 +91,7 @@
 
   <div class="container">
     <h1>Confirm &amp; Pay</h1>
-    <div id="summary" class="summary-card">
-      Loading booking…
-    </div>
+    <div id="summary" class="summary-card">Loading booking…</div>
 
     <div class="terms">
       <input type="checkbox" id="termsChk"/>
@@ -110,11 +108,13 @@
     <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
+  <!-- Firebase & Razorpay -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
+    // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -125,7 +125,6 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
     firebase.initializeApp(firebaseConfig);
-
     const db   = firebase.database();
     const auth = firebase.auth();
 
@@ -152,16 +151,16 @@
       auth.onAuthStateChanged(async user => {
         if (!user) {
           alert('Please login first.');
-          window.location = 'login.html';
-          return;
+          return window.location = 'login.html';
         }
 
         try {
           const snap = await db.ref(`users/${user.uid}`).once('value');
-          const profile = snap.val() || {};
-          const name = profile.name || 'Not set';
-          const phone = profile.phone || 'Not set';
+          const profile = snap.val();
+          const name  = profile?.name ?? 'Not set';
+          const phone = profile?.phone ?? 'Not set';
 
+          // Render summary with name & phone
           summaryEl.innerHTML = `
             <div><strong>Name:</strong> ${name}</div>
             <div><strong>Phone:</strong> ${phone}</div>
@@ -173,6 +172,7 @@
             <div><strong>Fare:</strong> ₹${booking.fare}</div>
           `;
 
+          // Enable button only after checking terms
           termsChk.addEventListener('change', () => {
             payBtn.disabled = !termsChk.checked;
           });
@@ -185,17 +185,20 @@
               currency: 'INR',
               name: 'WaveTravel',
               description: 'Ride Booking',
+              prefill: { name, contact: phone, email: user.email || '' },
               handler(res) {
+                // Update slot seats
                 const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
                 slotRef.transaction(cur => {
-                  const left = parseInt(cur.seats,10) - booking.seatsRequested;
-                  return { ...cur, seats: left<0?0:left };
+                  const left = parseInt(cur.seats, 10) - booking.seatsRequested;
+                  return { ...cur, seats: left < 0 ? 0 : left };
                 }).then(() => {
+                  // Push booking with user info
                   return db.ref('bookings').push({
                     ...booking,
                     userId: user.uid,
-                    name,
-                    phone,
+                    userName: name,
+                    userPhone: phone,
                     paymentId: res.razorpay_payment_id,
                     bookedAt: new Date().toISOString(),
                     status: 'confirmed'
@@ -204,16 +207,17 @@
                   alert('Payment successful & booking confirmed!');
                   localStorage.removeItem('selectedBooking');
                   window.location = 'mybookings.html';
-                }).catch(e => {
-                  console.error(e);
+                }).catch(err => {
+                  console.error(err);
                   alert('Booking failed');
                 });
               }
             };
             new Razorpay(options).open();
           });
+
         } catch (err) {
-          console.error("Error fetching user profile:", err);
+          console.error('Error fetching profile:', err);
           summaryEl.innerHTML = '<div>Error loading user profile.</div>';
         }
       });
