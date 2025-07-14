@@ -11,7 +11,6 @@
       --background-color: #f0f9f4;
       --input-border-color: #ced4da;
       --text-color: #212529;
-      --button-hover: #218838;
     }
     body {
       margin: 0;
@@ -22,7 +21,6 @@
     }
     .container {
       padding: 20px;
-      padding-bottom: 120px;
       max-width: 500px;
       margin: auto;
     }
@@ -32,52 +30,24 @@
       margin-bottom: 20px;
       font-size: 24px;
     }
-    .form-group {
+    .field {
       margin-bottom: 18px;
     }
-    label {
+    .label {
       font-weight: 600;
       font-size: 14px;
       display: block;
       margin-bottom: 5px;
       color: #495057;
     }
-    input, textarea {
-      width: 100%;
+    .value {
       padding: 10px 12px;
       border: 1px solid var(--input-border-color);
       border-radius: 10px;
       background: white;
       font-size: 14px;
       box-sizing: border-box;
-      margin-top: 5px;
-    }
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
-    button {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 12px;
-      width: 100%;
-      font-size: 16px;
-      font-weight: 600;
-      border-radius: 12px;
-      cursor: pointer;
-      margin-top: 10px;
-      box-shadow: 0 4px 6px rgba(40, 167, 69, 0.2);
-    }
-    button:hover {
-      background-color: var(--button-hover);
-    }
-    .logout-btn {
-      background-color: #dc3545;
-      box-shadow: 0 4px 6px rgba(220, 53, 69, 0.2);
-    }
-    .logout-btn:hover {
-      background-color: #c82333;
+      color: #212529;
     }
     .navbar {
       position: fixed;
@@ -109,33 +79,26 @@
   <div class="container">
     <h2>Driver Profile</h2>
 
-    <div class="form-group">
-      <label for="name">Name</label>
-      <input type="text" id="name" placeholder="Enter your name" />
+    <div class="field">
+      <div class="label">Name</div>
+      <div id="name" class="value">Loading…</div>
     </div>
-
-    <div class="form-group">
-      <label for="email">Email (read-only)</label>
-      <input type="email" id="email" disabled placeholder="Your email"/>
+    <div class="field">
+      <div class="label">Email</div>
+      <div id="email" class="value">Loading…</div>
     </div>
-
-    <div class="form-group">
-      <label for="phone">Phone</label>
-      <input type="text" id="phone" placeholder="Enter phone number"/>
+    <div class="field">
+      <div class="label">Phone</div>
+      <div id="phone" class="value">Loading…</div>
     </div>
-
-    <div class="form-group">
-      <label for="address">Address</label>
-      <input type="text" id="address" placeholder="Enter address"/>
+    <div class="field">
+      <div class="label">Address</div>
+      <div id="address" class="value">Loading…</div>
     </div>
-
-    <div class="form-group">
-      <label for="about">About</label>
-      <textarea id="about" placeholder="Write about yourself..."></textarea>
+    <div class="field">
+      <div class="label">About</div>
+      <div id="about" class="value" style="min-height:80px;">Loading…</div>
     </div>
-
-    <button id="saveBtn">Save Changes</button>
-    <button id="logoutBtn" class="logout-btn">Logout</button>
   </div>
 
   <div class="navbar">
@@ -148,8 +111,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -161,71 +124,43 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    // Initialize
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
     const db = getDatabase(app);
+    const auth = getAuth(app);
 
-    let driverId = null;
-
-    // Elements
     const nameEl    = document.getElementById('name');
     const emailEl   = document.getElementById('email');
     const phoneEl   = document.getElementById('phone');
     const addressEl = document.getElementById('address');
     const aboutEl   = document.getElementById('about');
-    const saveBtn   = document.getElementById('saveBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
 
-    // On auth change
     onAuthStateChanged(auth, user => {
       if (!user) {
-        alert('You are not logged in!');
         window.location = 'driverlogin.html';
         return;
       }
-      driverId = user.uid;
 
-      // Load from /driverdetails/{driverId}
+      const driverId = user.uid;
       const profileRef = ref(db, `driverdetails/${driverId}`);
       get(profileRef).then(snapshot => {
         if (snapshot.exists()) {
           const data = snapshot.val();
-          nameEl.value    = data.name    || '';
-          emailEl.value   = data.email   || '';
-          phoneEl.value   = data.phone   || '';
-          addressEl.value = data.address || '';
-          aboutEl.value   = data.about   || '';
+          nameEl.textContent    = data.name    || 'Not provided';
+          emailEl.textContent   = data.email   || 'Not provided';
+          phoneEl.textContent   = data.phone   || 'Not provided';
+          addressEl.textContent = data.address || 'Not provided';
+          aboutEl.textContent   = data.about   || 'Not provided';
+        } else {
+          nameEl.textContent = emailEl.textContent = phoneEl.textContent =
+          addressEl.textContent = aboutEl.textContent = 'No profile data';
         }
+      }).catch(err => {
+        console.error(err);
+        nameEl.textContent = emailEl.textContent = phoneEl.textContent =
+        addressEl.textContent = aboutEl.textContent = 'Error loading';
       });
     });
-
-    // Save handler
-    saveBtn.addEventListener('click', () => {
-      if (!driverId) return;
-      const updates = {
-        driverId: driverId,
-        name:    nameEl.value.trim(),
-        email:   emailEl.value.trim(),
-        phone:   phoneEl.value.trim(),
-        address: addressEl.value.trim(),
-        about:   aboutEl.value.trim(),
-        updatedAt: new Date().toISOString()
-      };
-      set(ref(db, `driverdetails/${driverId}`), updates)
-        .then(() => alert('Profile updated successfully!'))
-        .catch(err => alert('Error updating profile: ' + err.message));
-    });
-
-    // Logout handler
-    logoutBtn.addEventListener('click', () => {
-      signOut(auth)
-        .then(() => {
-          alert('Logged out successfully.');
-          window.location = 'driverlogin.html';
-        })
-        .catch(err => alert('Error logging out: ' + err.message));
-    });
   </script>
+
 </body>
 </html>
