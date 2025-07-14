@@ -141,15 +141,17 @@
                 <p><strong>Pickup:</strong> ${b.pickup}</p>
                 <p><strong>Dropoff:</strong> ${b.dropoff}</p>
                 <p><strong>Seats booked:</strong> ${b.seatsRequested}</p>
+                <p><strong>Fare:</strong> ₹${b.fare}</p>
                 <p><strong>Car:</strong> ${b.carBrand} (${b.carReg})</p>
                 <p><strong>Driver:</strong> ${b.driverName}</p>
                 <p>
+                <p><strong>Time:</strong> ${to12Hour(b.time)}</p>
                   <strong>Contact Driver:</strong>
                   <button onclick="window.location='tel:${b.driverNumber}'">
                     <i class="fas fa-phone"></i> ${b.driverNumber}
                   </button>
                 </p>
-                <p><strong>Time:</strong> ${to12Hour(b.time)}</p>
+                
               </div>`;
           });
           bookingsContainer.innerHTML = html;
