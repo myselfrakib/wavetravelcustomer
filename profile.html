@@ -100,19 +100,9 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import {
-      getDatabase,
-      ref,
-      get,
-      set
-    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
-    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -123,12 +113,10 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    // Initialize services
     const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // UI refs
     const nameEl   = document.getElementById("userName");
     const emailEl  = document.getElementById("userEmail");
     const phoneEl  = document.getElementById("userPhone");
@@ -141,36 +129,18 @@
       }
       console.log("Logged in UID:", user.uid);
 
-      // Attempt to read existing profile
-      const userRef = ref(db, `users/${user.uid}`);
       try {
-        const snap = await get(userRef);
-        let data = snap.val();
-
-        if (!data) {
-          // Seed profile node if missing
-          data = {
-            name: user.displayName || "",
-            email: user.email || "",
-            phone: user.phoneNumber || "",
-            role: "customer"
-          };
-          await set(userRef, data);
-          console.log("Seeded profile:", data);
-        }
-
-        // Display it
+        const snap = await get(ref(db, `users/${user.uid}`));
+        const data = snap.val() || {};
         nameEl.textContent  = data.name  || "Not set";
         emailEl.textContent = data.email || "Not set";
         phoneEl.textContent = data.phone || "Not set";
-
       } catch (e) {
         console.error("Error loading profile:", e);
         nameEl.textContent = emailEl.textContent = phoneEl.textContent = "Error";
       }
     });
 
-    // Logout handler
     logoutEl.addEventListener("click", e => {
       e.preventDefault();
       signOut(auth).then(() => window.location = "login.html");
