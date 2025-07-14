@@ -145,16 +145,22 @@
         window.location = "login.html";
         return;
       }
-
       console.log("Logged in UID:", user.uid);
 
       try {
         const snap = await get(ref(db, `users/${user.uid}`));
         console.log("Profile snapshot:", snap.val());
-        const data = snap.val() || {};
-        nameEl.textContent  = data.name  || "Not available";
-        emailEl.textContent = data.email || user.email || "Not available";
-        phoneEl.textContent = data.phone || "Not available";
+        const data = snap.val();
+        if (data) {
+          nameEl.textContent  = data.name;
+          emailEl.textContent = data.email;
+          phoneEl.textContent = data.phone;
+        } else {
+          // Fallback to Auth data if DB node missing
+          nameEl.textContent  = user.displayName || "Not set";
+          emailEl.textContent = user.email || "Not set";
+          phoneEl.textContent = user.phoneNumber || "Not set";
+        }
       } catch (e) {
         console.error("Error fetching profile:", e);
         nameEl.textContent = emailEl.textContent = phoneEl.textContent = "Error";
