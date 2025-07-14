@@ -124,7 +124,6 @@
         return;
       }
       const driverId = user.uid;
-      // Fetch bookings for this driver
       const bookingsQuery = query(
         ref(db, 'bookings'),
         orderByChild('driverId'),
@@ -132,26 +131,26 @@
       );
       onValue(bookingsQuery, snapshot => {
         const data = snapshot.val() || {};
-        // Group by slotKey
         const bySlot = {};
         Object.entries(data).forEach(([bookingId, b]) => {
           const slot = b.slotKey || 'unknown';
-          if (!bySlot[slot]) bySlot[slot] = { slotInfo: b, bookings: [] };
-          bySlot[slot].bookings.push({ id: bookingId, ...b });
+          if (!bySlot[slot]) bySlot[slot] = [];
+          bySlot[slot].push({ id: bookingId, ...b });
         });
 
-        // Render
         slotsContainer.innerHTML = '';
-        Object.entries(bySlot).forEach(([slotKey, { slotInfo, bookings }]) => {
+        let slotIndex = 1;
+        for (const [slotKey, bookings] of Object.entries(bySlot)) {
           const slotCard = document.createElement('div');
           slotCard.className = 'slot-card';
-          slotCard.innerHTML = `<h2>Slot ID: ${slotKey}</h2>`;
+          slotCard.innerHTML = `<h2>${slotIndex++}. Slot ID: ${slotKey}</h2>`;
+
           bookings.forEach(b => {
             const item = document.createElement('div');
             item.className = 'booking-item';
             item.innerHTML = `
               <p><strong>Customer:</strong> ${b.customerName}</p>
-              <p><strong>Phone:</strong> 
+              <p><strong>Phone:</strong>
                 <button onclick="window.location='tel:${b.customerPhone}'">
                   <i class="fas fa-phone"></i> ${b.customerPhone}
                 </button>
@@ -160,8 +159,9 @@
             `;
             slotCard.appendChild(item);
           });
+
           slotsContainer.appendChild(slotCard);
-        });
+        }
       });
     });
   </script>
