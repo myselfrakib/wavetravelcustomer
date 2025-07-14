@@ -108,7 +108,6 @@
     <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
-  <!-- Firebase & Razorpay -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -143,73 +142,104 @@
           return window.location = 'login.html';
         }
 
-        // Fetch profile data
+        // helper to render all fields
+        function render(name, phone) {
+          summaryEl.innerHTML = `
+            <div><strong>Name:</strong> ${name}</div>
+            <div><strong>Phone:</strong> ${phone}</div>
+            <div><strong>Pickup:</strong> ${booking.pickup}</div>
+            <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
+            <div><strong>Date:</strong> ${formatDate(booking.date)}</div>
+            <div><strong>Time:</strong> ${formatTime(booking.time)}</div>
+            <div><strong>Seats:</strong> ${booking.seatsRequested}</div>
+            <div><strong>Fare:</strong> ₹${booking.fare}</div>
+          `;
+          termsChk.addEventListener('change', () => payBtn.disabled = !termsChk.checked);
+          payBtn.disabled = true;
+          payBtn.onclick = () => handlePayment(user.uid, name, phone);
+        }
+
+        // 1) Try fetch by UID
         db.ref(`users/${user.uid}`).once('value')
-          .then(snapshot => {
-            const profile = snapshot.val() || {};
-            const name  = profile.name  || 'Not set';
-            const phone = profile.phone || 'Not set';
-
-            summaryEl.innerHTML = `
-              <div><strong>Name:</strong> ${name}</div>
-              <div><strong>Phone:</strong> ${phone}</div>
-              <div><strong>Pickup:</strong> ${booking.pickup}</div>
-              <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
-              <div><strong>Date:</strong> ${formatDate(booking.date)}</div>
-              <div><strong>Time:</strong> ${formatTime(booking.time)}</div>
-              <div><strong>Seats:</strong> ${booking.seatsRequested}</div>
-              <div><strong>Fare:</strong> ₹${booking.fare}</div>
-            `;
-
-            // Enable pay only after terms checked
-            termsChk.addEventListener('change', () => {
-              payBtn.disabled = !termsChk.checked;
-            });
-            payBtn.disabled = true;
-
-            payBtn.onclick = () => {
-              if (!termsChk.checked) return;
-              const options = {
-                key: 'rzp_test_NMB6jz5XK0G48R',
-                amount: booking.fare * 100,
-                currency: 'INR',
-                name: 'WaveTravel',
-                description: 'Ride Booking',
-                prefill: { name, contact: phone, email: user.email || '' },
-                handler: res => {
-                  const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
-                  slotRef.transaction(cur => {
-                    const left = parseInt(cur.seats,10) - booking.seatsRequested;
-                    return { ...cur, seats: left<0?0:left };
-                  }).then(() =>
-                    db.ref('bookings').push({
-                      ...booking,
-                      userId: user.uid,
-                      userName: name,
-                      userPhone: phone,
-                      paymentId: res.razorpay_payment_id,
-                      bookedAt: new Date().toISOString(),
-                      status: 'confirmed'
-                    })
-                  ).then(() => {
-                    alert('Payment successful & booking confirmed!');
-                    localStorage.removeItem('selectedBooking');
-                    window.location = 'mybookings.html';
-                  }).catch(err => {
-                    console.error(err);
-                    alert('Booking failed');
-                  });
-                }
-              };
-              new Razorpay(options).open();
-            };
+          .then(snap => {
+            const profile = snap.val();
+            if (profile) {
+              return render(profile.name || 'Not set', profile.phone || 'Not set');
+            }
+            // 2) fetch by phone
+            if (user.phoneNumber) {
+              const raw = user.phoneNumber.slice(-10);
+              return db.ref('users')
+                .orderByChild('phone')
+                .equalTo(raw)
+                .once('value')
+                .then(phoneSnap => {
+                  if (phoneSnap.exists()) {
+                    const rec = phoneSnap.val();
+                    const key = Object.keys(rec)[0];
+                    return render(rec[key].name, rec[key].phone);
+                  }
+                  // 3) fetch by email
+                  if (user.email) {
+                    return db.ref('users')
+                      .orderByChild('email')
+                      .equalTo(user.email)
+                      .once('value')
+                      .then(emailSnap => {
+                        if (emailSnap.exists()) {
+                          const rec = emailSnap.val();
+                          const key = Object.keys(rec)[0];
+                          return render(rec[key].name, rec[key].phone);
+                        }
+                        throw new Error('Profile not found');
+                      });
+                  }
+                  throw new Error('Profile not found');
+                });
+            }
+            throw new Error('Profile not found');
           })
           .catch(err => {
-            console.error('Error fetching profile:', err);
-            summaryEl.innerHTML = '<div>Error loading user profile.</div>';
+            console.error(err);
+            summaryEl.innerHTML = '<div>Unable to load profile data.</div>';
             payBtn.disabled = true;
           });
       });
+    }
+
+    function handlePayment(uid, name, phone) {
+      const options = {
+        key: 'rzp_test_NMB6jz5XK0G48R',
+        amount: booking.fare * 100,
+        currency: 'INR',
+        name: 'WaveTravel',
+        description: 'Ride Booking',
+        prefill: { name, contact: phone, email: firebase.auth().currentUser.email || '' },
+        handler: res => {
+          // update seats then booking
+          const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+          slotRef.transaction(cur => {
+            const left = parseInt(cur.seats,10) - booking.seatsRequested;
+            return { ...cur, seats: left<0?0:left };
+          }).then(() => db.ref('bookings').push({
+            ...booking,
+            userId: uid,
+            userName: name,
+            userPhone: phone,
+            paymentId: res.razorpay_payment_id,
+            bookedAt: new Date().toISOString(),
+            status: 'confirmed'
+          })).then(() => {
+            alert('Payment successful & booking confirmed!');
+            localStorage.removeItem('selectedBooking');
+            window.location = 'mybookings.html';
+          }).catch(e => {
+            console.error(e);
+            alert('Booking failed');
+          });
+        }
+      };
+      new Razorpay(options).open();
     }
 
     function formatDate(d) {
