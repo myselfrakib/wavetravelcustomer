@@ -35,11 +35,15 @@
       border-bottom: 1px solid rgba(255,255,255,0.4);
       padding-bottom: 5px;
     }
+    .slot-details p {
+      margin: 4px 0;
+      font-size: 0.95rem;
+    }
     .booking-item {
       background: rgba(255,255,255,0.05);
       padding: 10px;
       border-radius: 8px;
-      margin-bottom: 10px;
+      margin: 10px 0;
     }
     .booking-item p {
       margin: 4px 0;
@@ -118,6 +122,13 @@
 
     const slotsContainer = document.getElementById('slots-container');
 
+    function to12Hour(t) {
+      let [h, m] = t.split(':').map(Number);
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${String(m).padStart(2,'0')} ${suffix}`;
+    }
+
     onAuthStateChanged(auth, user => {
       if (!user) {
         window.location = 'driverlogin.html';
@@ -132,10 +143,10 @@
       onValue(bookingsQuery, snapshot => {
         const data = snapshot.val() || {};
         const bySlot = {};
-        Object.entries(data).forEach(([bookingId, b]) => {
+        Object.entries(data).forEach(([id, b]) => {
           const slot = b.slotKey || 'unknown';
           if (!bySlot[slot]) bySlot[slot] = [];
-          bySlot[slot].push({ id: bookingId, ...b });
+          bySlot[slot].push({ id, ...b });
         });
 
         slotsContainer.innerHTML = '';
@@ -143,7 +154,15 @@
         for (const [slotKey, bookings] of Object.entries(bySlot)) {
           const slotCard = document.createElement('div');
           slotCard.className = 'slot-card';
-          slotCard.innerHTML = `<h2>${slotIndex++}. Slot ID: ${slotKey}</h2>`;
+          slotCard.innerHTML = `
+            <h2>${slotIndex++}. Slot ID: ${slotKey}</h2>
+            <div class="slot-details">
+              <p><strong>Pickup:</strong> ${bookings[0].pickup}</p>
+              <p><strong>Dropoff:</strong> ${bookings[0].dropoff}</p>
+              <p><strong>Date:</strong> ${bookings[0].date}</p>
+              <p><strong>Time:</strong> ${to12Hour(bookings[0].time)}</p>
+            </div>
+          `;
 
           bookings.forEach(b => {
             const item = document.createElement('div');
