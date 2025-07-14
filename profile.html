@@ -3,109 +3,65 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>User Profile - WaveTravel</title>
+  <title>User Profile – WaveTravel</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
     :root {
       --primary: #0077ff;
-      --light-bg: #f8f8f8;
+      --bg-gradient: linear-gradient(to right, #74ebd5, #ACB6E5);
+      --card-bg: #fff;
       --dark-text: #333;
     }
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0; padding: 0;
-    }
+    * { box-sizing: border-box; margin:0; padding:0; }
     body {
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to right, #74ebd5, #ACB6E5);
-      display: flex; flex-direction: column; min-height: 100vh;
+      background: var(--bg-gradient);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
       color: var(--dark-text);
     }
-    .container {
-      flex: 1; max-width: 600px; width: 100%;
-      margin: 0 auto; padding: 16px; padding-bottom: 100px;
-    }
-    h1 {
-      text-align: center; color: #fff;
-      margin-bottom: 16px; font-size: 1.5rem;
-    }
     .card {
-      background: #fff; border-radius: 12px;
-      padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
     }
-    .card h2 {
-      color: var(--primary); margin-bottom: 12px;
-      font-size: 1.25rem; text-align: center;
+    .card h1 {
+      font-size: 1.5rem;
+      color: var(--primary);
+      margin-bottom: 16px;
     }
-    .item {
-      margin-bottom: 12px; font-size: 1rem;
+    .field {
+      margin-bottom: 12px;
+      font-size: 1rem;
       display: flex; justify-content: space-between;
     }
-    .item span { font-weight: 500; }
-    .input-field {
-      width: 100%; padding: 12px; margin-bottom: 12px;
-      border-radius: 8px; border: 1px solid #ccc;
-      font-size: 1rem;
+    .field span:first-child {
+      font-weight: 600;
     }
-    .button {
-      width: 100%; padding: 14px; background: var(--primary);
-      color: #fff; border: none; border-radius: 8px;
-      font-size: 1rem; font-weight: 600; cursor: pointer;
-      transition: background 0.2s;
-    }
-    .button:hover { background: #005bb5; }
-    .actions {
-      display: flex; flex-direction: column; gap: 12px;
-      margin-top: 16px;
-    }
-    .navbar {
-      position: fixed; bottom: 0; left: 0; width: 100%;
-      background: #fff; border-top: 1px solid #ddd;
-      display: flex; justify-content: space-around;
-      padding: 10px 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-    }
-    .navbar a {
-      text-decoration: none; color: var(--primary);
-      font-size: 0.75rem; text-align: center;
-    }
-    .navbar a i {
-      display: block; font-size: 1.25rem; margin-bottom: 4px;
+    .loading {
+      font-style: italic;
+      color: #666;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1>User Profile</h1>
-    <div class="card">
-      <h2>Your Details</h2>
-
-      <div id="viewMode">
-        <div class="item"><strong>Name:</strong><span id="userName">Loading...</span></div>
-        <div class="item"><strong>Email:</strong><span id="userEmail">Loading...</span></div>
-        <div class="item"><strong>Phone:</strong><span id="userPhone">Loading...</span></div>
-      </div>
-
-      <div id="editMode" style="display:none;">
-        <input type="text" id="editName" class="input-field" placeholder="Name"/>
-        <input type="email" id="editEmail" class="input-field" placeholder="Email"/>
-        <input type="text" id="editPhone" class="input-field" placeholder="Phone"/>
-        <button class="button" id="saveBtn">Save Changes</button>
-      </div>
-
-      <div class="actions">
-        <button class="button" id="editBtn">Edit Profile</button>
-        <button class="button" id="logoutBtn">Logout</button>
-      </div>
+  <div class="card">
+    <h1>Your Profile</h1>
+    <div id="nameField" class="field">
+      <span>Name:</span> <span class="loading">Loading…</span>
     </div>
-  </div>
-
-  <div class="navbar">
-    <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
-    <a href="booking.html"><i class="fas fa-car"></i>Book</a>
-    <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
-    <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
+    <div id="emailField" class="field">
+      <span>Email:</span> <span class="loading">Loading…</span>
+    </div>
+    <div id="phoneField" class="field">
+      <span>Phone:</span> <span class="loading">Loading…</span>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -127,68 +83,29 @@
     const auth = firebase.auth();
     const db   = firebase.database();
 
-    const userNameEl  = document.getElementById("userName");
-    const userEmailEl = document.getElementById("userEmail");
-    const userPhoneEl = document.getElementById("userPhone");
-    const viewMode    = document.getElementById("viewMode");
-    const editMode    = document.getElementById("editMode");
-    const editBtn     = document.getElementById("editBtn");
-    const saveBtn     = document.getElementById("saveBtn");
-    const logoutBtn   = document.getElementById("logoutBtn");
-
-    function toggleEdit(show) {
-      viewMode.style.display = show ? "none" : "";
-      editMode.style.display = show ? "" : "none";
-      editBtn.style.display  = show ? "none" : "";
-    }
+    const nameField  = document.querySelector('#nameField span:last-child');
+    const emailField = document.querySelector('#emailField span:last-child');
+    const phoneField = document.querySelector('#phoneField span:last-child');
 
     auth.onAuthStateChanged(user => {
       if (!user) {
-        alert("Please log in to view your profile.");
-        window.location = "login.html";
+        // Not logged in—redirect to login
+        window.location = 'login.html';
         return;
       }
-
-      const userRef = db.ref(`users/${user.uid}`);
-
-      // Real‑time listener
-      userRef.on("value", snapshot => {
-        const data = snapshot.val();
-        console.log("Profile data from DB:", data);
-        userNameEl.textContent  = data?.name  || "Not set";
-        userEmailEl.textContent = data?.email || "Not set";
-        userPhoneEl.textContent = data?.phone || "Not set";
-      }, err => {
-        console.error("Failed to read profile:", err);
-        alert("Error loading profile. Check console for details.");
-      });
-
-      editBtn.addEventListener("click", () => {
-        toggleEdit(true);
-        document.getElementById("editName").value  = userNameEl.textContent;
-        document.getElementById("editEmail").value = userEmailEl.textContent;
-        document.getElementById("editPhone").value = userPhoneEl.textContent;
-      });
-
-      saveBtn.addEventListener("click", async () => {
-        const updates = {
-          name:  document.getElementById("editName").value,
-          email: document.getElementById("editEmail").value,
-          phone: document.getElementById("editPhone").value
-        };
-        try {
-          await userRef.update(updates);
-          alert("Profile updated!");
-          toggleEdit(false);
-        } catch (err) {
-          console.error("Update failed:", err);
-          alert("Update failed: " + err.message);
-        }
-      });
-
-      logoutBtn.addEventListener("click", () => {
-        auth.signOut().then(() => window.location = "login.html");
-      });
+      // Fetch profile
+      db.ref(`users/${user.uid}`).once('value')
+        .then(snapshot => {
+          const data = snapshot.val() || {};
+          nameField.textContent  = data.name  || 'Not available';
+          emailField.textContent = data.email || 'Not available';
+          phoneField.textContent = data.phone || 'Not available';
+        })
+        .catch(err => {
+          console.error('Error loading profile:', err);
+          nameField.textContent = emailField.textContent = phoneField.textContent
+            = 'Error loading';
+        });
     });
   </script>
 </body>
