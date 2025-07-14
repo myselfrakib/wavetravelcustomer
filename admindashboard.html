@@ -5,45 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard – WaveTravel</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(to right, #2c3e50, #3498db);
-      color: white;
-      margin: 0; padding: 0;
-    }
-    .navbar {
-      background: #1f2c3f;
-      padding: 1rem;
-      display: flex; flex-wrap: wrap; gap: .5rem;
-    }
-    .navbar button {
-      background: #3498db; border: none;
-      padding: .5rem 1rem; color: white;
-      cursor: pointer; border-radius: 4px; flex-grow: 1;
-    }
-    .tab-pane { display: none; padding: 1rem; }
-    .tab-pane.active { display: block; }
-    .card {
-      background: #ffffff11; padding: 1rem;
-      margin: .5rem 0; border-radius: 8px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.2);
-      position: relative;
-    }
-    .card button {
-      margin-top: .5rem; margin-right: .5rem;
-      padding: .3rem .8rem; border: none;
-      border-radius: 4px; cursor: pointer;
-      background: #e74c3c; color: white;
-    }
-    .loading { text-align: center; margin-top: 2rem; font-size: 1.2rem; }
+    body { font-family: Arial, sans-serif; background: linear-gradient(to right,#2c3e50,#3498db); color: #fff; margin:0; }
+    .navbar { background:#1f2c3f; padding:1rem; display:flex; flex-wrap:wrap; gap:.5rem; }
+    .navbar button { flex-grow:1; background:#3498db; border:none; padding:.5rem 1rem; border-radius:4px; color:#fff; cursor:pointer; }
+    .tab-pane { display:none; padding:1rem; }
+    .tab-pane.active { display:block; }
+    .card { background:#ffffff11; margin:.5rem 0; padding:1rem; border-radius:8px; box-shadow:0 0 8px rgba(0,0,0,.2); }
+    .card button { margin-top:.5rem; margin-right:.5rem; padding:.3rem .8rem; border:none; border-radius:4px; cursor:pointer; }
+    .delete-btn { background:#e74c3c; color:#fff; }
+    .loading { text-align:center; margin-top:2rem; }
   </style>
 </head>
 <body>
+
   <div class="navbar">
     <button onclick="openTab('users')">Users</button>
     <button onclick="openTab('drivers')">Drivers</button>
     <button onclick="openTab('pending-cars')">Pending Cars</button>
-    <button onclick="openTab('approved-cars')">Approved Cars</button>
     <button onclick="openTab('slots')">Slots</button>
     <button onclick="openTab('bookings')">Bookings</button>
     <button onclick="openTab('profile')">Profile</button>
@@ -52,15 +30,20 @@
   <div id="users-tab" class="tab-pane"><h2>Users</h2><div id="users-list"></div></div>
   <div id="drivers-tab" class="tab-pane"><h2>Drivers</h2><div id="drivers-list"></div></div>
   <div id="pending-cars-tab" class="tab-pane"><h2>Pending Cars</h2><div id="pending-cars-list"></div></div>
-  <div id="approved-cars-tab" class="tab-pane"><h2>Approved Cars</h2><div id="approved-cars-list"></div></div>
   <div id="slots-tab" class="tab-pane"><h2>Slots</h2><div id="slots-list"></div></div>
   <div id="bookings-tab" class="tab-pane"><h2>Bookings</h2><div id="bookings-list"></div></div>
   <div id="profile-tab" class="tab-pane"><h2>Admin Profile</h2><div id="profile-details"></div></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, get, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import {
+      getDatabase, ref, get, remove, query, orderByChild, equalTo, onValue
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import {
+      getAuth, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
+    // config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -70,118 +53,94 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
+    const app  = initializeApp(firebaseConfig);
+    const db   = getDatabase(app);
+    const auth = getAuth(app);
 
-    let currentTab = '';
+    let currentUser = null;
+    // only open tabs after auth
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        alert("Please sign in as an admin.");
+        return window.location = "adminlogin.html";
+      }
+      currentUser = user;
+      openTab('users');
+    });
 
-    window.openTab = function(tabName) {
-      currentTab = tabName;
-      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-      document.getElementById(`${tabName}-tab`).classList.add('active');
+    // switch & load
+    function openTab(name) {
+      if (!currentUser) return;
+      document.querySelectorAll('.tab-pane').forEach(t=>t.classList.remove('active'));
+      document.getElementById(`${name}-tab`).classList.add('active');
 
-      if (tabName === 'users')          fetchList('users','users-list');
-      if (tabName === 'drivers')        fetchList('driverdetails','drivers-list');
-      if (tabName === 'pending-cars')   fetchList('pendingcars','pending-cars-list');
-      if (tabName === 'approved-cars')  fetchList('approvedcars','approved-cars-list');
-      if (tabName === 'slots')          fetchNested('availableslots','slots-list');
-      if (tabName === 'bookings')       fetchNested('bookings','bookings-list');
-      if (tabName === 'profile')        fetchProfile();
-    };
+      switch(name) {
+        case 'users':         fetchList('/users',    'users-list');      break;
+        case 'drivers':       fetchList('/driverdetails','drivers-list');break;
+        case 'pending-cars':  fetchList('/pendingcars','pending-cars-list');break;
+        case 'slots':         fetchList('/availableslots','slots-list');break;
+        case 'bookings':      fetchList('/bookings','bookings-list');  break;
+        case 'profile':       fetchProfile();        break;
+      }
+    }
 
-    // flat list at root: users, driverdetails, pendingcars, approvedcars
+    // generic list + delete
     async function fetchList(path, containerId) {
-      const c = document.getElementById(containerId);
-      c.innerHTML = '<div class="loading">Loading…</div>';
+      const container = document.getElementById(containerId);
+      container.innerHTML = '<div class="loading">Loading...</div>';
       try {
-        const snap = await get(ref(db, path));
-        if (!snap.exists()) {
-          c.innerHTML = 'No records';
+        const snapshot = await get(ref(db, path));
+        if (!snapshot.exists()) {
+          container.innerHTML = 'No records.';
           return;
         }
+        const data = snapshot.val();
         let html = '';
-        for (const [key, val] of Object.entries(snap.val())) {
+        for (const [key, item] of Object.entries(data)) {
           html += `<div class="card">
-                     <strong>${path.slice(0,-1).toUpperCase()} ID:</strong> ${key}<br/>` +
-                     Object.entries(val)
-                           .map(([k,v])=>`<strong>${k}:</strong> ${v}`)
-                           .join('<br/>') +
-                     `<br/><button onclick="deleteItem('${path}','${key}')">Delete</button>
-                   </div>`;
+            <strong>ID:</strong> ${key}<br/>` +
+            Object.entries(item).map(([k,v])=>`${k}: ${v}`).join('<br/>') +
+            `<br/><button class="delete-btn" onclick="deleteItem('${path}','${key}')">Delete</button>
+          </div>`;
         }
-        c.innerHTML = html;
-      } catch(err) {
-        c.innerHTML = 'Error loading';
-        console.error(err);
+        container.innerHTML = html;
+      } catch(e) {
+        console.error(e);
+        container.innerHTML = 'Error fetching.';
       }
     }
 
-    // nested lists: e.g. availableslots/{driverId}/{slotKey}, bookings similar
-    async function fetchNested(path, containerId) {
-      const c = document.getElementById(containerId);
-      c.innerHTML = '<div class="loading">Loading…</div>';
-      try {
-        const snap = await get(ref(db, path));
-        if (!snap.exists()) {
-          c.innerHTML = 'No records';
-          return;
-        }
-        let html = '';
-        for (const [driverId, slots] of Object.entries(snap.val())) {
-          for (const [key, val] of Object.entries(slots)) {
-            html += `<div class="card">
-                       <strong>${path.slice(0,-1).toUpperCase()} ID:</strong> ${key}<br/>` +
-                       Object.entries(val)
-                             .map(([k,v])=>`<strong>${k}:</strong> ${v}`)
-                             .join('<br/>') +
-                       `<br/><button onclick="deleteItem('${path}/${driverId}','${key}')">Delete</button>
-                     </div>`;
-          }
-        }
-        c.innerHTML = html;
-      } catch(err) {
-        c.innerHTML = 'Error loading';
-        console.error(err);
-      }
-    }
-
-    // special for admin profile (single node under /admins)
+    // special profile fetch
     async function fetchProfile() {
-      const c = document.getElementById('profile-details');
-      c.innerHTML = '<div class="loading">Loading…</div>';
+      const container = document.getElementById('profile-details');
+      container.innerHTML = '<div class="loading">Loading...</div>';
       try {
-        const snap = await get(ref(db, 'admins/hd07y5jW91M6QJFi9ykZ55jLwx12'));
+        const snap = await get(ref(db, `admins/${currentUser.uid}`));
         if (!snap.exists()) {
-          c.innerHTML = 'No profile';
+          container.innerHTML = 'No profile.';
           return;
         }
-        const data = snap.val();
-        let html = '<div class="card">';
-        html += Object.entries(data)
-                      .map(([k,v])=>`<strong>${k}:</strong> ${v}`)
-                      .join('<br/>');
-        html += '</div>';
-        c.innerHTML = html;
-      } catch(err) {
-        c.innerHTML = 'Error loading';
-        console.error(err);
+        const admin = snap.val();
+        container.innerHTML = `<div class="card">${
+          Object.entries(admin).map(([k,v])=>`<strong>${k}:</strong> ${v}`).join('<br/>')
+        }</div>`;
+      } catch (e) {
+        console.error(e);
+        container.innerHTML = 'Error loading profile.';
       }
     }
 
-    // delete any node
-    window.deleteItem = async function(path, key) {
-      if (!confirm('Delete this entry?')) return;
+    // delete helper
+    async function deleteItem(path, key) {
+      if (!confirm("Delete this record?")) return;
       try {
         await remove(ref(db, `${path}/${key}`));
         openTab(currentTab);
-      } catch(err) {
-        alert('Delete failed');
-        console.error(err);
+      } catch(e) {
+        console.error(e);
+        alert("Delete failed.");
       }
-    };
-
-    // kick things off
-    openTab('users');
+    }
   </script>
 </body>
 </html>
