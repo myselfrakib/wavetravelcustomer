@@ -38,7 +38,6 @@
       font-size: 14px;
       display: block;
       margin-bottom: 5px;
-      color: #495057;
     }
     .value {
       padding: 10px 12px;
@@ -124,8 +123,9 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    // Initialize
+    const app  = initializeApp(firebaseConfig);
+    const db   = getDatabase(app);
     const auth = getAuth(app);
 
     const nameEl    = document.getElementById('name');
@@ -136,29 +136,33 @@
 
     onAuthStateChanged(auth, user => {
       if (!user) {
+        // not signed in
         window.location = 'driverlogin.html';
         return;
       }
-
       const driverId = user.uid;
-      const profileRef = ref(db, `driverdetails/${driverId}`);
-      get(profileRef).then(snapshot => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          nameEl.textContent    = data.name    || 'Not provided';
-          emailEl.textContent   = data.email   || 'Not provided';
-          phoneEl.textContent   = data.phone   || 'Not provided';
-          addressEl.textContent = data.address || 'Not provided';
-          aboutEl.textContent   = data.about   || 'Not provided';
-        } else {
-          nameEl.textContent = emailEl.textContent = phoneEl.textContent =
-          addressEl.textContent = aboutEl.textContent = 'No profile data';
-        }
-      }).catch(err => {
-        console.error(err);
-        nameEl.textContent = emailEl.textContent = phoneEl.textContent =
-        addressEl.textContent = aboutEl.textContent = 'Error loading';
-      });
+      // fetch from /driverdetails/{driverId}
+      get(ref(db, `driverdetails/${driverId}`))
+        .then(snap => {
+          if (!snap.exists()) {
+            nameEl.textContent = emailEl.textContent =
+              phoneEl.textContent = addressEl.textContent =
+              aboutEl.textContent = 'No profile data';
+            return;
+          }
+          const d = snap.val();
+          nameEl.textContent    = d.name    || 'N/A';
+          emailEl.textContent   = d.email   || 'N/A';
+          phoneEl.textContent   = d.phone   || 'N/A';
+          addressEl.textContent = d.address || 'N/A';
+          aboutEl.textContent   = d.about   || 'N/A';
+        })
+        .catch(err => {
+          console.error(err);
+          nameEl.textContent = emailEl.textContent =
+            phoneEl.textContent = addressEl.textContent =
+            aboutEl.textContent = 'Error loading';
+        });
     });
   </script>
 
