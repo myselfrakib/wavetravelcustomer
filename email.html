@@ -124,7 +124,7 @@
       try {
         await signInWithEmailAndPassword(auth, email, pass);
         // Redirect on success
-        window.location = "customerdashboard.html";
+        window.location = "booking.html";
       } catch (err) {
         console.error("Login error:", err);
         errorMsgEl.textContent = err.message;
@@ -134,7 +134,7 @@
     // If already logged in, redirect away
     onAuthStateChanged(auth, user => {
       if (user) {
-        window.location = "customerdashboard.html";
+        window.location = "booking.html";
       }
     });
   </script>
