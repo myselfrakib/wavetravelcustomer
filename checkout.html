@@ -91,7 +91,9 @@
 
   <div class="container">
     <h1>Confirm &amp; Pay</h1>
-    <div id="summary" class="summary-card">Loading booking…</div>
+    <div id="summary" class="summary-card">
+      Loading booking…
+    </div>
 
     <div class="terms">
       <input type="checkbox" id="termsChk"/>
@@ -108,14 +110,11 @@
     <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
-  <!-- Firebase & Razorpay -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
   <script>
-    // Firebase init
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -134,8 +133,18 @@
     const payBtn    = document.getElementById('payBtn');
     const termsChk  = document.getElementById('termsChk');
 
-    const booking = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
+    function formatDate(d) {
+      const [y,m,dd] = d.split('-');
+      return `${dd}/${m}/${y}`;
+    }
+    function formatTime(t) {
+      let [h,mm] = t.split(':').map(Number);
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${mm.toString().padStart(2,'0')} ${suffix}`;
+    }
 
+    const booking = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
     if (!booking) {
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
       payBtn.disabled = true;
@@ -143,13 +152,14 @@
       auth.onAuthStateChanged(async user => {
         if (!user) {
           alert('Please login first.');
-          return window.location = 'login.html';
+          window.location = 'login.html';
+          return;
         }
 
         try {
           const snap = await db.ref(`users/${user.uid}`).once('value');
           const profile = snap.val() || {};
-          const name  = profile.name || 'Not set';
+          const name = profile.name || 'Not set';
           const phone = profile.phone || 'Not set';
 
           summaryEl.innerHTML = `
@@ -166,6 +176,7 @@
           termsChk.addEventListener('change', () => {
             payBtn.disabled = !termsChk.checked;
           });
+          payBtn.disabled = true;
 
           payBtn.addEventListener('click', () => {
             const options = {
@@ -174,22 +185,17 @@
               currency: 'INR',
               name: 'WaveTravel',
               description: 'Ride Booking',
-              prefill: {
-                name: name,
-                contact: phone,
-                email: user.email || ""
-              },
               handler(res) {
                 const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
                 slotRef.transaction(cur => {
-                  const left = parseInt(cur.seats, 10) - booking.seatsRequested;
-                  return { ...cur, seats: left < 0 ? 0 : left };
+                  const left = parseInt(cur.seats,10) - booking.seatsRequested;
+                  return { ...cur, seats: left<0?0:left };
                 }).then(() => {
                   return db.ref('bookings').push({
                     ...booking,
-                    name: name,
-                    phone: phone,
                     userId: user.uid,
+                    name,
+                    phone,
                     paymentId: res.razorpay_payment_id,
                     bookedAt: new Date().toISOString(),
                     status: 'confirmed'
@@ -206,24 +212,11 @@
             };
             new Razorpay(options).open();
           });
-
         } catch (err) {
           console.error("Error fetching user profile:", err);
-          summaryEl.innerHTML = `<div>Failed to load user info. Please try again.</div>`;
+          summaryEl.innerHTML = '<div>Error loading user profile.</div>';
         }
       });
-    }
-
-    function formatDate(d) {
-      const [y, m, dd] = d.split('-');
-      return `${dd}/${m}/${y}`;
-    }
-
-    function formatTime(t) {
-      let [h, mm] = t.split(':').map(Number);
-      const suffix = h >= 12 ? 'PM' : 'AM';
-      h = h % 12 || 12;
-      return `${h}:${mm.toString().padStart(2,'0')} ${suffix}`;
     }
   </script>
 </body>
