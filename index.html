@@ -45,7 +45,9 @@
     .option-links, .admin-login-btn, .driver-login-btn {
       margin-top: 15px;
     }
-    .option-links a, .admin-login-btn button, .driver-login-btn button {
+    .option-links a,
+    .admin-login-btn button,
+    .driver-login-btn button {
       color: #ffd1f4;
       text-decoration: none;
       background: none;
@@ -90,7 +92,6 @@
       Don't have an Account?<br>
       <a href="signup.html">SIGN UP</a>
     </div>
-
     <div class="admin-login-btn">
       <button onclick="location.href='adminlogin.html'">Admin Login</button>
     </div>
@@ -143,7 +144,7 @@
         return alert('Enter a valid 10‑digit phone number.');
       }
 
-      // Check in /users for that phone
+      // 1) Check in /users for that phone
       try {
         const snapshot = await db
           .ref('users')
@@ -151,18 +152,17 @@
           .equalTo(phone)
           .once('value');
         if (!snapshot.exists()) {
-          return alert('No account found. Please sign up first.');
+          return alert('No user found. Please sign up first.');
         }
       } catch (err) {
         console.error('DB lookup failed', err);
         return alert('Error verifying number. Try again later.');
       }
 
-      // Show spinner
-      const originalText = sendBtn.textContent;
+      // 2) Send OTP
+      const orig = sendBtn.textContent;
       sendBtn.innerHTML = 'Sending... <div class="spinner"></div>';
       sendBtn.disabled = true;
-
       try {
         confirmationResult = await firebase.auth().signInWithPhoneNumber(
           codeSelect.value + phone,
@@ -175,7 +175,7 @@
       } catch (err) {
         console.error('Error sending OTP', err);
         alert('Failed to send OTP: ' + err.message);
-        sendBtn.innerHTML = originalText;
+        sendBtn.textContent = orig;
         sendBtn.disabled = false;
       }
     });
@@ -188,19 +188,9 @@
       verifyBtn.disabled = true;
       try {
         const result = await confirmationResult.confirm(otp);
-        const user = result.user;
-
-        // If this is a newly created phone user, cancel it
-        const { creationTime, lastSignInTime } = user.metadata;
-        if (creationTime === lastSignInTime) {
-          // No existing account—sign out and block
-          await auth.signOut();
-          return alert('No account exists for this number.');
-        }
-
-        // Successful sign‑in of existing user
-        const userPhone = user.phoneNumber;
+        const userPhone = result.user.phoneNumber;
         localStorage.setItem('userPhone', userPhone);
+
         if (userPhone === '+919907738066') {
           alert('Admin login successful!');
           location.href = 'admindashboard.html';
