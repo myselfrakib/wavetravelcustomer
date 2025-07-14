@@ -46,16 +46,12 @@
     .booking-card button {
       margin-top:8px;
       padding:8px;
-      background:#ff4d4d;
+      background:#28a745;
       color:#fff;
       border:none;
       border-radius:6px;
       cursor:pointer;
       font-size:0.85rem;
-    }
-    .booking-card .call-btn {
-      background:#28a745;
-      margin-left:8px;
     }
     .navbar {
       position:fixed;
@@ -101,7 +97,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
   <script>
-    // --- Initialize Firebase ---
+    // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -117,70 +113,48 @@
     const auth = firebase.auth();
     const bookingsContainer = document.getElementById('bookings');
 
-    // Helpers for formatting
-    function formatDate(iso) {
-      const d = new Date(iso);
-      const dd = String(d.getDate()).padStart(2,'0');
-      const mm = String(d.getMonth()+1).padStart(2,'0');
-      const yy = d.getFullYear();
-      return `${dd}/${mm}/${yy}`;
-    }
-    function formatTime24to12(t) {
-      const [h,m] = t.split(':');
-      let hr = parseInt(h,10);
-      const suffix = hr >=12 ? 'PM':'AM';
-      hr = hr%12||12;
-      return `${hr}:${m} ${suffix}`;
+    function to12Hour(t) {
+      let [h, m] = t.split(':').map(Number);
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${String(m).padStart(2,'0')} ${suffix}`;
     }
 
-    // Load bookings once user is signed in
     auth.onAuthStateChanged(user => {
       if (!user) {
         alert('Please login first');
         return window.location = 'index.html';
       }
-      const ref = db.ref(`bookings/${user.uid}`);
-      ref.on('value', snap => {
-        const data = snap.val();
-        if (!data) {
-          bookingsContainer.innerHTML = 
-            '<p style="color:#fff;text-align:center;">No bookings found.</p>';
-          return;
-        }
-        let html = '';
-        Object.entries(data).forEach(([key, b]) => {
-          html += `
-            <div class="booking-card">
-              <h3>Booking ID: ${key}</h3>
-              <p><strong>Pickup:</strong> ${b.pickup}</p>
-              <p><strong>Dropoff:</strong> ${b.dropoff}</p>
-              <p><strong>Date:</strong> ${formatDate(b.date)}</p>
-              <p><strong>Time:</strong> ${formatTime24to12(b.time)}</p>
-              <p><strong>Seats:</strong> ${b.seatsRequested}</p>
-              <p><strong>Fare:</strong> ₹${b.fare}</p>
-              <p><strong>Car:</strong> ${b.carBrand} (${b.carReg})</p>
-              <p><strong>Driver:</strong> ${b.driverName}</p>
-              <div>
-                <button onclick="cancelBooking('${key}')">Cancel Booking</button>
-                <button class="call-btn" onclick="window.location='tel:${b.driverNumber}'">
-                  <i class="fas fa-phone"></i> Call Driver
-                </button>
-              </div>
-            </div>`;
+      // Listen under "bookings" root for all bookings then filter
+      db.ref('bookings').orderByChild('userId').equalTo(user.uid)
+        .on('value', snap => {
+          const data = snap.val();
+          if (!data) {
+            bookingsContainer.innerHTML =
+              '<p style="color:#fff;text-align:center;">No bookings found.</p>';
+            return;
+          }
+          let html = '';
+          Object.entries(data).forEach(([id, b]) => {
+            html += `
+              <div class="booking-card">
+                <h3>Booking ID: ${id}</h3>
+                <p><strong>Pickup:</strong> ${b.pickup}</p>
+                <p><strong>Dropoff:</strong> ${b.dropoff}</p>
+                <p><strong>Car:</strong> ${b.carBrand} (${b.carReg})</p>
+                <p><strong>Driver:</strong> ${b.driverName}</p>
+                <p>
+                  <strong>Contact:</strong>
+                  <button onclick="window.location='tel:${b.driverNumber}'">
+                    <i class="fas fa-phone"></i> ${b.driverNumber}
+                  </button>
+                </p>
+                <p><strong>Time:</strong> ${to12Hour(b.time)}</p>
+              </div>`;
+          });
+          bookingsContainer.innerHTML = html;
         });
-        bookingsContainer.innerHTML = html;
-      });
     });
-
-    // Cancel Booking (optionally restore seats)
-    function cancelBooking(bookingId) {
-      if (!confirm('Cancel this booking?')) return;
-      const user = auth.currentUser;
-      db.ref(`bookings/${user.uid}/${bookingId}`)
-        .remove()
-        .then(() => alert('Booking cancelled'))
-        .catch(err => alert('Error: '+err.message));
-    }
   </script>
 </body>
 </html>
