@@ -79,6 +79,10 @@
     <h2>Driver Profile</h2>
 
     <div class="field">
+      <div class="label">Driver ID</div>
+      <div id="driverId" class="value">Loading…</div>
+    </div>
+    <div class="field">
       <div class="label">Name</div>
       <div id="name" class="value">Loading…</div>
     </div>
@@ -124,30 +128,31 @@
     };
 
     // Initialize
-    const app  = initializeApp(firebaseConfig);
-    const db   = getDatabase(app);
-    const auth = getAuth(app);
+    const app    = initializeApp(firebaseConfig);
+    const db     = getDatabase(app);
+    const auth   = getAuth(app);
 
-    const nameEl    = document.getElementById('name');
-    const emailEl   = document.getElementById('email');
-    const phoneEl   = document.getElementById('phone');
-    const addressEl = document.getElementById('address');
-    const aboutEl   = document.getElementById('about');
+    const driverIdEl = document.getElementById('driverId');
+    const nameEl     = document.getElementById('name');
+    const emailEl    = document.getElementById('email');
+    const phoneEl    = document.getElementById('phone');
+    const addressEl  = document.getElementById('address');
+    const aboutEl    = document.getElementById('about');
 
     onAuthStateChanged(auth, user => {
       if (!user) {
-        // not signed in
         window.location = 'driverlogin.html';
         return;
       }
       const driverId = user.uid;
-      // fetch from /driverdetails/{driverId}
+      driverIdEl.textContent = driverId;
+
       get(ref(db, `driverdetails/${driverId}`))
         .then(snap => {
           if (!snap.exists()) {
             nameEl.textContent = emailEl.textContent =
-              phoneEl.textContent = addressEl.textContent =
-              aboutEl.textContent = 'No profile data';
+            phoneEl.textContent = addressEl.textContent =
+            aboutEl.textContent = 'No profile data';
             return;
           }
           const d = snap.val();
@@ -160,8 +165,8 @@
         .catch(err => {
           console.error(err);
           nameEl.textContent = emailEl.textContent =
-            phoneEl.textContent = addressEl.textContent =
-            aboutEl.textContent = 'Error loading';
+          phoneEl.textContent = addressEl.textContent =
+          aboutEl.textContent = 'Error loading';
         });
     });
   </script>
