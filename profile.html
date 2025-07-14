@@ -28,12 +28,13 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       width: 100%;
       max-width: 400px;
-      text-align: center;
+      text-align: left;
     }
     .card h1 {
       font-size: 1.5rem;
       color: var(--primary);
       margin-bottom: 16px;
+      text-align: center;
     }
     .field {
       margin-bottom: 12px;
@@ -47,21 +48,37 @@
       font-style: italic;
       color: #666;
     }
+    .logout {
+      display: block;
+      margin-top: 16px;
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: #fff;
+      text-align: center;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
 
   <div class="card">
     <h1>Your Profile</h1>
-    <div id="nameField" class="field">
-      <span>Name:</span> <span class="loading">Loading…</span>
+    <div class="field">
+      <span>Name:</span>
+      <span id="userName" class="loading">Loading…</span>
     </div>
-    <div id="emailField" class="field">
-      <span>Email:</span> <span class="loading">Loading…</span>
+    <div class="field">
+      <span>Email:</span>
+      <span id="userEmail" class="loading">Loading…</span>
     </div>
-    <div id="phoneField" class="field">
-      <span>Phone:</span> <span class="loading">Loading…</span>
+    <div class="field">
+      <span>Phone:</span>
+      <span id="userPhone" class="loading">Loading…</span>
     </div>
+    <a href="login.html" id="logoutBtn" class="logout">Logout</a>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -83,30 +100,35 @@
     const auth = firebase.auth();
     const db   = firebase.database();
 
-    const nameField  = document.querySelector('#nameField span:last-child');
-    const emailField = document.querySelector('#emailField span:last-child');
-    const phoneField = document.querySelector('#phoneField span:last-child');
+    const userNameEl  = document.getElementById("userName");
+    const userEmailEl = document.getElementById("userEmail");
+    const userPhoneEl = document.getElementById("userPhone");
+    const logoutBtn   = document.getElementById("logoutBtn");
 
+    // Redirect to login if not authenticated, otherwise fetch profile
     auth.onAuthStateChanged(user => {
       if (!user) {
-        // Not logged in—redirect to login
-        window.location = 'login.html';
-        return;
+        return window.location = "login.html";
       }
-      // Fetch profile
-      db.ref(`users/${user.uid}`).once('value')
+      db.ref(`users/${user.uid}`).once("value")
         .then(snapshot => {
           const data = snapshot.val() || {};
-          nameField.textContent  = data.name  || 'Not available';
-          emailField.textContent = data.email || 'Not available';
-          phoneField.textContent = data.phone || 'Not available';
+          userNameEl.textContent  = data.name  || "Not available";
+          userEmailEl.textContent = data.email || user.email || "Not available";
+          userPhoneEl.textContent = data.phone || "Not available";
         })
         .catch(err => {
-          console.error('Error loading profile:', err);
-          nameField.textContent = emailField.textContent = phoneField.textContent
-            = 'Error loading';
+          console.error("Error loading profile:", err);
+          userNameEl.textContent = userEmailEl.textContent = userPhoneEl.textContent = "Error";
         });
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", e => {
+      e.preventDefault();
+      auth.signOut().then(() => window.location = "login.html");
     });
   </script>
 </body>
 </html>
+
