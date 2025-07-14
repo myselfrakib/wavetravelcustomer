@@ -12,37 +12,14 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css" />
 
   <style>
-    body {
-      font-family:Arial,sans-serif;
-      margin:0;
-      background:linear-gradient(to right,#2c3e50,#3498db);
-      color:#fff;
-    }
-    .navbar {
-      display:flex; flex-wrap:wrap;
-      background:#1f2c3f; padding:1rem; gap:.5rem;
-    }
-    .navbar button {
-      flex:1; padding:.5rem 1rem; border:none;
-      border-radius:4px; background:#3498db;
-      color:#fff; cursor:pointer;
-    }
-    .tab-pane {
-      display:none; padding:1rem;
-      overflow:auto; max-height:calc(100vh - 64px);
-    }
-    .tab-pane.active { display:block }
-    .loading {
-      text-align:center; margin:2rem;
-      color:#ffd700;
-    }
-    table.dataTable {
-      background:rgba(255,255,255,0.1);
-      border-radius:8px; overflow:hidden;
-    }
-    .dt-button, .dataTables_length select, .dataTables_filter input {
-      color:#000 !important;
-    }
+    body { font-family:Arial,sans-serif; margin:0; background:linear-gradient(to right,#2c3e50,#3498db); color:#fff; }
+    .navbar { display:flex; flex-wrap:wrap; background:#1f2c3f; padding:1rem; gap:.5rem; }
+    .navbar button { flex:1; padding:.5rem 1rem; border:none; border-radius:4px; background:#3498db; color:#fff; cursor:pointer; }
+    .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px); }
+    .tab-pane.active { display:block; }
+    .loading { text-align:center; margin:2rem; color:#ffd700; }
+    table.dataTable { background:rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; }
+    .dt-button, .dataTables_length select, .dataTables_filter input { color:#000 !important; }
   </style>
 </head>
 <body>
@@ -63,11 +40,9 @@
     <h2>Users</h2>
     <div id="users-loading" class="loading">Loading users…</div>
     <table id="users-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead>
-        <tr>
-          <th>SL</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Created On</th><th>Action</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>SL</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Created On</th><th>Action</th>
+      </tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -77,11 +52,9 @@
     <h2>Drivers</h2>
     <div id="drivers-loading" class="loading">Loading drivers…</div>
     <table id="drivers-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead>
-        <tr>
-          <th>SL</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>Vehicle Count</th><th>Action</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>SL</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>Vehicle Count</th><th>Action</th>
+      </tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -91,21 +64,11 @@
     <h2>Pending Cars</h2>
     <div id="pending-loading" class="loading">Loading pending cars…</div>
     <table id="pending-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead>
-        <tr>
-          <th>SL</th>
-          <th>Car ID</th>
-          <th>Car Brand</th>
-          <th>Car Reg</th>
-          <th>Driver ID</th>
-          <th>Driver Name</th>
-          <th>Driver Number</th>
-          <th>Owner Name</th>
-          <th>Seats</th>
-          <th>Submitted At</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>SL</th><th>Car ID</th><th>Car Brand</th><th>Car Reg</th>
+        <th>Driver ID</th><th>Driver Name</th><th>Driver Number</th>
+        <th>Owner Name</th><th>Seats</th><th>Submitted At</th><th>Actions</th>
+      </tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -115,12 +78,10 @@
     <h2>Approved Cars</h2>
     <div id="approved-loading" class="loading">Loading approved cars…</div>
     <table id="approved-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead>
-        <tr>
-          <th>SL</th><th>Driver Name</th><th>Phone</th>
-          <th>Car ID</th><th>Brand</th><th>Reg No</th><th>Owner</th><th>Seats</th><th>Action</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>SL</th><th>Driver Name</th><th>Phone</th><th>Car ID</th>
+        <th>Brand</th><th>Reg No</th><th>Owner</th><th>Seats</th><th>Action</th>
+      </tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -130,13 +91,10 @@
     <h2>Slots</h2>
     <div id="slots-loading" class="loading">Loading slots…</div>
     <table id="slots-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead>
-        <tr>
-          <th>SL</th><th>Driver Name</th><th>Phone</th>
-          <th>Slot ID</th><th>Pickup</th><th>Dropoff</th>
-          <th>Date</th><th>Time</th><th>Seats</th><th>Action</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>SL</th><th>Driver Name</th><th>Phone</th><th>Slot ID</th>
+        <th>Pickup</th><th>Dropoff</th><th>Date</th><th>Time</th><th>Seats</th><th>Action</th>
+      </tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -146,13 +104,10 @@
     <h2>Bookings</h2>
     <div id="bookings-loading" class="loading">Loading bookings…</div>
     <table id="bookings-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead>
-        <tr>
-          <th>SL</th><th>Booking ID</th><th>Customer</th>
-          <th>Vehicle</th><th>Pickup</th><th>Dropoff</th>
-          <th>Duration</th><th>Fare</th><th>Status</th><th>Action</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>SL</th><th>Booking ID</th><th>Customer</th><th>Vehicle</th><th>Pickup</th>
+        <th>Dropoff</th><th>Duration</th><th>Fare</th><th>Status</th><th>Action</th>
+      </tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -167,7 +122,6 @@
     </table>
   </div>
 
-
   <!-- jQuery & DataTables JS -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
@@ -180,8 +134,7 @@
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
     import { getDatabase, ref, get, remove, set }   from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
-    // Firebase config
-    const cfg = {
+    const cfg = { const cfg = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
       databaseURL:"https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
@@ -194,9 +147,7 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // Expose global actions
     window.logout = () => signOut(auth).then(()=>location.href='adminlogin.html');
-
     window.deleteUser      = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
     window.deleteDriver    = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
     window.deletePending   = async cid => { await remove(ref(db,`pendingcars/${cid}`)); loadPending(); };
@@ -206,54 +157,31 @@
 
     window.approveCar = async cid => {
       const snap = await get(ref(db,`pendingcars/${cid}`));
-      const car  = snap.val();
-      if (!car) return;
+      const car  = snap.val(); if(!car) return;
       await set(ref(db,`approvedcars/${car.driverId}/${cid}`), car);
       await remove(ref(db,`pendingcars/${cid}`));
       loadPending();
     };
 
-    // Tab switching
-    window.openTab = name => {
-      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-      document.getElementById(`${name}-tab`).classList.add('active');
-      ({
-        'users':         loadUsers,
-        'drivers':       loadDrivers,
-        'pending-cars':  loadPending,
-        'approved-cars': loadApproved,
-        'slots':         loadSlots,
-        'bookings':      loadBookings,
-        'profile':       loadProfile
-      })[name]();
-    };
-
-    // DataTable init/clear
     const tables = {};
-    function initTable(id,noSortCols=[]){
-      if(!tables[id]){
+    function initTable(id,noSortCols=[]) {
+      if(!tables[id]) {
         tables[id] = $(`#${id}`).DataTable({
           responsive:true,
           dom:'Bfltip',
           buttons:['copy','csv','print'],
           columnDefs: noSortCols.map(c=>({ orderable:false, targets:c }))
         });
-      } else {
-        tables[id].clear().draw();
-      }
+      } else tables[id].clear().draw();
     }
 
-    // Loaders
     async function loadUsers(){
       $('#users-table').hide(); $('#users-loading').show();
       initTable('users-table',[7]);
       const snap = await get(ref(db,'users'));
       let i=1;
-      if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())){
-        tables['users-table'].row.add([
-          i++, uid, u.name||'', u.email||'', u.phone||'', u.address||'', u.createdOn||'',
-          `<button onclick="deleteUser('${uid}')">Delete</button>`
-        ]).draw(false);
+      if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())) {
+        tables['users-table'].row.add([i++,uid,u.name||'',u.email||'',u.phone||'',u.address||'',u.createdOn||'',`<button onclick="deleteUser('${uid}')">Delete</button>`]).draw(false);
       }
       $('#users-loading').hide(); $('#users-table').show();
     }
@@ -263,12 +191,9 @@
       initTable('drivers-table',[5]);
       const snap = await get(ref(db,'driverdetails'));
       let i=1;
-      if(snap.exists()) for(const [did,d] of Object.entries(snap.val())){
+      if(snap.exists()) for(const [did,d] of Object.entries(snap.val())) {
         const vc = d.vehicles?Object.keys(d.vehicles).length:0;
-        tables['drivers-table'].row.add([
-          i++, did, d.name||'', d.phone||'', vc,
-          `<button onclick="deleteDriver('${did}')">Delete</button>`
-        ]).draw(false);
+        tables['drivers-table'].row.add([i++,did,d.name||'',d.phone||'',vc,`<button onclick="deleteDriver('${did}')">Delete</button>`]).draw(false);
       }
       $('#drivers-loading').hide(); $('#drivers-table').show();
     }
@@ -278,7 +203,7 @@
       initTable('pending-table',[10]);
       const snap = await get(ref(db,'pendingcars'));
       let i=1;
-      if(snap.exists()) for(const [cid,c] of Object.entries(snap.val())){
+      if(snap.exists()) for(const [cid,c] of Object.entries(snap.val())) {
         tables['pending-table'].row.add([
           i++,
           cid,
@@ -290,8 +215,7 @@
           c.ownerName||'',
           c.seats||'',
           c.submittedAt||'',
-          `<button onclick="approveCar('${cid}')">Approve</button> 
-           <button onclick="deletePending('${cid}')">Delete</button>`
+          `<button onclick=\"approveCar('${cid}')\">Approve</button> <button onclick=\"deletePending('${cid}')\">Delete</button>`
         ]).draw(false);
       }
       $('#pending-loading').hide(); $('#pending-table').show();
@@ -302,19 +226,9 @@
       initTable('approved-table',[8]);
       const snap = await get(ref(db,'approvedcars'));
       let i=1;
-      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
-        for(const [cid,c] of Object.entries(cars)){
-          tables['approved-table'].row.add([
-            i++,
-            c.driverName||'',
-            c.driverNumber||'',
-            cid,
-            c.carBrand||'',
-            c.carReg||'',
-            c.ownerName||'',
-            c.seats||'',
-            `<button onclick="deleteApproved('${did}','${cid}')">Delete</button>`
-          ]).draw(false);
+      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())) {
+        for(const [cid,c] of Object.entries(cars)) {
+          tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button onclick=\"deleteApproved('${did}','${cid}')\">Delete</button>`]).draw(false);
         }
       }
       $('#approved-loading').hide(); $('#approved-table').show();
@@ -325,15 +239,11 @@
       initTable('slots-table',[9]);
       const snap = await get(ref(db,'availableslots'));
       let i=1;
-      if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())){
+      if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())) {
         const dSnap = await get(ref(db,`driverdetails/${did}`));
         const d = dSnap.exists()?dSnap.val():{};
-        for(const [sid,s] of Object.entries(slots)){
-          tables['slots-table'].row.add([
-            i++, d.name||'', d.phone||'', sid, s.pickup||'', s.dropoff||'',
-            s.date||'', s.time||'', s.seats||'',
-            `<button onclick="deleteSlot('${did}','${sid}')">Delete</button>`
-          ]).draw(false);
+        for(const [sid,s] of Object.entries(slots)) {
+          tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button onclick=\"deleteSlot('${did}','${sid}')\">Delete</button>`]).draw(false);
         }
       }
       $('#slots-loading').hide(); $('#slots-table').show();
@@ -344,19 +254,8 @@
       initTable('bookings-table',[9]);
       const snap = await get(ref(db,'bookings'));
       let i=1;
-      if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())){
-        tables['bookings-table'].row.add([
-          i++,
-          bid,
-          b.customerName||'',
-          b.vehicle||'',
-          b.pickup||'',
-          b.dropoff||'',
-          b.duration||'',
-          b.fare||'',
-          b.status||'',
-          `<button onclick="deleteBooking('${bid}')">Delete</button>`
-        ]).draw(false);
+      if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())) {
+        tables['bookings-table'].row.add([i++,bid,b.customerName||'',b.vehicle||'',b.pickup||'',b.dropoff||'',b.duration||'',b.fare||'',b.status||'',`<button onclick=\"deleteBooking('${bid}')\">Delete</button>`]).draw(false);
       }
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
@@ -367,23 +266,29 @@
       const user = auth.currentUser;
       if(user){
         const snap = await get(ref(db,`admins/${user.uid}`));
-        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())){
-          tables['profile-table'].row.add([k,v]).draw(false);
-        }
+        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())) tables['profile-table'].row.add([k,v]).draw(false);
       }
       $('#profile-loading').hide(); $('#profile-table').show();
     }
 
-    // Kick off on auth
-    onAuthStateChanged(auth, user => {
-      if (!user) return location.href='adminlogin.html';
-      get(ref(db,`admins/${user.uid}`)).then(s=>{
-        if (!s.exists() || s.val().role!=='superadmin') {
-          alert('Not authorized'); signOut(auth);
-        } else {
-          openTab('users');
-        }
-      });
+    window.openTab = name => {
+      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+      document.getElementById(`${name}-tab`).classList.add('active');
+      const loaders = {
+        users: loadUsers,
+        drivers: loadDrivers,
+        'pending-cars': loadPending,
+        'approved-cars': loadApproved,
+        slots: loadSlots,
+        bookings: loadBookings,
+        profile: loadProfile
+      };
+      loaders[name]();
+    };
+
+    onAuthStateChanged(auth,user=>{
+      if(!user) return location.href='adminlogin.html';
+      openTab('users');
     });
   </script>
 </body>
