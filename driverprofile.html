@@ -11,6 +11,8 @@
       --background-color: #f0f9f4;
       --input-border-color: #ced4da;
       --text-color: #212529;
+      --logout-color: #dc3545;
+      --logout-hover: #c82333;
     }
     body {
       margin: 0;
@@ -23,6 +25,7 @@
       padding: 20px;
       max-width: 500px;
       margin: auto;
+      padding-bottom: 100px; /* space for navbar + logout */
     }
     h2 {
       text-align: center;
@@ -47,6 +50,24 @@
       font-size: 14px;
       box-sizing: border-box;
       color: #212529;
+    }
+    .logout-btn {
+      width: 100%;
+      margin-top: 20px;
+      padding: 12px;
+      background: var(--logout-color);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      position: fixed;
+      bottom: 56px; /* above navbar */
+      left: 0;
+    }
+    .logout-btn:hover {
+      background: var(--logout-hover);
     }
     .navbar {
       position: fixed;
@@ -98,6 +119,8 @@
       <div id="phone" class="value">Loading…</div>
     </div>
   </div>
+  
+  <button class="logout-btn" id="logoutBtn">Logout</button>
 
   <div class="navbar">
     <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
@@ -110,7 +133,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -126,11 +149,12 @@
     const db   = getDatabase(app);
     const auth = getAuth(app);
 
-    const driverIdEl = document.getElementById('driverId');
+    const driverIdEl  = document.getElementById('driverId');
     const createdAtEl = document.getElementById('createdAt');
-    const nameEl    = document.getElementById('name');
-    const emailEl   = document.getElementById('email');
-    const phoneEl   = document.getElementById('phone');
+    const nameEl      = document.getElementById('name');
+    const emailEl     = document.getElementById('email');
+    const phoneEl     = document.getElementById('phone');
+    const logoutBtn   = document.getElementById('logoutBtn');
 
     onAuthStateChanged(auth, user => {
       if (!user) {
@@ -146,17 +170,23 @@
             return;
           }
           const d = snap.val();
-          driverIdEl.textContent = d.driverId || 'N/A';
+          driverIdEl.textContent  = d.driverId  || 'N/A';
           createdAtEl.textContent = d.createdAt || 'N/A';
-          nameEl.textContent    = d.name    || 'N/A';
-          emailEl.textContent   = d.email   || 'N/A';
-          phoneEl.textContent   = d.phone   || 'N/A';
+          nameEl.textContent      = d.name      || 'N/A';
+          emailEl.textContent     = d.email     || 'N/A';
+          phoneEl.textContent     = d.phone     || 'N/A';
         })
         .catch(err => {
           console.error(err);
           const msg = 'Error loading';
           [driverIdEl, createdAtEl, nameEl, emailEl, phoneEl].forEach(el => el.textContent = msg);
         });
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      signOut(auth).then(() => {
+        window.location = 'driverlogin.html';
+      });
     });
   </script>
 
