@@ -113,8 +113,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
   <script>
-    // Initialize Firebase
+    // Firebase init
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -125,6 +126,7 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
     firebase.initializeApp(firebaseConfig);
+
     const db   = firebase.database();
     const auth = firebase.auth();
 
@@ -132,18 +134,8 @@
     const payBtn    = document.getElementById('payBtn');
     const termsChk  = document.getElementById('termsChk');
 
-    function formatDate(d) {
-      const [y,m,dd] = d.split('-');
-      return `${dd}/${m}/${y}`;
-    }
-    function formatTime(t) {
-      let [h,mm] = t.split(':').map(Number);
-      const suffix = h >= 12 ? 'PM' : 'AM';
-      h = h % 12 || 12;
-      return `${h}:${mm.toString().padStart(2,'0')} ${suffix}`;
-    }
-
     const booking = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
+
     if (!booking) {
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
       payBtn.disabled = true;
@@ -151,66 +143,87 @@
       auth.onAuthStateChanged(async user => {
         if (!user) {
           alert('Please login first.');
-          window.location = 'login.html';
-          return;
+          return window.location = 'login.html';
         }
 
-        const snap = await db.ref(`users/${user.uid}`).once('value');
-        const profile = snap.val() || {};
-        const name  = profile.name  || '—';
-        const phone = profile.phone || '—';
+        try {
+          const snap = await db.ref(`users/${user.uid}`).once('value');
+          const profile = snap.val() || {};
+          const name  = profile.name || 'Not set';
+          const phone = profile.phone || 'Not set';
 
-        // Render updated booking summary with name & phone
-        summaryEl.innerHTML = `
-          <div><strong>Name:</strong> ${name}</div>
-          <div><strong>Phone:</strong> ${phone}</div>
-          <div><strong>Pickup:</strong> ${booking.pickup}</div>
-          <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
-          <div><strong>Date:</strong> ${formatDate(booking.date)}</div>
-          <div><strong>Time:</strong> ${formatTime(booking.time)}</div>
-          <div><strong>Seats:</strong> ${booking.seatsRequested}</div>
-          <div><strong>Fare:</strong> ₹${booking.fare}</div>
-        `;
+          summaryEl.innerHTML = `
+            <div><strong>Name:</strong> ${name}</div>
+            <div><strong>Phone:</strong> ${phone}</div>
+            <div><strong>Pickup:</strong> ${booking.pickup}</div>
+            <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
+            <div><strong>Date:</strong> ${formatDate(booking.date)}</div>
+            <div><strong>Time:</strong> ${formatTime(booking.time)}</div>
+            <div><strong>Seats:</strong> ${booking.seatsRequested}</div>
+            <div><strong>Fare:</strong> ₹${booking.fare}</div>
+          `;
 
-        termsChk.addEventListener('change', () => {
-          payBtn.disabled = !termsChk.checked;
-        });
-        payBtn.disabled = true;
+          termsChk.addEventListener('change', () => {
+            payBtn.disabled = !termsChk.checked;
+          });
 
-        payBtn.addEventListener('click', () => {
-          const options = {
-            key: 'rzp_test_NMB6jz5XK0G48R',
-            amount: booking.fare * 100,
-            currency: 'INR',
-            name: 'WaveTravel',
-            description: 'Ride Booking',
-            handler(res) {
-              const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
-              slotRef.transaction(cur => {
-                const left = parseInt(cur.seats,10) - booking.seatsRequested;
-                return { ...cur, seats: left < 0 ? 0 : left };
-              }).then(() => {
-                return db.ref('bookings').push({
-                  ...booking,
-                  paymentId: res.razorpay_payment_id,
-                  bookedAt: new Date().toISOString(),
-                  status: 'confirmed',
-                  userName: name,
-                  userPhone: phone
+          payBtn.addEventListener('click', () => {
+            const options = {
+              key: 'rzp_test_NMB6jz5XK0G48R',
+              amount: booking.fare * 100,
+              currency: 'INR',
+              name: 'WaveTravel',
+              description: 'Ride Booking',
+              prefill: {
+                name: name,
+                contact: phone,
+                email: user.email || ""
+              },
+              handler(res) {
+                const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+                slotRef.transaction(cur => {
+                  const left = parseInt(cur.seats, 10) - booking.seatsRequested;
+                  return { ...cur, seats: left < 0 ? 0 : left };
+                }).then(() => {
+                  return db.ref('bookings').push({
+                    ...booking,
+                    name: name,
+                    phone: phone,
+                    userId: user.uid,
+                    paymentId: res.razorpay_payment_id,
+                    bookedAt: new Date().toISOString(),
+                    status: 'confirmed'
+                  });
+                }).then(() => {
+                  alert('Payment successful & booking confirmed!');
+                  localStorage.removeItem('selectedBooking');
+                  window.location = 'mybookings.html';
+                }).catch(e => {
+                  console.error(e);
+                  alert('Booking failed');
                 });
-              }).then(() => {
-                alert('Payment successful & booking confirmed!');
-                localStorage.removeItem('selectedBooking');
-                window.location = 'mybookings.html';
-              }).catch(e => {
-                console.error(e);
-                alert('Booking failed');
-              });
-            }
-          };
-          new Razorpay(options).open();
-        });
+              }
+            };
+            new Razorpay(options).open();
+          });
+
+        } catch (err) {
+          console.error("Error fetching user profile:", err);
+          summaryEl.innerHTML = `<div>Failed to load user info. Please try again.</div>`;
+        }
       });
+    }
+
+    function formatDate(d) {
+      const [y, m, dd] = d.split('-');
+      return `${dd}/${m}/${y}`;
+    }
+
+    function formatTime(t) {
+      let [h, mm] = t.split(':').map(Number);
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${mm.toString().padStart(2,'0')} ${suffix}`;
     }
   </script>
 </body>
