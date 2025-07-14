@@ -4,18 +4,50 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>WaveTravel Admin Dashboard</title>
+
+  <!-- Normalize & DataTables CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css" />
+
   <style>
-    body { font-family:Arial,sans-serif; margin:0; background:linear-gradient(to right,#2c3e50,#3498db); color:#fff }
-    .navbar { display:flex; flex-wrap:wrap; background:#1f2c3f; padding:1rem; gap:.5rem }
-    .navbar button { flex:1; padding:.5rem 1rem; border:none; border-radius:4px; background:#3498db; color:#fff; cursor:pointer }
-    .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px) }
+    body {
+      font-family:Arial,sans-serif;
+      margin:0;
+      background:linear-gradient(to right,#2c3e50,#3498db);
+      color:#fff;
+    }
+    .navbar {
+      display:flex; flex-wrap:wrap;
+      background:#1f2c3f; padding:1rem; gap:.5rem;
+    }
+    .navbar button {
+      flex:1; padding:.5rem 1rem; border:none;
+      border-radius:4px; background:#3498db;
+      color:#fff; cursor:pointer;
+    }
+    .tab-pane {
+      display:none; padding:1rem;
+      overflow:auto; max-height:calc(100vh - 64px);
+    }
     .tab-pane.active { display:block }
-    .card { background:rgba(255,255,255,0.1); margin:.5rem 0; padding:1rem; border-radius:8px; }
-    .card button { margin:.5rem .5rem 0 0; padding:.3rem .8rem; border:none; border-radius:4px; cursor:pointer }
-    .delete-btn { background:#e74c3c }
-    .approve-btn{ background:#2ecc71 }
-    .loading { text-align:center; margin-top:2rem; color:#ffd700 }
-    .logout-btn { background:#e74c3c }
+    .loading {
+      text-align:center; margin:2rem;
+      color:#ffd700;
+    }
+    table.dataTable {
+      background:rgba(255,255,255,0.1);
+      border-radius:8px; overflow:hidden;
+    }
+    .dt-button, .dataTables_length select, .dataTables_filter input {
+      color:#000 !important;
+    }
+    /* Ensure the DataTables controls show with light backgrounds */
+    div.dataTables_wrapper div.dataTables_filter,
+    div.dataTables_wrapper div.dataTables_length {
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -31,249 +63,360 @@
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 
-  <div id="users-tab"         class="tab-pane"><h2>Users</h2><div id="users-list"></div></div>
-  <div id="drivers-tab"       class="tab-pane"><h2>Drivers</h2><div id="drivers-list"></div></div>
-  <div id="pending-cars-tab"  class="tab-pane"><h2>Pending Cars</h2><div id="pending-list"></div></div>
-  <div id="approved-cars-tab" class="tab-pane"><h2>Approved Cars</h2><div id="approved-list"></div></div>
-  <div id="slots-tab"         class="tab-pane"><h2>Slots</h2><div id="slots-list"></div></div>
-  <div id="bookings-tab"      class="tab-pane"><h2>Bookings</h2><div id="bookings-list"></div></div>
-  <div id="profile-tab"       class="tab-pane"><h2>My Profile</h2><div id="profile-details"></div></div>
+  <!-- Tab Panes with Tables -->
+  <div id="users-tab"         class="tab-pane">
+    <h2>Users</h2>
+    <div id="users-loading" class="loading">Loading users…</div>
+    <table id="users-table" class="display responsive nowrap" style="width:100%;display:none">
+      <thead>
+        <tr>
+          <th>SL</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Created On</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
+  <div id="drivers-tab"       class="tab-pane">
+    <h2>Drivers</h2>
+    <div id="drivers-loading" class="loading">Loading drivers…</div>
+    <table id="drivers-table" class="display responsive nowrap" style="width:100%;display:none">
+      <thead>
+        <tr>
+          <th>SL</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>Vehicle Count</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="pending-cars-tab"  class="tab-pane">
+    <h2>Pending Cars</h2>
+    <div id="pending-loading" class="loading">Loading pending cars…</div>
+    <table id="pending-table" class="display responsive nowrap" style="width:100%;display:none">
+      <thead>
+        <tr>
+          <th>SL</th><th>Car ID</th><th>Brand</th><th>Reg No</th>
+          <th>Driver ID</th><th>Driver Name</th><th>Phone</th><th>Owner</th>
+          <th>Seats</th><th>Submitted At</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="approved-cars-tab" class="tab-pane">
+    <h2>Approved Cars</h2>
+    <div id="approved-loading" class="loading">Loading approved cars…</div>
+    <table id="approved-table" class="display responsive nowrap" style="width:100%;display:none">
+      <thead>
+        <tr>
+          <th>SL</th><th>Driver Name</th><th>Phone</th>
+          <th>Car ID</th><th>Brand</th><th>Reg No</th><th>Owner</th><th>Seats</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="slots-tab"         class="tab-pane">
+    <h2>Slots</h2>
+    <div id="slots-loading" class="loading">Loading slots…</div>
+    <table id="slots-table" class="display responsive nowrap" style="width:100%;display:none">
+      <thead>
+        <tr>
+          <th>SL</th><th>Driver Name</th><th>Phone</th>
+          <th>Slot ID</th><th>Pickup</th><th>Dropoff</th>
+          <th>Date</th><th>Time</th><th>Seats</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="bookings-tab"      class="tab-pane">
+    <h2>Bookings</h2>
+    <div id="bookings-loading" class="loading">Loading bookings…</div>
+    <table id="bookings-table" class="display responsive nowrap" style="width:100%;display:none">
+      <thead>
+        <tr>
+          <th>SL</th><th>Booking ID</th><th>Customer</th>
+          <th>Vehicle</th><th>Pickup</th><th>Dropoff</th>
+          <th>Duration</th><th>Fare</th><th>Status</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="profile-tab"       class="tab-pane">
+    <h2>My Profile</h2>
+    <div id="profile-loading" class="loading">Loading profile…</div>
+    <table id="profile-table" class="display responsive nowrap" style="width:100%;display:none">
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+
+  <!-- jQuery & DataTables JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
+
+  <!-- Firebase SDK -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { initializeApp }                from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref, get, remove, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getDatabase, ref, get, remove, set }   from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
+    // -- Init Firebase --
     const cfg = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+      databaseURL:"https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId:"wavetravel-3c4c4",
+      storageBucket:"wavetravel-3c4c4.appspot.com",
+      messagingSenderId:"298226098137",
+      appId:"1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-
     const app  = initializeApp(cfg);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    function showLoading(el){
-      el.innerHTML = '<div class="loading">Loading…</div>';
+    let tables = {};
+
+    function logout(){
+      signOut(auth).then(()=>location.href='adminlogin.html');
     }
 
-    async function deleteNode(path, key){
-      if (!confirm('Delete?')) return;
-      await remove(ref(db, `${path}/${key}`));
-      openTab(activeTab);
-    }
+    // show/hide tab panes
+    function openTab(name){
+      $('.tab-pane').removeClass('active');
+      $(`#${name}-tab`).addClass('active');
 
-    async function deleteApprovedCar(driverId, carId){
-      if (!confirm('Delete this approved car?')) return;
-      await remove(ref(db, `approvedcars/${driverId}/${carId}`));
-      openTab('approved-cars');
-    }
-
-    async function approveCar(key){
-      const snap = await get(ref(db, `pendingcars/${key}`));
-      const car  = snap.val();
-      await set(ref(db, `approvedcars/${car.driverId}/${key}`), car);
-      await remove(ref(db, `pendingcars/${key}`));
-      openTab('pending-cars');
-    }
-
-    // Generic list fetch with SL # (Users, Drivers, Bookings, Profile)
-    async function fetchList(path, containerId){
-      const con = document.getElementById(containerId);
-      showLoading(con);
-
-      try {
-        const snap = await get(ref(db, path));
-        if (!snap.exists()) {
-          con.innerHTML = 'No data.';
-          return;
-        }
-        let serial = 1;
-        con.innerHTML = '';
-        for (const [k, v] of Object.entries(snap.val())) {
-          const card = document.createElement('div');
-          card.className = 'card';
-          let html = `<div><strong>SL #${serial++}</strong></div>`;
-          html += `<div><strong>ID:</strong> ${k}</div>`;
-          html += Object.entries(v).map(([f, val]) =>
-            `<div><strong>${f}:</strong> ${val}</div>`
-          ).join('');
-          html += `<button class="delete-btn" onclick="deleteNode('${path}','${k}')">Delete</button>`;
-          card.innerHTML = html;
-          con.appendChild(card);
-        }
-      } catch (e) {
-        con.innerHTML = 'Error loading.';
-      }
-    }
-
-    // Pending Cars: custom so we can show SL #, all fields, Approve & Delete
-    async function fetchPendingCars(){
-      const con = document.getElementById('pending-list');
-      showLoading(con);
-
-      try {
-        const snap = await get(ref(db, 'pendingcars'));
-        if (!snap.exists()) {
-          con.innerHTML = 'No pending cars.';
-          return;
-        }
-        let serial = 1;
-        con.innerHTML = '';
-        for (const [key, car] of Object.entries(snap.val())) {
-          const card = document.createElement('div');
-          card.className = 'card';
-
-          let html = `<div><strong>SL #${serial++}</strong></div>`;
-          html += `<div><strong>Car ID:</strong> ${key}</div>`;
-          html += `
-            <div><strong>Brand:</strong> ${car.carBrand}</div>
-            <div><strong>Reg:</strong> ${car.carReg}</div>
-            <div><strong>Driver ID:</strong> ${car.driverId}</div>
-            <div><strong>Driver Name:</strong> ${car.driverName}</div>
-            <div><strong>Driver Number:</strong> ${car.driverNumber}</div>
-            <div><strong>Owner Name:</strong> ${car.ownerName}</div>
-            <div><strong>Seats:</strong> ${car.seats}</div>
-            <div><strong>Submitted At:</strong> ${car.submittedAt}</div>
-          `;
-          html += `
-            <button class="approve-btn" onclick="approveCar('${key}')">Approve</button>
-            <button class="delete-btn"  onclick="deleteNode('pendingcars','${key}')">Delete</button>
-          `;
-
-          card.innerHTML = html;
-          con.appendChild(card);
-        }
-      } catch (e) {
-        con.innerHTML = 'Error loading.';
-      }
-    }
-
-    // Approved Cars (grouped by driver) with SL #
-    async function fetchApprovedCars(){
-      const con = document.getElementById('approved-list');
-      showLoading(con);
-
-      try {
-        const snap = await get(ref(db, 'approvedcars'));
-        if (!snap.exists()) {
-          con.innerHTML = 'No approved cars.';
-          return;
-        }
-        con.innerHTML = '';
-        let serial = 1;
-
-        for (const [driverId, cars] of Object.entries(snap.val())) {
-          const dSnap = await get(ref(db, `driverdetails/${driverId}`));
-          const d = dSnap.exists() ? dSnap.val() : { name:'Unknown', phone:'-' };
-
-          const card = document.createElement('div');
-          card.className = 'card';
-
-          let html = `<div><strong>SL #${serial++}</strong></div>`;
-          html += `<div><strong>Driver:</strong> ${d.name} (${d.phone})</div>`;
-          html += `<div><strong>Approved Cars:</strong></div>`;
-
-          for (const [carId, car] of Object.entries(cars)) {
-            html += `<div style="margin-left:1rem; margin-bottom:.5rem">
-              <strong>Car ID:</strong> ${carId}<br/>
-              <strong>Brand:</strong> ${car.carBrand}<br/>
-              <strong>Reg:</strong> ${car.carReg}<br/>
-              <strong>Owner:</strong> ${car.ownerName}<br/>
-              <strong>Seats:</strong> ${car.seats}<br/>
-              <button class="delete-btn" onclick="deleteApprovedCar('${driverId}','${carId}')">Delete</button>
-            </div>`;
-          }
-
-          const sSnap = await get(ref(db, `availableslots/${driverId}`));
-          if (sSnap.exists()) {
-            html += `<div><strong>Slots:</strong></div>`;
-            for (const slot of Object.values(sSnap.val())) {
-              html += `<div style="margin-left:1rem">• ${slot.pickup}→${slot.dropoff} on ${slot.date} @ ${slot.time}</div>`;
-            }
-          }
-
-          card.innerHTML = html;
-          con.appendChild(card);
-        }
-      } catch (e) {
-        con.innerHTML = 'Error loading.';
-      }
-    }
-
-    // Slots: one card per slot, with SL # + driver info + slotId + details
-    async function fetchSlots(){
-      const con = document.getElementById('slots-list');
-      showLoading(con);
-
-      try {
-        const snap = await get(ref(db, 'availableslots'));
-        if (!snap.exists()) {
-          con.innerHTML = 'No slots.';
-          return;
-        }
-        con.innerHTML = '';
-        let serial = 1;
-
-        for (const [driverId, slots] of Object.entries(snap.val())) {
-          const dSnap = await get(ref(db, `driverdetails/${driverId}`));
-          const d = dSnap.exists() ? dSnap.val() : { name:'Unknown', phone:'-' };
-
-          for (const [slotId, slot] of Object.entries(slots)) {
-            const card = document.createElement('div');
-            card.className = 'card';
-
-            let html = `
-              <div><strong>SL #${serial++}</strong></div>
-              <div><strong>Driver:</strong> ${d.name} (${d.phone})</div>
-              <div><strong>Slot ID:</strong> ${slotId}</div>
-              ${Object.entries(slot).map(([k, v]) =>
-                `<div><strong>${k}:</strong> ${v}</div>`
-              ).join('')}
-              <button class="delete-btn"
-                      onclick="deleteNode('availableslots/${driverId}','${slotId}')">
-                Delete
-              </button>`;
-
-            card.innerHTML = html;
-            con.appendChild(card);
-          }
-        }
-      } catch (e) {
-        con.innerHTML = 'Error loading.';
-      }
-    }
-
-    // Tab logic
-    let activeTab = 'users';
-    window.openTab = function(name){
-      activeTab = name;
-      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
-      document.getElementById(`${name}-tab`).classList.add('active');
       switch(name){
-        case 'users':         fetchList('users','users-list'); break;
-        case 'drivers':       fetchList('driverdetails','drivers-list'); break;
-        case 'pending-cars':  fetchPendingCars(); break;
-        case 'approved-cars': fetchApprovedCars(); break;
-        case 'slots':         fetchSlots(); break;
-        case 'bookings':      fetchList('bookings','bookings-list'); break;
-        case 'profile':       fetchList(`admins/${auth.currentUser.uid}`,'profile-details'); break;
+        case 'users':         loadUsers();     break;
+        case 'drivers':       loadDrivers();   break;
+        case 'pending-cars':  loadPending();   break;
+        case 'approved-cars': loadApproved();  break;
+        case 'slots':         loadSlots();     break;
+        case 'bookings':      loadBookings();  break;
+        case 'profile':       loadProfile();   break;
       }
-    };
+    }
 
-    window.logout = () => signOut(auth).then(() => location.href='adminlogin.html');
+    // initialize a DataTable if not already
+    function initTable(id){
+      if(!tables[id]){
+        tables[id] = $(`#${id}`).DataTable({
+          responsive:true,
+          lengthMenu:[5,10,25,50,100],
+          buttons:['copy','csv','print'],
+          dom: 'Bfltip',
+          columnDefs: [{ orderable:false, targets:-1 }]
+        });
+      } else {
+        tables[id].clear().draw();
+      }
+    }
 
-    onAuthStateChanged(auth, user => {
-      if (!user) return location.href='adminlogin.html';
-      get(ref(db, `admins/${user.uid}`)).then(s => {
-        if (!s.exists() || s.val().role!=='superadmin') {
-          alert('Not authorized');
-          signOut(auth);
+    // -- Loaders for each tab --
+    async function loadUsers(){
+      $('#users-table').hide(); $('#users-loading').show();
+      initTable('users-table');
+      const snap = await get(ref(db,'users'));
+      if(snap.exists()){
+        let i=1;
+        for(const [uid,u] of Object.entries(snap.val())){
+          tables['users-table'].row.add([
+            i++,
+            uid,
+            u.name||'',
+            u.email||'',
+            u.phone||'',
+            u.address||'',
+            u.createdOn||'',
+            `<button class="delete-btn" onclick="remove(ref(db,'users/${uid}'))">Delete</button>`
+          ]).draw(false);
+        }
+      }
+      $('#users-loading').hide(); $('#users-table').show();
+    }
+
+    async function loadDrivers(){
+      $('#drivers-table').hide(); $('#drivers-loading').show();
+      initTable('drivers-table');
+      const snap = await get(ref(db,'driverdetails'));
+      if(snap.exists()){
+        let i=1;
+        for(const [did,d] of Object.entries(snap.val())){
+          const vehicleCount = d.vehicles? Object.keys(d.vehicles).length : 0;
+          tables['drivers-table'].row.add([
+            i++,
+            did,
+            d.name||'',
+            d.phone||'',
+            vehicleCount,
+            `<button class="delete-btn" onclick="remove(ref(db,'driverdetails/${did}'))">Delete</button>`
+          ]).draw(false);
+        }
+      }
+      $('#drivers-loading').hide(); $('#drivers-table').show();
+    }
+
+    async function loadPending(){
+      $('#pending-table').hide(); $('#pending-loading').show();
+      initTable('pending-table');
+      const snap = await get(ref(db,'pendingcars'));
+      if(snap.exists()){
+        let i=1;
+        for(const [cid, c] of Object.entries(snap.val())){
+          tables['pending-table'].row.add([
+            i++,
+            cid,
+            c.carBrand||'',
+            c.carReg||'',
+            c.driverId||'',
+            c.driverName||'',
+            c.driverNumber||'',
+            c.ownerName||'',
+            c.seats||'',
+            c.submittedAt||'',
+            `<button class="approve-btn" onclick="approveCar('${cid}')">Approve</button>
+             <button class="delete-btn"  onclick="deletePending('${cid}')">Delete</button>`
+          ]).draw(false);
+        }
+      }
+      $('#pending-loading').hide(); $('#pending-table').show();
+    }
+
+    async function loadApproved(){
+      $('#approved-table').hide(); $('#approved-loading').show();
+      initTable('approved-table');
+      const snap = await get(ref(db,'approvedcars'));
+      if(snap.exists()){
+        let i=1;
+        for(const [did,cars] of Object.entries(snap.val())){
+          for(const [cid,c] of Object.entries(cars)){
+            tables['approved-table'].row.add([
+              i++,
+              c.driverName||'',
+              c.driverNumber||'',
+              cid,
+              c.carBrand||'',
+              c.carReg||'',
+              c.ownerName||'',
+              c.seats||'',
+              `<button class="delete-btn" onclick="deleteApproved('${did}','${cid}')">Delete</button>`
+            ]).draw(false);
+          }
+        }
+      }
+      $('#approved-loading').hide(); $('#approved-table').show();
+    }
+
+    async function loadSlots(){
+      $('#slots-table').hide(); $('#slots-loading').show();
+      initTable('slots-table');
+      const snap = await get(ref(db,'availableslots'));
+      if(snap.exists()){
+        let i=1;
+        for(const [did,slots] of Object.entries(snap.val())){
+          const dSnap = await get(ref(db,`driverdetails/${did}`));
+          const d = dSnap.exists()?dSnap.val():{};
+          for(const [sid,s] of Object.entries(slots)){
+            tables['slots-table'].row.add([
+              i++,
+              d.name||'',
+              d.phone||'',
+              sid,
+              s.pickup||'',
+              s.dropoff||'',
+              s.date||'',
+              s.time||'',
+              s.seats||'',
+              `<button class="delete-btn" onclick="deleteSlot('${did}','${sid}')">Delete</button>`
+            ]).draw(false);
+          }
+        }
+      }
+      $('#slots-loading').hide(); $('#slots-table').show();
+    }
+
+    async function loadBookings(){
+      $('#bookings-table').hide(); $('#bookings-loading').show();
+      initTable('bookings-table');
+      const snap = await get(ref(db,'bookings'));
+      if(snap.exists()){
+        let i=1;
+        for(const [bid,b] of Object.entries(snap.val())){
+          tables['bookings-table'].row.add([
+            i++,
+            bid,
+            b.customerName||'',
+            b.vehicle||'',
+            b.pickup||'',
+            b.dropoff||'',
+            b.duration||'',
+            b.fare||'',
+            b.status||'',
+            `<button class="delete-btn" onclick="deleteBooking('${bid}')">Delete</button>`
+          ]).draw(false);
+        }
+      }
+      $('#bookings-loading').hide(); $('#bookings-table').show();
+    }
+
+    async function loadProfile(){
+      $('#profile-table').hide(); $('#profile-loading').show();
+      initTable('profile-table');
+      const user = auth.currentUser;
+      if(user){
+        const snap = await get(ref(db,`admins/${user.uid}`));
+        if(snap.exists()){
+          for(const [k,v] of Object.entries(snap.val())){
+            tables['profile-table'].row.add([k,v]).draw(false);
+          }
+        }
+      }
+      $('#profile-loading').hide(); $('#profile-table').show();
+    }
+
+    // Button actions
+    async function approveCar(cid){
+      const snap = await get(ref(db,`pendingcars/${cid}`));
+      const car = snap.val();
+      await set(ref(db,`approvedcars/${car.driverId}/${cid}`),car);
+      await remove(ref(db,`pendingcars/${cid}`));
+      loadPending();
+    }
+    async function deletePending(cid){
+      await remove(ref(db,`pendingcars/${cid}`));
+      loadPending();
+    }
+    async function deleteApproved(did,cid){
+      await remove(ref(db,`approvedcars/${did}/${cid}`));
+      loadApproved();
+    }
+    async function deleteSlot(did,sid){
+      await remove(ref(db,`availableslots/${did}/${sid}`));
+      loadSlots();
+    }
+    async function deleteBooking(bid){
+      await remove(ref(db,`bookings/${bid}`));
+      loadBookings();
+    }
+
+    // Kick off with Users open
+    onAuthStateChanged(auth,user=>{
+      if(!user) return location.href='adminlogin.html';
+      get(ref(db,`admins/${user.uid}`)).then(s=>{
+        if(!s.exists()||s.val().role!=='superadmin'){
+          alert('Not authorized'); signOut(auth);
         } else {
           openTab('users');
         }
