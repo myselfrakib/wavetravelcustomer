@@ -111,7 +111,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
   <script>
     // Initialize Firebase
     const firebaseConfig = {
@@ -128,7 +127,6 @@
     const auth = firebase.auth();
     const db   = firebase.database();
 
-    // Elements
     const userNameEl  = document.getElementById("userName");
     const userEmailEl = document.getElementById("userEmail");
     const userPhoneEl = document.getElementById("userPhone");
@@ -144,22 +142,27 @@
       editBtn.style.display  = show ? "none" : "";
     }
 
-    auth.onAuthStateChanged(user => {
+    auth.onAuthStateChanged(async user => {
       if (!user) {
         alert("Please log in to view your profile.");
-        return window.location = "login.html";
+        window.location = "login.html";
+        return;
       }
 
-      const userRef = db.ref(`users/${user.uid}`);
-
-      // Real‑time listener
-      userRef.on("value", snap => {
+      // Fetch once
+      try {
+        const snap = await db.ref(`users/${user.uid}`).once("value");
         const data = snap.val() || {};
+        console.log("Profile data:", data);
         userNameEl.textContent  = data.name  || "Not set";
         userEmailEl.textContent = data.email || "Not set";
         userPhoneEl.textContent = data.phone || "Not set";
-      });
+      } catch (err) {
+        console.error("Error reading profile:", err);
+        alert("Could not load your profile. Try again later.");
+      }
 
+      // Edit button
       editBtn.addEventListener("click", () => {
         toggleEdit(true);
         document.getElementById("editName").value  = userNameEl.textContent;
@@ -167,21 +170,25 @@
         document.getElementById("editPhone").value = userPhoneEl.textContent;
       });
 
-      saveBtn.addEventListener("click", () => {
+      // Save updates
+      saveBtn.addEventListener("click", async () => {
         const updates = {
           name:  document.getElementById("editName").value,
           email: document.getElementById("editEmail").value,
           phone: document.getElementById("editPhone").value
         };
-        userRef.update(updates)
-          .then(() => {
-            alert("Profile updated!");
-            toggleEdit(false);
-          })
-          .catch(err => {
-            console.error("Update failed:", err);
-            alert("Update failed: " + err.message);
-          });
+        try {
+          await db.ref(`users/${user.uid}`).update(updates);
+          alert("Profile updated!");
+          toggleEdit(false);
+          // reflect immediately
+          userNameEl.textContent  = updates.name;
+          userEmailEl.textContent = updates.email;
+          userPhoneEl.textContent = updates.phone;
+        } catch (err) {
+          console.error("Update failed:", err);
+          alert("Update failed: " + err.message);
+        }
       });
 
       logoutBtn.addEventListener("click", () => {
