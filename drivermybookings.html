@@ -106,6 +106,7 @@
     import { getDatabase, ref, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+    // --- Your Firebase config ---
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -119,9 +120,9 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
-
     const slotsContainer = document.getElementById('slots-container');
 
+    // helper to format "HH:MM" into "h:MM AM/PM"
     function to12Hour(t) {
       let [h, m] = t.split(':').map(Number);
       const suffix = h >= 12 ? 'PM' : 'AM';
@@ -135,46 +136,61 @@
         return;
       }
       const driverId = user.uid;
+
+      // Query bookings where driverId == logged-in UID
       const bookingsQuery = query(
         ref(db, 'bookings'),
         orderByChild('driverId'),
         equalTo(driverId)
       );
+
       onValue(bookingsQuery, snapshot => {
-        const data = snapshot.val() || {};
+        const all = snapshot.val() || {};
         const bySlot = {};
-        Object.entries(data).forEach(([id, b]) => {
+
+        // group by slotKey
+        Object.entries(all).forEach(([bookingId, b]) => {
           const slot = b.slotKey || 'unknown';
           if (!bySlot[slot]) bySlot[slot] = [];
-          bySlot[slot].push({ id, ...b });
+          bySlot[slot].push({ id: bookingId, ...b });
         });
 
         slotsContainer.innerHTML = '';
-        let slotIndex = 1;
+        let slotNo = 1;
+
+        // render each slot group
         for (const [slotKey, bookings] of Object.entries(bySlot)) {
           const slotCard = document.createElement('div');
           slotCard.className = 'slot-card';
+
+          // pick first booking in that slot to show slot-level details
+          const first = bookings[0];
           slotCard.innerHTML = `
-            <h2>${slotIndex++}. Slot ID: ${slotKey}</h2>
+            <h2>${slotNo++}. Slot ID: ${slotKey}</h2>
             <div class="slot-details">
-              <p><strong>Pickup:</strong> ${bookings[0].pickup}</p>
-              <p><strong>Dropoff:</strong> ${bookings[0].dropoff}</p>
-              <p><strong>Date:</strong> ${bookings[0].date}</p>
-              <p><strong>Time:</strong> ${to12Hour(bookings[0].time)}</p>
+              <p><strong>Pickup:</strong> ${first.pickup}</p>
+              <p><strong>Dropoff:</strong> ${first.dropoff}</p>
+              <p><strong>Date:</strong> ${first.date}</p>
+              <p><strong>Time:</strong> ${to12Hour(first.time)}</p>
+              <p><strong>Car:</strong> ${first.carBrand} (${first.carReg})</p>
             </div>
           `;
 
+          // render each booking under this slot
           bookings.forEach(b => {
             const item = document.createElement('div');
             item.className = 'booking-item';
             item.innerHTML = `
-              <p><strong>Customer:</strong> ${b.customerName}</p>
+              <p><strong>Customer:</strong> ${b.userName}</p>
               <p><strong>Phone:</strong>
-                <button onclick="window.location='tel:${b.customerPhone}'">
-                  <i class="fas fa-phone"></i> ${b.customerPhone}
+                <button onclick="window.location='tel:${b.userPhone}'">
+                  <i class="fas fa-phone"></i> ${b.userPhone}
                 </button>
               </p>
-              <p><strong>Seats booked:</strong> ${b.seatsRequested}</p>
+              <p><strong>Seats booked:</strong> ${b.seatsRequested} / ${b.seatsAvailable}</p>
+              <p><strong>Fare:</strong> ₹${b.fare}</p>
+              <p><strong>Status:</strong> ${b.status}</p>
+              <p><small>Booked at: ${new Date(b.bookedAt).toLocaleString()}</small></p>
             `;
             slotCard.appendChild(item);
           });
