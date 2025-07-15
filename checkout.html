@@ -179,7 +179,6 @@
 
         if (!bound) {
           bound = true;
-          // Enable button when T&C checked
           termsChk.addEventListener('change', () => {
             payBtn.disabled = !termsChk.checked;
           });
@@ -200,18 +199,24 @@
                 email: user.email || ''
               },
               handler: res => {
-                // Safely decrement seats
+                // Safely decrement seats (handles string or number)
                 const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
-                slotRef.transaction(cur => {
-                  if (!cur || typeof cur.seats !== 'number') {
-                    return cur;
+                slotRef.transaction(current => {
+                  if (!current) return current;
+                  const currentSeats = parseInt(current.seats, 10);
+                  if (isNaN(currentSeats)) return current;
+                  const newSeats = Math.max(0, currentSeats - booking.seatsRequested);
+                  return { ...current, seats: newSeats };
+                }, (error, committed) => {
+                  if (error) {
+                    console.error("Transaction failed:", error);
+                    return alert("Could not update slot availability. Please try again.");
                   }
-                  return {
-                    ...cur,
-                    seats: Math.max(0, cur.seats - booking.seatsRequested)
-                  };
-                }).finally(() => {
-                  // Write booking under driverId
+                  if (!committed) {
+                    return alert("Slot availability not changed; booking canceled.");
+                  }
+
+                  // Only push the booking once seats have been decremented
                   db.ref(`bookings/${booking.driverId}`)
                     .push({
                       ...booking,
