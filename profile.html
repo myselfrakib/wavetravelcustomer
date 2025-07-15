@@ -72,6 +72,7 @@
       <div class="field"><span>Name:</span><span id="userName" class="loading">Loading…</span></div>
       <div class="field"><span>Email:</span><span id="userEmail" class="loading">Loading…</span></div>
       <div class="field"><span>Phone:</span><span id="userPhone" class="loading">Loading…</span></div>
+      <div class="field"><span>Role:</span><span id="userRole" class="loading">Loading…</span></div>
       <a href="#" id="logoutBtn" class="logout">Logout</a>
       <div id="notice" class="notice"></div>
     </div>
@@ -113,6 +114,7 @@
     const nameEl   = document.getElementById("userName");
     const emailEl  = document.getElementById("userEmail");
     const phoneEl  = document.getElementById("userPhone");
+    const roleEl   = document.getElementById("userRole");
     const logoutEl = document.getElementById("logoutBtn");
     const noticeEl = document.getElementById("notice");
 
@@ -156,8 +158,12 @@
         nameEl.textContent  = data.name  || "Not set";
         emailEl.textContent = data.email || "Not set";
         phoneEl.textContent = data.phone || "Not set";
+        roleEl.textContent  = data.role  || "Not set";
       } else {
-        nameEl.textContent = emailEl.textContent = phoneEl.textContent = "Not available";
+        nameEl.textContent  = "Not available";
+        emailEl.textContent = "Not available";
+        phoneEl.textContent = "Not available";
+        roleEl.textContent  = "Not available";
         noticeEl.textContent = "Profile data not found in /users.";
       }
     });
