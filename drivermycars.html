@@ -158,6 +158,7 @@
     import { getDatabase, ref, set, get, push } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-auth.js";
 
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -168,12 +169,14 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
     const auth = getAuth(app);
 
     let currentUser = null;
 
+    // Fetch and watch authentication state
     onAuthStateChanged(auth, user => {
       if (user) {
         currentUser = user;
@@ -184,23 +187,24 @@
       }
     });
 
+    // Submit new car for approval
     document.getElementById("carForm").addEventListener("submit", async event => {
       event.preventDefault();
       if (!currentUser) return;
 
-      const brand = document.getElementById("carBrand").value.trim();
       const carData = {
-        carBrand: brand,
+        carBrand: document.getElementById("carBrand").value.trim(),
         carReg: document.getElementById("carReg").value.trim(),
         ownerName: document.getElementById("ownerName").value.trim(),
         driverName: document.getElementById("driverName").value.trim(),
         driverNumber: document.getElementById("driverNumber").value.trim(),
         seats: document.getElementById("seats").value.trim(),
-        driverId: currentUser.uid,
+        driverId: currentUser.uid,  // Correctly fetched from auth state
         submittedAt: new Date().toISOString()
       };
 
       try {
+        // Save under /pendingcars/{driverId}/{generatedCarId}
         const newCarRef = push(ref(database, `pendingcars/${currentUser.uid}`));
         await set(newCarRef, carData);
         alert("Car submitted for approval!");
@@ -211,28 +215,33 @@
       }
     });
 
+    // Load approved cars for current driver
     async function loadApprovedCars() {
       try {
         const snap = await get(ref(database, "approvedcars"));
         const list = document.getElementById("approvedCarsList");
         list.innerHTML = "";
         let slNo = 1;
-        snap.forEach(child => {
-          const car = child.val();
-          if (car.driverId === currentUser?.uid) {
-            const div = document.createElement("div");
-            div.className = "slot-card";
-            div.innerHTML = `
-              <p><strong>Sl No:</strong> ${slNo++}</p>
-              <p><strong>Brand:</strong> ${car.carBrand}</p>
-              <p><strong>Reg No:</strong> ${car.carReg}</p>
-              <p><strong>Owner:</strong> ${car.ownerName}</p>
-              <p><strong>Driver:</strong> ${car.driverName}</p>
-              <p><strong>Contact:</strong> ${car.driverNumber}</p>
-              <p><strong>Seats:</strong> ${car.seats}</p>
-              <button onclick="removeCar('${child.key}')">Remove</button>
-            `;
-            list.appendChild(div);
+
+        // Iterate over driver IDs
+        snap.forEach(driverSnap => {
+          if (driverSnap.key === currentUser.uid) {
+            driverSnap.forEach(carSnap => {
+              const car = carSnap.val();
+              const div = document.createElement("div");
+              div.className = "slot-card";
+              div.innerHTML = `
+                <p><strong>Sl No:</strong> ${slNo++}</p>
+                <p><strong>Brand:</strong> ${car.carBrand}</p>
+                <p><strong>Reg No:</strong> ${car.carReg}</p>
+                <p><strong>Owner:</strong> ${car.ownerName}</p>
+                <p><strong>Driver:</strong> ${car.driverName}</p>
+                <p><strong>Contact:</strong> ${car.driverNumber}</p>
+                <p><strong>Seats:</strong> ${car.seats}</p>
+                <button onclick="removeCar('${driverSnap.key}', '${carSnap.key}')">Remove</button>
+              `;
+              list.appendChild(div);
+            });
           }
         });
       } catch (err) {
@@ -240,9 +249,10 @@
       }
     }
 
-    async function removeCar(key) {
+    // Remove approved car
+    async function removeCar(driverId, carId) {
       try {
-        await set(ref(database, `approvedcars/${key}`), null);
+        await set(ref(database, `approvedcars/${driverId}/${carId}`), null);
         loadApprovedCars();
       } catch (err) {
         console.error("Remove error", err);
