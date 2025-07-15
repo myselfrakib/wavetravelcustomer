@@ -200,34 +200,37 @@
                 email: user.email || ''
               },
               handler: res => {
-                // Safely decrement seats if data valid
+                // Safely decrement seats
                 const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
                 slotRef.transaction(cur => {
                   if (!cur || typeof cur.seats !== 'number') {
-                    return cur; // skip if malformed
+                    return cur;
                   }
                   return {
                     ...cur,
                     seats: Math.max(0, cur.seats - booking.seatsRequested)
                   };
                 }).finally(() => {
-                  // Always write booking record
-                  db.ref('bookings').push({
-                    ...booking,
-                    userId: dbUid,
-                    userName: name,
-                    userPhone: phone,
-                    paymentId: res.razorpay_payment_id,
-                    bookedAt: new Date().toISOString(),
-                    status: 'confirmed'
-                  }).then(() => {
-                    alert('Payment successful & booking confirmed!');
-                    localStorage.removeItem('selectedBooking');
-                    window.location = 'mybookings.html';
-                  }).catch(err => {
-                    console.error(err);
-                    alert('Error saving booking. Please contact support.');
-                  });
+                  // Write booking under driverId
+                  db.ref(`bookings/${booking.driverId}`)
+                    .push({
+                      ...booking,
+                      userId: dbUid,
+                      userName: name,
+                      userPhone: phone,
+                      paymentId: res.razorpay_payment_id,
+                      bookedAt: new Date().toISOString(),
+                      status: 'confirmed'
+                    })
+                    .then(() => {
+                      alert('Payment successful & booking confirmed!');
+                      localStorage.removeItem('selectedBooking');
+                      window.location = 'mybookings.html';
+                    })
+                    .catch(err => {
+                      console.error(err);
+                      alert('Error saving booking. Please contact support.');
+                    });
                 });
               }
             }).open();
