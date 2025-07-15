@@ -225,6 +225,8 @@
               <p><strong>${s.pickup}</strong> ➝ <strong>${s.dropoff}</strong></p>
               <p>Date: ${s.date}, Time: ${fmt12(s.time)}</p>
               <p>Seats: ${s.seats}</p>
+              <p>Car: ${s.carBrand} (${s.carReg})</p>
+              <p>Driver: ${s.driverName}</p>
               <button onclick="deleteSlot('${ch.key}')">Delete</button>
             </div>`;
         });
@@ -249,7 +251,7 @@
       loadLocations();
       loadSlots(driverId);
 
-      // ——— Load **this driver's** cars from approvedcars/{driverId} ———
+      // Load this driver's cars
       onValue(ref(db, `approvedcars/${driverId}`), snap => {
         let opts = "";
         snap.forEach(ch => {
