@@ -112,6 +112,7 @@
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+    // Your Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -122,40 +123,53 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    const app  = initializeApp(firebaseConfig);
-    const db   = getDatabase(app);
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
     const auth = getAuth(app);
 
+    // Element references
     const driverIdEl = document.getElementById('driverId');
     const createdAtEl = document.getElementById('createdAt');
     const nameEl    = document.getElementById('name');
     const emailEl   = document.getElementById('email');
     const phoneEl   = document.getElementById('phone');
 
+    // Listen for auth state changes
     onAuthStateChanged(auth, user => {
       if (!user) {
         window.location = 'driverlogin.html';
         return;
       }
+
       const driverId = user.uid;
+      driverIdEl.textContent = driverId;
+
+      // Fetch driver details
       get(ref(db, `driverdetails/${driverId}`))
-        .then(snap => {
-          if (!snap.exists()) {
+        .then(snapshot => {
+          if (!snapshot.exists()) {
             const msg = 'No profile data';
-            [driverIdEl, createdAtEl, nameEl, emailEl, phoneEl].forEach(el => el.textContent = msg);
+            [createdAtEl, nameEl, emailEl, phoneEl].forEach(el => el.textContent = msg);
             return;
           }
-          const d = snap.val();
-          driverIdEl.textContent = d.driverId || 'N/A';
-          createdAtEl.textContent = d.createdAt || 'N/A';
-          nameEl.textContent    = d.name    || 'N/A';
-          emailEl.textContent   = d.email   || 'N/A';
-          phoneEl.textContent   = d.phone   || 'N/A';
+
+          const data = snapshot.val();
+          // Format creation date
+          const createdAt = data.createdAt ? new Date(data.createdAt).toLocaleString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          }) : 'N/A';
+
+          createdAtEl.textContent = createdAt;
+          nameEl.textContent    = data.name  || 'N/A';
+          emailEl.textContent   = data.email || 'N/A';
+          phoneEl.textContent   = data.phone || 'N/A';
         })
-        .catch(err => {
-          console.error(err);
+        .catch(error => {
+          console.error('Error loading profile:', error);
           const msg = 'Error loading';
-          [driverIdEl, createdAtEl, nameEl, emailEl, phoneEl].forEach(el => el.textContent = msg);
+          [createdAtEl, nameEl, emailEl, phoneEl].forEach(el => el.textContent = msg);
         });
     });
   </script>
