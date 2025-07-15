@@ -93,7 +93,7 @@
   <div class="container">
     <h1>My Bookings</h1>
     <div id="bookings" class="booking-list">
-      <!-- Filled by JavaScript -->
+      <!-- Populated by JavaScript -->
     </div>
   </div>
 
@@ -110,7 +110,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
   <script>
-    // 1. Init Firebase
+    // 1) Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -122,11 +122,11 @@
     };
     firebase.initializeApp(firebaseConfig);
 
-    const auth = firebase.auth();
-    const db   = firebase.database();
+    const auth       = firebase.auth();
+    const db         = firebase.database();
     const bookingsEl = document.getElementById('bookings');
 
-    // Helpers for formatting
+    // Formatting helpers
     function to12Hour(time) {
       let [h, m] = time.split(':').map(Number);
       const suffix = h >= 12 ? 'PM' : 'AM';
@@ -140,47 +140,62 @@
       });
     }
 
-    // 2. Auth listener
+    // 2) Auth & Fetch
     auth.onAuthStateChanged(user => {
       if (!user) {
-        alert('Please log in to view your bookings.');
+        alert('Please log in first.');
         return window.location = 'index.html';
       }
 
-      // 3. Query bookings for this user
-      db.ref('bookings')
-        .orderByChild('userId')
-        .equalTo(user.uid)
-        .on('value', snap => {
-          const data = snap.val();
-          if (!data) {
-            bookingsEl.innerHTML = 
-              '<p style="color:#fff; text-align:center;">No bookings found.</p>';
-            return;
-          }
+      // 3) Fetch entire /bookings tree once
+      db.ref('bookings').once('value')
+        .then(snapshot => {
+          const allDrivers = snapshot.val() || {};
+          const myBookings = [];
 
-          // 4. Render each booking
-          let out = '';
-          Object.entries(data).forEach(([key, b]) => {
-            out += `
+          // 4) Traverse driverId → bookingId → bookingData
+          Object.entries(allDrivers).forEach(([driverId, bookings]) => {
+            if (!bookings) return;
+            Object.entries(bookings).forEach(([bookingId, b]) => {
+              if (b.userId === user.uid || b.customerId === user.uid) {
+                myBookings.push({ id: bookingId, ...b });
+              }
+            });
+          });
+
+          // 5) Render booking cards
+          if (myBookings.length === 0) {
+            bookingsEl.innerHTML = `
+              <p style="color:#fff; text-align:center;">
+                No bookings found.
+              </p>`;
+          } else {
+            bookingsEl.innerHTML = myBookings.map(b => `
               <div class="booking-card">
-                <h3>Booking ID: ${key}</h3>
+                <h3>Booking ID: ${b.id}</h3>
                 <p><strong>Date:</strong> ${formatDate(b.date)}</p>
                 <p><strong>Time:</strong> ${to12Hour(b.time)}</p>
-                <p><strong>From:</strong> ${b.pickup}</p>
-                <p><strong>To:</strong> ${b.dropoff}</p>
-                <p><strong>Seats:</strong> ${b.seatsRequested}</p>
-                <p><strong>Fare:</strong> ₹${b.fare}</p>
+                <p><strong>Pickup:</strong> ${b.pickup}</p>
+                <p><strong>Dropoff:</strong> ${b.dropoff}</p>
+                <p><strong>Seats:</strong> ${b.seatsRequested || b.seatsBooked || b.seats}</p>
+                <p><strong>Fare:</strong> ₹${b.fare || 'N/A'}</p>
                 <p><strong>Car:</strong> ${b.carBrand} (${b.carReg})</p>
                 <p><strong>Driver:</strong> ${b.driverName}</p>
                 <button onclick="location.href='tel:${b.driverNumber}'">
                   <i class="fas fa-phone"></i> Call ${b.driverNumber}
                 </button>
-              </div>`;
-          });
-          bookingsEl.innerHTML = out;
+              </div>`).join('');
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching bookings:', err);
+          bookingsEl.innerHTML = `
+            <p style="color:#fff; text-align:center;">
+              Unable to load bookings.
+            </p>`;
         });
     });
   </script>
+
 </body>
 </html>
