@@ -149,8 +149,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import {
-      getDatabase, ref, push, get, onValue, remove,
-      query, orderByChild, equalTo
+      getDatabase, ref, push, get, onValue, remove
     } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
@@ -250,13 +249,8 @@
       loadLocations();
       loadSlots(driverId);
 
-      // --- NEW: Query only this driver's approved cars ---
-      const carsQuery = query(
-        ref(db, "approvedcars"),
-        orderByChild("driverId"),
-        equalTo(driverId)
-      );
-      onValue(carsQuery, snap => {
+      // ——— Load **this driver's** cars from approvedcars/{driverId} ———
+      onValue(ref(db, `approvedcars/${driverId}`), snap => {
         let opts = "";
         snap.forEach(ch => {
           const d = ch.val();
@@ -278,7 +272,7 @@
           return alert("All fields are required");
         }
 
-        const carSnap = await get(ref(db, `approvedcars/${cid}`));
+        const carSnap = await get(ref(db, `approvedcars/${driverId}/${cid}`));
         const cd = carSnap.val() || {};
 
         const t24 = to24(h, mi, ap);
