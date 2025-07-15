@@ -65,9 +65,8 @@
     <div id="pending-loading" class="loading">Loading pending cars…</div>
     <table id="pending-table" class="display responsive nowrap" style="width:100%;display:none">
       <thead><tr>
-        <th>SL</th><th>Car ID</th><th>Car Brand</th><th>Car Reg</th>
-        <th>Driver ID</th><th>Driver Name</th><th>Driver Number</th>
-        <th>Owner Name</th><th>Seats</th><th>Submitted At</th><th>Actions</th>
+        <th>SL</th><th>Driver ID</th><th>Car ID</th><th>Brand</th><th>Reg No</th>
+        <th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Submitted At</th><th>Actions</th>
       </tr></thead>
       <tbody></tbody>
     </table>
@@ -134,7 +133,7 @@
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
     import { getDatabase, ref, get, remove, set }   from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
-   const cfg = {
+    const cfg = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
       databaseURL:"https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
@@ -150,16 +149,19 @@
     window.logout = () => signOut(auth).then(()=>location.href='adminlogin.html');
     window.deleteUser      = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
     window.deleteDriver    = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
-    window.deletePending   = async cid => { await remove(ref(db,`pendingcars/${cid}`)); loadPending(); };
+    // deletePending will remove by driverId and carId
+    window.deletePending   = async (did,cid) => { await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); };
     window.deleteApproved  = async (did,cid) => { await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); };
     window.deleteSlot      = async (did,sid) => { await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); };
     window.deleteBooking   = async bid => { await remove(ref(db,`bookings/${bid}`)); loadBookings(); };
 
-    window.approveCar = async cid => {
-      const snap = await get(ref(db,`pendingcars/${cid}`));
+    // approveCar now needs driverId and carId
+    window.approveCar      = async (did,cid) => {
+      const snap = await get(ref(db,`pendingcars/${did}/${cid}`));
       const car  = snap.val(); if(!car) return;
-      await set(ref(db,`approvedcars/${car.driverId}/${cid}`), car);
-      await remove(ref(db,`pendingcars/${cid}`));
+      // move to approvedcars under driver
+      await set(ref(db,`approvedcars/${did}/${cid}`), car);
+      await remove(ref(db,`pendingcars/${did}/${cid}`));
       loadPending();
     };
 
@@ -203,20 +205,22 @@
       initTable('pending-table',[10]);
       const snap = await get(ref(db,'pendingcars'));
       let i=1;
-      if(snap.exists()) for(const [cid,c] of Object.entries(snap.val())) {
-        tables['pending-table'].row.add([
-          i++,
-          cid,
-          c.carBrand||'',
-          c.carReg||'',
-          c.driverId||'',
-          c.driverName||'',
-          c.driverNumber||'',
-          c.ownerName||'',
-          c.seats||'',
-          c.submittedAt||'',
-          `<button onclick=\"approveCar('${cid}')\">Approve</button> <button onclick=\"deletePending('${cid}')\">Delete</button>`
-        ]).draw(false);
+      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())) {
+        for(const [cid,c] of Object.entries(cars)) {
+          tables['pending-table'].row.add([
+            i++,
+            did,
+            cid,
+            c.carBrand||'',
+            c.carReg||'',
+            c.driverName||'',
+            c.driverNumber||'',
+            c.ownerName||'',
+            c.seats||'',
+            c.submittedAt||'',
+            `<button onclick="approveCar('${did}','${cid}')">Approve</button> <button onclick="deletePending('${did}','${cid}')">Delete</button>`
+          ]).draw(false);
+        }
       }
       $('#pending-loading').hide(); $('#pending-table').show();
     }
@@ -228,7 +232,7 @@
       let i=1;
       if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())) {
         for(const [cid,c] of Object.entries(cars)) {
-          tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button onclick=\"deleteApproved('${did}','${cid}')\">Delete</button>`]).draw(false);
+          tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button onclick="deleteApproved('${did}','${cid}')">Delete</button>`]).draw(false);
         }
       }
       $('#approved-loading').hide(); $('#approved-table').show();
@@ -243,7 +247,7 @@
         const dSnap = await get(ref(db,`driverdetails/${did}`));
         const d = dSnap.exists()?dSnap.val():{};
         for(const [sid,s] of Object.entries(slots)) {
-          tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button onclick=\"deleteSlot('${did}','${sid}')\">Delete</button>`]).draw(false);
+          tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button onclick="deleteSlot('${did}','${sid}')">Delete</button>`]).draw(false);
         }
       }
       $('#slots-loading').hide(); $('#slots-table').show();
@@ -255,7 +259,7 @@
       const snap = await get(ref(db,'bookings'));
       let i=1;
       if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())) {
-        tables['bookings-table'].row.add([i++,bid,b.customerName||'',b.vehicle||'',b.pickup||'',b.dropoff||'',b.duration||'',b.fare||'',b.status||'',`<button onclick=\"deleteBooking('${bid}')\">Delete</button>`]).draw(false);
+        tables['bookings-table'].row.add([i++,bid,b.customerName||'',b.vehicle||'',b.pickup||'',b.dropoff||'',b.duration||'',b.fare||'',b.status||'',`<button onclick="deleteBooking('${bid}')">Delete</button>`]).draw(false);
       }
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
