@@ -93,7 +93,7 @@
   <div class="container">
     <h1>My Bookings</h1>
     <div id="bookings" class="booking-list">
-      <!-- populated by JS -->
+      <!-- Filled by JavaScript -->
     </div>
   </div>
 
@@ -110,7 +110,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
   <script>
-    // Initialize Firebase
+    // 1. Init Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -122,65 +122,63 @@
     };
     firebase.initializeApp(firebaseConfig);
 
-    const db = firebase.database();
     const auth = firebase.auth();
-    const bookingsContainer = document.getElementById('bookings');
+    const db   = firebase.database();
+    const bookingsEl = document.getElementById('bookings');
 
+    // Helpers for formatting
     function to12Hour(time) {
       let [h, m] = time.split(':').map(Number);
       const suffix = h >= 12 ? 'PM' : 'AM';
       h = h % 12 || 12;
       return `${h}:${String(m).padStart(2, '0')} ${suffix}`;
     }
-
-    function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
+    function formatDate(d) {
+      const dt = new Date(d);
+      return dt.toLocaleDateString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric'
       });
     }
 
+    // 2. Auth listener
     auth.onAuthStateChanged(user => {
       if (!user) {
-        alert('Please login first.');
+        alert('Please log in to view your bookings.');
         return window.location = 'index.html';
       }
 
-      // Query bookings where userId === current uid
+      // 3. Query bookings for this user
       db.ref('bookings')
         .orderByChild('userId')
         .equalTo(user.uid)
         .on('value', snap => {
           const data = snap.val();
           if (!data) {
-            bookingsContainer.innerHTML =
-              '<p style="color:#fff;text-align:center;">No bookings found.</p>';
+            bookingsEl.innerHTML = 
+              '<p style="color:#fff; text-align:center;">No bookings found.</p>';
             return;
           }
 
-          let html = '';
-          Object.entries(data).forEach(([id, b]) => {
-            html += `
+          // 4. Render each booking
+          let out = '';
+          Object.entries(data).forEach(([key, b]) => {
+            out += `
               <div class="booking-card">
-                <h3>Booking ID: ${id}</h3>
+                <h3>Booking ID: ${key}</h3>
                 <p><strong>Date:</strong> ${formatDate(b.date)}</p>
                 <p><strong>Time:</strong> ${to12Hour(b.time)}</p>
-                <p><strong>Pickup:</strong> ${b.pickup}</p>
-                <p><strong>Dropoff:</strong> ${b.dropoff}</p>
-                <p><strong>Seats booked:</strong> ${b.seatsRequested}</p>
+                <p><strong>From:</strong> ${b.pickup}</p>
+                <p><strong>To:</strong> ${b.dropoff}</p>
+                <p><strong>Seats:</strong> ${b.seatsRequested}</p>
                 <p><strong>Fare:</strong> ₹${b.fare}</p>
                 <p><strong>Car:</strong> ${b.carBrand} (${b.carReg})</p>
                 <p><strong>Driver:</strong> ${b.driverName}</p>
-                <button onclick="window.location='tel:${b.driverNumber}'">
+                <button onclick="location.href='tel:${b.driverNumber}'">
                   <i class="fas fa-phone"></i> Call ${b.driverNumber}
                 </button>
-              </div>
-            `;
+              </div>`;
           });
-
-          bookingsContainer.innerHTML = html;
+          bookingsEl.innerHTML = out;
         });
     });
   </script>
