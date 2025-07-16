@@ -53,6 +53,17 @@
       z-index: 999;
     }
     .toast.show { opacity: 1; }
+    .signup-link {
+      font-size: 0.9rem;
+      margin-top: -0.5rem;
+    }
+    .signup-link a {
+      color: #007cf0;
+      text-decoration: none;
+    }
+    .signup-link a:hover {
+      text-decoration: underline;
+    }
   </style>
 
   <!-- Firebase UMD compat -->
@@ -68,6 +79,9 @@
       <input id="phone" type="tel" placeholder="9907738070" required />
       <div id="recaptcha"></div>
       <button id="sendOtp">Send OTP</button>
+      <div class="signup-link">
+        Don't have an account? <a href="driversignup.html">Sign up</a>
+      </div>
     </div>
 
     <!-- Step 2: OTP input -->
@@ -107,24 +121,30 @@
       setTimeout(() => toastEl.className = "toast", 3000);
     }
 
-    // Recaptcha
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha", {
-      size: "invisible"
-    });
+    // Initialize invisible reCAPTCHA with fallback
+    let recaptchaVerifier;
+    try {
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha", {
+        size: "invisible"
+      });
+    } catch (e) {
+      console.info("reCAPTCHA Enterprise unavailable, falling back to v2", e);
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha", {
+        size: "invisible"
+      });
+    }
+    window.recaptchaVerifier = recaptchaVerifier;
 
     let confirmationResult;
-    let driverId;  // will hold the real UID from /driverdetails
+    let driverId;
 
     // 1️⃣ Lookup phone → send OTP
     sendOtpBtn.addEventListener("click", async () => {
       const raw = document.getElementById("phone").value.replace(/\D/g, "");
-      if (raw.length !== 10) {
-        return showToast("Enter a valid 10‑digit number.");
-      }
+      if (raw.length !== 10) return showToast("Enter a valid 10‑digit number.");
       const sms = "+91" + raw;
 
       try {
-        // a) query driverdetails by local phone
         const snap = await db
           .ref("driverdetails")
           .orderByChild("phone")
@@ -135,14 +155,8 @@
           return showToast("Phone not found. Please sign up first.");
         }
 
-        // b) grab the existing driverId
         driverId = Object.keys(snap.val())[0];
-
-        // c) send OTP
-        confirmationResult = await auth.signInWithPhoneNumber(
-          sms,
-          window.recaptchaVerifier
-        );
+        confirmationResult = await auth.signInWithPhoneNumber(sms, recaptchaVerifier);
         showToast("OTP sent!");
         phoneSection.style.display = "none";
         otpSection.style.display   = "block";
@@ -156,24 +170,16 @@
     // 2️⃣ Verify OTP → fetch driver details
     verifyOtpBtn.addEventListener("click", async () => {
       const code = document.getElementById("otp").value.trim();
-      if (code.length !== 6) {
-        return showToast("Enter the 6‑digit OTP.");
-      }
+      if (code.length !== 6) return showToast("Enter the 6‑digit OTP.");
 
       try {
-        // confirm the OTP with Firebase Auth
         await confirmationResult.confirm(code);
         showToast("Login successful!");
 
-        // now fetch the driver record by driverId
-        const drvSnap = await db
-          .ref(`driverdetails/${driverId}`)
-          .once("value");
-
+        const drvSnap = await db.ref(`driverdetails/${driverId}`).once("value");
         const driverRecord = drvSnap.val();
         console.log("Fetched driverRecord:", driverRecord);
-        // driverRecord.driverId === driverId
-        // Now you can store driverId locally, or redirect:
+        // e.g. redirect:
         // window.location = `driverdashboard.html?uid=${driverId}`;
 
       } catch (err) {
