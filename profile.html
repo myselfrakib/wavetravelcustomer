@@ -120,7 +120,7 @@
 
     onAuthStateChanged(auth, async user => {
       if (!user) {
-        return window.location = "login.html";
+        return window.location = "index.html";
       }
 
       let data = null;
@@ -170,7 +170,7 @@
 
     logoutEl.addEventListener("click", e => {
       e.preventDefault();
-      signOut(auth).then(() => window.location = "login.html");
+      signOut(auth).then(() => window.location = "index.html");
     });
   </script>
 </body>
