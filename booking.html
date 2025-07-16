@@ -162,11 +162,12 @@
         pickupEl.innerHTML  = puOpts;
         dropoffEl.innerHTML = doOpts;
 
-        // Set default selections
-        pickupEl.value = 'berhampore mohana bus stand';
-        dropoffEl.value = 'kolkata airport';
-        dateEl.value = new Date().toISOString().split('T')[0];
-        seatsEl.value = 1;
+        // Set defaults:
+        const today = new Date().toISOString().split('T')[0];
+        dateEl.value    = today;
+        seatsEl.value   = '1';
+        pickupEl.value  = 'Berhampore Mohana Bus Stand';
+        dropoffEl.value = 'Kolkata Airport';
       });
     }
 
