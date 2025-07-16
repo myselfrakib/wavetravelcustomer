@@ -120,7 +120,10 @@
 
     // Setup reCAPTCHA
     window.onload = () => {
-      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+        'recaptcha-container', 
+        { size: 'invisible' }
+      );
       window.recaptchaVerifier.render();
     };
 
@@ -137,26 +140,44 @@
         return alert('Enter a valid 10‑digit phone number.');
       }
 
-      const fullPhone = codeSelect.value + phone;
+      // Save original state
+      const originalText = sendBtn.textContent;
+      sendBtn.innerHTML = 'Checking... <div class="spinner"></div>';
+      sendBtn.disabled = true;
 
-      // Check in /users
+      // Verify user exists in /users
       try {
-        const snap = await db.ref('users').orderByChild('phone').equalTo(phone).once('value');
+        const snap = await db
+          .ref('users')
+          .orderByChild('phone')
+          .equalTo(phone)
+          .once('value');
+
         if (!snap.exists()) {
-          return alert('No user found. Please sign up first.');
+          alert('No user found. Please sign up first.');
+          // Restore button
+          sendBtn.textContent = originalText;
+          sendBtn.disabled = false;
+          return;
         }
       } catch (err) {
         console.error("Database check error:", err);
-        return alert('Failed to check user existence. Try again later.');
+        alert('Failed to check user existence. Try again later.');
+        // Restore button
+        sendBtn.textContent = originalText;
+        sendBtn.disabled = false;
+        return;
       }
 
-      // Send OTP
-      const originalText = sendBtn.textContent;
+      // All clear – send the OTP
       sendBtn.innerHTML = 'Sending... <div class="spinner"></div>';
-      sendBtn.disabled = true;
 
       try {
-        confirmationResult = await auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier);
+        const fullPhone = codeSelect.value + phone;
+        confirmationResult = await auth.signInWithPhoneNumber(
+          fullPhone, 
+          window.recaptchaVerifier
+        );
         alert('OTP sent!');
         otpInput.style.display   = 'block';
         verifyBtn.style.display  = 'block';
@@ -164,7 +185,8 @@
       } catch (err) {
         console.error('OTP send failed:', err);
         alert('Failed to send OTP: ' + err.message);
-        sendBtn.innerHTML = originalText;
+        // Restore button
+        sendBtn.textContent = originalText;
         sendBtn.disabled = false;
       }
     });
