@@ -243,7 +243,7 @@
           if (avail < reqSeats) return;
           const puIdx = locationIndexMap[slot.pickup] || 0;
           const doIdx = locationIndexMap[slot.dropoff] || 0;
-          const fare  = Math.abs(puIdx - doIdx) * reqSeats;
+          const fare  = Math.abs(puIdx - doIdx) * reqSeats * 120;
 
           const displayTime = formatTime24to12(slot.time);
           const displayDate = formatDateISOtoDMY(slot.date);
