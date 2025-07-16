@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Driver Login (OTP)</title>
+  <title>Driver Sign Up</title>
   <style>
     body {
       margin: 0;
@@ -14,7 +14,7 @@
       justify-content: center;
       height: 100vh;
     }
-    .login-container {
+    .signup-container {
       background: white;
       padding: 2rem;
       border-radius: 1rem;
@@ -24,93 +24,50 @@
       text-align: center;
     }
     h2 {
-      margin-bottom: 1.5rem;
       color: #007cf0;
+      margin-bottom: 1.5rem;
     }
-    input {
+    input, button {
       width: 100%;
       padding: 0.8rem;
       margin-bottom: 1rem;
-      border: 1px solid #ccc;
       border-radius: 0.5rem;
       font-size: 1rem;
     }
+    input {
+      border: 1px solid #ccc;
+    }
     button {
-      width: 100%;
-      padding: 0.8rem;
       background-color: #007cf0;
       color: white;
-      font-size: 1rem;
       border: none;
-      border-radius: 0.5rem;
       cursor: pointer;
     }
     button:hover {
       background-color: #005fa3;
     }
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #323232;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-      opacity: 0;
-      transition: opacity 0.3s ease-in-out;
-      z-index: 999;
-    }
-    .toast.show {
-      opacity: 1;
-    }
-    #otpSection {
-      display: none;
-    }
-    .signup-link {
-      margin-top: 1rem;
-      font-size: 0.9rem;
-    }
-    .signup-link a {
-      color: #007cf0;
-      text-decoration: none;
-    }
-    .signup-link a:hover {
-      text-decoration: underline;
-    }
   </style>
 
-  <!-- Firebase UMD (compat) SDKs – non-module -->
+  <!-- Firebase UMD compat -->
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database-compat.js"></script>
 </head>
 <body>
-
-  <div class="login-container">
-    <h2>Driver Login</h2>
-
-    <!-- STEP 1: Enter phone -->
-    <div id="phoneSection">
-      <input type="tel" id="phone" placeholder="9907738070" required />
-      <div id="recaptcha-container"></div>
-      <button id="sendOtpBtn">Send OTP</button>
-      <div class="signup-link">
-        Don't have an account? <a href="driversignup.html">Sign up</a>
-      </div>
-    </div>
-
-    <!-- STEP 2: Enter OTP -->
-    <div id="otpSection">
-      <input type="text" id="otp" placeholder="Enter OTP" maxlength="6" required />
-      <button id="verifyOtpBtn">Verify OTP</button>
-    </div>
+  <div class="signup-container">
+    <h2>Driver Sign Up</h2>
+    <form id="signupForm">
+      <input id="name"     type="text"     placeholder="Full Name"      required />
+      <input id="email"    type="email"    placeholder="Email"          required />
+      <input id="password" type="password" placeholder="Password"       required />
+      
+      <input id="phone"    type="tel"      placeholder="Phone Number"   required />
+      <button type="submit">Sign Up</button>
+    </form>
   </div>
 
-  <div id="toast" class="toast"></div>
-
   <script>
-    // ——— Your Firebase config ———
+    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -126,79 +83,37 @@
     const auth = firebase.auth();
     const db   = firebase.database();
 
-    // Toast helper
-    const toastEl = document.getElementById("toast");
-    function showToast(msg) {
-      toastEl.textContent = msg;
-      toastEl.className = "toast show";
-      setTimeout(() => toastEl.className = "toast", 3000);
-    }
+    document.getElementById("signupForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const name     = document.getElementById("name").value.trim();
+      const email    = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const name     = document.getElementById("name").value.trim();
+      const phoneRaw = document.getElementById("phone").value.replace(/\D/g, "");
 
-    // Render invisible reCAPTCHA
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
-      "recaptcha-container",
-      { size: "invisible" }
-    );
-
-    // UI refs
-    const phoneSection = document.getElementById("phoneSection");
-    const otpSection   = document.getElementById("otpSection");
-    const sendOtpBtn   = document.getElementById("sendOtpBtn");
-    const verifyOtpBtn = document.getElementById("verifyOtpBtn");
-
-    let confirmationResult;
-
-    // STEP 1: Check DB & send OTP
-    sendOtpBtn.addEventListener("click", async () => {
-      const raw = document.getElementById("phone").value.trim();
-      const localNumber = raw.replace(/\D/g, "");
-      if (localNumber.length !== 10) {
-        return showToast("Enter a valid 10‑digit mobile number.");
+      if (phoneRaw.length !== 10) {
+        return alert("Enter a valid 10‑digit phone number.");
       }
-      const smsNumber = "+91" + localNumber;
 
       try {
-        // Lookup driverdetails by local phone
-        const snapshot = await db
-          .ref("driverdetails")
-          .orderByChild("phone")
-          .equalTo(localNumber)
-          .once("value");
+        // 1) Create email/password account
+        const { user } = await auth.createUserWithEmailAndPassword(email, password);
 
-        if (!snapshot.exists()) {
-          return showToast("Phone not registered as a driver.");
-        }
+        // 2) Save driver details, including phone
+        await db.ref(`driverdetails/${user.uid}`).set({
+          driverId:  user.uid,
+          email,
+          name,
+          phone:     phoneRaw,
+          createdAt: new Date().toISOString()
+        });
 
-        // Send OTP
-        confirmationResult = await auth.signInWithPhoneNumber(
-          smsNumber,
-          window.recaptchaVerifier
-        );
-        showToast("OTP sent!");
-        phoneSection.style.display = "none";
-        otpSection.style.display   = "block";
+        alert("Signup successful! Please log in.");
+        window.location = "driverlogin.html";
 
       } catch (err) {
         console.error(err);
-        showToast("Error: " + err.message);
-      }
-    });
-
-    // STEP 2: Verify OTP
-    verifyOtpBtn.addEventListener("click", async () => {
-      const code = document.getElementById("otp").value.trim();
-      if (code.length !== 6) {
-        return showToast("Enter the 6‑digit OTP.");
-      }
-      try {
-        await confirmationResult.confirm(code);
-        showToast("Login successful!");
-        setTimeout(() => {
-          window.location.href = "driverdashboard.html";
-        }, 800);
-      } catch (err) {
-        console.error(err);
-        showToast("Invalid OTP: " + err.message);
+        alert(err.message);
       }
     });
   </script>
