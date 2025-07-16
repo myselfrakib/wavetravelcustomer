@@ -143,7 +143,7 @@
     // Enforce login before anything else
     auth.onAuthStateChanged(user => {
       if (!user) {
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
       } else {
         loadLocations();
       }
@@ -162,12 +162,20 @@
         pickupEl.innerHTML  = puOpts;
         dropoffEl.innerHTML = doOpts;
 
-        // Set defaults:
+        // defaults
         const today = new Date().toISOString().split('T')[0];
-        dateEl.value    = today;
-        seatsEl.value   = '1';
-        pickupEl.value  = 'Berhampore Mohana Bus Stand';
-        dropoffEl.value = 'Kolkata Airport';
+        dateEl.value  = today;
+        seatsEl.value = '1';
+
+        // explicitly mark the matching <option> as selected
+        const defaultPickup  = 'Berhampore Mohana Bus Stand';
+        const defaultDropoff = 'Kolkata Airport';
+        Array.from(pickupEl.options).forEach(opt => {
+          if (opt.text === defaultPickup) opt.selected = true;
+        });
+        Array.from(dropoffEl.options).forEach(opt => {
+          if (opt.text === defaultDropoff) opt.selected = true;
+        });
       });
     }
 
