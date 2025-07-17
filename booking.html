@@ -140,7 +140,6 @@
     const slotsDiv  = document.getElementById('slots');
     const locationIndexMap = {};
 
-    // Enforce login before anything else
     auth.onAuthStateChanged(user => {
       if (!user) {
         window.location.href = 'index.html';
@@ -162,12 +161,10 @@
         pickupEl.innerHTML  = puOpts;
         dropoffEl.innerHTML = doOpts;
 
-        // defaults
         const today = new Date().toISOString().split('T')[0];
         dateEl.value  = today;
         seatsEl.value = '1';
 
-        // explicitly mark the matching <option> as selected
         const defaultPickup  = 'Berhampore Mohona Bus Stand';
         const defaultDropoff = 'Kolkata Airport';
         Array.from(pickupEl.options).forEach(opt => {
@@ -254,6 +251,7 @@
             <div class="slot-card-header">Sl. No. ${idx + 1}</div>
             <div><strong>Pickup:</strong> ${slot.pickup}</div>
             <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
+            <div><strong>Car:</strong> ${slot.carBrand || 'N/A'}</div>
             <div><strong>Date:</strong> ${displayDate}</div>
             <div><strong>Time:</strong> ${displayTime}</div>
             <div><strong>Seats:</strong> ${avail}</div>
