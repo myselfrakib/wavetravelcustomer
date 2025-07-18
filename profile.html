@@ -29,10 +29,17 @@
       background: var(--card-bg); border-radius: 12px;
       padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       text-align: left;
+      position: relative;
     }
     .card h1 {
       font-size: 1.5rem; color: var(--primary);
       margin-bottom: 16px; text-align: center;
+    }
+    .profile-pic {
+      width: 100px; height: 100px;
+      border-radius: 50%; object-fit: cover;
+      display: block; margin: 0 auto 16px;
+      background: #eee;
     }
     .field {
       display: flex; justify-content: space-between;
@@ -68,6 +75,8 @@
 <body>
   <div class="container">
     <div class="card">
+      <!-- Profile Photo -->
+      <img id="userPhoto" src="" alt="Profile Photo" class="profile-pic" />
       <h1>Your Profile</h1>
       <div class="field"><span>Name:</span><span id="userName" class="loading">Loading…</span></div>
       <div class="field"><span>Email:</span><span id="userEmail" class="loading">Loading…</span></div>
@@ -111,6 +120,7 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
+    const photoEl = document.getElementById("userPhoto");
     const nameEl   = document.getElementById("userName");
     const emailEl  = document.getElementById("userEmail");
     const phoneEl  = document.getElementById("userPhone");
@@ -155,11 +165,19 @@
       }
 
       if (data) {
+        // Photo
+        if (data.imageUrl) {
+          photoEl.src = data.imageUrl;
+        } else {
+          photoEl.style.display = 'none';
+        }
+        // Remove loading indicators and set fields
         nameEl.textContent  = data.name  || "Not set";
         emailEl.textContent = data.email || "Not set";
         phoneEl.textContent = data.phone || "Not set";
         roleEl.textContent  = data.role  || "Not set";
       } else {
+        photoEl.style.display = 'none';
         nameEl.textContent  = "Not available";
         emailEl.textContent = "Not available";
         phoneEl.textContent = "Not available";
