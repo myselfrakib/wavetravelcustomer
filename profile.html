@@ -80,32 +80,48 @@
     const uploadBtn = document.getElementById('uploadBtn');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    let currentUser = null;
+    let data = null;
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return window.location = 'index.html';
-      currentUser = user;
-      console.log("Logged in UID:", user.uid);
+      // 1) Attempt fetch by UID
+      const snapUid = await get(ref(db, `users/${user.uid}`));
+      data = snapUid.val();
 
-      try {
-        const userRef = dbRef(db, `users/${user.uid}`);
-        const userSnap = await get(userRef);
-
-        if (userSnap.exists()) {
-          const data = userSnap.val();
-          nameEl.textContent = data.name || 'Not set';
-          emailEl.textContent = data.email || 'Not set';
-          phoneEl.textContent = data.phone || 'Not set';
-          roleEl.textContent = data.role || 'Not set';
-          if (data.profileImageUrl) previewEl.src = data.profileImageUrl;
-          noticeEl.textContent = '';
-        } else {
-          noticeEl.textContent = "User not found in database.";
-          console.warn("Missing user in /users/", user.uid);
+      // 2) If not found & phoneNumber present, fetch by last 10 digits
+      if (!data && user.phoneNumber) {
+        const rawPhone = user.phoneNumber.slice(-10);
+        const snapPhone = await get(
+          query(ref(db, "users"),
+                orderByChild("phone"),
+                equalTo(rawPhone))
+        );
+        if (snapPhone.exists()) {
+          data = Object.values(snapPhone.val())[0];
         }
-      } catch (err) {
-        console.error("Error fetching user data:", err);
-        noticeEl.textContent = "Failed to fetch user data.";
+      }
+
+      // 3) If still not found & email present, fetch by email
+      if (!data && user.email) {
+        const snapEmail = await get(
+          query(ref(db, "users"),
+                orderByChild("email"),
+                equalTo(user.email))
+        );
+        if (snapEmail.exists()) {
+          data = Object.values(snapEmail.val())[0];
+        }
+      }
+
+      if (data) {
+        nameEl.textContent  = data.name  || "Not set";
+        emailEl.textContent = data.email || "Not set";
+        phoneEl.textContent = data.phone || "Not set";
+        roleEl.textContent  = data.role  || "Not set";
+      } else {
+        nameEl.textContent  = "Not available";
+        emailEl.textContent = "Not available";
+        phoneEl.textContent = "Not available";
+        roleEl.textContent  = "Not available";
+        noticeEl.textContent = "Profile data not found in /users.";
       }
     });
 
