@@ -7,115 +7,52 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    :root {
-      --primary: #0077ff;
-      --bg-gradient: linear-gradient(to right, #74ebd5, #ACB6E5);
-      --card-bg: #fff;
-      --dark-text: #333;
-    }
+    :root { --primary: #0077ff; --bg-gradient: linear-gradient(to right, #74ebd5, #ACB6E5); --card-bg: #fff; --dark-text: #333; }
     * { box-sizing: border-box; margin:0; padding:0; }
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: var(--bg-gradient);
-      min-height: 100vh;
-      display: flex; flex-direction: column;
-      color: var(--dark-text);
-    }
-    .container {
-      flex: 1; max-width: 400px; width: 100%;
-      margin: 0 auto; padding: 24px 16px;
-    }
-    .card {
-      background: var(--card-bg); border-radius: 12px;
-      padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      text-align: left;
-    }
-    .card h1 {
-      font-size: 1.5rem; color: var(--primary);
-      margin-bottom: 16px; text-align: center;
-    }
-    .profile-pic {
-      width: 100px; height: 100px;
-      border-radius: 50%; object-fit: cover;
-      display: block; margin: 0 auto 16px;
-      background: #eee;
-    }
-    .field {
-      display: flex; justify-content: space-between;
-      margin-bottom: 12px; font-size: 1rem;
-    }
-    .field span:first-child { font-weight: 600; }
-    .loading { font-style: italic; color: #666; }
-    .logout {
-      display: block; margin-top: 16px;
-      width: 100%; padding: 12px;
-      background: var(--primary); color: #fff;
-      text-align: center; border-radius: 8px;
-      text-decoration: none; font-weight: 600;
-    }
-    .navbar {
-      position: fixed; bottom: 0; left: 0; width: 100%;
-      background: #fff; border-top:1px solid #ddd;
-      display: flex; justify-content: space-around;
-      padding:8px 0; box-shadow:0 -2px 8px rgba(0,0,0,0.1);
-    }
-    .navbar a {
-      color: var(--primary); text-decoration:none;
-      font-size:0.75rem; text-align:center;
-    }
-    .navbar a i {
-      display:block; font-size:1.25rem; margin-bottom:4px;
-    }
-    .notice {
-      margin-top:12px; color: red; text-align: center;
-    }
-    #uploadBtn {
-      background: #28a745;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 10px;
-      width: 100%;
-      margin-bottom: 16px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    #photoInput {
-      display: block;
-      margin: 0 auto 8px;
-    }
+    body { font-family:'Poppins',sans-serif; background:var(--bg-gradient); min-height:100vh; display:flex; flex-direction:column; color:var(--dark-text); }
+    .container { flex:1; max-width:400px; width:100%; margin:0 auto; padding:24px 16px; }
+    .card { background:var(--card-bg); border-radius:12px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.1); text-align:left; }
+    .card h1 { font-size:1.5rem; color:var(--primary); margin-bottom:16px; text-align:center; }
+    .profile-pic { width:100px; height:100px; border-radius:50%; object-fit:cover; display:block; margin:0 auto 16px; background:#eee; }
+    .field { display:flex; justify-content:space-between; margin-bottom:12px; font-size:1rem; }
+    .field span:first-child { font-weight:600; }
+    .loading { font-style:italic; color:#666; }
+    #profileImageInput { display:block; margin:0 auto 8px; }
+    #uploadBtn { display:block; margin-top:8px; width:100%; padding:12px; background:#28a745; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
+    #logoutBtn { display:block; margin-top:16px; width:100%; padding:12px; background:var(--primary); color:#fff; border:none; border-radius:8px; text-decoration:none; font-weight:600; cursor:pointer; }
+    .navbar { position:fixed; bottom:0; left:0; width:100%; background:#fff; border-top:1px solid #ddd; display:flex; justify-content:space-around; padding:8px 0; box-shadow:0 -2px 8px rgba(0,0,0,0.1); }
+    .navbar a { color:var(--primary); text-decoration:none; font-size:0.75rem; text-align:center; }
+    .navbar a i { display:block; font-size:1.25rem; margin-bottom:4px; }
+    .notice { margin-top:12px; color:red; text-align:center; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
-    
-      <!-- Profile Photo Display -->
-      <img id="userPhoto" src="" alt="Profile Photo" class="profile-pic" />
-        <!-- Photo Upload -->
-      <input type="file" id="photoInput" accept="image/*" />
-      <button id="uploadBtn">Upload Photo</button>
       <h1>Your Profile</h1>
+      <!-- Upload input and button -->
+      <input type="file" id="profileImageInput" accept="image/*" />
+      <button id="uploadBtn">Upload Photo</button>
+      <!-- Display profile image -->
+      <img id="profilePreview" class="profile-pic" src="" alt="Profile Photo" />
       <div class="field"><span>Name:</span><span id="userName" class="loading">Loading…</span></div>
       <div class="field"><span>Email:</span><span id="userEmail" class="loading">Loading…</span></div>
       <div class="field"><span>Phone:</span><span id="userPhone" class="loading">Loading…</span></div>
       <div class="field"><span>Role:</span><span id="userRole" class="loading">Loading…</span></div>
-      <a href="#" id="logoutBtn" class="logout">Logout</a>
+      <button id="logoutBtn">Logout</button>
       <div id="notice" class="notice"></div>
     </div>
   </div>
-
   <div class="navbar">
     <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
     <a href="booking.html"><i class="fas fa-car"></i>Book</a>
     <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
     <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref, set, get, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getDatabase, ref as dbRef, set, get } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
     import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
     const firebaseConfig = {
@@ -128,84 +65,61 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    const app     = initializeApp(firebaseConfig);
-    const auth    = getAuth(app);
-    const db      = getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
     const storage = getStorage(app);
 
-    const photoEl   = document.getElementById("userPhoto");
-    const nameEl    = document.getElementById("userName");
-    const emailEl   = document.getElementById("userEmail");
-    const phoneEl   = document.getElementById("userPhone");
-    const roleEl    = document.getElementById("userRole");
-    const logoutEl  = document.getElementById("logoutBtn");
-    const noticeEl  = document.getElementById("notice");
-    const inputEl   = document.getElementById("photoInput");
-    const uploadBtn = document.getElementById("uploadBtn");
+    const nameEl = document.getElementById('userName');
+    const emailEl = document.getElementById('userEmail');
+    const phoneEl = document.getElementById('userPhone');
+    const roleEl = document.getElementById('userRole');
+    const noticeEl = document.getElementById('notice');
+    const previewEl = document.getElementById('profilePreview');
+    const inputEl = document.getElementById('profileImageInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
 
-    onAuthStateChanged(auth, async user => {
-      if (!user) return window.location = "index.html";
+    let currentUser = null;
 
-      let data = null;
-      // Fetch user data by UID
-      const snapUid = await get(ref(db, `users/${user.uid}`));
-      data = snapUid.val();
-      // Fetch by phone if needed
-      if (!data && user.phoneNumber) {
-        const rawPhone = user.phoneNumber.slice(-10);
-        const snapPhone = await get(query(ref(db, "users"), orderByChild("phone"), equalTo(rawPhone)));
-        if (snapPhone.exists()) data = Object.values(snapPhone.val())[0];
-      }
-      // Fetch by email if needed
-      if (!data && user.email) {
-        const snapEmail = await get(query(ref(db, "users"), orderByChild("email"), equalTo(user.email)));
-        if (snapEmail.exists()) data = Object.values(snapEmail.val())[0];
-      }
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return window.location = 'index.html';
+      currentUser = user;
 
-      // Display data
-      if (data) {
-        if (data.imageUrl) photoEl.src = data.imageUrl;
-        else photoEl.style.display = 'none';
-        nameEl.textContent  = data.name  || "Not set";
-        emailEl.textContent = data.email || "Not set";
-        phoneEl.textContent = data.phone || "Not set";
-        roleEl.textContent  = data.role  || "Not set";
-      } else {
-        photoEl.style.display = 'none';
-        nameEl.textContent = emailEl.textContent = phoneEl.textContent = roleEl.textContent = "Not available";
-        noticeEl.textContent = "Profile data not found in /users.";
-      }
-
-      // Preview selected file
-      inputEl.addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (file) photoEl.src = URL.createObjectURL(file);
-      });
-
-      // Upload photo
-      uploadBtn.addEventListener('click', async () => {
-        const file = inputEl.files[0];
-        if (!file) {
-          noticeEl.textContent = 'Please select an image first.';
-          return;
-        }
-        noticeEl.textContent = 'Uploading…';
-        const imgRef = storageRef(storage, `profileImages/${user.uid}/${file.name}`);
-        try {
-          const snap = await uploadBytes(imgRef, file);
-          const url = await getDownloadURL(snap.ref);
-          await set(ref(db, `users/${user.uid}/imageUrl`), url);
-          noticeEl.textContent = 'Profile photo updated!';
-        } catch (err) {
-          console.error(err);
-          noticeEl.textContent = 'Upload failed. Try again.';
-        }
-      });
+      // Load profile data
+      const snap = await get(dbRef(db, `users/${user.uid}`));
+      const data = snap.val() || {};
+      nameEl.textContent = data.name || 'Not set';
+      emailEl.textContent = data.email || 'Not set';
+      phoneEl.textContent = data.phone || 'Not set';
+      roleEl.textContent = data.role || 'Not set';
+      if (data.profileImageUrl) previewEl.src = data.profileImageUrl;
     });
 
-    logoutEl.addEventListener("click", e => {
+    uploadBtn.addEventListener('click', async () => {
+      if (!currentUser) return;
+      const file = inputEl.files[0];
+      if (!file) { noticeEl.textContent = 'Select an image first.'; return; }
+
+      noticeEl.textContent = 'Uploading…';
+      const path = `profileImages/${currentUser.uid}/${file.name}`;
+      const imgRef = storageRef(storage, path);
+
+      try {
+        await uploadBytes(imgRef, file);
+        const url = await getDownloadURL(imgRef);
+        await set(dbRef(db, `users/${currentUser.uid}/profileImageUrl`), url);
+        previewEl.src = url;
+        noticeEl.textContent = 'Upload successful!';
+      } catch (err) {
+        console.error(err);
+        noticeEl.textContent = 'Upload failed.';
+      }
+    });
+
+    logoutBtn.addEventListener('click', e => {
       e.preventDefault();
-      signOut(auth).then(() => window.location = "index.html");
+      signOut(auth).then(() => window.location = 'index.html');
     });
   </script>
 </body>
