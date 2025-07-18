@@ -85,22 +85,27 @@
     onAuthStateChanged(auth, async (user) => {
       if (!user) return window.location = 'index.html';
       currentUser = user;
+      console.log("Logged in UID:", user.uid);
 
       try {
-        const userSnap = await get(dbRef(db, `users/${user.uid}`));
-        if (!userSnap.exists()) {
+        const userRef = dbRef(db, `users/${user.uid}`);
+        const userSnap = await get(userRef);
+
+        if (userSnap.exists()) {
+          const data = userSnap.val();
+          nameEl.textContent = data.name || 'Not set';
+          emailEl.textContent = data.email || 'Not set';
+          phoneEl.textContent = data.phone || 'Not set';
+          roleEl.textContent = data.role || 'Not set';
+          if (data.profileImageUrl) previewEl.src = data.profileImageUrl;
+          noticeEl.textContent = '';
+        } else {
           noticeEl.textContent = "User not found in database.";
-          return;
+          console.warn("Missing user in /users/", user.uid);
         }
-        const data = userSnap.val();
-        nameEl.textContent = data.name || 'Not set';
-        emailEl.textContent = data.email || 'Not set';
-        phoneEl.textContent = data.phone || 'Not set';
-        roleEl.textContent = data.role || 'Not set';
-        if (data.profileImageUrl) previewEl.src = data.profileImageUrl;
       } catch (err) {
-        console.error("Fetch error:", err);
-        noticeEl.textContent = "Failed to load user data.";
+        console.error("Error fetching user data:", err);
+        noticeEl.textContent = "Failed to fetch user data.";
       }
     });
 
@@ -113,8 +118,8 @@
       }
 
       noticeEl.textContent = "Uploading...";
-      const path = `profileImages/${currentUser.uid}/${file.name}`;
-      const imageRef = storageRef(storage, path);
+      const filePath = `profileImages/${currentUser.uid}/${file.name}`;
+      const imageRef = storageRef(storage, filePath);
 
       try {
         await uploadBytes(imageRef, file);
