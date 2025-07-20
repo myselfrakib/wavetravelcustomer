@@ -79,6 +79,7 @@
       box-shadow: 0 0 0 2px rgba(0, 124, 240, 0.2);
     }
     button {
+      position: relative;
       padding: 0.85rem 1rem;
       background-color: var(--primary);
       color: #fff;
@@ -88,11 +89,27 @@
       border-radius: var(--radius);
       cursor: pointer;
       transition: background-color var(--transition), transform var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     button:hover {
       background-color: #005fa3;
       transform: translateY(-2px);
     }
+    .spinner {
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(255,255,255,0.6);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 0.5rem;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading .spinner { display: block; }
+    .loading span.label { display: none; }
     .link {
       margin-top: 1.25rem;
       font-size: 0.9rem;
@@ -120,9 +137,7 @@
       transition: opacity var(--transition);
       z-index: 999;
     }
-    .toast.show {
-      opacity: 1;
-    }
+    .toast.show { opacity: 1; }
   </style>
 </head>
 <body>
@@ -132,7 +147,10 @@
     <form id="loginForm">
       <input type="email" id="email" placeholder="Email Address" required />
       <input type="password" id="password" placeholder="Password" required />
-      <button type="submit">Login</button>
+      <button type="submit" id="loginBtn">
+        <div class="spinner"></div>
+        <span class="label">Login</span>
+      </button>
     </form>
     <div class="link">
       <p>Don't have an account? <a href="driversignup.html">Sign up</a></p>
@@ -144,7 +162,13 @@
   <!-- Firebase Scripts -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      setPersistence,
+      browserLocalPersistence
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
     import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -156,21 +180,20 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
     const toast = document.getElementById("toast");
+    const loginBtn = document.getElementById("loginBtn");
 
-    // Keep user logged in even in WebView
-    setPersistence(auth, browserLocalPersistence).catch((err) => {
-      console.error("Persistence error:", err);
-    });
+    // Persist session across restarts/WebView
+    setPersistence(auth, browserLocalPersistence).catch(err =>
+      console.error("Persistence error:", err)
+    );
 
-    // Check if user already logged in
-    onAuthStateChanged(auth, (user) => {
+    // Auto-redirect if already logged in
+    onAuthStateChanged(auth, user => {
       if (user) {
-        // Optional: double-check driverdetails exists before redirect
         get(child(ref(db), `driverdetails/${user.uid}`)).then(snapshot => {
           if (snapshot.exists()) {
             window.location.href = "driverdashboard.html";
@@ -185,22 +208,31 @@
       setTimeout(() => toast.classList.remove("show"), 3000);
     }
 
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    document.getElementById("loginForm").addEventListener("submit", async e => {
       e.preventDefault();
+
+      // Show spinner + hide label
+      loginBtn.classList.add("loading");
+
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
+
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         const snapshot = await get(child(ref(db), `driverdetails/${user.uid}`));
+
         if (snapshot.exists()) {
           showToast("Login successful!");
-          setTimeout(() => { window.location.href = "driverdashboard.html"; }, 1000);
+          setTimeout(() => window.location.href = "driverdashboard.html", 1000);
         } else {
           showToast("No driver details found.");
         }
       } catch (error) {
         showToast("Login failed. " + error.message);
+      } finally {
+        // Hide spinner (if not redirected already)
+        loginBtn.classList.remove("loading");
       }
     });
   </script>
