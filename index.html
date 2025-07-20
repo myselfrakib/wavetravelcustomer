@@ -118,13 +118,24 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // Setup reCAPTCHA
+    // On load: setup reCAPTCHA and check for existing login
     window.onload = () => {
+      // Setup invisible reCAPTCHA
       window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
-        'recaptcha-container', 
+        'recaptcha-container',
         { size: 'invisible' }
       );
       window.recaptchaVerifier.render();
+
+      // If userPhone in localStorage, auto-redirect
+      const stored = localStorage.getItem('userPhone');
+      if (stored) {
+        if (stored === '+919907738066') {
+          location.href = 'admindashboard.html';
+        } else {
+          location.href = 'booking.html';
+        }
+      }
     };
 
     let confirmationResult = null;
@@ -140,7 +151,6 @@
         return alert('Enter a valid 10‑digit phone number.');
       }
 
-      // Save original state
       const originalText = sendBtn.textContent;
       sendBtn.innerHTML = 'Checking... <div class="spinner"></div>';
       sendBtn.disabled = true;
@@ -155,7 +165,6 @@
 
         if (!snap.exists()) {
           alert('No user found. Please sign up first.');
-          // Restore button
           sendBtn.textContent = originalText;
           sendBtn.disabled = false;
           return;
@@ -163,19 +172,17 @@
       } catch (err) {
         console.error("Database check error:", err);
         alert('Failed to check user existence. Try again later.');
-        // Restore button
         sendBtn.textContent = originalText;
         sendBtn.disabled = false;
         return;
       }
 
-      // All clear – send the OTP
+      // Send the OTP
       sendBtn.innerHTML = 'Sending... <div class="spinner"></div>';
-
       try {
         const fullPhone = codeSelect.value + phone;
         confirmationResult = await auth.signInWithPhoneNumber(
-          fullPhone, 
+          fullPhone,
           window.recaptchaVerifier
         );
         alert('OTP sent!');
@@ -185,7 +192,6 @@
       } catch (err) {
         console.error('OTP send failed:', err);
         alert('Failed to send OTP: ' + err.message);
-        // Restore button
         sendBtn.textContent = originalText;
         sendBtn.disabled = false;
       }
@@ -200,6 +206,7 @@
       try {
         const result = await confirmationResult.confirm(otp);
         const userPhone = result.user.phoneNumber;
+        // Persist login
         localStorage.setItem('userPhone', userPhone);
 
         if (userPhone === '+919907738066') {
