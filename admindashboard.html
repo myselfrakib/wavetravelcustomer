@@ -241,18 +241,13 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // Auth & logout
     window.logout = () => signOut(auth).then(() => location.href = 'adminlogin.html');
-
-    // Delete helpers
     window.deleteUser      = async uid => { await remove(ref(db, `users/${uid}`)); loadUsers(); };
     window.deleteDriver    = async did => { await remove(ref(db, `driverdetails/${did}`)); loadDrivers(); };
     window.deletePending   = async (did, cid) => { await remove(ref(db, `pendingcars/${did}/${cid}`)); loadPending(); };
     window.deleteApproved  = async (did, cid) => { await remove(ref(db, `approvedcars/${did}/${cid}`)); loadApproved(); };
     window.deleteSlot      = async (did, sid) => { await remove(ref(db, `availableslots/${did}/${sid}`)); loadSlots(); };
     window.deleteBooking   = async bid => { await remove(ref(db, `bookings/${bid}`)); loadBookings(); };
-
-    // Approve pending car
     window.approveCar = async (did, cid) => {
       const snap = await get(ref(db, `pendingcars/${did}/${cid}`));
       const car  = snap.val(); if (!car) return;
@@ -261,7 +256,6 @@
       loadPending();
     };
 
-    // DataTables init utility
     const tables = {};
     function initTable(id, noSortCols = []) {
       if (!tables[id]) {
@@ -276,7 +270,6 @@
       }
     }
 
-    // Load Users
     async function loadUsers() {
       $('#users-table').hide(); $('#users-loading').show();
       initTable('users-table', [7]);
@@ -294,7 +287,6 @@
       $('#users-loading').hide(); $('#users-table').show();
     }
 
-    // Load Drivers
     async function loadDrivers() {
       $('#drivers-table').hide(); $('#drivers-loading').show();
       initTable('drivers-table', [5]);
@@ -312,7 +304,6 @@
       $('#drivers-loading').hide(); $('#drivers-table').show();
     }
 
-    // Load Pending Cars
     async function loadPending() {
       $('#pending-table').hide(); $('#pending-loading').show();
       initTable('pending-table', [10]);
@@ -334,7 +325,6 @@
       $('#pending-loading').hide(); $('#pending-table').show();
     }
 
-    // Load Approved Cars
     async function loadApproved() {
       $('#approved-table').hide(); $('#approved-loading').show();
       initTable('approved-table', [8]);
@@ -355,7 +345,6 @@
       $('#approved-loading').hide(); $('#approved-table').show();
     }
 
-    // Load Slots
     async function loadSlots() {
       $('#slots-table').hide(); $('#slots-loading').show();
       initTable('slots-table', [9]);
@@ -378,7 +367,6 @@
       $('#slots-loading').hide(); $('#slots-table').show();
     }
 
-    // Load Bookings
     async function loadBookings() {
       $('#bookings-table').hide(); $('#bookings-loading').show();
       initTable('bookings-table', [9]);
@@ -398,32 +386,36 @@
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
-    // Load Wallet Balances
+    // Load Wallet Balances (nested: driver → slot → booking)
     async function loadWalletBalances() {
       $('#wallet-container').hide();
       $('#wallet-loading').show();
       $('#wallet-container').empty();
 
-      const snap = await get(ref(db, 'walletBalance'));
+      const snap = await get(ref(db, 'walletbalance'));
       if (snap.exists()) {
-        for (const [did, records] of Object.entries(snap.val())) {
-          // get driver info
+        for (const [did, slots] of Object.entries(snap.val())) {
+          // fetch driver info
           const dSnap = await get(ref(db, `driverdetails/${did}`));
           const d = dSnap.exists() ? dSnap.val() : {};
           const name  = d.name  || 'Unknown Driver';
           const phone = d.phone || '';
 
-          // build a card
+          // create a card per driver
           const card = $('<div class="wallet-card"></div>');
           card.append(`<h3>${name} (${phone})</h3>`);
 
-          for (const [rid, r] of Object.entries(records)) {
-            card.append(`<p><strong>Record ID:</strong> ${rid}</p>`);
-            card.append(`<p><strong>Amount:</strong> ${r.amount || ''}</p>`);
-            card.append(`<p><strong>Date:</strong> ${r.date || ''}</p>`);
-            card.append(`<p><strong>Balance:</strong> ${r.balance || ''}</p>`);
-            card.append(`<p><strong>Status:</strong> ${r.status || ''}</p>`);
-            card.append('<hr>');
+          // iterate slots
+          for (const [slotId, bookings] of Object.entries(slots)) {
+            card.append(`<p><strong>Slot ID:</strong> ${slotId}</p>`);
+            // iterate bookings under each slot
+            for (const [bookingId, r] of Object.entries(bookings)) {
+              card.append(`<p><strong>Booking ID:</strong> ${bookingId}</p>`);
+              card.append(`<p><strong>Amount:</strong> ${r.amount || ''}</p>`);
+              card.append(`<p><strong>Date:</strong> ${r.date || ''}</p>`);
+              card.append(`<p><strong>Status:</strong> ${r.status || ''}</p>`);
+              card.append('<hr>');
+            }
           }
 
           $('#wallet-container').append(card);
@@ -434,7 +426,6 @@
       $('#wallet-container').show();
     }
 
-    // Load Profile
     async function loadProfile() {
       $('#profile-table').hide();
       $('#profile-loading').show();
@@ -458,7 +449,6 @@
     window.openTab = name => {
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
       document.getElementById(`${name}-tab`).classList.add('active');
-
       const loaders = {
         users: loadUsers,
         drivers: loadDrivers,
@@ -472,7 +462,6 @@
       loaders[name]();
     };
 
-    // On auth change
     onAuthStateChanged(auth, user => {
       if (!user) return location.href = 'adminlogin.html';
       openTab('users');
