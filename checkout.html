@@ -71,7 +71,10 @@
 
     <div class="terms">
       <input type="checkbox" id="termsChk"/>
-      <label for="termsChk">I agree to the <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a></label>
+      <label for="termsChk">
+        I agree to the 
+        <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a>
+      </label>
     </div>
 
     <button id="payBtn" disabled>Pay &amp; Book</button>
@@ -119,20 +122,17 @@
       auth.onAuthStateChanged(async user => {
         if (!user) {
           alert('Please login first.');
-          window.location = 'login.html';
+          location = 'login.html';
           return;
         }
 
-        // Resolve database UID, name, phone:
+        // Resolve DB UID, name, phone
         let dbUid = null, name = 'Not set', phone = 'Not set';
-
-        // 1) Try direct UID lookup:
         const snapUid = await db.ref(`users/${user.uid}`).once('value');
         if (snapUid.exists()) {
           dbUid = user.uid;
-          ({ name, phone } = snapUid.val());
+          ({name, phone} = snapUid.val());
         } else {
-          // 2) Fallback: phone lookup (last 10 digits)
           if (user.phoneNumber) {
             const raw = user.phoneNumber.slice(-10);
             const snapPhone = await db.ref('users')
@@ -142,10 +142,9 @@
             if (snapPhone.exists()) {
               const rec = snapPhone.val();
               dbUid = Object.keys(rec)[0];
-              ({ name, phone } = rec[dbUid]);
+              ({name, phone} = rec[dbUid]);
             }
           }
-          // 3) Fallback: email lookup
           if (!dbUid && user.email) {
             const snapEmail = await db.ref('users')
               .orderByChild('email')
@@ -154,7 +153,7 @@
             if (snapEmail.exists()) {
               const rec = snapEmail.val();
               dbUid = Object.keys(rec)[0];
-              ({ name, phone } = rec[dbUid]);
+              ({name, phone} = rec[dbUid]);
             }
           }
         }
@@ -165,7 +164,7 @@
           return;
         }
 
-        // Render booking summary with user info
+        // Show summary
         summaryEl.innerHTML = `
           <div><strong>Name:</strong> ${name}</div>
           <div><strong>Phone:</strong> ${phone}</div>
@@ -193,50 +192,57 @@
               currency: 'INR',
               name: 'WaveTravel',
               description: 'Ride Booking',
-              prefill: {
-                name,
-                contact: phone,
-                email: user.email || ''
-              },
+              prefill: { name, contact: phone, email: user.email || '' },
               handler: res => {
-                // Safely decrement seats (handles string or number)
                 const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
                 slotRef.transaction(current => {
                   if (!current) return current;
-                  const currentSeats = parseInt(current.seats, 10);
-                  if (isNaN(currentSeats)) return current;
-                  const newSeats = Math.max(0, currentSeats - booking.seatsRequested);
-                  return { ...current, seats: newSeats };
-                }, (error, committed) => {
-                  if (error) {
-                    console.error("Transaction failed:", error);
-                    return alert("Could not update slot availability. Please try again.");
+                  const cs = parseInt(current.seats, 10);
+                  if (isNaN(cs)) return current;
+                  return { ...current, seats: Math.max(0, cs - booking.seatsRequested) };
+                }, async (err, committed) => {
+                  if (err) {
+                    console.error(err);
+                    return alert("Could not update slots. Try again.");
                   }
                   if (!committed) {
-                    return alert("Slot availability not changed; booking canceled.");
+                    return alert("Booking canceled; seats unchanged.");
                   }
 
-                  // Only push the booking once seats have been decremented
-                  db.ref(`bookings/${booking.driverId}`)
-                    .push({
-                      ...booking,
-                      userId: dbUid,
-                      userName: name,
-                      userPhone: phone,
-                      paymentId: res.razorpay_payment_id,
-                      bookedAt: new Date().toISOString(),
-                      status: 'confirmed',
-                      driverCommission: booking.fare * 0.5  // 50% commission
-                    })
-                    .then(() => {
-                      alert('Payment successful & booking confirmed!');
-                      localStorage.removeItem('selectedBooking');
-                      window.location = 'mybookings.html';
-                    })
-                    .catch(err => {
-                      console.error(err);
-                      alert('Error saving booking. Please contact support.');
-                    });
+                  // 1) Push booking
+                  const bookingsRef   = db.ref(`bookings/${booking.driverId}`);
+                  const newBookingRef = bookingsRef.push();
+                  const bookingId     = newBookingRef.key;
+                  const commAmount    = booking.fare * 0.5;
+
+                  const bookingData = {
+                    ...booking,
+                    userId: dbUid,
+                    userName: name,
+                    userPhone: phone,
+                    paymentId: res.razorpay_payment_id,
+                    bookedAt: new Date().toISOString(),
+                    status: 'confirmed',
+                    driverCommission: commAmount
+                  };
+                  // 2) Push commission record
+                  const commissionData = {
+                    amount: commAmount,
+                    status: 'unpaid',
+                    date: new Date().toISOString()
+                  };
+
+                  try {
+                    await newBookingRef.set(bookingData);
+                    await db.ref(`commisions/${booking.driverId}/${booking.slotKey}/${bookingId}`)
+                            .set(commissionData);
+                    alert('Payment successful & booking confirmed!');
+                    localStorage.removeItem('selectedBooking');
+                    location = 'mybookings.html';
+                  } catch (e) {
+                    console.error(e);
+                    alert('Error saving data. Please contact support.');
+                  }
                 });
               }
             }).open();
@@ -246,13 +252,13 @@
     }
 
     function formatDate(d) {
-      const [y, m, dd] = d.split('-');
+      const [y,m,dd] = d.split('-');
       return `${dd}/${m}/${y}`;
     }
     function formatTime(t) {
-      let [h, mm] = t.split(':').map(Number);
-      const suffix = h >= 12 ? 'PM' : 'AM';
-      h = h % 12 || 12;
+      let [h,mm] = t.split(':').map(Number);
+      const suffix = h>=12 ? 'PM':'AM';
+      h = h%12||12;
       return `${h}:${mm.toString().padStart(2,'0')} ${suffix}`;
     }
   </script>
