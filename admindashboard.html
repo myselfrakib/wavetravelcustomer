@@ -18,8 +18,22 @@
     .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px); }
     .tab-pane.active { display:block; }
     .loading { text-align:center; margin:2rem; color:#ffd700; }
+
+    /* Tables */
     table.dataTable { background:rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; }
     .dt-button, .dataTables_length select, .dataTables_filter input { color:#000 !important; }
+
+    /* Wallet cards */
+    #walletbalances-container { display:flex; flex-wrap:wrap; gap:1rem; }
+    .wallet-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 1rem;
+      width: 300px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .wallet-card h3 { margin-top: 0; color: #ffd700; }
+    .wallet-card p { margin: 0.5rem 0; color: #fff; }
   </style>
 </head>
 <body>
@@ -31,6 +45,7 @@
     <button onclick="openTab('approved-cars')">Approved Cars</button>
     <button onclick="openTab('slots')">Slots</button>
     <button onclick="openTab('bookings')">Bookings</button>
+    <button onclick="openTab('walletbalances')">Wallet Balances</button>
     <button onclick="openTab('profile')">Profile</button>
     <button onclick="logout()">Logout</button>
   </div>
@@ -111,6 +126,13 @@
     </table>
   </div>
 
+  <!-- WALLET BALANCES -->
+  <div id="walletbalances-tab" class="tab-pane">
+    <h2>Wallet Balances</h2>
+    <div id="walletbalances-loading" class="loading">Loading wallet balances…</div>
+    <div id="walletbalances-container" style="display:none;"></div>
+  </div>
+
   <!-- PROFILE -->
   <div id="profile-tab" class="tab-pane">
     <h2>My Profile</h2>
@@ -149,25 +171,21 @@
     window.logout = () => signOut(auth).then(()=>location.href='adminlogin.html');
     window.deleteUser      = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
     window.deleteDriver    = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
-    // deletePending will remove by driverId and carId
     window.deletePending   = async (did,cid) => { await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); };
     window.deleteApproved  = async (did,cid) => { await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); };
     window.deleteSlot      = async (did,sid) => { await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); };
     window.deleteBooking   = async bid => { await remove(ref(db,`bookings/${bid}`)); loadBookings(); };
-
-    // approveCar now needs driverId and carId
     window.approveCar      = async (did,cid) => {
       const snap = await get(ref(db,`pendingcars/${did}/${cid}`));
       const car  = snap.val(); if(!car) return;
-      // move to approvedcars under driver
       await set(ref(db,`approvedcars/${did}/${cid}`), car);
       await remove(ref(db,`pendingcars/${did}/${cid}`));
       loadPending();
     };
 
     const tables = {};
-    function initTable(id,noSortCols=[]) {
-      if(!tables[id]) {
+    function initTable(id,noSortCols=[]){
+      if(!tables[id]){
         tables[id] = $(`#${id}`).DataTable({
           responsive:true,
           dom:'Bfltip',
@@ -182,7 +200,7 @@
       initTable('users-table',[7]);
       const snap = await get(ref(db,'users'));
       let i=1;
-      if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())) {
+      if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())){
         tables['users-table'].row.add([i++,uid,u.name||'',u.email||'',u.phone||'',u.address||'',u.createdOn||'',`<button onclick="deleteUser('${uid}')">Delete</button>`]).draw(false);
       }
       $('#users-loading').hide(); $('#users-table').show();
@@ -193,7 +211,7 @@
       initTable('drivers-table',[5]);
       const snap = await get(ref(db,'driverdetails'));
       let i=1;
-      if(snap.exists()) for(const [did,d] of Object.entries(snap.val())) {
+      if(snap.exists()) for(const [did,d] of Object.entries(snap.val())){
         const vc = d.vehicles?Object.keys(d.vehicles).length:0;
         tables['drivers-table'].row.add([i++,did,d.name||'',d.phone||'',vc,`<button onclick="deleteDriver('${did}')">Delete</button>`]).draw(false);
       }
@@ -205,19 +223,10 @@
       initTable('pending-table',[10]);
       const snap = await get(ref(db,'pendingcars'));
       let i=1;
-      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())) {
-        for(const [cid,c] of Object.entries(cars)) {
+      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
+        for(const [cid,c] of Object.entries(cars)){
           tables['pending-table'].row.add([
-            i++,
-            did,
-            cid,
-            c.carBrand||'',
-            c.carReg||'',
-            c.driverName||'',
-            c.driverNumber||'',
-            c.ownerName||'',
-            c.seats||'',
-            c.submittedAt||'',
+            i++, did, cid, c.carBrand||'', c.carReg||'', c.driverName||'', c.driverNumber||'', c.ownerName||'', c.seats||'', c.submittedAt||'',
             `<button onclick="approveCar('${did}','${cid}')">Approve</button> <button onclick="deletePending('${did}','${cid}')">Delete</button>`
           ]).draw(false);
         }
@@ -230,8 +239,8 @@
       initTable('approved-table',[8]);
       const snap = await get(ref(db,'approvedcars'));
       let i=1;
-      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())) {
-        for(const [cid,c] of Object.entries(cars)) {
+      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
+        for(const [cid,c] of Object.entries(cars)){
           tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button onclick="deleteApproved('${did}','${cid}')">Delete</button>`]).draw(false);
         }
       }
@@ -243,10 +252,10 @@
       initTable('slots-table',[9]);
       const snap = await get(ref(db,'availableslots'));
       let i=1;
-      if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())) {
+      if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())){
         const dSnap = await get(ref(db,`driverdetails/${did}`));
         const d = dSnap.exists()?dSnap.val():{};
-        for(const [sid,s] of Object.entries(slots)) {
+        for(const [sid,s] of Object.entries(slots)){
           tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button onclick="deleteSlot('${did}','${sid}')">Delete</button>`]).draw(false);
         }
       }
@@ -258,10 +267,40 @@
       initTable('bookings-table',[9]);
       const snap = await get(ref(db,'bookings'));
       let i=1;
-      if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())) {
+      if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())){
         tables['bookings-table'].row.add([i++,bid,b.customerName||'',b.vehicle||'',b.pickup||'',b.dropoff||'',b.duration||'',b.fare||'',b.status||'',`<button onclick="deleteBooking('${bid}')">Delete</button>`]).draw(false);
       }
       $('#bookings-loading').hide(); $('#bookings-table').show();
+    }
+
+    async function loadWalletBalances(){
+      $('#walletbalances-container').hide(); $('#walletbalances-loading').show();
+      const container = $('#walletbalances-container').empty();
+      const snap = await get(ref(db,'walletBalance'));
+      if(snap.exists()){
+        for(const [did, records] of Object.entries(snap.val())){
+          // fetch driver details for name & phone
+          const dSnap = await get(ref(db,`driverdetails/${did}`));
+          const driver = dSnap.exists()?dSnap.val():{};
+          for(const [balId, bal] of Object.entries(records)){
+            const card = $(`
+              <div class="wallet-card">
+                <h3>Driver: ${driver.name||did}</h3>
+                <p><strong>Phone:</strong> ${driver.phone||'N/A'}</p>
+                <p><strong>Record ID:</strong> ${balId}</p>
+                <p><strong>Amount:</strong> ${bal.amount}</p>
+                <p><strong>Date:</strong> ${new Date(bal.date).toLocaleString()}</p>
+                <p><strong>Status:</strong> ${bal.status}</p>
+              </div>
+            `);
+            container.append(card);
+          }
+        }
+      } else {
+        container.append('<p>No wallet balance records found.</p>');
+      }
+      $('#walletbalances-loading').hide();
+      $('#walletbalances-container').show();
     }
 
     async function loadProfile(){
@@ -270,7 +309,9 @@
       const user = auth.currentUser;
       if(user){
         const snap = await get(ref(db,`admins/${user.uid}`));
-        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())) tables['profile-table'].row.add([k,v]).draw(false);
+        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())){
+          tables['profile-table'].row.add([k,v]).draw(false);
+        }
       }
       $('#profile-loading').hide(); $('#profile-table').show();
     }
@@ -285,6 +326,7 @@
         'approved-cars': loadApproved,
         slots: loadSlots,
         bookings: loadBookings,
+        walletbalances: loadWalletBalances,
         profile: loadProfile
       };
       loaders[name]();
