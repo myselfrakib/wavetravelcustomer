@@ -12,19 +12,84 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css" />
 
   <style>
-    body { font-family:Arial,sans-serif; margin:0; background:linear-gradient(to right,#2c3e50,#3498db); color:#fff; }
-    .navbar { display:flex; flex-wrap:wrap; background:#1f2c3f; padding:1rem; gap:.5rem; }
-    .navbar button { flex:1; padding:.5rem 1rem; border:none; border-radius:4px; background:#3498db; color:#fff; cursor:pointer; }
-    .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px); }
-    .tab-pane.active { display:block; }
-    .loading { text-align:center; margin:2rem; color:#ffd700; }
-    table.dataTable { background:rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; }
-    .dt-button, .dataTables_length select, .dataTables_filter input { color:#000 !important; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: linear-gradient(to right, #2c3e50, #3498db);
+      color: #fff;
+    }
+
+    .navbar {
+      display: flex;
+      flex-wrap: wrap;
+      background: #1f2c3f;
+      padding: 1rem;
+      gap: .5rem;
+    }
+
+    .navbar button {
+      flex: 1;
+      padding: .5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      background: #3498db;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .tab-pane {
+      display: none;
+      padding: 1rem;
+      overflow: auto;
+      max-height: calc(100vh - 64px);
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    .loading {
+      text-align: center;
+      margin: 2rem;
+      color: #ffd700;
+    }
+
+    table.dataTable {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .dt-button,
+    .dataTables_length select,
+    .dataTables_filter input {
+      color: #000 !important;
+    }
+
     /* Wallet card styles */
-    #wallet-container { display:flex; flex-wrap:wrap; gap:1rem; }
-    .wallet-card { background:rgba(255,255,255,0.1); border-radius:8px; padding:1rem; flex:1 1 calc(33% - 1rem); min-width:250px; }
-    .wallet-card h3 { margin-top:0; }
-    .wallet-card hr { border:0; border-top:1px solid rgba(255,255,255,0.3); margin:0.5rem 0; }
+    #wallet-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .wallet-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 1rem;
+      flex: 1 1 calc(33% - 1rem);
+      min-width: 250px;
+    }
+
+    .wallet-card h3 {
+      margin-top: 0;
+    }
+
+    .wallet-card hr {
+      border: 0;
+      border-top: 1px solid rgba(255,255,255,0.3);
+      margin: 0.5rem 0;
+    }
   </style>
 </head>
 <body>
@@ -46,9 +111,12 @@
     <h2>Users</h2>
     <div id="users-loading" class="loading">Loading users…</div>
     <table id="users-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Created On</th><th>Action</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th>SL</th><th>User ID</th><th>Name</th><th>Email</th>
+          <th>Phone</th><th>Address</th><th>Created On</th><th>Action</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
@@ -58,9 +126,12 @@
     <h2>Drivers</h2>
     <div id="drivers-loading" class="loading">Loading drivers…</div>
     <table id="drivers-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>Vehicle Count</th><th>Action</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th>SL</th><th>Driver ID</th><th>Name</th>
+          <th>Phone</th><th>Vehicle Count</th><th>Action</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
@@ -70,10 +141,14 @@
     <h2>Pending Cars</h2>
     <div id="pending-loading" class="loading">Loading pending cars…</div>
     <table id="pending-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver ID</th><th>Car ID</th><th>Brand</th><th>Reg No</th>
-        <th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Submitted At</th><th>Actions</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th>SL</th><th>Driver ID</th><th>Car ID</th>
+          <th>Brand</th><th>Reg No</th><th>Driver Name</th>
+          <th>Driver Number</th><th>Owner Name</th>
+          <th>Seats</th><th>Submitted At</th><th>Actions</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
@@ -83,10 +158,12 @@
     <h2>Approved Cars</h2>
     <div id="approved-loading" class="loading">Loading approved cars…</div>
     <table id="approved-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver Name</th><th>Phone</th><th>Car ID</th>
-        <th>Brand</th><th>Reg No</th><th>Owner</th><th>Seats</th><th>Action</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th>SL</th><th>Driver Name</th><th>Phone</th><th>Car ID</th>
+          <th>Brand</th><th>Reg No</th><th>Owner</th><th>Seats</th><th>Action</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
@@ -96,10 +173,12 @@
     <h2>Slots</h2>
     <div id="slots-loading" class="loading">Loading slots…</div>
     <table id="slots-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver Name</th><th>Phone</th><th>Slot ID</th>
-        <th>Pickup</th><th>Dropoff</th><th>Date</th><th>Time</th><th>Seats</th><th>Action</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th>SL</th><th>Driver Name</th><th>Phone</th><th>Slot ID</th>
+          <th>Pickup</th><th>Dropoff</th><th>Date</th><th>Time</th><th>Seats</th><th>Action</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
@@ -109,10 +188,13 @@
     <h2>Bookings</h2>
     <div id="bookings-loading" class="loading">Loading bookings…</div>
     <table id="bookings-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Booking ID</th><th>Customer</th><th>Vehicle</th><th>Pickup</th>
-        <th>Dropoff</th><th>Duration</th><th>Fare</th><th>Status</th><th>Action</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th>SL</th><th>Booking ID</th><th>Customer</th><th>Vehicle</th>
+          <th>Pickup</th><th>Dropoff</th><th>Duration</th><th>Fare</th>
+          <th>Status</th><th>Action</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
@@ -159,151 +241,224 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    window.logout = () => signOut(auth).then(()=>location.href='adminlogin.html');
-    window.deleteUser      = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
-    window.deleteDriver    = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
-    window.deletePending   = async (did,cid) => { await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); };
-    window.deleteApproved  = async (did,cid) => { await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); };
-    window.deleteSlot      = async (did,sid) => { await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); };
-    window.deleteBooking   = async bid => { await remove(ref(db,`bookings/${bid}`)); loadBookings(); };
-    window.approveCar      = async (did,cid) => {
-      const snap = await get(ref(db,`pendingcars/${did}/${cid}`));
-      const car  = snap.val(); if(!car) return;
-      await set(ref(db,`approvedcars/${did}/${cid}`), car);
-      await remove(ref(db,`pendingcars/${did}/${cid}`));
+    // Auth & logout
+    window.logout = () => signOut(auth).then(() => location.href = 'adminlogin.html');
+
+    // Delete helpers
+    window.deleteUser      = async uid => { await remove(ref(db, `users/${uid}`)); loadUsers(); };
+    window.deleteDriver    = async did => { await remove(ref(db, `driverdetails/${did}`)); loadDrivers(); };
+    window.deletePending   = async (did, cid) => { await remove(ref(db, `pendingcars/${did}/${cid}`)); loadPending(); };
+    window.deleteApproved  = async (did, cid) => { await remove(ref(db, `approvedcars/${did}/${cid}`)); loadApproved(); };
+    window.deleteSlot      = async (did, sid) => { await remove(ref(db, `availableslots/${did}/${sid}`)); loadSlots(); };
+    window.deleteBooking   = async bid => { await remove(ref(db, `bookings/${bid}`)); loadBookings(); };
+
+    // Approve pending car
+    window.approveCar = async (did, cid) => {
+      const snap = await get(ref(db, `pendingcars/${did}/${cid}`));
+      const car  = snap.val(); if (!car) return;
+      await set(ref(db, `approvedcars/${did}/${cid}`), car);
+      await remove(ref(db, `pendingcars/${did}/${cid}`));
       loadPending();
     };
 
+    // DataTables init utility
     const tables = {};
-    function initTable(id,noSortCols=[]){
-      if(!tables[id]){
+    function initTable(id, noSortCols = []) {
+      if (!tables[id]) {
         tables[id] = $(`#${id}`).DataTable({
-          responsive:true,
-          dom:'Bfltip',
-          buttons:['copy','csv','print'],
-          columnDefs: noSortCols.map(c=>({ orderable:false, targets:c }))
+          responsive: true,
+          dom: 'Bfltip',
+          buttons: ['copy', 'csv', 'print'],
+          columnDefs: noSortCols.map(c => ({ orderable: false, targets: c }))
         });
-      } else tables[id].clear().draw();
+      } else {
+        tables[id].clear().draw();
+      }
     }
 
-    async function loadUsers(){
+    // Load Users
+    async function loadUsers() {
       $('#users-table').hide(); $('#users-loading').show();
-      initTable('users-table',[7]);
-      const snap = await get(ref(db,'users'));
-      let i=1;
-      if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())){
-        tables['users-table'].row.add([i++,uid,u.name||'',u.email||'',u.phone||'',u.address||'',u.createdOn||'',`<button onclick="deleteUser('${uid}')">Delete</button>`]).draw(false);
+      initTable('users-table', [7]);
+      const snap = await get(ref(db, 'users'));
+      let i = 1;
+      if (snap.exists()) {
+        for (const [uid, u] of Object.entries(snap.val())) {
+          tables['users-table'].row.add([
+            i++, uid, u.name || '', u.email || '', u.phone || '',
+            u.address || '', u.createdOn || '',
+            `<button onclick="deleteUser('${uid}')">Delete</button>`
+          ]).draw(false);
+        }
       }
       $('#users-loading').hide(); $('#users-table').show();
     }
 
-    async function loadDrivers(){
+    // Load Drivers
+    async function loadDrivers() {
       $('#drivers-table').hide(); $('#drivers-loading').show();
-      initTable('drivers-table',[5]);
-      const snap = await get(ref(db,'driverdetails'));
-      let i=1;
-      if(snap.exists()) for(const [did,d] of Object.entries(snap.val())){
-        const vc = d.vehicles?Object.keys(d.vehicles).length:0;
-        tables['drivers-table'].row.add([i++,did,d.name||'',d.phone||'',vc,`<button onclick="deleteDriver('${did}')">Delete</button>`]).draw(false);
+      initTable('drivers-table', [5]);
+      const snap = await get(ref(db, 'driverdetails'));
+      let i = 1;
+      if (snap.exists()) {
+        for (const [did, d] of Object.entries(snap.val())) {
+          const vc = d.vehicles ? Object.keys(d.vehicles).length : 0;
+          tables['drivers-table'].row.add([
+            i++, did, d.name || '', d.phone || '', vc,
+            `<button onclick="deleteDriver('${did}')">Delete</button>`
+          ]).draw(false);
+        }
       }
       $('#drivers-loading').hide(); $('#drivers-table').show();
     }
 
-    async function loadPending(){
+    // Load Pending Cars
+    async function loadPending() {
       $('#pending-table').hide(); $('#pending-loading').show();
-      initTable('pending-table',[10]);
-      const snap = await get(ref(db,'pendingcars'));
-      let i=1;
-      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
-        for(const [cid,c] of Object.entries(cars)){
-          tables['pending-table'].row.add([
-            i++, did, cid, c.carBrand||'', c.carReg||'', c.driverName||'', c.driverNumber||'', c.ownerName||'', c.seats||'', c.submittedAt||'',
-            `<button onclick="approveCar('${did}','${cid}')">Approve</button> <button onclick="deletePending('${did}','${cid}')">Delete</button>`
-          ]).draw(false);
+      initTable('pending-table', [10]);
+      const snap = await get(ref(db, 'pendingcars'));
+      let i = 1;
+      if (snap.exists()) {
+        for (const [did, cars] of Object.entries(snap.val())) {
+          for (const [cid, c] of Object.entries(cars)) {
+            tables['pending-table'].row.add([
+              i++, did, cid, c.carBrand || '', c.carReg || '',
+              c.driverName || '', c.driverNumber || '',
+              c.ownerName || '', c.seats || '', c.submittedAt || '',
+              `<button onclick="approveCar('${did}','${cid}')">Approve</button>
+               <button onclick="deletePending('${did}','${cid}')">Delete</button>`
+            ]).draw(false);
+          }
         }
       }
       $('#pending-loading').hide(); $('#pending-table').show();
     }
 
-    async function loadApproved(){
+    // Load Approved Cars
+    async function loadApproved() {
       $('#approved-table').hide(); $('#approved-loading').show();
-      initTable('approved-table',[8]);
-      const snap = await get(ref(db,'approvedcars'));
-      let i=1;
-      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
-        for(const [cid,c] of Object.entries(cars)){
-          tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button onclick="deleteApproved('${did}','${cid}')">Delete</button>`]).draw(false);
+      initTable('approved-table', [8]);
+      const snap = await get(ref(db, 'approvedcars'));
+      let i = 1;
+      if (snap.exists()) {
+        for (const [did, cars] of Object.entries(snap.val())) {
+          for (const [cid, c] of Object.entries(cars)) {
+            tables['approved-table'].row.add([
+              i++, c.driverName || '', c.driverNumber || '', cid,
+              c.carBrand || '', c.carReg || '',
+              c.ownerName || '', c.seats || '',
+              `<button onclick="deleteApproved('${did}','${cid}')">Delete</button>`
+            ]).draw(false);
+          }
         }
       }
       $('#approved-loading').hide(); $('#approved-table').show();
     }
 
-    async function loadSlots(){
+    // Load Slots
+    async function loadSlots() {
       $('#slots-table').hide(); $('#slots-loading').show();
-      initTable('slots-table',[9]);
-      const snap = await get(ref(db,'availableslots'));
-      let i=1;
-      if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())){
-        const dSnap = await get(ref(db,`driverdetails/${did}`));
-        const d = dSnap.exists()?dSnap.val():{};
-        for(const [sid,s] of Object.entries(slots)){
-          tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button onclick="deleteSlot('${did}','${sid}')">Delete</button>`]).draw(false);
+      initTable('slots-table', [9]);
+      const snap = await get(ref(db, 'availableslots'));
+      let i = 1;
+      if (snap.exists()) {
+        for (const [did, slots] of Object.entries(snap.val())) {
+          const dSnap = await get(ref(db, `driverdetails/${did}`));
+          const d = dSnap.exists() ? dSnap.val() : {};
+          for (const [sid, s] of Object.entries(slots)) {
+            tables['slots-table'].row.add([
+              i++, d.name || '', d.phone || '', sid,
+              s.pickup || '', s.dropoff || '',
+              s.date || '', s.time || '', s.seats || '',
+              `<button onclick="deleteSlot('${did}','${sid}')">Delete</button>`
+            ]).draw(false);
+          }
         }
       }
       $('#slots-loading').hide(); $('#slots-table').show();
     }
 
-    async function loadBookings(){
+    // Load Bookings
+    async function loadBookings() {
       $('#bookings-table').hide(); $('#bookings-loading').show();
-      initTable('bookings-table',[9]);
-      const snap = await get(ref(db,'bookings'));
-      let i=1;
-      if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())){
-        tables['bookings-table'].row.add([i++,bid,b.customerName||'',b.vehicle||'',b.pickup||'',b.dropoff||'',b.duration||'',b.fare||'',b.status||'',`<button onclick="deleteBooking('${bid}')">Delete</button>`]).draw(false);
+      initTable('bookings-table', [9]);
+      const snap = await get(ref(db, 'bookings'));
+      let i = 1;
+      if (snap.exists()) {
+        for (const [bid, b] of Object.entries(snap.val())) {
+          tables['bookings-table'].row.add([
+            i++, bid, b.customerName || '', b.vehicle || '',
+            b.pickup || '', b.dropoff || '',
+            b.duration || '', b.fare || '',
+            b.status || '',
+            `<button onclick="deleteBooking('${bid}')">Delete</button>`
+          ]).draw(false);
+        }
       }
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
-    // New: load wallet balances
-    async function loadWalletBalances(){
-      $('#wallet-container').hide(); $('#wallet-loading').show();
+    // Load Wallet Balances
+    async function loadWalletBalances() {
+      $('#wallet-container').hide();
+      $('#wallet-loading').show();
       $('#wallet-container').empty();
-      const snap = await get(ref(db,'walletBalance'));
-      if(snap.exists()){
-        for(const [did, records] of Object.entries(snap.val())){
-          const dSnap = await get(ref(db,`driverdetails/${did}`));
-          const d = dSnap.exists()?dSnap.val():{};
-          const name  = d.name || 'Unknown Driver';
-          const phone = d.phone||'';
-          const card  = $('<div class="wallet-card"></div>');
+
+      const snap = await get(ref(db, 'walletBalance'));
+      if (snap.exists()) {
+        for (const [did, records] of Object.entries(snap.val())) {
+          // get driver info
+          const dSnap = await get(ref(db, `driverdetails/${did}`));
+          const d = dSnap.exists() ? dSnap.val() : {};
+          const name  = d.name  || 'Unknown Driver';
+          const phone = d.phone || '';
+
+          // build a card
+          const card = $('<div class="wallet-card"></div>');
           card.append(`<h3>${name} (${phone})</h3>`);
-          for(const [rid, r] of Object.entries(records)){
+
+          for (const [rid, r] of Object.entries(records)) {
             card.append(`<p><strong>Record ID:</strong> ${rid}</p>`);
-            card.append(`<p><strong>Amount:</strong> ${r.amount||''}</p>`);
-            card.append(`<p><strong>Date:</strong> ${r.date||''}</p>`);
-            card.append(`<p><strong>Status:</strong> ${r.status||''}</p>`);
+            card.append(`<p><strong>Amount:</strong> ${r.amount || ''}</p>`);
+            card.append(`<p><strong>Date:</strong> ${r.date || ''}</p>`);
+            card.append(`<p><strong>Balance:</strong> ${r.balance || ''}</p>`);
+            card.append(`<p><strong>Status:</strong> ${r.status || ''}</p>`);
             card.append('<hr>');
           }
+
           $('#wallet-container').append(card);
         }
       }
-      $('#wallet-loading').hide(); $('#wallet-container').show();
+
+      $('#wallet-loading').hide();
+      $('#wallet-container').show();
     }
 
-    async function loadProfile(){
-      $('#profile-table').hide(); $('#profile-loading').show();
+    // Load Profile
+    async function loadProfile() {
+      $('#profile-table').hide();
+      $('#profile-loading').show();
       initTable('profile-table');
+
       const user = auth.currentUser;
-      if(user){
-        const snap = await get(ref(db,`admins/${user.uid}`));
-        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())) tables['profile-table'].row.add([k,v]).draw(false);
+      if (user) {
+        const snap = await get(ref(db, `admins/${user.uid}`));
+        if (snap.exists()) {
+          for (const [k, v] of Object.entries(snap.val())) {
+            tables['profile-table'].row.add([k, v]).draw(false);
+          }
+        }
       }
-      $('#profile-loading').hide(); $('#profile-table').show();
+
+      $('#profile-loading').hide();
+      $('#profile-table').show();
     }
 
+    // Tab navigation
     window.openTab = name => {
-      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
       document.getElementById(`${name}-tab`).classList.add('active');
+
       const loaders = {
         users: loadUsers,
         drivers: loadDrivers,
@@ -317,8 +472,9 @@
       loaders[name]();
     };
 
-    onAuthStateChanged(auth,user=>{
-      if(!user) return location.href='adminlogin.html';
+    // On auth change
+    onAuthStateChanged(auth, user => {
+      if (!user) return location.href = 'adminlogin.html';
       openTab('users');
     });
   </script>
