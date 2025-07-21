@@ -234,7 +234,7 @@
 
                   try {
                     await newBookingRef.set(bookingData);
-                    await db.ref(`commisions/${booking.driverId}/${booking.slotKey}/${bookingId}`)
+                    await db.ref(`walletBalance/${booking.driverId}/${booking.slotKey}/${bookingId}`)
                             .set(commissionData);
                     alert('Payment successful & booking confirmed!');
                     localStorage.removeItem('selectedBooking');
