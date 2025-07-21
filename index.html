@@ -118,7 +118,6 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // On load: setup reCAPTCHA and check for existing login
     window.onload = () => {
       // Setup invisible reCAPTCHA
       window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
@@ -127,15 +126,19 @@
       );
       window.recaptchaVerifier.render();
 
-      // If userPhone in localStorage, auto-redirect
-      const stored = localStorage.getItem('userPhone');
-      if (stored) {
-        if (stored === '+919907738066') {
-          location.href = 'admindashboard.html';
-        } else {
-          location.href = 'booking.html';
+      // Only redirect if there's a real Firebase session
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          const userPhone = user.phoneNumber;
+          // persist in localStorage too, if you like
+          localStorage.setItem('userPhone', userPhone);
+          if (userPhone === '+919907738066') {
+            location.href = 'admindashboard.html';
+          } else {
+            location.href = 'booking.html';
+          }
         }
-      }
+      });
     };
 
     let confirmationResult = null;
@@ -206,7 +209,7 @@
       try {
         const result = await confirmationResult.confirm(otp);
         const userPhone = result.user.phoneNumber;
-        // Persist login
+        // persist login
         localStorage.setItem('userPhone', userPhone);
 
         if (userPhone === '+919907738066') {
