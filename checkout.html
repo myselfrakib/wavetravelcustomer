@@ -225,7 +225,8 @@
                       userPhone: phone,
                       paymentId: res.razorpay_payment_id,
                       bookedAt: new Date().toISOString(),
-                      status: 'confirmed'
+                      status: 'confirmed',
+                      driverCommission: booking.fare * 0.5  // 50% commission
                     })
                     .then(() => {
                       alert('Payment successful & booking confirmed!');
