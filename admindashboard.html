@@ -18,22 +18,13 @@
     .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px); }
     .tab-pane.active { display:block; }
     .loading { text-align:center; margin:2rem; color:#ffd700; }
-
-    /* Tables */
     table.dataTable { background:rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; }
     .dt-button, .dataTables_length select, .dataTables_filter input { color:#000 !important; }
-
-    /* Wallet cards */
-    #walletbalances-container { display:flex; flex-wrap:wrap; gap:1rem; }
-    .wallet-card {
-      background: rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 1rem;
-      width: 300px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-    .wallet-card h3 { margin-top: 0; color: #ffd700; }
-    .wallet-card p { margin: 0.5rem 0; color: #fff; }
+    /* Wallet card styles */
+    #wallet-container { display:flex; flex-wrap:wrap; gap:1rem; }
+    .wallet-card { background:rgba(255,255,255,0.1); border-radius:8px; padding:1rem; flex:1 1 calc(33% - 1rem); min-width:250px; }
+    .wallet-card h3 { margin-top:0; }
+    .wallet-card hr { border:0; border-top:1px solid rgba(255,255,255,0.3); margin:0.5rem 0; }
   </style>
 </head>
 <body>
@@ -129,8 +120,8 @@
   <!-- WALLET BALANCES -->
   <div id="walletbalances-tab" class="tab-pane">
     <h2>Wallet Balances</h2>
-    <div id="walletbalances-loading" class="loading">Loading wallet balances…</div>
-    <div id="walletbalances-container" style="display:none;"></div>
+    <div id="wallet-loading" class="loading">Loading wallet balances…</div>
+    <div id="wallet-container" style="display:none;"></div>
   </div>
 
   <!-- PROFILE -->
@@ -273,34 +264,30 @@
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
+    // New: load wallet balances
     async function loadWalletBalances(){
-      $('#walletbalances-container').hide(); $('#walletbalances-loading').show();
-      const container = $('#walletbalances-container').empty();
+      $('#wallet-container').hide(); $('#wallet-loading').show();
+      $('#wallet-container').empty();
       const snap = await get(ref(db,'walletBalance'));
       if(snap.exists()){
         for(const [did, records] of Object.entries(snap.val())){
-          // fetch driver details for name & phone
           const dSnap = await get(ref(db,`driverdetails/${did}`));
-          const driver = dSnap.exists()?dSnap.val():{};
-          for(const [balId, bal] of Object.entries(records)){
-            const card = $(`
-              <div class="wallet-card">
-                <h3>Driver: ${driver.name||did}</h3>
-                <p><strong>Phone:</strong> ${driver.phone||'N/A'}</p>
-                <p><strong>Record ID:</strong> ${balId}</p>
-                <p><strong>Amount:</strong> ${bal.amount}</p>
-                <p><strong>Date:</strong> ${new Date(bal.date).toLocaleString()}</p>
-                <p><strong>Status:</strong> ${bal.status}</p>
-              </div>
-            `);
-            container.append(card);
+          const d = dSnap.exists()?dSnap.val():{};
+          const name  = d.name || 'Unknown Driver';
+          const phone = d.phone||'';
+          const card  = $('<div class="wallet-card"></div>');
+          card.append(`<h3>${name} (${phone})</h3>`);
+          for(const [rid, r] of Object.entries(records)){
+            card.append(`<p><strong>Record ID:</strong> ${rid}</p>`);
+            card.append(`<p><strong>Amount:</strong> ${r.amount||''}</p>`);
+            card.append(`<p><strong>Date:</strong> ${r.date||''}</p>`);
+            card.append(`<p><strong>Status:</strong> ${r.status||''}</p>`);
+            card.append('<hr>');
           }
+          $('#wallet-container').append(card);
         }
-      } else {
-        container.append('<p>No wallet balance records found.</p>');
       }
-      $('#walletbalances-loading').hide();
-      $('#walletbalances-container').show();
+      $('#wallet-loading').hide(); $('#wallet-container').show();
     }
 
     async function loadProfile(){
@@ -309,9 +296,7 @@
       const user = auth.currentUser;
       if(user){
         const snap = await get(ref(db,`admins/${user.uid}`));
-        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())){
-          tables['profile-table'].row.add([k,v]).draw(false);
-        }
+        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())) tables['profile-table'].row.add([k,v]).draw(false);
       }
       $('#profile-loading').hide(); $('#profile-table').show();
     }
