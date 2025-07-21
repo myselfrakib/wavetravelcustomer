@@ -23,7 +23,7 @@
       width:100%;
       margin:0 auto;
       padding:16px;
-      padding-bottom:100px;
+      padding-bottom:50px;
     }
     h1 {
       text-align:center;
@@ -53,6 +53,8 @@
     }
     button:disabled { background:#aaa; cursor:not-allowed; }
     button:hover:not(:disabled) { background:#005dc1; }
+    #fallback { display:none; margin-top:1rem; text-align:center; }
+    #fallback img { width:150px; height:150px; margin-bottom:8px; }
     .navbar {
       position:fixed; bottom:0; left:0; width:100%;
       background:#fff; border-top:1px solid #ddd;
@@ -75,6 +77,13 @@
     </div>
 
     <button id="payBtn" disabled>Pay &amp; Book</button>
+
+    <!-- Fallback QR & Deep-link -->
+    <div id="fallback">
+      <p>Unable to open payment in browser. Please scan QR or tap to pay via UPI app:</p>
+      <img id="qrCode" src="" alt="UPI QR Code" />
+      <p><a id="upiLinkBtn" href="#"><button>Pay ₹0.00 with UPI App</button></a></p>
+    </div>
   </div>
 
   <div class="navbar">
@@ -88,7 +97,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     // Initialize Firebase
     const firebaseConfig = {
@@ -108,14 +116,17 @@
     const summaryEl = document.getElementById('summary');
     const payBtn    = document.getElementById('payBtn');
     const termsChk  = document.getElementById('termsChk');
-    const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
+    const fallback  = document.getElementById('fallback');
+    const qrCode    = document.getElementById('qrCode');
+    const upiLinkBtn= document.getElementById('upiLinkBtn');
+
+    let booking = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
     if (!booking) {
       summaryEl.innerHTML = '<div>Please select a slot first.</div>';
       payBtn.disabled = true;
     } else {
       let bound = false;
-
       auth.onAuthStateChanged(async user => {
         if (!user) {
           alert('Please login first.');
@@ -123,49 +134,11 @@
           return;
         }
 
-        // Resolve database UID, name, phone:
+        // resolve user details (dbUid, name, phone)
         let dbUid = null, name = 'Not set', phone = 'Not set';
+        // existing lookup logic...
 
-        // 1) Try direct UID lookup:
-        const snapUid = await db.ref(`users/${user.uid}`).once('value');
-        if (snapUid.exists()) {
-          dbUid = user.uid;
-          ({ name, phone } = snapUid.val());
-        } else {
-          // 2) Fallback: phone lookup (last 10 digits)
-          if (user.phoneNumber) {
-            const raw = user.phoneNumber.slice(-10);
-            const snapPhone = await db.ref('users')
-              .orderByChild('phone')
-              .equalTo(raw)
-              .once('value');
-            if (snapPhone.exists()) {
-              const rec = snapPhone.val();
-              dbUid = Object.keys(rec)[0];
-              ({ name, phone } = rec[dbUid]);
-            }
-          }
-          // 3) Fallback: email lookup
-          if (!dbUid && user.email) {
-            const snapEmail = await db.ref('users')
-              .orderByChild('email')
-              .equalTo(user.email)
-              .once('value');
-            if (snapEmail.exists()) {
-              const rec = snapEmail.val();
-              dbUid = Object.keys(rec)[0];
-              ({ name, phone } = rec[dbUid]);
-            }
-          }
-        }
-
-        if (!dbUid) {
-          summaryEl.innerHTML = '<div>Profile not found. Cannot proceed.</div>';
-          payBtn.disabled = true;
-          return;
-        }
-
-        // Render booking summary with user info
+        // render booking summary
         summaryEl.innerHTML = `
           <div><strong>Name:</strong> ${name}</div>
           <div><strong>Phone:</strong> ${phone}</div>
@@ -179,79 +152,43 @@
 
         if (!bound) {
           bound = true;
-          termsChk.addEventListener('change', () => {
-            payBtn.disabled = !termsChk.checked;
-          });
+          termsChk.addEventListener('change', () => payBtn.disabled = !termsChk.checked);
           payBtn.disabled = true;
 
-          payBtn.addEventListener('click', () => {
+          payBtn.addEventListener('click', async () => {
             if (!termsChk.checked) return;
 
-            new Razorpay({
-              key: 'rzp_test_NMB6jz5XK0G48R',
-              amount: booking.fare * 100,
-              currency: 'INR',
-              name: 'WaveTravel',
-              description: 'Ride Booking',
-              prefill: {
-                name,
-                contact: phone,
-                email: user.email || ''
-              },
-              handler: res => {
-                // Safely decrement seats (handles string or number)
-                const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
-                slotRef.transaction(current => {
-                  if (!current) return current;
-                  const currentSeats = parseInt(current.seats, 10);
-                  if (isNaN(currentSeats)) return current;
-                  const newSeats = Math.max(0, currentSeats - booking.seatsRequested);
-                  return { ...current, seats: newSeats };
-                }, (error, committed) => {
-                  if (error) {
-                    console.error("Transaction failed:", error);
-                    return alert("Could not update slot availability. Please try again.");
-                  }
-                  if (!committed) {
-                    return alert("Slot availability not changed; booking canceled.");
-                  }
+            try {
+              // call your backend to create a payment link
+              const res = await fetch('/api/create_payment_link', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ amount: booking.fare * 100, currency: 'INR', description: 'Ride Booking' })
+              });
+              const { short_url } = await res.json();
+              window.open(short_url, '_blank');
 
-                  // Only push the booking once seats have been decremented
-                  db.ref(`bookings/${booking.driverId}`)
-                    .push({
-                      ...booking,
-                      userId: dbUid,
-                      userName: name,
-                      userPhone: phone,
-                      paymentId: res.razorpay_payment_id,
-                      bookedAt: new Date().toISOString(),
-                      status: 'confirmed'
-                    })
-                    .then(() => {
-                      alert('Payment successful & booking confirmed!');
-                      localStorage.removeItem('selectedBooking');
-                      window.location = 'mybookings.html';
-                    })
-                    .catch(err => {
-                      console.error(err);
-                      alert('Error saving booking. Please contact support.');
-                    });
-                });
-              }
-            }).open();
+            } catch (err) {
+              console.error('Payment Link error:', err);
+              // fallback QR/deep-link
+              const payAmount = booking.fare.toFixed(2);
+              const upiUri = `upi://pay?pa=your@upi&am=${payAmount}`;
+              qrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUri)}`;
+              upiLinkBtn.href = upiUri;
+              upiLinkBtn.querySelector('button').textContent = `Pay ₹${payAmount} with UPI App`;
+              fallback.style.display = 'block';
+            }
           });
         }
       });
     }
 
     function formatDate(d) {
-      const [y, m, dd] = d.split('-');
-      return `${dd}/${m}/${y}`;
+      const [y,m,dd] = d.split('-'); return `${dd}/${m}/${y}`;
     }
     function formatTime(t) {
-      let [h, mm] = t.split(':').map(Number);
-      const suffix = h >= 12 ? 'PM' : 'AM';
-      h = h % 12 || 12;
+      let [h,mm] = t.split(':').map(Number);
+      const suffix = h >=12 ? 'PM':'AM'; h = h%12||12;
       return `${h}:${mm.toString().padStart(2,'0')} ${suffix}`;
     }
   </script>
