@@ -271,7 +271,7 @@
       $('#wallets-loading').show();
       container.innerHTML = '';
 
-      const snap = await get(ref(db,'walletbalance'));
+      const snap = await get(ref(db,'walletBalance'));
       if (snap.exists()){
         const byDriver = snap.val();
         for (const driverId in byDriver) {
