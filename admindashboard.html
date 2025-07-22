@@ -1,341 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>WaveTravel Admin Dashboard</title>
-
-  <!-- Normalize & DataTables CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css" />
-
-  <style>
-    body { font-family:Arial,sans-serif; margin:0; background:linear-gradient(to right,#2c3e50,#3498db); color:#fff; }
-    .navbar { display:flex; flex-wrap:wrap; background:#1f2c3f; padding:1rem; gap:.5rem; }
-    .navbar button { flex:1; padding:.5rem 1rem; border:none; border-radius:4px; background:#3498db; color:#fff; cursor:pointer; }
-    .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px); }
-    .tab-pane.active { display:block; }
-    .loading { text-align:center; margin:2rem; color:#ffd700; }
-    table.dataTable { background:rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; }
-    .dt-button, .dataTables_length select, .dataTables_filter input { color:#000 !important; }
-
-    /* Wallet cards */
-    #wallets-container { display:flex; flex-wrap:wrap; gap:1rem; }
-    .wallet-card { background:rgba(255,255,255,0.1); padding:1rem; border-radius:8px; width:280px; }
-    .wallet-card h3 { margin:0 0 .5rem; color:#ffd700; font-size:1.1rem; }
-    .wallet-card p { margin:0.25rem 0; font-size:0.95rem; }
-  </style>
-</head>
-<body>
-
-  <div class="navbar">
-    <button onclick="openTab('users')">Users</button>
-    <button onclick="openTab('drivers')">Drivers</button>
-    <button onclick="openTab('pending-cars')">Pending Cars</button>
-    <button onclick="openTab('approved-cars')">Approved Cars</button>
-    <button onclick="openTab('slots')">Slots</button>
-    <button onclick="openTab('bookings')">Bookings</button>
-    <button onclick="openTab('driver-wallets')">Driver Wallets</button>
-    <button onclick="openTab('profile')">Profile</button>
-    <button onclick="logout()">Logout</button>
-  </div>
-
-  <!-- USERS -->
-  <div id="users-tab" class="tab-pane">
-    <h2>Users</h2>
-    <div id="users-loading" class="loading">Loading users…</div>
-    <table id="users-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Created On</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- DRIVERS -->
-  <div id="drivers-tab" class="tab-pane">
-    <h2>Drivers</h2>
-    <div id="drivers-loading" class="loading">Loading drivers…</div>
-    <table id="drivers-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>Vehicle Count</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- PENDING CARS -->
-  <div id="pending-cars-tab" class="tab-pane">
-    <h2>Pending Cars</h2>
-    <div id="pending-loading" class="loading">Loading pending cars…</div>
-    <table id="pending-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver ID</th><th>Car ID</th><th>Brand</th><th>Reg No</th>
-        <th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Submitted At</th><th>Actions</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- APPROVED CARS -->
-  <div id="approved-cars-tab" class="tab-pane">
-    <h2>Approved Cars</h2>
-    <div id="approved-loading" class="loading">Loading approved cars…</div>
-    <table id="approved-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver Name</th><th>Phone</th><th>Car ID</th>
-        <th>Brand</th><th>Reg No</th><th>Owner</th><th>Seats</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- SLOTS -->
-  <div id="slots-tab" class="tab-pane">
-    <h2>Slots</h2>
-    <div id="slots-loading" class="loading">Loading slots…</div>
-    <table id="slots-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver Name</th><th>Phone</th><th>Slot ID</th>
-        <th>Pickup</th><th>Dropoff</th><th>Date</th><th>Time</th><th>Seats</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- BOOKINGS -->
-  <div id="bookings-tab" class="tab-pane">
-    <h2>Bookings</h2>
-    <div id="bookings-loading" class="loading">Loading bookings…</div>
-    <table id="bookings-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Booking ID</th><th>Customer</th><th>Vehicle</th><th>Pickup</th>
-        <th>Dropoff</th><th>Duration</th><th>Fare</th><th>Status</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- DRIVER WALLETS -->
-  <div id="driver-wallets-tab" class="tab-pane">
-    <h2>Driver Wallets</h2>
-    <div id="wallets-loading" class="loading">Loading wallets…</div>
-    <div id="wallets-container" style="display:none;"></div>
-  </div>
-
-  <!-- PROFILE -->
-  <div id="profile-tab" class="tab-pane">
-    <h2>My Profile</h2>
-    <div id="profile-loading" class="loading">Loading profile…</div>
-    <table id="profile-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr><th>Field</th><th>Value</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- jQuery & DataTables JS -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
-
-  <!-- Firebase & App Logic -->
-  <script type="module">
-    import { initializeApp }                from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref, get, remove, set }   from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
-
-    const cfg = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL:"https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId:"wavetravel-3c4c4",
-      storageBucket:"wavetravel-3c4c4.appspot.com",
-      messagingSenderId:"298226098137",
-      appId:"1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
-    const app  = initializeApp(cfg);
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
-
-    window.logout = () => signOut(auth).then(()=>location.href='adminlogin.html');
-    window.deleteUser      = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
-    window.deleteDriver    = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
-    window.deletePending   = async (did,cid) => { await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); };
-    window.deleteApproved  = async (did,cid) => { await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); };
-    window.deleteSlot      = async (did,sid) => { await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); };
-    window.deleteBooking   = async bid => { await remove(ref(db,`bookings/${bid}`)); loadBookings(); };
-    window.approveCar      = async (did,cid) => {
-      const snap = await get(ref(db,`pendingcars/${did}/${cid}`));
-      const car  = snap.val(); if(!car) return;
-      await set(ref(db,`approvedcars/${did}/${cid}`), car);
-      await remove(ref(db,`pendingcars/${did}/${cid}`));
-      loadPending();
-    };
-
-    const tables = {};
-    function initTable(id,noSortCols=[]){
-      if(!tables[id]){
-        tables[id] = $(`#${id}`).DataTable({
-          responsive:true,
-          dom:'Bfltip',
-          buttons:['copy','csv','print'],
-          columnDefs: noSortCols.map(c=>({ orderable:false, targets:c }))
-        });
-      } else tables[id].clear().draw();
-    }
-
-    async function loadUsers(){
-      $('#users-table').hide(); $('#users-loading').show();
-      initTable('users-table',[7]);
-      const snap = await get(ref(db,'users'));
-      let i=1;
-      if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())){
-        tables['users-table'].row.add([i++,uid,u.name||'',u.email||'',u.phone||'',u.address||'',u.createdOn||'',`<button onclick="deleteUser('${uid}')">Delete</button>`]).draw(false);
+{
+  "rules": {
+    "users": {
+      ".read":  "true",
+      ".write": "false",
+      ".indexOn": ["phone", "email"],
+      "$uid": {
+        ".read":  "auth != null",
+        ".write": "auth != null && auth.uid === $uid"
       }
-      $('#users-loading').hide(); $('#users-table').show();
-    }
-
-    async function loadDrivers(){
-      $('#drivers-table').hide(); $('#drivers-loading').show();
-      initTable('drivers-table',[5]);
-      const snap = await get(ref(db,'driverdetails'));
-      let i=1;
-      if(snap.exists()) for(const [did,d] of Object.entries(snap.val())){
-        const vc = d.vehicles?Object.keys(d.vehicles).length:0;
-        tables['drivers-table'].row.add([i++,did,d.name||'',d.phone||'',vc,`<button onclick="deleteDriver('${did}')">Delete</button>`]).draw(false);
+    },
+    "locations": {
+      ".read":  "auth != null",
+      ".write": "auth != null"
+    },
+    "availableslots": {
+      ".read":  "auth != null",
+      ".write": "auth != null",
+      "$driverId": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
       }
-      $('#drivers-loading').hide(); $('#drivers-table').show();
-    }
-
-    async function loadPending(){
-      $('#pending-table').hide(); $('#pending-loading').show();
-      initTable('pending-table',[10]);
-      const snap = await get(ref(db,'pendingcars'));
-      let i=1;
-      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
-        for(const [cid,c] of Object.entries(cars)){
-          tables['pending-table'].row.add([
-            i++,did,cid,c.carBrand||'',c.carReg||'',c.driverName||'',c.driverNumber||'',c.ownerName||'',c.seats||'',c.submittedAt||'',
-            `<button onclick="approveCar('${did}','${cid}')">Approve</button> <button onclick="deletePending('${did}','${cid}')">Delete</button>`
-          ]).draw(false);
+    },
+    "driverdetails": {
+      ".read":    "true",
+      ".write":   "auth != null",
+      ".indexOn": ["phone"],
+      "$driverId": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "pendingcars": {
+      ".read":  "auth != null && root.child('admins').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()",
+      "$driverId": {
+        ".read":  "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())",
+        ".write": "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())"
+      }
+    },
+    "approvedcars": {
+      ".read":  "auth != null",
+      ".write": "auth != null",
+      "$driverId": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "bookings": {
+      ".read":  "auth != null",
+      ".write": "auth != null",
+      "$driverId": {
+        "$bookingId": {
+          ".read":  "auth != null && (auth.uid === data.child('userId').val() || auth.uid === $driverId || root.child('admins').child(auth.uid).exists())",
+          ".write": "auth != null && (auth.uid === newData.child('userId').val() || auth.uid === $driverId || root.child('admins').child(auth.uid).exists())"
         }
       }
-      $('#pending-loading').hide(); $('#pending-table').show();
-    }
-
-    async function loadApproved(){
-      $('#approved-table').hide(); $('#approved-loading').show();
-      initTable('approved-table',[8]);
-      const snap = await get(ref(db,'approvedcars'));
-      let i=1;
-      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
-        for(const [cid,c] of Object.entries(cars)){
-          tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button onclick="deleteApproved('${did}','${cid}')">Delete</button>`]).draw(false);
-        }
-      }
-      $('#approved-loading').hide(); $('#approved-table').show();
-    }
-
-    async function loadSlots(){
-      $('#slots-table').hide(); $('#slots-loading').show();
-      initTable('slots-table',[9]);
-      const snap = await get(ref(db,'availableslots'));
-      let i=1;
-      if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())){
-        const dSnap = await get(ref(db,`driverdetails/${did}`));
-        const d = dSnap.exists()?dSnap.val():{};
-        for(const [sid,s] of Object.entries(slots)){
-          tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button onclick="deleteSlot('${did}','${sid}')">Delete</button>`]).draw(false);
-        }
-      }
-      $('#slots-loading').hide(); $('#slots-table').show();
-    }
-
-    async function loadBookings(){
-      $('#bookings-table').hide(); $('#bookings-loading').show();
-      initTable('bookings-table',[9]);
-      const snap = await get(ref(db,'bookings'));
-      let i=1;
-      if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())){
-        tables['bookings-table'].row.add([i++,bid,b.customerName||'',b.vehicle||'',b.pickup||'',b.dropoff||'',b.duration||'',b.fare||'',b.status||'',`<button onclick="deleteBooking('${bid}')">Delete</button>`]).draw(false);
-      }
-      $('#bookings-loading').hide(); $('#bookings-table').show();
-    }
-
-    async function loadWallets(){
-      const container = document.getElementById('wallets-container');
-      $('#wallets-container').hide();
-      $('#wallets-loading').show();
-      container.innerHTML = '';
-
-      const snap = await get(ref(db,'walletBalance'));
-      if (snap.exists()){
-        const byDriver = snap.val();
-        for (const driverId in byDriver) {
-          const bySlot = byDriver[driverId];
-          for (const slotId in bySlot) {
-            const byBooking = bySlot[slotId];
-            for (const bookingId in byBooking) {
-              const { amount, date, status } = byBooking[bookingId];
-              const card = document.createElement('div');
-              card.className = 'wallet-card';
-              card.innerHTML = `
-                <h3>Driver: ${driverId}</h3>
-                <p><strong>Slot:</strong> ${slotId}</p>
-                <p><strong>Booking:</strong> ${bookingId}</p>
-                <p><strong>Amount:</strong> ${amount}</p>
-                <p><strong>Date:</strong> ${date}</p>
-                <p><strong>Status:</strong> ${status}</p>
-              `;
-              container.appendChild(card);
-            }
+    },
+    "commisions": {
+      ".read":  "auth != null",
+      ".write": "auth != null",
+      "$driverId": {
+        "$slotKey": {
+          "$bookingId": {
+            ".read":  "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())",
+            ".write": "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())"
           }
         }
       }
-
-      $('#wallets-loading').hide();
-      container.style.display = container.children.length ? 'flex' : 'block';
-      if (!container.children.length) {
-        container.innerHTML = '<p>No wallet records found.</p>';
-      }
-    }
-
-    async function loadProfile(){
-      $('#profile-table').hide(); $('#profile-loading').show();
-      initTable('profile-table');
-      const user = auth.currentUser;
-      if(user){
-        const snap = await get(ref(db,`admins/${user.uid}`));
-        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())){
-          tables['profile-table'].row.add([k,v]).draw(false);
+    },
+    "walletbalance": {
+      ".read":  "auth != null",
+      ".write": "auth != null",
+      "$driverId": {
+        ".read":  "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())",
+        "$slotKey": {
+          "$bookingId": {
+            ".read":  "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())",
+            ".write": "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())"
+          }
         }
       }
-      $('#profile-loading').hide(); $('#profile-table').show();
-    }
-
-    window.openTab = name => {
-      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-      document.getElementById(`${name}-tab`).classList.add('active');
-      const loaders = {
-        users: loadUsers,
-        drivers: loadDrivers,
-        'pending-cars': loadPending,
-        'approved-cars': loadApproved,
-        slots: loadSlots,
-        bookings: loadBookings,
-        'driver-wallets': loadWallets,
-        profile: loadProfile
-      };
-      loaders[name]();
-    };
-
-    onAuthStateChanged(auth,user=>{
-      if(!user) return location.href='adminlogin.html';
-      openTab('users');
-    });
-  </script>
-</body>
-</html>
+    },
+    "admins": {
+      "$adminId": {
+        ".read":  "auth != null && root.child('admins').child(auth.uid).exists()",
+        ".write": "auth != null && root.child('admins').child(auth.uid).exists()"
+      }
+    },
+    ".read":  "false",
+    ".write": "false"
+  }
+}
