@@ -1,341 +1,352 @@
+{
+  "rules": {
+    "users": {
+      ".read":  "true",
+      ".write": "false",
+      ".indexOn": ["phone", "email"],
+      "$uid": {
+        ".read":  "auth != null",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "locations": {
+      ".read":  "auth != null",
+      ".write": "auth != null"
+    },
+    "availableslots": {
+      ".read":  "auth != null",
+      ".write": "auth != null",
+      "$driverId": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "driverdetails": {
+      ".read":    "true",
+      ".write":   "auth != null",
+      ".indexOn": ["phone"],
+      "$driverId": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "pendingcars": {
+      ".read":  "auth != null && root.child('admins').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()",
+      "$driverId": {
+        ".read":  "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())",
+        ".write": "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())"
+      }
+    },
+    "approvedcars": {
+      ".read":  "auth != null",
+      ".write": "auth != null",
+      "$driverId": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "bookings": {
+      ".read":  "auth != null",
+      ".write": "auth != null",
+      "$driverId": {
+        "$bookingId": {
+          ".read":  "auth != null &&
+                     (auth.uid === data.child('userId').val() ||
+                      auth.uid === $driverId ||
+                      root.child('admins').child(auth.uid).exists())",
+          ".write": "auth != null &&
+                     (auth.uid === newData.child('userId').val() ||
+                      auth.uid === $driverId ||
+                      root.child('admins').child(auth.uid).exists())"
+        }
+      }
+    },
+    "commisions": {
+      ".read":  "auth != null",
+      ".write": "auth != null",
+      "$driverId": {
+        "$slotKey": {
+          "$bookingId": {
+            ".read":  "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())",
+            ".write": "auth != null && (auth.uid === $driverId || root.child('admins').child(auth.uid).exists())"
+          }
+        }
+      }
+    },
+    "admins": {
+      "$adminId": {
+        ".read":  "auth != null && root.child('admins').child(auth.uid).exists()",
+        ".write": "auth != null && root.child('admins').child(auth.uid).exists()"
+      }
+    },
+    ".read":  "false",
+    ".write": "false"
+  }
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>WaveTravel Admin Dashboard</title>
-
-  <!-- Normalize & DataTables CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css" />
-
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checkout – WaveTravel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    body { font-family:Arial,sans-serif; margin:0; background:linear-gradient(to right,#2c3e50,#3498db); color:#fff; }
-    .navbar { display:flex; flex-wrap:wrap; background:#1f2c3f; padding:1rem; gap:.5rem; }
-    .navbar button { flex:1; padding:.5rem 1rem; border:none; border-radius:4px; background:#3498db; color:#fff; cursor:pointer; }
-    .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px); }
-    .tab-pane.active { display:block; }
-    .loading { text-align:center; margin:2rem; color:#ffd700; }
-    table.dataTable { background:rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; }
-    .dt-button, .dataTables_length select, .dataTables_filter input { color:#000 !important; }
-
-    /* Wallet cards */
-    #wallets-container { display:flex; flex-wrap:wrap; gap:1rem; }
-    .wallet-card { background:rgba(255,255,255,0.1); padding:1rem; border-radius:8px; width:280px; }
-    .wallet-card h3 { margin:0 0 .5rem; color:#ffd700; font-size:1.1rem; }
-    .wallet-card p { margin:0.25rem 0; font-size:0.95rem; }
+    :root { --primary: #0077ff; --dark: #333; }
+    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+    body {
+      font-family:'Poppins',sans-serif;
+      background:linear-gradient(to right,#74ebd5,#ACB6E5);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      color: var(--dark);
+    }
+    .container {
+      flex:1;
+      max-width:600px;
+      width:100%;
+      margin:0 auto;
+      padding:16px;
+      padding-bottom:100px;
+    }
+    h1 {
+      text-align:center;
+      color:#fff;
+      font-size:1.5rem;
+      margin-bottom:1rem;
+    }
+    .summary-card {
+      background:#fff;
+      border-radius:8px;
+      padding:16px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom:1rem;
+    }
+    .summary-card div { margin-bottom:8px; font-size:1rem; }
+    .summary-card strong { display:inline-block; width:120px; }
+    .terms {
+      margin:16px 0; display:flex; align-items:center;
+    }
+    .terms input { margin-right:8px; width:16px; height:16px; }
+    .terms label { font-size:0.9rem; color:#fff; }
+    button {
+      width:100%; padding:12px; background:var(--primary);
+      color:#fff; font-size:1rem; font-weight:600;
+      border:none; border-radius:8px; cursor:pointer;
+      transition:background .2s;
+    }
+    button:disabled { background:#aaa; cursor:not-allowed; }
+    button:hover:not(:disabled) { background:#005dc1; }
+    .navbar {
+      position:fixed; bottom:0; left:0; width:100%;
+      background:#fff; border-top:1px solid #ddd;
+      display:flex; justify-content:space-around;
+      padding:8px 0; box-shadow:0 -2px 8px rgba(0,0,0,0.1);
+    }
+    .navbar a { color:var(--primary); text-decoration:none; font-size:0.75rem; text-align:center; }
+    .navbar a i { font-size:1.25rem; display:block; margin-bottom:4px; }
   </style>
 </head>
 <body>
 
+  <div class="container">
+    <h1>Confirm &amp; Pay</h1>
+    <div id="summary" class="summary-card">Loading booking…</div>
+
+    <div class="terms">
+      <input type="checkbox" id="termsChk"/>
+      <label for="termsChk">
+        I agree to the 
+        <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a>
+      </label>
+    </div>
+
+    <button id="payBtn" disabled>Pay &amp; Book</button>
+  </div>
+
   <div class="navbar">
-    <button onclick="openTab('users')">Users</button>
-    <button onclick="openTab('drivers')">Drivers</button>
-    <button onclick="openTab('pending-cars')">Pending Cars</button>
-    <button onclick="openTab('approved-cars')">Approved Cars</button>
-    <button onclick="openTab('slots')">Slots</button>
-    <button onclick="openTab('bookings')">Bookings</button>
-    <button onclick="openTab('driver-wallets')">Driver Wallets</button>
-    <button onclick="openTab('profile')">Profile</button>
-    <button onclick="logout()">Logout</button>
+    <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
+    <a href="booking.html"><i class="fas fa-car"></i>Book</a>
+    <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
+    <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
-  <!-- USERS -->
-  <div id="users-tab" class="tab-pane">
-    <h2>Users</h2>
-    <div id="users-loading" class="loading">Loading users…</div>
-    <table id="users-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Created On</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- DRIVERS -->
-  <div id="drivers-tab" class="tab-pane">
-    <h2>Drivers</h2>
-    <div id="drivers-loading" class="loading">Loading drivers…</div>
-    <table id="drivers-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>Vehicle Count</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- PENDING CARS -->
-  <div id="pending-cars-tab" class="tab-pane">
-    <h2>Pending Cars</h2>
-    <div id="pending-loading" class="loading">Loading pending cars…</div>
-    <table id="pending-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver ID</th><th>Car ID</th><th>Brand</th><th>Reg No</th>
-        <th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Submitted At</th><th>Actions</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- APPROVED CARS -->
-  <div id="approved-cars-tab" class="tab-pane">
-    <h2>Approved Cars</h2>
-    <div id="approved-loading" class="loading">Loading approved cars…</div>
-    <table id="approved-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver Name</th><th>Phone</th><th>Car ID</th>
-        <th>Brand</th><th>Reg No</th><th>Owner</th><th>Seats</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- SLOTS -->
-  <div id="slots-tab" class="tab-pane">
-    <h2>Slots</h2>
-    <div id="slots-loading" class="loading">Loading slots…</div>
-    <table id="slots-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver Name</th><th>Phone</th><th>Slot ID</th>
-        <th>Pickup</th><th>Dropoff</th><th>Date</th><th>Time</th><th>Seats</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- BOOKINGS -->
-  <div id="bookings-tab" class="tab-pane">
-    <h2>Bookings</h2>
-    <div id="bookings-loading" class="loading">Loading bookings…</div>
-    <table id="bookings-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Booking ID</th><th>Customer</th><th>Vehicle</th><th>Pickup</th>
-        <th>Dropoff</th><th>Duration</th><th>Fare</th><th>Status</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- DRIVER WALLETS -->
-  <div id="driver-wallets-tab" class="tab-pane">
-    <h2>Driver Wallets</h2>
-    <div id="wallets-loading" class="loading">Loading wallets…</div>
-    <div id="wallets-container" style="display:none;"></div>
-  </div>
-
-  <!-- PROFILE -->
-  <div id="profile-tab" class="tab-pane">
-    <h2>My Profile</h2>
-    <div id="profile-loading" class="loading">Loading profile…</div>
-    <table id="profile-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr><th>Field</th><th>Value</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- jQuery & DataTables JS -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
-
-  <!-- Firebase & App Logic -->
-  <script type="module">
-    import { initializeApp }                from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref, get, remove, set }   from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
-
-    const cfg = {
+  <!-- Firebase & Razorpay -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    // Initialize Firebase
+    const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL:"https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId:"wavetravel-3c4c4",
-      storageBucket:"wavetravel-3c4c4.appspot.com",
-      messagingSenderId:"298226098137",
-      appId:"1:298226098137:web:720953b80e3e61c8bc43c8"
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-    const app  = initializeApp(cfg);
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
+    firebase.initializeApp(firebaseConfig);
 
-    window.logout = () => signOut(auth).then(()=>location.href='adminlogin.html');
-    window.deleteUser      = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
-    window.deleteDriver    = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
-    window.deletePending   = async (did,cid) => { await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); };
-    window.deleteApproved  = async (did,cid) => { await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); };
-    window.deleteSlot      = async (did,sid) => { await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); };
-    window.deleteBooking   = async bid => { await remove(ref(db,`bookings/${bid}`)); loadBookings(); };
-    window.approveCar      = async (did,cid) => {
-      const snap = await get(ref(db,`pendingcars/${did}/${cid}`));
-      const car  = snap.val(); if(!car) return;
-      await set(ref(db,`approvedcars/${did}/${cid}`), car);
-      await remove(ref(db,`pendingcars/${did}/${cid}`));
-      loadPending();
-    };
+    const db   = firebase.database();
+    const auth = firebase.auth();
 
-    const tables = {};
-    function initTable(id,noSortCols=[]){
-      if(!tables[id]){
-        tables[id] = $(`#${id}`).DataTable({
-          responsive:true,
-          dom:'Bfltip',
-          buttons:['copy','csv','print'],
-          columnDefs: noSortCols.map(c=>({ orderable:false, targets:c }))
-        });
-      } else tables[id].clear().draw();
-    }
+    const summaryEl = document.getElementById('summary');
+    const payBtn    = document.getElementById('payBtn');
+    const termsChk  = document.getElementById('termsChk');
+    const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
-    async function loadUsers(){
-      $('#users-table').hide(); $('#users-loading').show();
-      initTable('users-table',[7]);
-      const snap = await get(ref(db,'users'));
-      let i=1;
-      if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())){
-        tables['users-table'].row.add([i++,uid,u.name||'',u.email||'',u.phone||'',u.address||'',u.createdOn||'',`<button onclick="deleteUser('${uid}')">Delete</button>`]).draw(false);
-      }
-      $('#users-loading').hide(); $('#users-table').show();
-    }
+    if (!booking) {
+      summaryEl.innerHTML = '<div>Please select a slot first.</div>';
+      payBtn.disabled = true;
+    } else {
+      let bound = false;
 
-    async function loadDrivers(){
-      $('#drivers-table').hide(); $('#drivers-loading').show();
-      initTable('drivers-table',[5]);
-      const snap = await get(ref(db,'driverdetails'));
-      let i=1;
-      if(snap.exists()) for(const [did,d] of Object.entries(snap.val())){
-        const vc = d.vehicles?Object.keys(d.vehicles).length:0;
-        tables['drivers-table'].row.add([i++,did,d.name||'',d.phone||'',vc,`<button onclick="deleteDriver('${did}')">Delete</button>`]).draw(false);
-      }
-      $('#drivers-loading').hide(); $('#drivers-table').show();
-    }
-
-    async function loadPending(){
-      $('#pending-table').hide(); $('#pending-loading').show();
-      initTable('pending-table',[10]);
-      const snap = await get(ref(db,'pendingcars'));
-      let i=1;
-      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
-        for(const [cid,c] of Object.entries(cars)){
-          tables['pending-table'].row.add([
-            i++,did,cid,c.carBrand||'',c.carReg||'',c.driverName||'',c.driverNumber||'',c.ownerName||'',c.seats||'',c.submittedAt||'',
-            `<button onclick="approveCar('${did}','${cid}')">Approve</button> <button onclick="deletePending('${did}','${cid}')">Delete</button>`
-          ]).draw(false);
+      auth.onAuthStateChanged(async user => {
+        if (!user) {
+          alert('Please login first.');
+          location = 'login.html';
+          return;
         }
-      }
-      $('#pending-loading').hide(); $('#pending-table').show();
-    }
 
-    async function loadApproved(){
-      $('#approved-table').hide(); $('#approved-loading').show();
-      initTable('approved-table',[8]);
-      const snap = await get(ref(db,'approvedcars'));
-      let i=1;
-      if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
-        for(const [cid,c] of Object.entries(cars)){
-          tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button onclick="deleteApproved('${did}','${cid}')">Delete</button>`]).draw(false);
-        }
-      }
-      $('#approved-loading').hide(); $('#approved-table').show();
-    }
-
-    async function loadSlots(){
-      $('#slots-table').hide(); $('#slots-loading').show();
-      initTable('slots-table',[9]);
-      const snap = await get(ref(db,'availableslots'));
-      let i=1;
-      if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())){
-        const dSnap = await get(ref(db,`driverdetails/${did}`));
-        const d = dSnap.exists()?dSnap.val():{};
-        for(const [sid,s] of Object.entries(slots)){
-          tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button onclick="deleteSlot('${did}','${sid}')">Delete</button>`]).draw(false);
-        }
-      }
-      $('#slots-loading').hide(); $('#slots-table').show();
-    }
-
-    async function loadBookings(){
-      $('#bookings-table').hide(); $('#bookings-loading').show();
-      initTable('bookings-table',[9]);
-      const snap = await get(ref(db,'bookings'));
-      let i=1;
-      if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())){
-        tables['bookings-table'].row.add([i++,bid,b.customerName||'',b.vehicle||'',b.pickup||'',b.dropoff||'',b.duration||'',b.fare||'',b.status||'',`<button onclick="deleteBooking('${bid}')">Delete</button>`]).draw(false);
-      }
-      $('#bookings-loading').hide(); $('#bookings-table').show();
-    }
-
-    async function loadWallets(){
-      const container = document.getElementById('wallets-container');
-      $('#wallets-container').hide();
-      $('#wallets-loading').show();
-      container.innerHTML = '';
-
-      const snap = await get(ref(db,'walletBalance'));
-      if (snap.exists()){
-        const byDriver = snap.val();
-        for (const driverId in byDriver) {
-          const bySlot = byDriver[driverId];
-          for (const slotId in bySlot) {
-            const byBooking = bySlot[slotId];
-            for (const bookingId in byBooking) {
-              const { amount, date, status } = byBooking[bookingId];
-              const card = document.createElement('div');
-              card.className = 'wallet-card';
-              card.innerHTML = `
-                <h3>Driver: ${driverId}</h3>
-                <p><strong>Slot:</strong> ${slotId}</p>
-                <p><strong>Booking:</strong> ${bookingId}</p>
-                <p><strong>Amount:</strong> ${amount}</p>
-                <p><strong>Date:</strong> ${date}</p>
-                <p><strong>Status:</strong> ${status}</p>
-              `;
-              container.appendChild(card);
+        // Resolve DB UID, name, phone
+        let dbUid = null, name = 'Not set', phone = 'Not set';
+        const snapUid = await db.ref(users/${user.uid}).once('value');
+        if (snapUid.exists()) {
+          dbUid = user.uid;
+          ({name, phone} = snapUid.val());
+        } else {
+          if (user.phoneNumber) {
+            const raw = user.phoneNumber.slice(-10);
+            const snapPhone = await db.ref('users')
+              .orderByChild('phone')
+              .equalTo(raw)
+              .once('value');
+            if (snapPhone.exists()) {
+              const rec = snapPhone.val();
+              dbUid = Object.keys(rec)[0];
+              ({name, phone} = rec[dbUid]);
+            }
+          }
+          if (!dbUid && user.email) {
+            const snapEmail = await db.ref('users')
+              .orderByChild('email')
+              .equalTo(user.email)
+              .once('value');
+            if (snapEmail.exists()) {
+              const rec = snapEmail.val();
+              dbUid = Object.keys(rec)[0];
+              ({name, phone} = rec[dbUid]);
             }
           }
         }
-      }
 
-      $('#wallets-loading').hide();
-      container.style.display = container.children.length ? 'flex' : 'block';
-      if (!container.children.length) {
-        container.innerHTML = '<p>No wallet records found.</p>';
-      }
-    }
-
-    async function loadProfile(){
-      $('#profile-table').hide(); $('#profile-loading').show();
-      initTable('profile-table');
-      const user = auth.currentUser;
-      if(user){
-        const snap = await get(ref(db,`admins/${user.uid}`));
-        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())){
-          tables['profile-table'].row.add([k,v]).draw(false);
+        if (!dbUid) {
+          summaryEl.innerHTML = '<div>Profile not found. Cannot proceed.</div>';
+          payBtn.disabled = true;
+          return;
         }
-      }
-      $('#profile-loading').hide(); $('#profile-table').show();
+
+        // Show summary
+        summaryEl.innerHTML = 
+          <div><strong>Name:</strong> ${name}</div>
+          <div><strong>Phone:</strong> ${phone}</div>
+          <div><strong>Pickup:</strong> ${booking.pickup}</div>
+          <div><strong>Dropoff:</strong> ${booking.dropoff}</div>
+          <div><strong>Date:</strong> ${formatDate(booking.date)}</div>
+          <div><strong>Time:</strong> ${formatTime(booking.time)}</div>
+          <div><strong>Seats:</strong> ${booking.seatsRequested}</div>
+          <div><strong>Fare:</strong> ₹${booking.fare}</div>
+        ;
+
+        if (!bound) {
+          bound = true;
+          termsChk.addEventListener('change', () => {
+            payBtn.disabled = !termsChk.checked;
+          });
+          payBtn.disabled = true;
+
+          payBtn.addEventListener('click', () => {
+            if (!termsChk.checked) return;
+
+            new Razorpay({
+              key: 'rzp_test_NMB6jz5XK0G48R',
+              amount: booking.fare * 100,
+              currency: 'INR',
+              name: 'WaveTravel',
+              description: 'Ride Booking',
+              prefill: { name, contact: phone, email: user.email || '' },
+              handler: res => {
+                const slotRef = db.ref(availableslots/${booking.driverId}/${booking.slotKey});
+                slotRef.transaction(current => {
+                  if (!current) return current;
+                  const cs = parseInt(current.seats, 10);
+                  if (isNaN(cs)) return current;
+                  return { ...current, seats: Math.max(0, cs - booking.seatsRequested) };
+                }, async (err, committed) => {
+                  if (err) {
+                    console.error(err);
+                    return alert("Could not update slots. Try again.");
+                  }
+                  if (!committed) {
+                    return alert("Booking canceled; seats unchanged.");
+                  }
+
+                  // 1) Push booking
+                  const bookingsRef   = db.ref(bookings/${booking.driverId});
+                  const newBookingRef = bookingsRef.push();
+                  const bookingId     = newBookingRef.key;
+                  const commAmount    = booking.fare * 0.5;
+
+                  const bookingData = {
+                    ...booking,
+                    userId: dbUid,
+                    userName: name,
+                    userPhone: phone,
+                    paymentId: res.razorpay_payment_id,
+                    bookedAt: new Date().toISOString(),
+                    status: 'confirmed',
+                    driverCommission: commAmount
+                  };
+                  // 2) Push commission record
+                  const commissionData = {
+                    amount: commAmount,
+                    status: 'unpaid',
+                    date: new Date().toISOString()
+                  };
+
+                  try {
+                    await newBookingRef.set(bookingData);
+                    await db.ref(walletBalance/${booking.driverId}/${booking.slotKey}/${bookingId})
+                            .set(commissionData);
+                    alert('Payment successful & booking confirmed!');
+                    localStorage.removeItem('selectedBooking');
+                    location = 'mybookings.html';
+                  } catch (e) {
+                    console.error(e);
+                    alert('Error saving data. Please contact support.');
+                  }
+                });
+              }
+            }).open();
+          });
+        }
+      });
     }
 
-    window.openTab = name => {
-      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-      document.getElementById(`${name}-tab`).classList.add('active');
-      const loaders = {
-        users: loadUsers,
-        drivers: loadDrivers,
-        'pending-cars': loadPending,
-        'approved-cars': loadApproved,
-        slots: loadSlots,
-        bookings: loadBookings,
-        'driver-wallets': loadWallets,
-        profile: loadProfile
-      };
-      loaders[name]();
-    };
-
-    onAuthStateChanged(auth,user=>{
-      if(!user) return location.href='adminlogin.html';
-      openTab('users');
-    });
+    function formatDate(d) {
+      const [y,m,dd] = d.split('-');
+      return ${dd}/${m}/${y};
+    }
+    function formatTime(t) {
+      let [h,mm] = t.split(':').map(Number);
+      const suffix = h>=12 ? 'PM':'AM';
+      h = h%12||12;
+      return ${h}:${mm.toString().padStart(2,'0')} ${suffix};
+    }
   </script>
 </body>
 </html>
