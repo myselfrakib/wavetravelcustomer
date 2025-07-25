@@ -201,8 +201,8 @@
             for (const bookingId in freshData) {
               const amount = freshData[bookingId]?.amount ?? 0;
 
-              // Move to /Withdrew/driverId/bookingId
-              updates[`/Withdrew/${driverId}/${bookingId}`] = {
+              // Move to /pendingWithdrawls/driverId/bookingId
+              updates[`/pendingWithdrawls/${driverId}/${bookingId}`] = {
                 amount,
                 date: now
               };
