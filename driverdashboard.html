@@ -131,7 +131,8 @@
       getDatabase,
       ref,
       get,
-      update
+      update,
+      onValue
     } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
     import {
       getAuth,
@@ -156,75 +157,97 @@
     const balanceEl   = document.getElementById('balance');
     const withdrawBtn = document.getElementById('withdraw-btn');
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        balanceEl.textContent = 'Please log in to see your balance.';
-        return;
-      }
+    let currentDriverId = null;
+    let stopWalletListener = null;
+    let isProcessing = false;
 
-      const driverId = user.uid;
-      const walletRef = ref(db, `/driverWallet/${driverId}`);
+    // Helper to sum wallet data
+    function sumWallet(data) {
+      let total = 0;
+      for (const bookingId in data) {
+        total += parseFloat(data[bookingId]?.amount) || 0;
+      }
+      return total;
+    }
+
+    // Attach the click listener ONCE
+    withdrawBtn.addEventListener('click', async () => {
+      if (!currentDriverId || isProcessing) return;
+      isProcessing = true;
+      withdrawBtn.disabled = true;
+      balanceEl.textContent = 'Processing withdrawal…';
+
+      const walletRef = ref(db, `/driverWallet/${currentDriverId}`);
 
       try {
-        // Read all wallet entries and sum them
-        const snap = await get(walletRef);
-        if (!snap.exists()) {
-          balanceEl.textContent = '₹0';
+        const freshSnap = await get(walletRef);
+        if (!freshSnap.exists()) {
+          balanceEl.textContent = '₹0 (nothing to withdraw)';
+          isProcessing = false;
           return;
         }
 
-        let total = 0;
-        const walletData = snap.val(); // { bookingId: { amount: ... }, ... }
-        for (const bookingId in walletData) {
-          const amt = parseFloat(walletData[bookingId]?.amount) || 0;
-          total += amt;
+        const updates = {};
+        const now = new Date().toISOString();
+
+        const freshData = freshSnap.val();
+        for (const bookingId in freshData) {
+          const amount = freshData[bookingId]?.amount ?? 0;
+
+          // Move to /pendingWithdrawals/driverId/bookingId (fixed spelling)
+          updates[`/pendingWithdrawals/${currentDriverId}/${bookingId}`] = {
+            amount,
+            date: now
+          };
+
+          // Remove from /driverWallet/driverId/bookingId
+          updates[`/driverWallet/${currentDriverId}/${bookingId}`] = null;
         }
 
-        balanceEl.textContent = `₹${total}`;
-        if (total > 0) withdrawBtn.disabled = false;
-
-        withdrawBtn.addEventListener('click', async () => {
-          withdrawBtn.disabled = true;
-          balanceEl.textContent = 'Processing withdrawal…';
-
-          try {
-            const freshSnap = await get(walletRef);
-            if (!freshSnap.exists()) {
-              balanceEl.textContent = '₹0 (nothing to withdraw)';
-              return;
-            }
-
-            const updates = {};
-            const now = new Date().toISOString();
-
-            const freshData = freshSnap.val();
-            for (const bookingId in freshData) {
-              const amount = freshData[bookingId]?.amount ?? 0;
-
-              // Move to /pendingWithdrawls/driverId/bookingId
-              updates[`/pendingWithdrawls/${driverId}/${bookingId}`] = {
-                amount,
-                date: now
-              };
-
-              // Remove from /driverWallet/driverId/bookingId
-              updates[`/driverWallet/${driverId}/${bookingId}`] = null;
-            }
-
-            await update(ref(db), updates);
-
-            balanceEl.textContent = '₹0 (withdrawn)';
-          } catch (err) {
-            console.error(err);
-            balanceEl.textContent = 'Withdrawal failed';
-            withdrawBtn.disabled = false;
-          }
-        }, { once: true }); // prevent attaching multiple listeners
-
+        await update(ref(db), updates);
+        balanceEl.textContent = '₹0 (withdrawn)';
       } catch (err) {
         console.error(err);
-        balanceEl.textContent = 'Error loading balance';
+        balanceEl.textContent = 'Withdrawal failed';
+        withdrawBtn.disabled = false;
+      } finally {
+        isProcessing = false;
       }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      // Clean up old listener when user changes / logs out
+      if (stopWalletListener) {
+        stopWalletListener();
+        stopWalletListener = null;
+      }
+
+      if (!user) {
+        currentDriverId = null;
+        balanceEl.textContent = 'Please log in to see your balance.';
+        withdrawBtn.disabled = true;
+        return;
+      }
+
+      currentDriverId = user.uid;
+      const walletRef = ref(db, `/driverWallet/${currentDriverId}`);
+
+      // Real-time balance updates
+      stopWalletListener = onValue(walletRef, (snapshot) => {
+        if (!snapshot.exists()) {
+          balanceEl.textContent = '₹0';
+          withdrawBtn.disabled = true;
+          return;
+        }
+
+        const total = sumWallet(snapshot.val());
+        balanceEl.textContent = `₹${total}`;
+        withdrawBtn.disabled = total <= 0 || isProcessing;
+      }, (error) => {
+        console.error(error);
+        balanceEl.textContent = 'Error loading balance';
+        withdrawBtn.disabled = true;
+      });
     });
   </script>
 </body>
