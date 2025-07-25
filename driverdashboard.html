@@ -62,6 +62,32 @@
       cursor: not-allowed;
     }
 
+    /* Transaction History Styles */
+    #history-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      text-align: left;
+    }
+    #history-list li {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    #view-more-btn {
+      margin-top: 10px;
+      background: #fff;
+      color: #4a00e0;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
     .navbar {
       position: fixed;
       bottom: 0;
@@ -114,6 +140,15 @@
       <p id="balance">Loading your balance…</p>
       <button id="withdraw-btn" disabled>Withdraw</button>
     </div>
+
+    <!-- Transaction History Card -->
+    <div class="dashboard-card" id="history-card">
+      <h2>Withdrawal History</h2>
+      <ul id="history-list">
+        <li>Loading history…</li>
+      </ul>
+      <button id="view-more-btn" style="display:none;">View More</button>
+    </div>
   </div>
 
   <div class="navbar">
@@ -154,14 +189,16 @@
     const db   = getDatabase(app);
     const auth = getAuth(app);
 
-    const balanceEl   = document.getElementById('balance');
-    const withdrawBtn = document.getElementById('withdraw-btn');
+    const balanceEl     = document.getElementById('balance');
+    const withdrawBtn   = document.getElementById('withdraw-btn');
+    const historyListEl = document.getElementById('history-list');
+    const viewMoreBtn   = document.getElementById('view-more-btn');
 
     let currentDriverId = null;
-    let stopWalletListener = null;
+    let allHistory = [];
+    let visibleCount = 5;
     let isProcessing = false;
 
-    // Helper to sum wallet data
     function sumWallet(data) {
       let total = 0;
       for (const bookingId in data) {
@@ -170,7 +207,29 @@
       return total;
     }
 
-    // Attach the click listener ONCE
+    function renderHistory() {
+      historyListEl.innerHTML = '';
+      if (allHistory.length === 0) {
+        historyListEl.innerHTML = '<li>No withdrawals yet.</li>';
+        viewMoreBtn.style.display = 'none';
+        return;
+      }
+
+      const slice = allHistory.slice(0, visibleCount);
+      slice.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = `₹${item.amount} - ${new Date(item.date).toLocaleString()}`;
+        historyListEl.appendChild(li);
+      });
+
+      viewMoreBtn.style.display = allHistory.length > visibleCount ? 'block' : 'none';
+    }
+
+    viewMoreBtn.addEventListener('click', () => {
+      visibleCount += 5;
+      renderHistory();
+    });
+
     withdrawBtn.addEventListener('click', async () => {
       if (!currentDriverId || isProcessing) return;
       isProcessing = true;
@@ -178,7 +237,6 @@
       balanceEl.textContent = 'Processing withdrawal…';
 
       const walletRef = ref(db, `/driverWallet/${currentDriverId}`);
-
       try {
         const freshSnap = await get(walletRef);
         if (!freshSnap.exists()) {
@@ -189,18 +247,11 @@
 
         const updates = {};
         const now = new Date().toISOString();
-
         const freshData = freshSnap.val();
+
         for (const bookingId in freshData) {
           const amount = freshData[bookingId]?.amount ?? 0;
-
-          // Move to /pendingWithdrawals/driverId/bookingId (fixed spelling)
-          updates[`/pendingWithdrawals/${currentDriverId}/${bookingId}`] = {
-            amount,
-            date: now
-          };
-
-          // Remove from /driverWallet/driverId/bookingId
+          updates[`/pendingWithdrawals/${currentDriverId}/${bookingId}`] = { amount, date: now };
           updates[`/driverWallet/${currentDriverId}/${bookingId}`] = null;
         }
 
@@ -216,37 +267,42 @@
     });
 
     onAuthStateChanged(auth, (user) => {
-      // Clean up old listener when user changes / logs out
-      if (stopWalletListener) {
-        stopWalletListener();
-        stopWalletListener = null;
-      }
-
       if (!user) {
         currentDriverId = null;
         balanceEl.textContent = 'Please log in to see your balance.';
+        historyListEl.innerHTML = '<li>Please log in to view history.</li>';
+        viewMoreBtn.style.display = 'none';
         withdrawBtn.disabled = true;
         return;
       }
 
       currentDriverId = user.uid;
-      const walletRef = ref(db, `/driverWallet/${currentDriverId}`);
 
-      // Real-time balance updates
-      stopWalletListener = onValue(walletRef, (snapshot) => {
+      const walletRef  = ref(db, `/driverWallet/${currentDriverId}`);
+      const historyRef = ref(db, `/pendingWithdrawals/${currentDriverId}`);
+
+      onValue(walletRef, (snapshot) => {
         if (!snapshot.exists()) {
           balanceEl.textContent = '₹0';
           withdrawBtn.disabled = true;
           return;
         }
-
         const total = sumWallet(snapshot.val());
         balanceEl.textContent = `₹${total}`;
         withdrawBtn.disabled = total <= 0 || isProcessing;
-      }, (error) => {
-        console.error(error);
-        balanceEl.textContent = 'Error loading balance';
-        withdrawBtn.disabled = true;
+      });
+
+      onValue(historyRef, (snapshot) => {
+        if (!snapshot.exists()) {
+          allHistory = [];
+          renderHistory();
+          return;
+        }
+        allHistory = Object.entries(snapshot.val())
+          .map(([bookingId, obj]) => ({ bookingId, amount: obj.amount, date: obj.date }))
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+        visibleCount = 5;
+        renderHistory();
       });
     });
   </script>
