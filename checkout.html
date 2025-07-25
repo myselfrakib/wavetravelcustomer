@@ -72,7 +72,7 @@
     <div class="terms">
       <input type="checkbox" id="termsChk"/>
       <label for="termsChk">
-        I agree to the 
+        I agree to the
         <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a>
       </label>
     </div>
@@ -194,14 +194,27 @@
               description: 'Ride Booking',
               prefill: { name, contact: phone, email: user.email || '' },
               handler: res => {
-                const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+                const path = `availableslots/${booking.driverId}/${booking.slotKey}`;
+                console.log("Running transaction on:", path);
+                const slotRef = db.ref(path);
+
                 slotRef.transaction(current => {
-                  if (!current) return;
+                  console.log("Current slot data:", current);
+                  if (!current) {
+                    console.warn("No slot found at path—aborting transaction");
+                    return;  // aborts → committed = false
+                  }
                   const cs = parseInt(current.seats, 10);
-                  return { ...current, seats: Math.max(0, cs - booking.seatsRequested) };
-                }, async (err, committed) => {
+                  if (isNaN(cs)) {
+                    console.warn("Seats not a number:", current.seats, "– returning current object to avoid abort");
+                    return current;  // leave as-is, committed = true but no change
+                  }
+                  const updated = { ...current, seats: Math.max(0, cs - booking.seatsRequested) };
+                  console.log("Updating slot to:", updated);
+                  return updated;
+                }, (err, committed) => {
                   if (err) {
-                    console.error(err);
+                    console.error("Transaction error:", err);
                     return alert("Could not update slots. Try again.");
                   }
                   if (!committed) {
@@ -231,17 +244,20 @@
                     date: new Date().toISOString()
                   };
 
-                  try {
-                    await newBookingRef.set(bookingData);
-                    await db.ref(`walletBalance/${booking.driverId}/${booking.slotKey}/${bookingId}`)
-                            .set(commissionData);
+                  Promise.all([
+                    newBookingRef.set(bookingData),
+                    db.ref(`walletBalance/${booking.driverId}/${booking.slotKey}/${bookingId}`)
+                      .set(commissionData)
+                  ])
+                  .then(() => {
                     alert('Payment successful & booking confirmed!');
                     localStorage.removeItem('selectedBooking');
                     window.location.href = 'mybookings.html';
-                  } catch (e) {
-                    console.error(e);
+                  })
+                  .catch(e => {
+                    console.error("Save error:", e);
                     alert('Error saving data. Please contact support.');
-                  }
+                  });
                 });
               }
             }).open();
