@@ -71,10 +71,7 @@
 
     <div class="terms">
       <input type="checkbox" id="termsChk"/>
-      <label for="termsChk">
-        I agree to the
-        <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a>
-      </label>
+      <label for="termsChk">I agree to the <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a></label>
     </div>
 
     <button id="payBtn" disabled>Pay &amp; Book</button>
@@ -94,7 +91,15 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     // Initialize Firebase
-    const firebaseConfig = { /* your config */ };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
     firebase.initializeApp(firebaseConfig);
 
     const db   = firebase.database();
@@ -114,13 +119,45 @@
       auth.onAuthStateChanged(async user => {
         if (!user) {
           alert('Please login first.');
-          window.location.href = 'login.html';
+          window.location = 'login.html';
           return;
         }
 
-        // Resolve DB UID, name, phone (same as before)…
-        let dbUid, name, phone;
-        // … your existing lookup logic …
+        // Resolve database UID, name, phone:
+        let dbUid = null, name = 'Not set', phone = 'Not set';
+
+        // 1) Try direct UID lookup:
+        const snapUid = await db.ref(`users/${user.uid}`).once('value');
+        if (snapUid.exists()) {
+          dbUid = user.uid;
+          ({ name, phone } = snapUid.val());
+        } else {
+          // 2) Fallback: phone lookup (last 10 digits)
+          if (user.phoneNumber) {
+            const raw = user.phoneNumber.slice(-10);
+            const snapPhone = await db.ref('users')
+              .orderByChild('phone')
+              .equalTo(raw)
+              .once('value');
+            if (snapPhone.exists()) {
+              const rec = snapPhone.val();
+              dbUid = Object.keys(rec)[0];
+              ({ name, phone } = rec[dbUid]);
+            }
+          }
+          // 3) Fallback: email lookup
+          if (!dbUid && user.email) {
+            const snapEmail = await db.ref('users')
+              .orderByChild('email')
+              .equalTo(user.email)
+              .once('value');
+            if (snapEmail.exists()) {
+              const rec = snapEmail.val();
+              dbUid = Object.keys(rec)[0];
+              ({ name, phone } = rec[dbUid]);
+            }
+          }
+        }
 
         if (!dbUid) {
           summaryEl.innerHTML = '<div>Profile not found. Cannot proceed.</div>';
@@ -128,7 +165,7 @@
           return;
         }
 
-        // Show summary
+        // Render booking summary with user info
         summaryEl.innerHTML = `
           <div><strong>Name:</strong> ${name}</div>
           <div><strong>Phone:</strong> ${phone}</div>
@@ -142,18 +179,14 @@
 
         if (!bound) {
           bound = true;
-          termsChk.addEventListener('change', () => payBtn.disabled = !termsChk.checked);
+          // Enable button when T&C checked
+          termsChk.addEventListener('change', () => {
+            payBtn.disabled = !termsChk.checked;
+          });
           payBtn.disabled = true;
 
-          payBtn.addEventListener('click', async () => {
+          payBtn.addEventListener('click', () => {
             if (!termsChk.checked) return;
-
-            // Pre‑check slot existence
-            const slotPath = `availableslots/${booking.driverId}/${booking.slotKey}`;
-            const slotSnap = await db.ref(slotPath).once('value');
-            if (!slotSnap.exists()) {
-              return alert('Sorry, this slot is no longer available.');
-            }
 
             new Razorpay({
               key: 'rzp_test_NMB6jz5XK0G48R',
@@ -161,45 +194,43 @@
               currency: 'INR',
               name: 'WaveTravel',
               description: 'Ride Booking',
-              prefill: { name, contact: phone, email: user.email || '' },
+              prefill: {
+                name,
+                contact: phone,
+                email: user.email || ''
+              },
               handler: res => {
-                // Safe to transact now that we know it exists
-                db.ref(slotPath).transaction(current => {
-                  const cs = parseInt(current.seats, 10);
-                  if (isNaN(cs)) return current; 
-                  return { ...current, seats: Math.max(0, cs - booking.seatsRequested) };
-                }, async (err, committed) => {
-                  if (err) {
-                    console.error(err);
-                    return alert("Could not update seats. Please try again.");
+                // Safely decrement seats
+                const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+                slotRef.transaction(cur => {
+                  if (!cur || typeof cur.seats !== 'number') {
+                    return cur;
                   }
-                  if (!committed) {
-                    // This should now only happen if someone else booked at the same millisecond
-                    return alert("Seats were just taken. Please try again.");
-                  }
-
-                  // Push booking & commission (same as before)…
-                  const bookingsRef   = db.ref(`bookings/${booking.driverId}`);
-                  const newBookingRef = bookingsRef.push();
-                  const bookingId     = newBookingRef.key;
-                  const commAmount    = booking.fare * 0.5;
-
-                  const bookingData = { /* … */ };
-                  const commissionData = { /* … */ };
-
-                  try {
-                    await newBookingRef.set(bookingData);
-                    await db
-                      .ref(`walletBalance/${booking.driverId}/${booking.slotKey}/${bookingId}`)
-                      .set(commissionData);
-
-                    alert('Payment successful & booking confirmed!');
-                    localStorage.removeItem('selectedBooking');
-                    window.location.href = 'mybookings.html';
-                  } catch (e) {
-                    console.error(e);
-                    alert('Error saving booking. Please contact support.');
-                  }
+                  return {
+                    ...cur,
+                    seats: Math.max(0, cur.seats - booking.seatsRequested)
+                  };
+                }).finally(() => {
+                  // Write booking under driverId
+                  db.ref(`bookings/${booking.driverId}`)
+                    .push({
+                      ...booking,
+                      userId: dbUid,
+                      userName: name,
+                      userPhone: phone,
+                      paymentId: res.razorpay_payment_id,
+                      bookedAt: new Date().toISOString(),
+                      status: 'confirmed'
+                    })
+                    .then(() => {
+                      alert('Payment successful & booking confirmed!');
+                      localStorage.removeItem('selectedBooking');
+                      window.location = 'mybookings.html';
+                    })
+                    .catch(err => {
+                      console.error(err);
+                      alert('Error saving booking. Please contact support.');
+                    });
                 });
               }
             }).open();
@@ -209,11 +240,11 @@
     }
 
     function formatDate(d) {
-      const [y,m,dd] = d.split('-');
+      const [y, m, dd] = d.split('-');
       return `${dd}/${m}/${y}`;
     }
     function formatTime(t) {
-      let [h,mm] = t.split(':').map(Number);
+      let [h, mm] = t.split(':').map(Number);
       const suffix = h >= 12 ? 'PM' : 'AM';
       h = h % 12 || 12;
       return `${h}:${mm.toString().padStart(2,'0')} ${suffix}`;
