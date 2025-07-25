@@ -13,13 +13,10 @@
     .container { flex:1; max-width:400px; width:100%; margin:0 auto; padding:24px 16px; }
     .card { background:var(--card-bg); border-radius:12px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.1); text-align:left; }
     .card h1 { font-size:1.5rem; color:var(--primary); margin-bottom:16px; text-align:center; }
-    .profile-pic { width:100px; height:100px; border-radius:50%; object-fit:cover; display:block; margin:0 auto 16px; background:#eee; }
     .field { display:flex; justify-content:space-between; margin-bottom:12px; font-size:1rem; }
     .field span:first-child { font-weight:600; }
     .loading { font-style:italic; color:#666; }
-    #profileImageInput { display:block; margin:0 auto 8px; }
-    #uploadBtn { display:block; margin-top:8px; width:100%; padding:12px; background:#28a745; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
-    #logoutBtn { display:block; margin-top:16px; width:100%; padding:12px; background:var(--primary); color:#fff; border:none; border-radius:8px; text-decoration:none; font-weight:600; cursor:pointer; }
+    #logoutBtn { display:block; margin-top:16px; width:100%; padding:12px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
     .navbar { position:fixed; bottom:0; left:0; width:100%; background:#fff; border-top:1px solid #ddd; display:flex; justify-content:space-around; padding:8px 0; box-shadow:0 -2px 8px rgba(0,0,0,0.1); }
     .navbar a { color:var(--primary); text-decoration:none; font-size:0.75rem; text-align:center; }
     .navbar a i { display:block; font-size:1.25rem; margin-bottom:4px; }
@@ -49,8 +46,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref as dbRef, get, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
-    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
+    import { getDatabase, ref as dbRef, get, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -65,16 +61,12 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
-    const storage = getStorage(app);
 
     const nameEl = document.getElementById('userName');
     const emailEl = document.getElementById('userEmail');
     const phoneEl = document.getElementById('userPhone');
     const roleEl = document.getElementById('userRole');
     const noticeEl = document.getElementById('notice');
-    const previewEl = document.getElementById('profilePreview');
-    const inputEl = document.getElementById('profileImageInput');
-    const uploadBtn = document.getElementById('uploadBtn');
     const logoutBtn = document.getElementById('logoutBtn');
 
     let currentUser = null;
@@ -113,10 +105,6 @@
           emailEl.textContent = data.email || "Not set";
           phoneEl.textContent = data.phone || "Not set";
           roleEl.textContent = data.role || "Not set";
-
-          if (data.profileImageUrl) {
-            previewEl.src = data.profileImageUrl;
-          }
         } else {
           nameEl.textContent = "Not available";
           emailEl.textContent = "Not available";
@@ -130,35 +118,16 @@
       }
     });
 
-    uploadBtn.addEventListener('click', async () => {
-      if (!currentUser) return;
-      const file = inputEl.files[0];
-      if (!file) {
-        noticeEl.textContent = "Select an image first.";
-        return;
-      }
-
-      noticeEl.textContent = "Uploading...";
-      const filePath = `profileImages/${currentUser.uid}/${file.name}`;
-      const imageRef = storageRef(storage, filePath);
-
-      try {
-        await uploadBytes(imageRef, file);
-        const url = await getDownloadURL(imageRef);
-        await update(dbRef(db, `users/${currentUser.uid}`), {
-          profileImageUrl: url
-        });
-        previewEl.src = url;
-        noticeEl.textContent = "Upload successful!";
-      } catch (error) {
-        console.error("Upload failed:", error);
-        noticeEl.textContent = "Upload failed.";
-      }
-    });
-
     logoutBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      signOut(auth).then(() => window.location = 'index.html');
+      signOut(auth)
+        .then(() => {
+          window.location = 'index.html';
+        })
+        .catch((err) => {
+          console.error("Logout error:", err);
+          noticeEl.textContent = "Logout failed.";
+        });
     });
   </script>
 </body>
