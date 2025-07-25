@@ -130,9 +130,6 @@
       </select>
     </div>
 
-    <label for="seats">Available Seats (Max 6)</label>
-    <input type="number" id="seats" min="1" max="6" />
-
     <button id="addSlotBtn">Add Slot</button>
 
     <div class="slot-list" id="slotList"></div>
@@ -174,7 +171,6 @@
     const hour = document.getElementById("hour");
     const minute = document.getElementById("minute");
     const ampm = document.getElementById("ampm");
-    const seats = document.getElementById("seats");
     const slotList = document.getElementById("slotList");
     const addBtn = document.getElementById("addSlotBtn");
 
@@ -268,14 +264,15 @@
               dt = date.value,
               h  = hour.value,
               mi = minute.value,
-              ap = ampm.value,
-              st = seats.value;
-        if (!cid||!pu||!dr||!dt||!h||!mi||!ap||!st) {
+              ap = ampm.value;
+        if (!cid || !pu || !dr || !dt || !h || !mi || !ap) {
           return alert("All fields are required");
         }
 
+        // Fetch car details (including seats) from approvedcars
         const carSnap = await get(ref(db, `approvedcars/${driverId}/${cid}`));
         const cd = carSnap.val() || {};
+        const seatCount = cd.seats || 0;
 
         const t24 = to24(h, mi, ap);
         const slotData = {
@@ -283,7 +280,7 @@
           dropoff: dr,
           date: dt,
           time: t24,
-          seats: st,
+          seats: seatCount,
           driverName: cd.driverName || "",
           driverNumber: cd.driverNumber || "",
           carBrand: cd.carBrand || "",
@@ -292,7 +289,6 @@
 
         await push(ref(db, `availableslots/${driverId}`), slotData);
         alert("Slot added successfully");
-        seats.value = "";
       };
     });
   </script>
