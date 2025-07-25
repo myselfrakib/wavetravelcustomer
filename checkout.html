@@ -210,22 +210,37 @@
                     ...cur,
                     seats: Math.max(0, cur.seats - booking.seatsRequested)
                   };
-                }).finally(() => {
+                }).finally(async () => {
                   // Write booking under driverId
-                  db.ref(`bookings/${booking.driverId}`)
-                    .push({
-                      ...booking,
-                      userId: dbUid,
-                      userName: name,
-                      userPhone: phone,
-                      paymentId: res.razorpay_payment_id,
-                      bookedAt: new Date().toISOString(),
-                      status: 'confirmed'
-                    })
+                  const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+                  const newBookingRef = bookingsRef.push();
+                  const bookingData = {
+                    ...booking,
+                    userId: dbUid,
+                    userName: name,
+                    userPhone: phone,
+                    paymentId: res.razorpay_payment_id,
+                    bookedAt: new Date().toISOString(),
+                    status: 'confirmed'
+                  };
+                  newBookingRef.set(bookingData)
                     .then(() => {
-                      alert('Payment successful & booking confirmed!');
-                      localStorage.removeItem('selectedBooking');
-                      window.location = 'mybookings.html';
+                      // Now create driverWallet entry at 50% amount
+                      const walletRef = db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`);
+                      walletRef.set({
+                        amount: booking.fare * 0.5,
+                        date: new Date().toISOString(),
+                        paidout: false
+                      })
+                      .then(() => {
+                        alert('Payment successful & booking confirmed!');
+                        localStorage.removeItem('selectedBooking');
+                        window.location = 'mybookings.html';
+                      })
+                      .catch(err => {
+                        console.error(err);
+                        alert('Booking saved but wallet entry failed. Please contact support.');
+                      });
                     })
                     .catch(err => {
                       console.error(err);
