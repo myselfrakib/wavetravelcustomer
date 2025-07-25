@@ -247,12 +247,13 @@
       loadLocations();
       loadSlots(driverId);
 
-      // Load this driver's cars
+      // Load this driver's cars, showing seat count in the dropdown
       onValue(ref(db, `approvedcars/${driverId}`), snap => {
         let opts = "";
         snap.forEach(ch => {
           const d = ch.val();
-          opts += `<option value="${ch.key}">${d.carBrand}</option>`;
+          const seatText = d.seats ? `${d.seats} seats` : "Unknown seats";
+          opts += `<option value="${ch.key}">${d.carBrand} (${seatText})</option>`;
         });
         car.innerHTML = opts || `<option disabled>No approved cars</option>`;
       });
