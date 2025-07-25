@@ -34,6 +34,7 @@
       padding: 15px;
       border-radius: 10px;
       margin-bottom: 20px;
+      text-align: center;
     }
 
     .dashboard-card h2 {
@@ -43,6 +44,21 @@
 
     .dashboard-card p {
       font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    #withdraw-btn {
+      background: #ffd700;
+      color: #4a00e0;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #withdraw-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .navbar {
@@ -91,16 +107,11 @@
   <div class="container">
     <h1>Welcome to Your Dashboard</h1>
 
-    <div class="dashboard-card">
-      <h2>Your Cars</h2>
-      <p> Click below to manage Your Cars.</p>
-      <a href="drivermycars.html" style="color: #ffd700; font-weight: bold;">Manage Your Cars</a>
-    </div>
-
-    <div class="dashboard-card">
-      <h2>Available Slots</h2>
-      <p> Click below to manage your slots.</p>
-      <a href="driverslots.html" style="color: #ffd700; font-weight: bold;">Manage Your Slots</a>
+    <!-- Wallet Balance Card -->
+    <div class="dashboard-card" id="wallet-card">
+      <h2>Wallet Balance</h2>
+      <p id="balance">Loading your balance…</p>
+      <button id="withdraw-btn" disabled>Withdraw</button>
     </div>
   </div>
 
@@ -112,5 +123,89 @@
     <a href="driverprofile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <script>
+    // TODO: Replace with your Firebase project configuration
+     const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+    
+    const balanceEl = document.getElementById('balance');
+    const withdrawBtn = document.getElementById('withdraw-btn');
+
+    // Wait for auth state
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user) {
+        balanceEl.textContent = 'Please log in to see your balance.';
+        return;
+      }
+      const driverId = user.uid;
+      const walletRef = firebase.database().ref(`/driverWallet/${driverId}`);
+
+      // Fetch current wallet entries
+      walletRef.once('value')
+        .then(snapshot => {
+          if (!snapshot.exists()) {
+            balanceEl.textContent = '₹0';
+            return;
+          }
+          let total = 0;
+          snapshot.forEach(childSnap => {
+            const amt = parseFloat(childSnap.val().amount) || 0;
+            total += amt;
+          });
+          balanceEl.textContent = `₹${total}`;
+          // enable withdraw if there is any amount
+          if (total > 0) withdrawBtn.disabled = false;
+        })
+        .catch(err => {
+          console.error(err);
+          balanceEl.textContent = 'Error loading balance';
+        });
+
+      // Handle withdraw
+      withdrawBtn.addEventListener('click', () => {
+        withdrawBtn.disabled = true;
+        balanceEl.textContent = 'Processing withdrawal…';
+
+        walletRef.once('value')
+          .then(snapshot => {
+            const updates = {};
+            const now = new Date().toISOString();
+            snapshot.forEach(childSnap => {
+              const bookingId = childSnap.key;
+              const amount = childSnap.val().amount;
+              // Prepare write to Withdrew node
+              updates[`/Withdrew/${driverId}/${bookingId}`] = {
+                amount,
+                date: now
+              };
+              // Prepare removal from original wallet
+              updates[`/driverWallet/${driverId}/${bookingId}`] = null;
+            });
+            // Execute all updates in one go
+            return firebase.database().ref().update(updates);
+          })
+          .then(() => {
+            balanceEl.textContent = '₹0 (withdrawn)';
+          })
+          .catch(err => {
+            console.error(err);
+            balanceEl.textContent = 'Withdrawal failed';
+            withdrawBtn.disabled = false;
+          });
+      });
+    });
+  </script>
 </body>
 </html>
