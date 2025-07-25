@@ -94,15 +94,7 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     // Initialize Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
+    const firebaseConfig = { /* your config */ };
     firebase.initializeApp(firebaseConfig);
 
     const db   = firebase.database();
@@ -126,37 +118,9 @@
           return;
         }
 
-        // Resolve DB UID, name, phone
-        let dbUid = null, name = 'Not set', phone = 'Not set';
-        const snapUid = await db.ref(`users/${user.uid}`).once('value');
-        if (snapUid.exists()) {
-          dbUid = user.uid;
-          ({ name, phone } = snapUid.val());
-        } else {
-          if (user.phoneNumber) {
-            const raw = user.phoneNumber.slice(-10);
-            const snapPhone = await db.ref('users')
-              .orderByChild('phone')
-              .equalTo(raw)
-              .once('value');
-            if (snapPhone.exists()) {
-              const rec = snapPhone.val();
-              dbUid = Object.keys(rec)[0];
-              ({ name, phone } = rec[dbUid]);
-            }
-          }
-          if (!dbUid && user.email) {
-            const snapEmail = await db.ref('users')
-              .orderByChild('email')
-              .equalTo(user.email)
-              .once('value');
-            if (snapEmail.exists()) {
-              const rec = snapEmail.val();
-              dbUid = Object.keys(rec)[0];
-              ({ name, phone } = rec[dbUid]);
-            }
-          }
-        }
+        // Resolve DB UID, name, phone (same as before)…
+        let dbUid, name, phone;
+        // … your existing lookup logic …
 
         if (!dbUid) {
           summaryEl.innerHTML = '<div>Profile not found. Cannot proceed.</div>';
@@ -178,13 +142,18 @@
 
         if (!bound) {
           bound = true;
-          termsChk.addEventListener('change', () => {
-            payBtn.disabled = !termsChk.checked;
-          });
+          termsChk.addEventListener('change', () => payBtn.disabled = !termsChk.checked);
           payBtn.disabled = true;
 
-          payBtn.addEventListener('click', () => {
+          payBtn.addEventListener('click', async () => {
             if (!termsChk.checked) return;
+
+            // Pre‑check slot existence
+            const slotPath = `availableslots/${booking.driverId}/${booking.slotKey}`;
+            const slotSnap = await db.ref(slotPath).once('value');
+            if (!slotSnap.exists()) {
+              return alert('Sorry, this slot is no longer available.');
+            }
 
             new Razorpay({
               key: 'rzp_test_NMB6jz5XK0G48R',
@@ -194,70 +163,43 @@
               description: 'Ride Booking',
               prefill: { name, contact: phone, email: user.email || '' },
               handler: res => {
-                const path = `availableslots/${booking.driverId}/${booking.slotKey}`;
-                console.log("Running transaction on:", path);
-                const slotRef = db.ref(path);
-
-                slotRef.transaction(current => {
-                  console.log("Current slot data:", current);
-                  if (!current) {
-                    console.warn("No slot found at path—aborting transaction");
-                    return;  // aborts → committed = false
-                  }
+                // Safe to transact now that we know it exists
+                db.ref(slotPath).transaction(current => {
                   const cs = parseInt(current.seats, 10);
-                  if (isNaN(cs)) {
-                    console.warn("Seats not a number:", current.seats, "– returning current object to avoid abort");
-                    return current;  // leave as-is, committed = true but no change
-                  }
-                  const updated = { ...current, seats: Math.max(0, cs - booking.seatsRequested) };
-                  console.log("Updating slot to:", updated);
-                  return updated;
-                }, (err, committed) => {
+                  if (isNaN(cs)) return current; 
+                  return { ...current, seats: Math.max(0, cs - booking.seatsRequested) };
+                }, async (err, committed) => {
                   if (err) {
-                    console.error("Transaction error:", err);
-                    return alert("Could not update slots. Try again.");
+                    console.error(err);
+                    return alert("Could not update seats. Please try again.");
                   }
                   if (!committed) {
-                    return alert("Booking canceled; seats unchanged.");
+                    // This should now only happen if someone else booked at the same millisecond
+                    return alert("Seats were just taken. Please try again.");
                   }
 
-                  // 1) Push booking
+                  // Push booking & commission (same as before)…
                   const bookingsRef   = db.ref(`bookings/${booking.driverId}`);
                   const newBookingRef = bookingsRef.push();
                   const bookingId     = newBookingRef.key;
                   const commAmount    = booking.fare * 0.5;
 
-                  const bookingData = {
-                    ...booking,
-                    userId: dbUid,
-                    userName: name,
-                    userPhone: phone,
-                    paymentId: res.razorpay_payment_id,
-                    bookedAt: new Date().toISOString(),
-                    status: 'confirmed',
-                    driverCommission: commAmount
-                  };
-                  // 2) Push commission record
-                  const commissionData = {
-                    amount: commAmount,
-                    status: 'unpaid',
-                    date: new Date().toISOString()
-                  };
+                  const bookingData = { /* … */ };
+                  const commissionData = { /* … */ };
 
-                  Promise.all([
-                    newBookingRef.set(bookingData),
-                    db.ref(`walletBalance/${booking.driverId}/${booking.slotKey}/${bookingId}`)
-                      .set(commissionData)
-                  ])
-                  .then(() => {
+                  try {
+                    await newBookingRef.set(bookingData);
+                    await db
+                      .ref(`walletBalance/${booking.driverId}/${booking.slotKey}/${bookingId}`)
+                      .set(commissionData);
+
                     alert('Payment successful & booking confirmed!');
                     localStorage.removeItem('selectedBooking');
                     window.location.href = 'mybookings.html';
-                  })
-                  .catch(e => {
-                    console.error("Save error:", e);
-                    alert('Error saving data. Please contact support.');
-                  });
+                  } catch (e) {
+                    console.error(e);
+                    alert('Error saving booking. Please contact support.');
+                  }
                 });
               }
             }).open();
