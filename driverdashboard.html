@@ -172,7 +172,6 @@
       ref,
       get,
       update,
-      push,
       onValue
     } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
     import {
@@ -229,6 +228,7 @@
           item.status === 'paid' ? '#4CAF50' :
           item.status === 'processing' ? '#FF9800' :
           item.status === 'rejected' ? '#F44336' : '#ffffff';
+
         li.innerHTML = `
           <div class="history-summary">
             <span>${index + 1}. ₹${item.amount} | ${new Date(item.date).toLocaleString()}</span>
@@ -236,18 +236,24 @@
           </div>
           <div class="details">
             ${
-              Object.keys(item.bookings || {}).length
-                ? Object.entries(item.bookings).map(([bid, b]) => `
-                    <div><strong>Booking:</strong> ${bid} | ₹${b.amount || 0} | ${b.booking?.date || '-'} ${b.booking?.time || '-'}</div>
-                  `).join('')
-                : '<div>(No booking breakdown stored for this request)</div>'
+              item.booking
+                ? `
+                  <div><strong>Booking ID:</strong> ${item.id}</div>
+                  <div><strong>Fare:</strong> ₹${item.booking.fare ?? '-'}</div>
+                  <div><strong>Pickup:</strong> ${item.booking.pickup ?? '-'}</div>
+                  <div><strong>Dropoff:</strong> ${item.booking.dropoff ?? '-'}</div>
+                  <div><strong>Date:</strong> ${item.booking.date ?? '-'} ${item.booking.time ?? ''}</div>
+                `
+                : '<div>(No booking details)</div>'
             }
           </div>
         `;
+
         li.addEventListener('click', () => {
           const detailDiv = li.querySelector('.details');
           detailDiv.style.display = detailDiv.style.display === 'block' ? 'none' : 'block';
         });
+
         historyListEl.appendChild(li);
       });
 
@@ -269,45 +275,39 @@
       renderHistory();
     });
 
-    // Normalize NEW model: /withdrawRequests/{driverId}/{requestId}
-    function normalizeWithdrawRequests(raw) {
-      const out = [];
-      if (!raw) return out;
-      for (const [requestId, obj] of Object.entries(raw)) {
-        out.push({
-          requestId,
-          amount: obj.amount || 0,
-          status: obj.status || 'processing',
-          date: obj.requestedAt || obj.updatedAt || new Date().toISOString(),
-          bookings: obj.bookings || {}
-        });
-      }
-      return out;
-    }
-
-    // Normalize OLD model: /pendingWithdrawals/{driverId}/{bookingId}
-    // We create one pseudo-request per bookingId
-    function normalizePendingWithdrawals(raw) {
+    // Normalize NEW path: /pendingwithdrawl/{driverId}/{bookingId}
+    function normalizePendingwithdrawl(raw) {
       const out = [];
       if (!raw) return out;
       for (const [bookingId, obj] of Object.entries(raw)) {
         out.push({
-          requestId: bookingId,
-          amount: obj.amount || 0,
+          id: bookingId,
+          amount: obj.amount || obj.booking?.amount || 0,
           status: obj.status || 'processing',
-          date: obj.date || new Date().toISOString(),
-          bookings: {
-            [bookingId]: {
-              amount: obj.amount || 0,
-              booking: obj.booking || null
-            }
-          }
+          date: obj.requestedAt || obj.date || new Date().toISOString(),
+          booking: obj.booking || obj // keep full booking details
         });
       }
       return out;
     }
 
-    // Driver presses withdraw -> create a new withdrawRequests node & clear wallet
+    // Legacy path: /pendingWithdrawals/{driverId}/{bookingId}
+    function normalizePendingWithdrawalsLegacy(raw) {
+      const out = [];
+      if (!raw) return out;
+      for (const [bookingId, obj] of Object.entries(raw)) {
+        out.push({
+          id: bookingId,
+          amount: obj.amount || 0,
+          status: obj.status || 'processing',
+          date: obj.date || new Date().toISOString(),
+          booking: obj.booking || null
+        });
+      }
+      return out;
+    }
+
+    // Withdraw handler -> move EACH booking to /pendingwithdrawl/{driverId}/{bookingId}
     withdrawBtn.addEventListener('click', async () => {
       if (!currentDriverId || isProcessing) return;
       isProcessing = true;
@@ -331,17 +331,27 @@
           return;
         }
 
-        const newReqRef = push(ref(db, `/withdrawRequests/${currentDriverId}`));
         const now = new Date().toISOString();
-
         const updates = {};
-        updates[`/withdrawRequests/${currentDriverId}/${newReqRef.key}`] = {
-          amount: totalAmount,
-          bookings: freshData,
-          status: "processing",
-          requestedAt: now,
-          updatedAt: now
-        };
+
+        // For each booking in driverWallet, move it to /pendingwithdrawl
+        Object.entries(freshData).forEach(([bookingId, obj]) => {
+          const bookingDetails = obj.booking || {}; // if you stored booking object here
+          const amount = obj.amount || bookingDetails.amount || 0;
+          const fare   = bookingDetails.fare ?? obj.fare ?? 0;
+
+          updates[`/pendingwithdrawl/${currentDriverId}/${bookingId}`] = {
+            amount,
+            fare,
+            status: "processing",
+            requestedAt: now,
+            booking: {
+              ...bookingDetails
+            }
+          };
+        });
+
+        // Clear driver wallet
         updates[`/driverWallet/${currentDriverId}`] = null;
 
         await update(ref(db), updates);
@@ -367,9 +377,9 @@
 
       currentDriverId = user.uid;
 
-      const walletRef   = ref(db, `/driverWallet/${currentDriverId}`);
-      const newHistRef  = ref(db, `/withdrawRequests/${currentDriverId}`);
-      const oldHistRef  = ref(db, `/pendingWithdrawals/${currentDriverId}`); // legacy
+      const walletRef        = ref(db, `/driverWallet/${currentDriverId}`);
+      const newHistRef       = ref(db, `/pendingwithdrawl/${currentDriverId}`);      // NEW per your requirement
+      const legacyHistRef    = ref(db, `/pendingWithdrawals/${currentDriverId}`);    // legacy support
 
       // Wallet balance
       onValue(walletRef, (snapshot) => {
@@ -383,15 +393,15 @@
         withdrawBtn.disabled = total <= 0 || isProcessing;
       });
 
-      // Listen to both NEW and OLD histories and merge
-      const recomputeHistory = (newSnap, oldSnap) => {
-        const newData = newSnap?.val() || null;
-        const oldData = oldSnap?.val() || null;
+      // Merge NEW + LEGACY histories
+      const recomputeHistory = (newSnap, legacySnap) => {
+        const newData    = newSnap?.val()    || null;
+        const legacyData = legacySnap?.val() || null;
 
-        const listNew = normalizeWithdrawRequests(newData);
-        const listOld = normalizePendingWithdrawals(oldData);
+        const listNew    = normalizePendingwithdrawl(newData);
+        const listLegacy = normalizePendingWithdrawalsLegacy(legacyData);
 
-        allHistory = [...listNew, ...listOld]
+        allHistory = [...listNew, ...listLegacy]
           .sort((a, b) => new Date(b.date) - new Date(a.date));
 
         visibleCount = 5;
@@ -399,16 +409,16 @@
       };
 
       let lastNewSnap = null;
-      let lastOldSnap = null;
+      let lastLegacySnap = null;
 
       onValue(newHistRef, (snap) => {
         lastNewSnap = snap;
-        recomputeHistory(lastNewSnap, lastOldSnap);
+        recomputeHistory(lastNewSnap, lastLegacySnap);
       });
 
-      onValue(oldHistRef, (snap) => {
-        lastOldSnap = snap;
-        recomputeHistory(lastNewSnap, lastOldSnap);
+      onValue(legacyHistRef, (snap) => {
+        lastLegacySnap = snap;
+        recomputeHistory(lastNewSnap, lastLegacySnap);
       });
     });
   </script>
