@@ -123,16 +123,48 @@
           return;
         }
 
-        // Fetch user profile
-        const uid = user.uid;
-        const snap = await db.ref(`users/${uid}`).once('value');
-        if (!snap.exists()) {
+        // --- Fetch user details from /users ---
+        let dbUid = user.uid;
+        let userData = null;
+
+        // 1) Direct UID lookup
+        const snapUid = await db.ref(`users/${dbUid}`).once('value');
+        if (snapUid.exists()) {
+          userData = snapUid.val();
+        } else {
+          // 2) Fallback phone lookup
+          if (user.phoneNumber) {
+            const phoneSnap = await db.ref("users")
+              .orderByChild("phone")
+              .equalTo(user.phoneNumber)
+              .once("value");
+            if (phoneSnap.exists()) {
+              const rec = phoneSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
+          }
+          // 3) Fallback email lookup
+          if (!userData && user.email) {
+            const emailSnap = await db.ref("users")
+              .orderByChild("email")
+              .equalTo(user.email)
+              .once("value");
+            if (emailSnap.exists()) {
+              const rec = emailSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
+          }
+        }
+
+        if (!userData) {
           summaryEl.innerHTML = '<div>Profile not found. Cannot proceed.</div>';
           payBtn.disabled = true;
           return;
         }
 
-        const { name, phone } = snap.val();
+        const { name, phone } = userData;
 
         // Render booking summary
         summaryEl.innerHTML = `
@@ -162,53 +194,53 @@
               currency: 'INR',
               name: 'WaveTravel',
               description: 'Ride Booking',
-              prefill: {
-                name,
-                contact: phone,
-                email: user.email || ''
-              },
+              prefill: { name, contact: phone, email: user.email || '' },
               handler: res => {
-                // Safely decrement seats
+                // Decrement seats
                 const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
                 slotRef.transaction(cur => {
                   if (!cur || typeof cur.seats !== 'number') return cur;
                   return { ...cur, seats: Math.max(0, cur.seats - booking.seatsRequested) };
-                }).finally(() => saveBooking(uid, name, phone, res.razorpay_payment_id));
+                }).finally(async () => {
+                  // Save booking
+                  const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+                  const newBookingRef = bookingsRef.push();
+                  const bookingData = {
+                    ...booking,
+                    userId: dbUid,
+                    userName: name,
+                    userPhone: phone,
+                    paymentId: res.razorpay_payment_id,
+                    bookedAt: new Date().toISOString(),
+                    status: 'confirmed'
+                  };
+
+                  newBookingRef.set(bookingData)
+                    .then(() => {
+                      // Create driverWallet entry with booking details
+                      const walletRef = db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`);
+                      walletRef.set({
+                        amount: booking.fare * 0.5,
+                        date: new Date().toISOString(),
+                        paidout: false,
+                        booking: bookingData
+                      }).then(() => {
+                        alert('Payment successful & booking confirmed!');
+                        localStorage.removeItem('selectedBooking');
+                        window.location = 'mybookings.html';
+                      }).catch(err => {
+                        console.error(err);
+                        alert('Booking saved but wallet entry failed. Contact support.');
+                      });
+                    })
+                    .catch(err => {
+                      console.error(err);
+                      alert('Error saving booking. Contact support.');
+                    });
+                });
               }
             }).open();
           });
-        }
-
-        async function saveBooking(userId, userName, userPhone, paymentId) {
-          try {
-            const bookingsRef = db.ref(`bookings/${booking.driverId}`);
-            const newBookingRef = bookingsRef.push();
-            const bookingData = {
-              ...booking,
-              userId,
-              userName,
-              userPhone,
-              paymentId,
-              bookedAt: new Date().toISOString(),
-              status: 'confirmed'
-            };
-
-            await newBookingRef.set(bookingData);
-
-            // Store full booking details in driver wallet
-            await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
-              ...bookingData,
-              amount: booking.fare * 0.5, // commission amount
-              paidout: false
-            });
-
-            alert('Payment successful & booking confirmed!');
-            localStorage.removeItem('selectedBooking');
-            window.location = 'mybookings.html';
-          } catch (err) {
-            console.error(err);
-            alert('Error saving booking or wallet entry.');
-          }
         }
       });
     }
