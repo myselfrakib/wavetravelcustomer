@@ -269,11 +269,11 @@
           return;
         }
 
-        const newReqRef = push(ref(db, `/withdrawRequests/${currentDriverId}`));
+        const newReqRef = push(ref(db, `/pendingWithdrawals/${currentDriverId}`));
         const now = new Date().toISOString();
 
         const updates = {};
-        updates[`/withdrawRequests/${currentDriverId}/${newReqRef.key}`] = {
+        updates[`/pendingWithdrawals/${currentDriverId}/${newReqRef.key}`] = {
           amount: totalAmount,
           bookings: freshData,
           status: "processing",
@@ -306,7 +306,7 @@
       currentDriverId = user.uid;
 
       const walletRef  = ref(db, `/driverWallet/${currentDriverId}`);
-      const historyRef = ref(db, `/withdrawRequests/${currentDriverId}`);
+      const historyRef = ref(db, `/pendingWithdrawals/${currentDriverId}`);
 
       onValue(walletRef, (snapshot) => {
         if (!snapshot.exists()) {
