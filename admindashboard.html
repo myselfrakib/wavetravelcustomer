@@ -20,9 +20,7 @@
     .loading { text-align:center; margin:2rem; color:#ffd700; }
     table.dataTable { background:rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; }
     .dt-button, .dataTables_length select, .dataTables_filter input { color:#000 !important; }
-
-    /* Wallet cards */
-    #wallets-container { display:flex; flex-wrap:wrap; gap:1rem; }
+    #wallets-container, #withdrawals-container { display:flex; flex-wrap:wrap; gap:1rem; }
     .wallet-card { background:rgba(255,255,255,0.1); padding:1rem; border-radius:8px; width:280px; }
     .wallet-card h3 { margin:0 0 .5rem; color:#ffd700; font-size:1.1rem; }
     .wallet-card p { margin:0.25rem 0; font-size:0.95rem; }
@@ -35,7 +33,7 @@
       color:#fff;
       cursor:pointer;
     }
-    .wallet-card button:nth-child(2) { background:#e74c3c; margin-left:5px; }
+    .wallet-card button.reject { background:#e74c3c; margin-left:5px; }
   </style>
 </head>
 <body>
@@ -48,6 +46,7 @@
     <button onclick="openTab('slots')">Slots</button>
     <button onclick="openTab('bookings')">Bookings</button>
     <button onclick="openTab('driver-wallets')">Driver Wallets</button>
+    <button onclick="openTab('pending-withdrawals')">Pending Withdrawals</button>
     <button onclick="openTab('profile')">Profile</button>
     <button onclick="logout()">Logout</button>
   </div>
@@ -135,6 +134,13 @@
     <div id="wallets-container" style="display:none;"></div>
   </div>
 
+  <!-- PENDING WITHDRAWALS -->
+  <div id="pending-withdrawals-tab" class="tab-pane">
+    <h2>Pending Withdrawals</h2>
+    <div id="withdrawals-loading" class="loading">Loading pending withdrawals…</div>
+    <div id="withdrawals-container" style="display:none;"></div>
+  </div>
+
   <!-- PROFILE -->
   <div id="profile-tab" class="tab-pane">
     <h2>My Profile</h2>
@@ -153,36 +159,56 @@
 
   <!-- Firebase & App Logic -->
   <script type="module">
-    import { initializeApp }                from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref, get, remove, set }   from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getDatabase, ref, get, remove, set, update } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
     const cfg = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL:"https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId:"wavetravel-3c4c4",
-      storageBucket:"wavetravel-3c4c4.appspot.com",
-      messagingSenderId:"298226098137",
-      appId:"1:298226098137:web:720953b80e3e61c8bc43c8"
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
     const app  = initializeApp(cfg);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    window.logout = () => signOut(auth).then(()=>location.href='adminlogin.html');
-    window.deleteUser      = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
-    window.deleteDriver    = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
-    window.deletePending   = async (did,cid) => { await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); };
-    window.deleteApproved  = async (did,cid) => { await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); };
-    window.deleteSlot      = async (did,sid) => { await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); };
-    window.deleteBooking   = async bid => { await remove(ref(db,`bookings/${bid}`)); loadBookings(); };
-    window.approveCar      = async (did,cid) => {
+    window.logout = () => signOut(auth).then(() => location.href='adminlogin.html');
+    window.deleteUser = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
+    window.deleteDriver = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
+    window.deletePending = async (did,cid) => { await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); };
+    window.deleteApproved = async (did,cid) => { await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); };
+    window.deleteSlot = async (did,sid) => { await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); };
+    window.deleteBooking = async bid => { await remove(ref(db,`bookings/${bid}`)); loadBookings(); };
+    window.approveCar = async (did,cid) => {
       const snap = await get(ref(db,`pendingcars/${did}/${cid}`));
       const car  = snap.val(); if(!car) return;
       await set(ref(db,`approvedcars/${did}/${cid}`), car);
       await remove(ref(db,`pendingcars/${did}/${cid}`));
       loadPending();
+    };
+
+    // Wallet Approve/Reject
+    window.approveWalletEntry = async (driverId, bookingId) => {
+      await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { status: 'paid' });
+      loadWallets();
+    };
+    window.rejectWalletEntry = async (driverId, bookingId, amount) => {
+      await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { status: 'available', amount });
+      loadWallets();
+    };
+
+    // Pending Withdrawals Approve/Reject
+    window.approveWithdrawal = async (driverId, bookingId) => {
+      await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'approved' });
+      loadWithdrawals();
+    };
+    window.rejectWithdrawal = async (driverId, bookingId) => {
+      await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'rejected' });
+      loadWithdrawals();
     };
 
     const tables = {};
@@ -275,84 +301,91 @@
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
-    // --- DRIVER WALLET SECTION ---
-    window.approveWalletEntry = async function(driverId, bookingId) {
-      const bookingRef = ref(db, `driverWallet/${driverId}/${bookingId}/status`);
-      await set(bookingRef, 'paid');
-      loadWallets();
-    }
-
-    window.rejectWalletEntry = async function(driverId, bookingId, amount) {
-      const bookingRef = ref(db, `driverWallet/${driverId}/${bookingId}`);
-      await set(bookingRef, {
-        amount: amount,
-        date: new Date().toISOString(),
-        status: 'available'
-      });
-      loadWallets();
-    }
-
-    async function loadWallets() {
+    async function loadWallets(){
+      $('#wallets-container').hide(); $('#wallets-loading').show();
       const container = document.getElementById('wallets-container');
-      $('#wallets-container').hide();
-      $('#wallets-loading').show();
-      container.innerHTML = '';
-
+      container.innerHTML='';
       const snap = await get(ref(db,'driverWallet'));
-      if (snap.exists()) {
-        const allDrivers = snap.val();
-        for (const driverId in allDrivers) {
-          const driverWallet = allDrivers[driverId];
+      if(snap.exists()){
+        for(const [driverId, entries] of Object.entries(snap.val())){
           let driverTotal = 0;
+          for(const e of Object.values(entries)) driverTotal += parseFloat(e.amount)||0;
+          const driverHeader = document.createElement('div');
+          driverHeader.className='wallet-card';
+          driverHeader.style.width='100%';
+          driverHeader.innerHTML = `<h3>Driver: ${driverId} | Total: ₹${driverTotal}</h3>`;
+          container.appendChild(driverHeader);
 
-          for (const bookingId in driverWallet) {
-          const entry = driverWallet[bookingId];
-          driverTotal += parseFloat(entry.amount) || 0;
-          }
-
-          const driverCard = document.createElement('div');
-          driverCard.className = 'wallet-card';
-          driverCard.style.width = '100%';
-          driverCard.innerHTML = `<h3>Driver: ${driverId} | Total Balance: ₹${driverTotal}</h3>`;
-          container.appendChild(driverCard);
-
-          for (const bookingId in driverWallet) {
-            const { amount, date, status } = driverWallet[bookingId];
+          for(const [bookingId, entry] of Object.entries(entries)){
             const card = document.createElement('div');
-            card.className = 'wallet-card';
+            card.className='wallet-card';
             card.innerHTML = `
               <h3>Booking: ${bookingId}</h3>
-              <p><strong>Amount:</strong> ₹${amount}</p>
-              <p><strong>Date:</strong> ${date || ''}</p>
-              <p><strong>Status:</strong> ${status || 'unpaid'}</p>
-              <button onclick="approveWalletEntry('${driverId}','${bookingId}')">Approve</button>
-              <button onclick="rejectWalletEntry('${driverId}','${bookingId}','${amount}')">Reject</button>
+              <p>Amount: ₹${entry.amount}</p>
+              <p>Fare: ₹${entry.fare}</p>
+              <p>Status: ${entry.status}</p>
+              <button onclick="approveWalletEntry('${driverId}','${bookingId}')">Mark Paid</button>
+              <button class="reject" onclick="rejectWalletEntry('${driverId}','${bookingId}',${entry.amount})">Reject</button>
             `;
             container.appendChild(card);
           }
         }
       }
-
-      $('#wallets-loading').hide();
-      container.style.display = container.children.length ? 'flex' : 'block';
-      if (!container.children.length) container.innerHTML = '<p>No wallet records found.</p>';
+      $('#wallets-loading').hide(); $('#wallets-container').show();
     }
-    // --- END ---
+
+    async function loadWithdrawals(){
+      $('#withdrawals-container').hide(); $('#withdrawals-loading').show();
+      const container = document.getElementById('withdrawals-container');
+      container.innerHTML='';
+      const snap = await get(ref(db,'pendingWithdrawals'));
+      if(snap.exists()){
+        for(const [driverId, bookings] of Object.entries(snap.val())){
+          const driverHeader = document.createElement('div');
+          driverHeader.className='wallet-card';
+          driverHeader.style.width='100%';
+          driverHeader.innerHTML = `<h3>Driver: ${driverId}</h3>`;
+          container.appendChild(driverHeader);
+
+          for(const [bookingId, data] of Object.entries(bookings)){
+            const card = document.createElement('div');
+            card.className='wallet-card';
+            card.innerHTML = `
+              <h3>Booking: ${bookingId}</h3>
+              <p>Amount: ₹${data.amount}</p>
+              <p>Fare: ₹${data.fare}</p>
+              <p>Status: ${data.status}</p>
+              <p>Pickup: ${data.booking?.pickup}</p>
+              <p>Dropoff: ${data.booking?.dropoff}</p>
+              <button onclick="approveWithdrawal('${driverId}','${bookingId}')">Approve</button>
+              <button class="reject" onclick="rejectWithdrawal('${driverId}','${bookingId}')">Reject</button>
+            `;
+            container.appendChild(card);
+          }
+        }
+      }
+      $('#withdrawals-loading').hide(); $('#withdrawals-container').show();
+    }
 
     async function loadProfile(){
       $('#profile-table').hide(); $('#profile-loading').show();
       initTable('profile-table');
       const user = auth.currentUser;
-      if(user){
-        tables['profile-table'].row.add(['UID', user.uid]).draw(false);
-        tables['profile-table'].row.add(['Email', user.email || '']).draw(false);
+      const profileData = {
+        Name: user?.displayName || 'Admin',
+        Email: user?.email || '',
+        UID: user?.uid || '',
+      };
+      for(const [k,v] of Object.entries(profileData)){
+        tables['profile-table'].row.add([k,v]).draw(false);
       }
       $('#profile-loading').hide(); $('#profile-table').show();
     }
 
-    window.openTab = tab => {
-      document.querySelectorAll('.tab-pane').forEach(t=>t.classList.remove('active'));
-      document.getElementById(`${tab}-tab`).classList.add('active');
+    window.openTab = function(tab){
+      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+      const id = tab+'-tab';
+      document.getElementById(id).classList.add('active');
       switch(tab){
         case 'users': loadUsers(); break;
         case 'drivers': loadDrivers(); break;
@@ -361,14 +394,12 @@
         case 'slots': loadSlots(); break;
         case 'bookings': loadBookings(); break;
         case 'driver-wallets': loadWallets(); break;
+        case 'pending-withdrawals': loadWithdrawals(); break;
         case 'profile': loadProfile(); break;
       }
     };
 
-    onAuthStateChanged(auth,user=>{
-      if(user) openTab('users');
-      else location.href='adminlogin.html';
-    });
+    onAuthStateChanged(auth, user => { if(user) openTab('users'); else location.href='adminlogin.html'; });
   </script>
 </body>
 </html>
