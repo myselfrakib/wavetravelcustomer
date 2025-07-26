@@ -26,6 +26,16 @@
     .wallet-card { background:rgba(255,255,255,0.1); padding:1rem; border-radius:8px; width:280px; }
     .wallet-card h3 { margin:0 0 .5rem; color:#ffd700; font-size:1.1rem; }
     .wallet-card p { margin:0.25rem 0; font-size:0.95rem; }
+    .wallet-card button {
+      margin-top:0.5rem;
+      padding:0.4rem 0.8rem;
+      border:none;
+      border-radius:4px;
+      background:#3498db;
+      color:#fff;
+      cursor:pointer;
+    }
+    .wallet-card button:nth-child(2) { background:#e74c3c; margin-left:5px; }
   </style>
 </head>
 <body>
@@ -265,30 +275,59 @@
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
-    async function loadWallets(){
+    // Wallet Management
+    async function approveWalletEntry(driverId, slotId, bookingId) {
+      const bookingRef = ref(db, `walletBalance/${driverId}/${slotId}/${bookingId}/status`);
+      await set(bookingRef, 'paid');
+      loadWallets();
+    }
+
+    async function rejectWalletEntry(driverId, slotId, bookingId, amount) {
+      const walletRef = ref(db, `driverWallet/${driverId}/${bookingId}`);
+      await set(walletRef, { amount: amount, date: new Date().toISOString(), status: 'available' });
+      await remove(ref(db, `walletBalance/${driverId}/${slotId}/${bookingId}`));
+      loadWallets();
+    }
+
+    async function loadWallets() {
       const container = document.getElementById('wallets-container');
       $('#wallets-container').hide();
       $('#wallets-loading').show();
       container.innerHTML = '';
 
       const snap = await get(ref(db,'walletBalance'));
-      if (snap.exists()){
+      if (snap.exists()) {
         const byDriver = snap.val();
         for (const driverId in byDriver) {
-          const bySlot = byDriver[driverId];
-          for (const slotId in bySlot) {
-            const byBooking = bySlot[slotId];
-            for (const bookingId in byBooking) {
-              const { amount, date, status } = byBooking[bookingId];
+          const driverWallet = byDriver[driverId];
+          let driverTotal = 0;
+
+          for (const slotId in driverWallet) {
+            for (const bookingId in driverWallet[slotId]) {
+              const { amount } = driverWallet[slotId][bookingId];
+              driverTotal += parseFloat(amount) || 0;
+            }
+          }
+
+          const driverCard = document.createElement('div');
+          driverCard.className = 'wallet-card';
+          driverCard.style.width = '100%';
+          driverCard.innerHTML = `<h3>Driver: ${driverId} | Total Balance: ₹${driverTotal}</h3>`;
+          container.appendChild(driverCard);
+
+          for (const slotId in driverWallet) {
+            for (const bookingId in driverWallet[slotId]) {
+              const { amount, date, status } = driverWallet[slotId][bookingId];
               const card = document.createElement('div');
               card.className = 'wallet-card';
               card.innerHTML = `
-                <h3>Driver: ${driverId}</h3>
-                <p><strong>Slot:</strong> ${slotId}</p>
+                <h3>Slot: ${slotId}</h3>
                 <p><strong>Booking:</strong> ${bookingId}</p>
-                <p><strong>Amount:</strong> ${amount}</p>
+                <p><strong>Amount:</strong> ₹${amount}</p>
                 <p><strong>Date:</strong> ${date}</p>
                 <p><strong>Status:</strong> ${status}</p>
+                <button onclick="approveWalletEntry('${driverId}','${slotId}','${bookingId}')">Approve</button>
+                <button onclick="rejectWalletEntry('${driverId}','${slotId}','${bookingId}','${amount}')">Reject</button>
               `;
               container.appendChild(card);
             }
@@ -298,43 +337,37 @@
 
       $('#wallets-loading').hide();
       container.style.display = container.children.length ? 'flex' : 'block';
-      if (!container.children.length) {
-        container.innerHTML = '<p>No wallet records found.</p>';
-      }
+      if (!container.children.length) container.innerHTML = '<p>No wallet records found.</p>';
     }
 
     async function loadProfile(){
       $('#profile-table').hide(); $('#profile-loading').show();
-      initTable('profile-table');
       const user = auth.currentUser;
+      initTable('profile-table');
       if(user){
-        const snap = await get(ref(db,`admins/${user.uid}`));
-        if(snap.exists()) for(const [k,v] of Object.entries(snap.val())){
-          tables['profile-table'].row.add([k,v]).draw(false);
-        }
+        tables['profile-table'].row.add(['Name',user.displayName||'']).draw(false);
+        tables['profile-table'].row.add(['Email',user.email||'']).draw(false);
+        tables['profile-table'].row.add(['UID',user.uid]).draw(false);
       }
       $('#profile-loading').hide(); $('#profile-table').show();
     }
 
-    window.openTab = name => {
-      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-      document.getElementById(`${name}-tab`).classList.add('active');
-      const loaders = {
-        users: loadUsers,
-        drivers: loadDrivers,
-        'pending-cars': loadPending,
-        'approved-cars': loadApproved,
-        slots: loadSlots,
-        bookings: loadBookings,
-        'driver-wallets': loadWallets,
-        profile: loadProfile
-      };
-      loaders[name]();
+    window.openTab = function(name){
+      $('.tab-pane').removeClass('active');
+      switch(name){
+        case 'users': $('#users-tab').addClass('active'); loadUsers(); break;
+        case 'drivers': $('#drivers-tab').addClass('active'); loadDrivers(); break;
+        case 'pending-cars': $('#pending-cars-tab').addClass('active'); loadPending(); break;
+        case 'approved-cars': $('#approved-cars-tab').addClass('active'); loadApproved(); break;
+        case 'slots': $('#slots-tab').addClass('active'); loadSlots(); break;
+        case 'bookings': $('#bookings-tab').addClass('active'); loadBookings(); break;
+        case 'driver-wallets': $('#driver-wallets-tab').addClass('active'); loadWallets(); break;
+        case 'profile': $('#profile-tab').addClass('active'); loadProfile(); break;
+      }
     };
 
-    onAuthStateChanged(auth,user=>{
-      if(!user) return location.href='adminlogin.html';
-      openTab('users');
+    onAuthStateChanged(auth, u=>{
+      if(!u) location.href='adminlogin.html'; else openTab('users');
     });
   </script>
 </body>
