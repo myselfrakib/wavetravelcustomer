@@ -90,7 +90,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
-    // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -123,7 +122,6 @@
           return;
         }
 
-        // --- Resolve user from /users ---
         let dbUid = user.uid;
         let userData = null;
 
@@ -163,7 +161,6 @@
 
         const { name, phone } = userData;
 
-        // Render booking summary
         summaryEl.innerHTML = `
           <div><strong>Name:</strong> ${name}</div>
           <div><strong>Phone:</strong> ${phone}</div>
@@ -187,7 +184,6 @@
 
             const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
 
-            // -------- PRE-CHECK seats BEFORE opening Razorpay ----------
             try {
               const snap = await slotRef.once('value');
               if (!snap.exists()) {
@@ -210,9 +206,7 @@
               alert('Failed to verify seats. Please try again.');
               return;
             }
-            // -----------------------------------------------------------
 
-            // Open Razorpay only if pre-check passed
             new Razorpay({
               key: 'rzp_test_NMB6jz5XK0G48R',
               amount: booking.fare * 100,
@@ -221,7 +215,6 @@
               description: 'Ride Booking',
               prefill: { name, contact: phone, email: user.email || '' },
               handler: res => {
-                // Transaction to *actually* deduct (atomic, handles races)
                 slotRef.transaction(cur => {
                   if (!cur) return cur;
 
@@ -229,7 +222,7 @@
                   const requested = parseInt(booking.seatsRequested, 10);
 
                   if (isNaN(currentSeats) || isNaN(requested)) return cur;
-                  if (currentSeats < requested) return; // abort transaction
+                  if (currentSeats < requested) return;
 
                   const newSeats = currentSeats - requested;
                   return { ...cur, seats: String(newSeats) };
@@ -245,7 +238,6 @@
                   }
 
                   try {
-                    // Save booking
                     const bookingsRef = db.ref(`bookings/${booking.driverId}`);
                     const newBookingRef = bookingsRef.push();
                     const bookingData = {
@@ -260,14 +252,14 @@
 
                     await newBookingRef.set(bookingData);
 
-                    // === Driver wallet entry (STRICT structure you asked) ===
+                    // === Driver wallet entry with status: 'unpaid' ===
                     await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
                       amount: booking.fare * 0.5,
                       status: 'unpaid',
-                      bookingdata: bookingData,
+                      booking: bookingData,
                       date: new Date().toISOString()
                     });
-                    // =========================================================
+                    // ==================================================
 
                     alert('Payment successful & booking confirmed!');
                     localStorage.removeItem('selectedBooking');
