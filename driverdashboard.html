@@ -275,8 +275,8 @@
       renderHistory();
     });
 
-    // Normalize NEW path: /pendingwithdrawl/{driverId}/{bookingId}
-    function normalizePendingwithdrawl(raw) {
+    // Normalize NEW path: /pendingwithdrawals/{driverId}/{bookingId}
+    function normalizependingwithdrawals(raw) {
       const out = [];
       if (!raw) return out;
       for (const [bookingId, obj] of Object.entries(raw)) {
@@ -307,7 +307,7 @@
       return out;
     }
 
-    // Withdraw handler -> move EACH booking to /pendingwithdrawl/{driverId}/{bookingId}
+    // Withdraw handler -> move EACH booking to /pendingwithdrawals/{driverId}/{bookingId}
     withdrawBtn.addEventListener('click', async () => {
       if (!currentDriverId || isProcessing) return;
       isProcessing = true;
@@ -334,13 +334,13 @@
         const now = new Date().toISOString();
         const updates = {};
 
-        // For each booking in driverWallet, move it to /pendingwithdrawl
+        // For each booking in driverWallet, move it to /pendingwithdrawals
         Object.entries(freshData).forEach(([bookingId, obj]) => {
           const bookingDetails = obj.booking || {}; // if you stored booking object here
           const amount = obj.amount || bookingDetails.amount || 0;
           const fare   = bookingDetails.fare ?? obj.fare ?? 0;
 
-          updates[`/pendingwithdrawl/${currentDriverId}/${bookingId}`] = {
+          updates[`/pendingwithdrawals/${currentDriverId}/${bookingId}`] = {
             amount,
             fare,
             status: "processing",
@@ -378,7 +378,7 @@
       currentDriverId = user.uid;
 
       const walletRef        = ref(db, `/driverWallet/${currentDriverId}`);
-      const newHistRef       = ref(db, `/pendingwithdrawl/${currentDriverId}`);      // NEW per your requirement
+      const newHistRef       = ref(db, `/pendingwithdrawals/${currentDriverId}`);      // NEW per your requirement
       const legacyHistRef    = ref(db, `/pendingWithdrawals/${currentDriverId}`);    // legacy support
 
       // Wallet balance
@@ -398,7 +398,7 @@
         const newData    = newSnap?.val()    || null;
         const legacyData = legacySnap?.val() || null;
 
-        const listNew    = normalizePendingwithdrawl(newData);
+        const listNew    = normalizependingwithdrawals(newData);
         const listLegacy = normalizePendingWithdrawalsLegacy(legacyData);
 
         allHistory = [...listNew, ...listLegacy]
