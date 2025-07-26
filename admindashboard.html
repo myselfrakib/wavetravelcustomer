@@ -275,17 +275,20 @@
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
-    // Wallet Management
-    async function approveWalletEntry(driverId, slotId, bookingId) {
-      const bookingRef = ref(db, `walletBalance/${driverId}/${slotId}/${bookingId}/status`);
+    // --- FIXED DRIVER WALLET SECTION ---
+    async function approveWalletEntry(driverId, bookingId) {
+      const bookingRef = ref(db, `driverWallet/${driverId}/${bookingId}/status`);
       await set(bookingRef, 'paid');
       loadWallets();
     }
 
-    async function rejectWalletEntry(driverId, slotId, bookingId, amount) {
-      const walletRef = ref(db, `driverWallet/${driverId}/${bookingId}`);
-      await set(walletRef, { amount: amount, date: new Date().toISOString(), status: 'available' });
-      await remove(ref(db, `walletBalance/${driverId}/${slotId}/${bookingId}`));
+    async function rejectWalletEntry(driverId, bookingId, amount) {
+      const bookingRef = ref(db, `driverWallet/${driverId}/${bookingId}`);
+      await set(bookingRef, {
+        amount: amount,
+        date: new Date().toISOString(),
+        status: 'available'
+      });
       loadWallets();
     }
 
@@ -295,18 +298,16 @@
       $('#wallets-loading').show();
       container.innerHTML = '';
 
-      const snap = await get(ref(db,'walletBalance'));
+      const snap = await get(ref(db,'driverWallet'));
       if (snap.exists()) {
-        const byDriver = snap.val();
-        for (const driverId in byDriver) {
-          const driverWallet = byDriver[driverId];
+        const allDrivers = snap.val();
+        for (const driverId in allDrivers) {
+          const driverWallet = allDrivers[driverId];
           let driverTotal = 0;
 
-          for (const slotId in driverWallet) {
-            for (const bookingId in driverWallet[slotId]) {
-              const { amount } = driverWallet[slotId][bookingId];
-              driverTotal += parseFloat(amount) || 0;
-            }
+          for (const bookingId in driverWallet) {
+            const entry = driverWallet[bookingId];
+            driverTotal += parseFloat(entry.amount) || 0;
           }
 
           const driverCard = document.createElement('div');
@@ -315,22 +316,19 @@
           driverCard.innerHTML = `<h3>Driver: ${driverId} | Total Balance: ₹${driverTotal}</h3>`;
           container.appendChild(driverCard);
 
-          for (const slotId in driverWallet) {
-            for (const bookingId in driverWallet[slotId]) {
-              const { amount, date, status } = driverWallet[slotId][bookingId];
-              const card = document.createElement('div');
-              card.className = 'wallet-card';
-              card.innerHTML = `
-                <h3>Slot: ${slotId}</h3>
-                <p><strong>Booking:</strong> ${bookingId}</p>
-                <p><strong>Amount:</strong> ₹${amount}</p>
-                <p><strong>Date:</strong> ${date}</p>
-                <p><strong>Status:</strong> ${status}</p>
-                <button onclick="approveWalletEntry('${driverId}','${slotId}','${bookingId}')">Approve</button>
-                <button onclick="rejectWalletEntry('${driverId}','${slotId}','${bookingId}','${amount}')">Reject</button>
-              `;
-              container.appendChild(card);
-            }
+          for (const bookingId in driverWallet) {
+            const { amount, date, status } = driverWallet[bookingId];
+            const card = document.createElement('div');
+            card.className = 'wallet-card';
+            card.innerHTML = `
+              <h3>Booking: ${bookingId}</h3>
+              <p><strong>Amount:</strong> ₹${amount}</p>
+              <p><strong>Date:</strong> ${date || ''}</p>
+              <p><strong>Status:</strong> ${status || 'unpaid'}</p>
+              <button onclick="approveWalletEntry('${driverId}','${bookingId}')">Approve</button>
+              <button onclick="rejectWalletEntry('${driverId}','${bookingId}','${amount}')">Reject</button>
+            `;
+            container.appendChild(card);
           }
         }
       }
@@ -339,35 +337,37 @@
       container.style.display = container.children.length ? 'flex' : 'block';
       if (!container.children.length) container.innerHTML = '<p>No wallet records found.</p>';
     }
+    // --- END FIX ---
 
     async function loadProfile(){
       $('#profile-table').hide(); $('#profile-loading').show();
-      const user = auth.currentUser;
       initTable('profile-table');
+      const user = auth.currentUser;
       if(user){
-        tables['profile-table'].row.add(['Name',user.displayName||'']).draw(false);
-        tables['profile-table'].row.add(['Email',user.email||'']).draw(false);
-        tables['profile-table'].row.add(['UID',user.uid]).draw(false);
+        tables['profile-table'].row.add(['UID', user.uid]).draw(false);
+        tables['profile-table'].row.add(['Email', user.email || '']).draw(false);
       }
       $('#profile-loading').hide(); $('#profile-table').show();
     }
 
-    window.openTab = function(name){
-      $('.tab-pane').removeClass('active');
-      switch(name){
-        case 'users': $('#users-tab').addClass('active'); loadUsers(); break;
-        case 'drivers': $('#drivers-tab').addClass('active'); loadDrivers(); break;
-        case 'pending-cars': $('#pending-cars-tab').addClass('active'); loadPending(); break;
-        case 'approved-cars': $('#approved-cars-tab').addClass('active'); loadApproved(); break;
-        case 'slots': $('#slots-tab').addClass('active'); loadSlots(); break;
-        case 'bookings': $('#bookings-tab').addClass('active'); loadBookings(); break;
-        case 'driver-wallets': $('#driver-wallets-tab').addClass('active'); loadWallets(); break;
-        case 'profile': $('#profile-tab').addClass('active'); loadProfile(); break;
+    window.openTab = tab => {
+      document.querySelectorAll('.tab-pane').forEach(t=>t.classList.remove('active'));
+      document.getElementById(`${tab}-tab`).classList.add('active');
+      switch(tab){
+        case 'users': loadUsers(); break;
+        case 'drivers': loadDrivers(); break;
+        case 'pending-cars': loadPending(); break;
+        case 'approved-cars': loadApproved(); break;
+        case 'slots': loadSlots(); break;
+        case 'bookings': loadBookings(); break;
+        case 'driver-wallets': loadWallets(); break;
+        case 'profile': loadProfile(); break;
       }
     };
 
-    onAuthStateChanged(auth, u=>{
-      if(!u) location.href='adminlogin.html'; else openTab('users');
+    onAuthStateChanged(auth,user=>{
+      if(user) openTab('users');
+      else location.href='adminlogin.html';
     });
   </script>
 </body>
