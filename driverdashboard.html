@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Driver Dashboard</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
-
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -18,18 +17,8 @@
       flex-direction: column;
       justify-content: space-between;
     }
-
-    .container {
-      padding: 20px;
-      flex-grow: 1;
-    }
-
-    h1 {
-      font-size: 24px;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
+    .container { padding: 20px; flex-grow: 1; }
+    h1 { font-size: 24px; text-align: center; margin-bottom: 20px; }
     .dashboard-card {
       background: rgba(255,255,255,0.1);
       padding: 15px;
@@ -37,17 +26,8 @@
       margin-bottom: 20px;
       text-align: center;
     }
-
-    .dashboard-card h2 {
-      font-size: 20px;
-      margin-bottom: 10px;
-    }
-
-    .dashboard-card p {
-      font-size: 16px;
-      margin-bottom: 15px;
-    }
-
+    .dashboard-card h2 { font-size: 20px; margin-bottom: 10px; }
+    .dashboard-card p { font-size: 16px; margin-bottom: 15px; }
     #withdraw-btn {
       background: #ffd700;
       color: #4a00e0;
@@ -57,11 +37,7 @@
       font-weight: bold;
       cursor: pointer;
     }
-    #withdraw-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
+    #withdraw-btn:disabled { opacity: 0.6; cursor: not-allowed; }
     /* Transaction History Styles */
     #history-list {
       list-style: none;
@@ -75,10 +51,14 @@
       margin: 5px 0;
       border-radius: 5px;
       font-size: 14px;
+      line-height: 1.4;
     }
-
-    #view-more-btn {
+    .pagination-controls {
+      display: flex;
+      justify-content: space-between;
       margin-top: 10px;
+    }
+    .pagination-controls button {
       background: #fff;
       color: #4a00e0;
       border: none;
@@ -87,7 +67,6 @@
       cursor: pointer;
       font-weight: bold;
     }
-
     .navbar {
       position: fixed;
       bottom: 0;
@@ -100,7 +79,6 @@
       padding: 12px 0;
       z-index: 999;
     }
-
     .navbar a {
       color: #fff;
       text-decoration: none;
@@ -109,48 +87,33 @@
       flex-direction: column;
       align-items: center;
     }
-
-    .navbar a i {
-      font-size: 20px;
-      margin-bottom: 5px;
-    }
-
+    .navbar a i { font-size: 20px; margin-bottom: 5px; }
     @media (min-width: 768px) {
-      body {
-        padding-bottom: 90px;
-      }
-
-      .container {
-        padding: 40px;
-      }
-
-      h1 {
-        font-size: 28px;
-      }
+      body { padding-bottom: 90px; }
+      .container { padding: 40px; }
+      h1 { font-size: 28px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Welcome to Your Dashboard</h1>
-
     <!-- Wallet Balance Card -->
     <div class="dashboard-card" id="wallet-card">
       <h2>Wallet Balance</h2>
       <p id="balance">Loading your balance…</p>
       <button id="withdraw-btn" disabled>Withdraw</button>
     </div>
-
     <!-- Transaction History Card -->
     <div class="dashboard-card" id="history-card">
       <h2>Withdrawal History</h2>
-      <ul id="history-list">
-        <li>Loading history…</li>
-      </ul>
-      <button id="view-more-btn" style="display:none;">View More</button>
+      <ul id="history-list"><li>Loading history…</li></ul>
+      <div class="pagination-controls">
+        <button id="prev-btn" style="display:none;">Previous</button>
+        <button id="next-btn" style="display:none;">Next</button>
+      </div>
     </div>
   </div>
-
   <div class="navbar">
     <a href="driverdashboard.html"><i class="fas fa-home"></i>Home</a>
     <a href="drivermybookings.html"><i class="fas fa-list"></i>My Bookings</a>
@@ -162,17 +125,8 @@
   <!-- Firebase v11 (modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import {
-      getDatabase,
-      ref,
-      get,
-      update,
-      onValue
-    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-    import {
-      getAuth,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -184,7 +138,6 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    // Initialize Firebase
     const app  = initializeApp(firebaseConfig);
     const db   = getDatabase(app);
     const auth = getAuth(app);
@@ -192,11 +145,13 @@
     const balanceEl     = document.getElementById('balance');
     const withdrawBtn   = document.getElementById('withdraw-btn');
     const historyListEl = document.getElementById('history-list');
-    const viewMoreBtn   = document.getElementById('view-more-btn');
+    const prevBtn       = document.getElementById('prev-btn');
+    const nextBtn       = document.getElementById('next-btn');
 
     let currentDriverId = null;
     let allHistory = [];
-    let visibleCount = 5;
+    let pageIndex = 0;
+    const pageSize = 5;
     let isProcessing = false;
 
     function sumWallet(data) {
@@ -209,24 +164,39 @@
 
     function renderHistory() {
       historyListEl.innerHTML = '';
-      if (allHistory.length === 0) {
+      const start = pageIndex * pageSize;
+      const end = start + pageSize;
+      const slice = allHistory.slice(start, end);
+
+      if (slice.length === 0) {
         historyListEl.innerHTML = '<li>No withdrawals yet.</li>';
-        viewMoreBtn.style.display = 'none';
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
         return;
       }
 
-      const slice = allHistory.slice(0, visibleCount);
       slice.forEach(item => {
         const li = document.createElement('li');
-        li.textContent = `₹${item.amount} - ${new Date(item.date).toLocaleString()}`;
+        li.innerHTML = `
+          <strong>Booking ID:</strong> ${item.bookingId} <br/>
+          <strong>Trip:</strong> ${item.tripDate || '-'} ${item.tripTime || ''} <br/>
+          <strong>Amount:</strong> ₹${item.amount} <br/>
+          <strong>Status:</strong> ${item.status || 'pending'} <br/>
+          <em>Withdrawn at: ${new Date(item.date).toLocaleString()}</em>
+        `;
         historyListEl.appendChild(li);
       });
 
-      viewMoreBtn.style.display = allHistory.length > visibleCount ? 'block' : 'none';
+      prevBtn.style.display = pageIndex > 0 ? 'block' : 'none';
+      nextBtn.style.display = end < allHistory.length ? 'block' : 'none';
     }
 
-    viewMoreBtn.addEventListener('click', () => {
-      visibleCount += 5;
+    prevBtn.addEventListener('click', () => {
+      if (pageIndex > 0) pageIndex--;
+      renderHistory();
+    });
+    nextBtn.addEventListener('click', () => {
+      if ((pageIndex + 1) * pageSize < allHistory.length) pageIndex++;
       renderHistory();
     });
 
@@ -250,8 +220,16 @@
         const freshData = freshSnap.val();
 
         for (const bookingId in freshData) {
-          const amount = freshData[bookingId]?.amount ?? 0;
-          updates[`/pendingWithdrawals/${currentDriverId}/${bookingId}`] = { amount, date: now };
+          const walletEntry = freshData[bookingId];
+          const amount = walletEntry?.amount ?? 0;
+          updates[`/pendingWithdrawals/${currentDriverId}/${bookingId}`] = {
+            amount,
+            date: now,
+            bookingId,
+            tripDate: walletEntry?.booking?.date || '',
+            tripTime: walletEntry?.booking?.time || '',
+            status: 'pending'
+          };
           updates[`/driverWallet/${currentDriverId}/${bookingId}`] = null;
         }
 
@@ -271,13 +249,13 @@
         currentDriverId = null;
         balanceEl.textContent = 'Please log in to see your balance.';
         historyListEl.innerHTML = '<li>Please log in to view history.</li>';
-        viewMoreBtn.style.display = 'none';
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
         withdrawBtn.disabled = true;
         return;
       }
 
       currentDriverId = user.uid;
-
       const walletRef  = ref(db, `/driverWallet/${currentDriverId}`);
       const historyRef = ref(db, `/pendingWithdrawals/${currentDriverId}`);
 
@@ -299,9 +277,16 @@
           return;
         }
         allHistory = Object.entries(snapshot.val())
-          .map(([bookingId, obj]) => ({ bookingId, amount: obj.amount, date: obj.date }))
+          .map(([bookingId, obj]) => ({
+            bookingId,
+            amount: obj.amount,
+            date: obj.date,
+            tripDate: obj.tripDate,
+            tripTime: obj.tripTime,
+            status: obj.status
+          }))
           .sort((a, b) => new Date(b.date) - new Date(a.date));
-        visibleCount = 5;
+        pageIndex = 0;
         renderHistory();
       });
     });
