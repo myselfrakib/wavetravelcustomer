@@ -17,8 +17,15 @@
       flex-direction: column;
       justify-content: space-between;
     }
-    .container { padding: 20px; flex-grow: 1; }
-    h1 { font-size: 24px; text-align: center; margin-bottom: 20px; }
+    .container {
+      padding: 20px;
+      flex-grow: 1;
+    }
+    h1 {
+      font-size: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
     .dashboard-card {
       background: rgba(255,255,255,0.1);
       padding: 15px;
@@ -26,8 +33,14 @@
       margin-bottom: 20px;
       text-align: center;
     }
-    .dashboard-card h2 { font-size: 20px; margin-bottom: 10px; }
-    .dashboard-card p { font-size: 16px; margin-bottom: 15px; }
+    .dashboard-card h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    .dashboard-card p {
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
     #withdraw-btn {
       background: #ffd700;
       color: #4a00e0;
@@ -37,28 +50,45 @@
       font-weight: bold;
       cursor: pointer;
     }
-    #withdraw-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    /* Transaction History Styles */
+    #withdraw-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
     #history-list {
       list-style: none;
       padding: 0;
       margin: 0;
       text-align: left;
     }
-    #history-list li {
+    .history-entry {
       background: rgba(255, 255, 255, 0.1);
       padding: 8px;
       margin: 5px 0;
       border-radius: 5px;
       font-size: 14px;
-      line-height: 1.4;
+      cursor: pointer;
     }
-    .pagination-controls {
+    .history-summary {
       display: flex;
       justify-content: space-between;
-      margin-top: 10px;
+      align-items: center;
     }
-    .pagination-controls button {
+    .history-summary span.status {
+      font-weight: bold;
+    }
+    .details {
+      display: none;
+      margin-top: 8px;
+      padding: 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 5px;
+      font-size: 13px;
+    }
+    .details div {
+      margin-bottom: 4px;
+    }
+    #view-more-btn {
+      margin-top: 10px;
       background: #fff;
       color: #4a00e0;
       border: none;
@@ -87,7 +117,10 @@
       flex-direction: column;
       align-items: center;
     }
-    .navbar a i { font-size: 20px; margin-bottom: 5px; }
+    .navbar a i {
+      font-size: 20px;
+      margin-bottom: 5px;
+    }
     @media (min-width: 768px) {
       body { padding-bottom: 90px; }
       .container { padding: 40px; }
@@ -98,22 +131,24 @@
 <body>
   <div class="container">
     <h1>Welcome to Your Dashboard</h1>
+
     <!-- Wallet Balance Card -->
     <div class="dashboard-card" id="wallet-card">
       <h2>Wallet Balance</h2>
       <p id="balance">Loading your balance…</p>
       <button id="withdraw-btn" disabled>Withdraw</button>
     </div>
+
     <!-- Transaction History Card -->
     <div class="dashboard-card" id="history-card">
       <h2>Withdrawal History</h2>
-      <ul id="history-list"><li>Loading history…</li></ul>
-      <div class="pagination-controls">
-        <button id="prev-btn" style="display:none;">Previous</button>
-        <button id="next-btn" style="display:none;">Next</button>
-      </div>
+      <ul id="history-list">
+        <li>Loading history…</li>
+      </ul>
+      <button id="view-more-btn" style="display:none;">View More</button>
     </div>
   </div>
+
   <div class="navbar">
     <a href="driverdashboard.html"><i class="fas fa-home"></i>Home</a>
     <a href="drivermybookings.html"><i class="fas fa-list"></i>My Bookings</a>
@@ -125,8 +160,18 @@
   <!-- Firebase v11 (modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import {
+      getDatabase,
+      ref,
+      get,
+      update,
+      push,
+      onValue
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -145,13 +190,11 @@
     const balanceEl     = document.getElementById('balance');
     const withdrawBtn   = document.getElementById('withdraw-btn');
     const historyListEl = document.getElementById('history-list');
-    const prevBtn       = document.getElementById('prev-btn');
-    const nextBtn       = document.getElementById('next-btn');
+    const viewMoreBtn   = document.getElementById('view-more-btn');
 
     let currentDriverId = null;
     let allHistory = [];
-    let pageIndex = 0;
-    const pageSize = 5;
+    let visibleCount = 5;
     let isProcessing = false;
 
     function sumWallet(data) {
@@ -164,39 +207,40 @@
 
     function renderHistory() {
       historyListEl.innerHTML = '';
-      const start = pageIndex * pageSize;
-      const end = start + pageSize;
-      const slice = allHistory.slice(start, end);
-
-      if (slice.length === 0) {
+      if (allHistory.length === 0) {
         historyListEl.innerHTML = '<li>No withdrawals yet.</li>';
-        prevBtn.style.display = 'none';
-        nextBtn.style.display = 'none';
+        viewMoreBtn.style.display = 'none';
         return;
       }
 
-      slice.forEach(item => {
+      const slice = allHistory.slice(0, visibleCount);
+      slice.forEach((item, index) => {
         const li = document.createElement('li');
+        li.className = 'history-entry';
+        const statusColor = item.status === 'paid' ? '#4CAF50' : item.status === 'processing' ? '#FF9800' : '#F44336';
         li.innerHTML = `
-          <strong>Booking ID:</strong> ${item.bookingId} <br/>
-          <strong>Trip:</strong> ${item.tripDate || '-'} ${item.tripTime || ''} <br/>
-          <strong>Amount:</strong> ₹${item.amount} <br/>
-          <strong>Status:</strong> ${item.status || 'pending'} <br/>
-          <em>Withdrawn at: ${new Date(item.date).toLocaleString()}</em>
+          <div class="history-summary">
+            <span>${index + 1}. ₹${item.amount} | ${new Date(item.date).toLocaleString()}</span>
+            <span class="status" style="color:${statusColor}">${item.status}</span>
+          </div>
+          <div class="details">
+            ${Object.entries(item.bookings).map(([bid, b]) => `
+              <div><strong>Booking:</strong> ${bid} | ₹${b.amount} | ${b.booking?.date || '-'} ${b.booking?.time || '-'}</div>
+            `).join('')}
+          </div>
         `;
+        li.addEventListener('click', () => {
+          const detailDiv = li.querySelector('.details');
+          detailDiv.style.display = detailDiv.style.display === 'block' ? 'none' : 'block';
+        });
         historyListEl.appendChild(li);
       });
 
-      prevBtn.style.display = pageIndex > 0 ? 'block' : 'none';
-      nextBtn.style.display = end < allHistory.length ? 'block' : 'none';
+      viewMoreBtn.style.display = allHistory.length > visibleCount ? 'block' : 'none';
     }
 
-    prevBtn.addEventListener('click', () => {
-      if (pageIndex > 0) pageIndex--;
-      renderHistory();
-    });
-    nextBtn.addEventListener('click', () => {
-      if ((pageIndex + 1) * pageSize < allHistory.length) pageIndex++;
+    viewMoreBtn.addEventListener('click', () => {
+      visibleCount += 5;
       renderHistory();
     });
 
@@ -215,26 +259,29 @@
           return;
         }
 
-        const updates = {};
-        const now = new Date().toISOString();
         const freshData = freshSnap.val();
-
-        for (const bookingId in freshData) {
-          const walletEntry = freshData[bookingId];
-          const amount = walletEntry?.amount ?? 0;
-          updates[`/pendingWithdrawals/${currentDriverId}/${bookingId}`] = {
-            amount,
-            date: now,
-            bookingId,
-            tripDate: walletEntry?.booking?.date || '',
-            tripTime: walletEntry?.booking?.time || '',
-            status: 'pending'
-          };
-          updates[`/driverWallet/${currentDriverId}/${bookingId}`] = null;
+        const totalAmount = sumWallet(freshData);
+        if (totalAmount <= 0) {
+          balanceEl.textContent = '₹0 (nothing to withdraw)';
+          isProcessing = false;
+          return;
         }
 
+        const newReqRef = push(ref(db, `/withdrawRequests/${currentDriverId}`));
+        const now = new Date().toISOString();
+
+        const updates = {};
+        updates[`/withdrawRequests/${currentDriverId}/${newReqRef.key}`] = {
+          amount: totalAmount,
+          bookings: freshData,
+          status: "processing",
+          requestedAt: now,
+          updatedAt: now
+        };
+        updates[`/driverWallet/${currentDriverId}`] = null;
+
         await update(ref(db), updates);
-        balanceEl.textContent = '₹0 (withdrawn)';
+        balanceEl.textContent = '₹0 (withdrawal requested)';
       } catch (err) {
         console.error(err);
         balanceEl.textContent = 'Withdrawal failed';
@@ -249,15 +296,15 @@
         currentDriverId = null;
         balanceEl.textContent = 'Please log in to see your balance.';
         historyListEl.innerHTML = '<li>Please log in to view history.</li>';
-        prevBtn.style.display = 'none';
-        nextBtn.style.display = 'none';
+        viewMoreBtn.style.display = 'none';
         withdrawBtn.disabled = true;
         return;
       }
 
       currentDriverId = user.uid;
+
       const walletRef  = ref(db, `/driverWallet/${currentDriverId}`);
-      const historyRef = ref(db, `/pendingWithdrawals/${currentDriverId}`);
+      const historyRef = ref(db, `/withdrawRequests/${currentDriverId}`);
 
       onValue(walletRef, (snapshot) => {
         if (!snapshot.exists()) {
@@ -277,16 +324,15 @@
           return;
         }
         allHistory = Object.entries(snapshot.val())
-          .map(([bookingId, obj]) => ({
-            bookingId,
+          .map(([reqId, obj]) => ({
+            requestId: reqId,
             amount: obj.amount,
-            date: obj.date,
-            tripDate: obj.tripDate,
-            tripTime: obj.tripTime,
-            status: obj.status
+            status: obj.status,
+            date: obj.requestedAt,
+            bookings: obj.bookings || {}
           }))
           .sort((a, b) => new Date(b.date) - new Date(a.date));
-        pageIndex = 0;
+        visibleCount = 5;
         renderHistory();
       });
     });
