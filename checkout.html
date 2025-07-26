@@ -40,9 +40,7 @@
     }
     .summary-card div { margin-bottom:8px; font-size:1rem; }
     .summary-card strong { display:inline-block; width:120px; }
-    .terms {
-      margin:16px 0; display:flex; align-items:center;
-    }
+    .terms { margin:16px 0; display:flex; align-items:center; }
     .terms input { margin-right:8px; width:16px; height:16px; }
     .terms label { font-size:0.9rem; color:#fff; }
     button {
@@ -90,7 +88,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
-    // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -123,16 +120,13 @@
           return;
         }
 
-        // --- Fetch user details from /users ---
         let dbUid = user.uid;
         let userData = null;
 
-        // 1) Direct UID lookup
         const snapUid = await db.ref(`users/${dbUid}`).once('value');
         if (snapUid.exists()) {
           userData = snapUid.val();
         } else {
-          // 2) Fallback phone lookup
           if (user.phoneNumber) {
             const phoneSnap = await db.ref("users")
               .orderByChild("phone")
@@ -144,7 +138,6 @@
               userData = rec[dbUid];
             }
           }
-          // 3) Fallback email lookup
           if (!userData && user.email) {
             const emailSnap = await db.ref("users")
               .orderByChild("email")
@@ -166,7 +159,6 @@
 
         const { name, phone } = userData;
 
-        // Render booking summary
         summaryEl.innerHTML = `
           <div><strong>Name:</strong> ${name}</div>
           <div><strong>Phone:</strong> ${phone}</div>
@@ -196,13 +188,14 @@
               description: 'Ride Booking',
               prefill: { name, contact: phone, email: user.email || '' },
               handler: res => {
-                // Decrement seats
                 const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
                 slotRef.transaction(cur => {
-                  if (!cur || typeof cur.seats !== 'number') return cur;
-                  return { ...cur, seats: Math.max(0, cur.seats - booking.seatsRequested) };
+                  if (!cur) return cur;
+                  if (typeof cur.seats === 'number') {
+                    cur.seats = Math.max(0, cur.seats - booking.seatsRequested);
+                  }
+                  return cur;
                 }).finally(async () => {
-                  // Save booking
                   const bookingsRef = db.ref(`bookings/${booking.driverId}`);
                   const newBookingRef = bookingsRef.push();
                   const bookingData = {
@@ -217,7 +210,6 @@
 
                   newBookingRef.set(bookingData)
                     .then(() => {
-                      // Create driverWallet entry with booking details
                       const walletRef = db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`);
                       walletRef.set({
                         amount: booking.fare * 0.5,
