@@ -2,47 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Driver Dashboard</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
   <style>
-    body { font-family:'Segoe UI',sans-serif; margin:0; padding:0;
-      background:linear-gradient(to right,#8e2de2,#4a00e0); color:#fff;
+    body { font-family: 'Segoe UI',sans-serif; margin:0;padding:0;
+      background: linear-gradient(to right,#8e2de2,#4a00e0); color:#fff;
       min-height:100vh; display:flex; flex-direction:column; }
     .container { padding:20px; flex-grow:1; }
     h1 { text-align:center; margin-bottom:20px; }
     .dashboard-card { background:rgba(255,255,255,0.1); padding:15px;
       border-radius:10px; margin-bottom:20px; text-align:center; }
     .dashboard-card h2 { margin-bottom:10px; }
-    .dashboard-card p { margin-bottom:15px; }
     #withdraw-btn { background:#ffd700; color:#4a00e0; border:none;
       padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer; }
     #withdraw-btn:disabled { opacity:.6; cursor:not-allowed; }
-    /* History */
     #history-list { list-style:none; padding:0; margin:0; text-align:left; }
     .history-entry { background:rgba(255,255,255,0.1); padding:8px;
-      margin:5px 0; border-radius:5px; font-size:14px; cursor:pointer; }
+      margin:5px 0; border-radius:5px; cursor:pointer; }
     .history-summary { display:flex; justify-content:space-between; }
-    .history-summary .status { font-weight:bold; }
     .details { display:none; margin-top:8px; padding:8px;
       background:rgba(0,0,0,0.2); border-radius:5px; font-size:13px; }
-    /* Filters */
-    .filter-bar { display:flex; justify-content:center; gap:8px; margin-bottom:10px; }
+    .filter-bar { display:flex; justify-content:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
     .filter-btn { background:rgba(255,255,255,0.2); border:none;
       padding:6px 12px; border-radius:4px; color:#fff; cursor:pointer; }
     .filter-btn.active { background:#ffd700; color:#4a00e0; }
     #view-more-btn { margin-top:10px; background:#fff; color:#4a00e0;
-      border:none; padding:8px 15px; border-radius:5px; cursor:pointer; }
+      border:none; padding:8px 15px; border-radius:5px; font-weight:bold; cursor:pointer; }
     .navbar { position:fixed; bottom:0; width:100%; background:rgba(0,0,0,0.6);
       display:flex; justify-content:space-around; padding:12px 0; }
-    .navbar a { color:#fff; text-decoration:none; font-size:14px; }
-    .navbar a i { display:block; margin-bottom:4px; }
+    .navbar a { color:#fff; text-decoration:none; font-size:14px; text-align:center; }
+    .navbar a i { display:block; margin-bottom:4px; font-size:20px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Driver Dashboard</h1>
-
+    <h1>Your Dashboard</h1>
     <div class="dashboard-card">
       <h2>Wallet Balance</h2>
       <p id="balance">Loading…</p>
@@ -63,136 +58,146 @@
   </div>
 
   <div class="navbar">
-    <a href="#"><i class="fas fa-home"></i>Home</a>
-    <a href="#"><i class="fas fa-list"></i>Bookings</a>
-    <a href="#"><i class="fas fa-car"></i>Slots</a>
-    <a href="#"><i class="fas fa-user"></i>Profile</a>
+    <a href="driverdashboard.html"><i class="fas fa-home"></i>Home</a>
+    <a href="drivermybookings.html"><i class="fas fa-list"></i>My Bookings</a>
+    <a href="driverslots.html"><i class="fas fa-calendar"></i>Slots</a>
+    <a href="driverprofile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, get, set, remove, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import {
+      getDatabase, ref, get, update, remove, onValue
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "...", authDomain: "...", databaseURL: "...",
-      projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..."
+    const cfg = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4"
     };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
+    const app = initializeApp(cfg), db = getDatabase(app), auth = getAuth(app);
 
-    const balanceEl = document.getElementById('balance');
+    const balanceEl   = document.getElementById('balance');
     const withdrawBtn = document.getElementById('withdraw-btn');
     const historyList = document.getElementById('history-list');
-    const filters = document.querySelectorAll('.filter-btn');
-    const viewMore = document.getElementById('view-more-btn');
+    const viewMore    = document.getElementById('view-more-btn');
+    const filterBtns  = document.querySelectorAll('.filter-btn');
 
-    let driverId = null, allHistory = [], visible=5, filter='all', processing=false;
+    let driverId = null, allHistory = [], visible=5, processing=false, filter='all';
 
-    function sumWallet(data){
-      return Object.values(data||{}).reduce((sum,e)=>sum+(parseFloat(e.amount)||0),0);
+    function sumWallet(data) {
+      return Object.values(data).reduce((sum,e)=> sum + parseFloat(e.amount||0),0);
     }
 
-    function render(){
+    function render() {
       historyList.innerHTML = '';
-      let list = allHistory.filter(i=>filter==='all'||i.status===filter);
-      if(!list.length){
-        historyList.innerHTML = `<li>No ${filter} entries</li>`;
-        viewMore.style.display='none';
+      const items = allHistory.filter(i=>filter==='all'||i.status===filter);
+      if (!items.length) {
+        historyList.innerHTML = `<li>No ${filter} items.</li>`;
+        viewMore.style.display = 'none';
         return;
       }
-      list.slice(0,visible).forEach((i,idx)=>{
-        let color = i.status==='paid'?'#4CAF50':i.status==='processing'?'#FF9800':'#F44336';
-        let li=document.createElement('li');
+      items.slice(0,visible).forEach((it,i)=>{
+        const li = document.createElement('li');
         li.className='history-entry';
+        const col = it.status==='paid'? '#4CAF50' : it.status==='processing'? '#FF9800':'#F44336';
         li.innerHTML = `
           <div class="history-summary">
-            <span>${idx+1}. ₹${i.amount} | ${new Date(i.date).toLocaleString()}</span>
-            <span class="status" style="color:${color}">${i.status}</span>
+            <span>${i+1}. ₹${it.amount} | ${new Date(it.date).toLocaleString()}</span>
+            <span class="status" style="color:${col}">${it.status}</span>
           </div>
           <div class="details">
-            <div><b>ID:</b> ${i.id}</div>
-            <div><b>Fare:</b> ₹${i.booking.fare||'-'}</div>
-            <div><b>Pickup:</b> ${i.booking.pickup||'-'}</div>
-            <div><b>Dropoff:</b> ${i.booking.dropoff||'-'}</div>
-            <div><b>Date:</b> ${i.booking.date||'-'} ${i.booking.time||''}</div>
+            <div><b>Booking ID:</b> ${it.id}</div>
+            <div><b>Fare:</b> ₹${it.booking.fare||'-'}</div>
+            <div><b>Pickup:</b> ${it.booking.pickup||'-'}</div>
+            <div><b>Dropoff:</b> ${it.booking.dropoff||'-'}</div>
+            <div><b>Date:</b> ${it.booking.date||'-'} ${it.booking.time||''}</div>
           </div>`;
-        li.querySelector('.history-summary').onclick=()=>{
-          let d=li.querySelector('.details');
-          d.style.display=d.style.display==='block'?'none':'block';
-        };
+        li.querySelector('.history-summary')
+          .addEventListener('click',()=> {
+            const d= li.querySelector('.details');
+            d.style.display = d.style.display==='block'? 'none':'block';
+          });
         historyList.appendChild(li);
       });
-      viewMore.style.display = list.length>visible?'block':'none';
+      viewMore.style.display = items.length>visible ? 'block':'none';
     }
 
-    filters.forEach(btn=>{
-      btn.onclick=()=>{
-        filters.forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        filter=btn.dataset.status; visible=5; render();
+    filterBtns.forEach(b=>{
+      b.onclick=()=>{
+        filterBtns.forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        filter=b.dataset.status;
+        visible=5; render();
       };
     });
-    viewMore.onclick=()=>{ visible+=5; render(); };
+    viewMore.onclick=()=> { visible+=5; render(); };
 
-    function normalize(raw){
-      if(!raw)return[];
-      return Object.entries(raw).map(([id,o])=>({
+    function normalize(node){
+      return node? Object.entries(node).map(([id,o])=>({
         id,
-        amount:o.amount,
-        status:o.status,
-        date:o.requestedAt,
-        booking:o.booking||{}
-      }));
+        amount: o.amount||o.booking?.amount||0,
+        status: o.status,
+        date: o.requestedAt||o.date,
+        booking: o.booking||o
+      })): [];
     }
 
-    withdrawBtn.onclick=async()=>{
-      if(!driverId||processing)return;
-      processing=true; withdrawBtn.disabled=true; balanceEl.textContent='Processing…';
-      let snap = await get(ref(db,`driverWallet/${driverId}`));
-      if(!snap.exists()){
-        balanceEl.textContent='₹0'; processing=false; return;
-      }
-      let data = snap.val(), now=new Date().toISOString();
-      for(let [bid,entry] of Object.entries(data)){
-        await set(ref(db,`pendingwithdrawl/${driverId}/${bid}`),{
-          amount:entry.amount,
-          fare:entry.booking?.fare||0,
+    withdrawBtn.onclick= async ()=>{
+      if(!driverId||processing) return;
+      processing=true;
+      withdrawBtn.disabled=true;
+      balanceEl.textContent='Processing…';
+
+      const walletSnap = await get(ref(db, `driverWallet/${driverId}`));
+      if(!walletSnap.exists()){ balanceEl.textContent='₹0'; processing=false; return; }
+      const data = walletSnap.val(), now=new Date().toISOString();
+
+      // write each under pendingwithdrawl/driverId/bookingId
+      await Promise.all(Object.entries(data).map(([bid,e])=>
+        update(ref(db, `pendingwithdrawl/${driverId}/${bid}`), {
+          amount: e.amount,
+          fare: e.booking?.fare||0,
           status:'processing',
           requestedAt:now,
-          booking:entry.booking
-        });
-        await remove(ref(db,`driverWallet/${driverId}/${bid}`));
-      }
+          booking: e.booking
+        })
+      ));
+      // clear wallet
+      await remove(ref(db, `driverWallet/${driverId}`));
+
       processing=false;
     };
 
-    onAuthStateChanged(auth,u=>{
-      if(!u){
+    onAuthStateChanged(auth,user=>{
+      if(!user){
         balanceEl.textContent='Please log in';
+        historyList.innerHTML='<li>Log in to view.</li>';
         withdrawBtn.disabled=true;
-        historyList.innerHTML='<li>Log in to view</li>';
         return;
       }
-      driverId=u.uid;
-      // balance
-      onValue(ref(db,`driverWallet/${driverId}`),snap=>{
-        let total=snap.exists()?sumWallet(snap.val()):0;
+      driverId=user.uid;
+
+      onValue(ref(db, `driverWallet/${driverId}`),snap=>{
+        const val=snap.val();
+        const total = val? sumWallet(val):0;
         balanceEl.textContent=`₹${total}`;
-        withdrawBtn.disabled= total<=0||processing;
+        withdrawBtn.disabled = total<=0 || processing;
       });
-      // history (new + legacy)
+
       let newSnap=null, oldSnap=null;
-      function refresh(){
-        allHistory=[
+      const recompute=()=>{
+        allHistory = [
           ...normalize(newSnap?.val()),
           ...normalize(oldSnap?.val())
         ].sort((a,b)=>new Date(b.date)-new Date(a.date));
         visible=5; render();
-      }
-      onValue(ref(db,`pendingwithdrawl/${driverId}`),s=>{ newSnap=s; refresh(); });
-      onValue(ref(db,`pendingWithdrawals/${driverId}`),s=>{ oldSnap=s; refresh(); });
+      };
+
+      onValue(ref(db, `pendingwithdrawl/${driverId}`), s=>{ newSnap=s; recompute(); });
+      onValue(ref(db, `pendingWithdrawals/${driverId}`), s=>{ oldSnap=s; recompute(); });
     });
   </script>
 </body>
