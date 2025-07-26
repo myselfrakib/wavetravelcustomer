@@ -275,14 +275,14 @@
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
-    // --- FIXED DRIVER WALLET SECTION ---
-    async function approveWalletEntry(driverId, bookingId) {
+    // --- DRIVER WALLET SECTION ---
+    window.approveWalletEntry = async function(driverId, bookingId) {
       const bookingRef = ref(db, `driverWallet/${driverId}/${bookingId}/status`);
       await set(bookingRef, 'paid');
       loadWallets();
     }
 
-    async function rejectWalletEntry(driverId, bookingId, amount) {
+    window.rejectWalletEntry = async function(driverId, bookingId, amount) {
       const bookingRef = ref(db, `driverWallet/${driverId}/${bookingId}`);
       await set(bookingRef, {
         amount: amount,
@@ -306,8 +306,8 @@
           let driverTotal = 0;
 
           for (const bookingId in driverWallet) {
-            const entry = driverWallet[bookingId];
-            driverTotal += parseFloat(entry.amount) || 0;
+          const entry = driverWallet[bookingId];
+          driverTotal += parseFloat(entry.amount) || 0;
           }
 
           const driverCard = document.createElement('div');
@@ -337,7 +337,7 @@
       container.style.display = container.children.length ? 'flex' : 'block';
       if (!container.children.length) container.innerHTML = '<p>No wallet records found.</p>';
     }
-    // --- END FIX ---
+    // --- END ---
 
     async function loadProfile(){
       $('#profile-table').hide(); $('#profile-loading').show();
