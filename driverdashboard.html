@@ -17,15 +17,8 @@
       flex-direction: column;
       justify-content: space-between;
     }
-    .container {
-      padding: 20px;
-      flex-grow: 1;
-    }
-    h1 {
-      font-size: 24px;
-      text-align: center;
-      margin-bottom: 20px;
-    }
+    .container { padding: 20px; flex-grow: 1; }
+    h1 { font-size: 24px; text-align: center; margin-bottom: 20px; }
     .dashboard-card {
       background: rgba(255,255,255,0.1);
       padding: 15px;
@@ -33,14 +26,8 @@
       margin-bottom: 20px;
       text-align: center;
     }
-    .dashboard-card h2 {
-      font-size: 20px;
-      margin-bottom: 10px;
-    }
-    .dashboard-card p {
-      font-size: 16px;
-      margin-bottom: 15px;
-    }
+    .dashboard-card h2 { font-size: 20px; margin-bottom: 10px; }
+    .dashboard-card p { font-size: 16px; margin-bottom: 15px; }
     #withdraw-btn {
       background: #ffd700;
       color: #4a00e0;
@@ -50,16 +37,8 @@
       font-weight: bold;
       cursor: pointer;
     }
-    #withdraw-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    #history-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      text-align: left;
-    }
+    #withdraw-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    #history-list { list-style: none; padding: 0; margin: 0; text-align: left; }
     .history-entry {
       background: rgba(255, 255, 255, 0.1);
       padding: 8px;
@@ -73,9 +52,7 @@
       justify-content: space-between;
       align-items: center;
     }
-    .history-summary span.status {
-      font-weight: bold;
-    }
+    .history-summary span.status { font-weight: bold; }
     .details {
       display: none;
       margin-top: 8px;
@@ -84,9 +61,7 @@
       border-radius: 5px;
       font-size: 13px;
     }
-    .details div {
-      margin-bottom: 4px;
-    }
+    .details div { margin-bottom: 4px; }
     #view-more-btn {
       margin-top: 10px;
       background: #fff;
@@ -97,6 +72,25 @@
       cursor: pointer;
       font-weight: bold;
     }
+    /* Filter Buttons */
+    .filter-bar {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .filter-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .filter-btn.active { background: #ffd700; color: #4a00e0; }
+    .filter-btn:hover { background: rgba(255,255,255,0.4); }
     .navbar {
       position: fixed;
       bottom: 0;
@@ -117,10 +111,7 @@
       flex-direction: column;
       align-items: center;
     }
-    .navbar a i {
-      font-size: 20px;
-      margin-bottom: 5px;
-    }
+    .navbar a i { font-size: 20px; margin-bottom: 5px; }
     @media (min-width: 768px) {
       body { padding-bottom: 90px; }
       .container { padding: 40px; }
@@ -142,6 +133,15 @@
     <!-- Transaction History Card -->
     <div class="dashboard-card" id="history-card">
       <h2>Withdrawal History</h2>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <button class="filter-btn active" data-status="all">All</button>
+        <button class="filter-btn" data-status="processing">Processing</button>
+        <button class="filter-btn" data-status="paid">Paid</button>
+        <button class="filter-btn" data-status="rejected">Rejected</button>
+      </div>
+
       <ul id="history-list">
         <li>Loading history…</li>
       </ul>
@@ -157,21 +157,10 @@
     <a href="driverprofile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
-  <!-- Firebase v11 (modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import {
-      getDatabase,
-      ref,
-      get,
-      update,
-      push,
-      onValue
-    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-    import {
-      getAuth,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import { getDatabase, ref, get, update, push, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -191,11 +180,13 @@
     const withdrawBtn   = document.getElementById('withdraw-btn');
     const historyListEl = document.getElementById('history-list');
     const viewMoreBtn   = document.getElementById('view-more-btn');
+    const filterBtns    = document.querySelectorAll('.filter-btn');
 
     let currentDriverId = null;
     let allHistory = [];
     let visibleCount = 5;
     let isProcessing = false;
+    let currentFilter = 'all';
 
     function sumWallet(data) {
       let total = 0;
@@ -207,13 +198,14 @@
 
     function renderHistory() {
       historyListEl.innerHTML = '';
-      if (allHistory.length === 0) {
-        historyListEl.innerHTML = '<li>No withdrawals yet.</li>';
+      const filtered = allHistory.filter(item => currentFilter === 'all' || item.status === currentFilter);
+      if (filtered.length === 0) {
+        historyListEl.innerHTML = `<li>No ${currentFilter !== 'all' ? currentFilter : ''} withdrawals.</li>`;
         viewMoreBtn.style.display = 'none';
         return;
       }
 
-      const slice = allHistory.slice(0, visibleCount);
+      const slice = filtered.slice(0, visibleCount);
       slice.forEach((item, index) => {
         const li = document.createElement('li');
         li.className = 'history-entry';
@@ -236,8 +228,18 @@
         historyListEl.appendChild(li);
       });
 
-      viewMoreBtn.style.display = allHistory.length > visibleCount ? 'block' : 'none';
+      viewMoreBtn.style.display = filtered.length > visibleCount ? 'block' : 'none';
     }
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.status;
+        visibleCount = 5;
+        renderHistory();
+      });
+    });
 
     viewMoreBtn.addEventListener('click', () => {
       visibleCount += 5;
