@@ -38,6 +38,8 @@
       cursor: pointer;
     }
     #withdraw-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* History */
     #history-list { list-style: none; padding: 0; margin: 0; text-align: left; }
     .history-entry {
       background: rgba(255, 255, 255, 0.1);
@@ -62,22 +64,14 @@
       font-size: 13px;
     }
     .details div { margin-bottom: 4px; }
-    #view-more-btn {
-      margin-top: 10px;
-      background: #fff;
-      color: #4a00e0;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-    }
+
     /* Filter Buttons */
     .filter-bar {
       display: flex;
       justify-content: center;
       gap: 8px;
       margin-bottom: 10px;
+      flex-wrap: wrap;
     }
     .filter-btn {
       background: rgba(255,255,255,0.2);
@@ -91,6 +85,18 @@
     }
     .filter-btn.active { background: #ffd700; color: #4a00e0; }
     .filter-btn:hover { background: rgba(255,255,255,0.4); }
+
+    #view-more-btn {
+      margin-top: 10px;
+      background: #fff;
+      color: #4a00e0;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
     .navbar {
       position: fixed;
       bottom: 0;
@@ -112,6 +118,7 @@
       align-items: center;
     }
     .navbar a i { font-size: 20px; margin-bottom: 5px; }
+
     @media (min-width: 768px) {
       body { padding-bottom: 90px; }
       .container { padding: 40px; }
@@ -157,10 +164,21 @@
     <a href="driverprofile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
+  <!-- Firebase v11 (modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, get, update, push, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import {
+      getDatabase,
+      ref,
+      get,
+      update,
+      push,
+      onValue
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -190,9 +208,7 @@
 
     function sumWallet(data) {
       let total = 0;
-      for (const bookingId in data) {
-        total += parseFloat(data[bookingId]?.amount) || 0;
-      }
+      for (const bookingId in data) total += parseFloat(data[bookingId]?.amount) || 0;
       return total;
     }
 
@@ -209,16 +225,23 @@
       slice.forEach((item, index) => {
         const li = document.createElement('li');
         li.className = 'history-entry';
-        const statusColor = item.status === 'paid' ? '#4CAF50' : item.status === 'processing' ? '#FF9800' : '#F44336';
+        const statusColor =
+          item.status === 'paid' ? '#4CAF50' :
+          item.status === 'processing' ? '#FF9800' :
+          item.status === 'rejected' ? '#F44336' : '#ffffff';
         li.innerHTML = `
           <div class="history-summary">
             <span>${index + 1}. ₹${item.amount} | ${new Date(item.date).toLocaleString()}</span>
             <span class="status" style="color:${statusColor}">${item.status}</span>
           </div>
           <div class="details">
-            ${Object.entries(item.bookings).map(([bid, b]) => `
-              <div><strong>Booking:</strong> ${bid} | ₹${b.amount} | ${b.booking?.date || '-'} ${b.booking?.time || '-'}</div>
-            `).join('')}
+            ${
+              Object.keys(item.bookings || {}).length
+                ? Object.entries(item.bookings).map(([bid, b]) => `
+                    <div><strong>Booking:</strong> ${bid} | ₹${b.amount || 0} | ${b.booking?.date || '-'} ${b.booking?.time || '-'}</div>
+                  `).join('')
+                : '<div>(No booking breakdown stored for this request)</div>'
+            }
           </div>
         `;
         li.addEventListener('click', () => {
@@ -246,6 +269,45 @@
       renderHistory();
     });
 
+    // Normalize NEW model: /withdrawRequests/{driverId}/{requestId}
+    function normalizeWithdrawRequests(raw) {
+      const out = [];
+      if (!raw) return out;
+      for (const [requestId, obj] of Object.entries(raw)) {
+        out.push({
+          requestId,
+          amount: obj.amount || 0,
+          status: obj.status || 'processing',
+          date: obj.requestedAt || obj.updatedAt || new Date().toISOString(),
+          bookings: obj.bookings || {}
+        });
+      }
+      return out;
+    }
+
+    // Normalize OLD model: /pendingWithdrawals/{driverId}/{bookingId}
+    // We create one pseudo-request per bookingId
+    function normalizePendingWithdrawals(raw) {
+      const out = [];
+      if (!raw) return out;
+      for (const [bookingId, obj] of Object.entries(raw)) {
+        out.push({
+          requestId: bookingId,
+          amount: obj.amount || 0,
+          status: obj.status || 'processing',
+          date: obj.date || new Date().toISOString(),
+          bookings: {
+            [bookingId]: {
+              amount: obj.amount || 0,
+              booking: obj.booking || null
+            }
+          }
+        });
+      }
+      return out;
+    }
+
+    // Driver presses withdraw -> create a new withdrawRequests node & clear wallet
     withdrawBtn.addEventListener('click', async () => {
       if (!currentDriverId || isProcessing) return;
       isProcessing = true;
@@ -269,11 +331,11 @@
           return;
         }
 
-        const newReqRef = push(ref(db, `/pendingWithdrawals/${currentDriverId}`));
+        const newReqRef = push(ref(db, `/withdrawRequests/${currentDriverId}`));
         const now = new Date().toISOString();
 
         const updates = {};
-        updates[`/pendingWithdrawals/${currentDriverId}/${newReqRef.key}`] = {
+        updates[`/withdrawRequests/${currentDriverId}/${newReqRef.key}`] = {
           amount: totalAmount,
           bookings: freshData,
           status: "processing",
@@ -305,9 +367,11 @@
 
       currentDriverId = user.uid;
 
-      const walletRef  = ref(db, `/driverWallet/${currentDriverId}`);
-      const historyRef = ref(db, `/pendingWithdrawals/${currentDriverId}`);
+      const walletRef   = ref(db, `/driverWallet/${currentDriverId}`);
+      const newHistRef  = ref(db, `/withdrawRequests/${currentDriverId}`);
+      const oldHistRef  = ref(db, `/pendingWithdrawals/${currentDriverId}`); // legacy
 
+      // Wallet balance
       onValue(walletRef, (snapshot) => {
         if (!snapshot.exists()) {
           balanceEl.textContent = '₹0';
@@ -319,23 +383,32 @@
         withdrawBtn.disabled = total <= 0 || isProcessing;
       });
 
-      onValue(historyRef, (snapshot) => {
-        if (!snapshot.exists()) {
-          allHistory = [];
-          renderHistory();
-          return;
-        }
-        allHistory = Object.entries(snapshot.val())
-          .map(([reqId, obj]) => ({
-            requestId: reqId,
-            amount: obj.amount,
-            status: obj.status,
-            date: obj.requestedAt,
-            bookings: obj.bookings || {}
-          }))
+      // Listen to both NEW and OLD histories and merge
+      const recomputeHistory = (newSnap, oldSnap) => {
+        const newData = newSnap?.val() || null;
+        const oldData = oldSnap?.val() || null;
+
+        const listNew = normalizeWithdrawRequests(newData);
+        const listOld = normalizePendingWithdrawals(oldData);
+
+        allHistory = [...listNew, ...listOld]
           .sort((a, b) => new Date(b.date) - new Date(a.date));
+
         visibleCount = 5;
         renderHistory();
+      };
+
+      let lastNewSnap = null;
+      let lastOldSnap = null;
+
+      onValue(newHistRef, (snap) => {
+        lastNewSnap = snap;
+        recomputeHistory(lastNewSnap, lastOldSnap);
+      });
+
+      onValue(oldHistRef, (snap) => {
+        lastOldSnap = snap;
+        recomputeHistory(lastNewSnap, lastOldSnap);
       });
     });
   </script>
