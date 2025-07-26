@@ -119,53 +119,22 @@
       auth.onAuthStateChanged(async user => {
         if (!user) {
           alert('Please login first.');
-          window.location = 'login.html';
+          window.location = 'index.html';
           return;
         }
 
-        // Resolve database UID, name, phone:
-        let dbUid = null, name = 'Not set', phone = 'Not set';
-
-        // 1) Try direct UID lookup:
-        const snapUid = await db.ref(`users/${user.uid}`).once('value');
-        if (snapUid.exists()) {
-          dbUid = user.uid;
-          ({ name, phone } = snapUid.val());
-        } else {
-          // 2) Fallback: phone lookup (last 10 digits)
-          if (user.phoneNumber) {
-            const raw = user.phoneNumber.slice(-10);
-            const snapPhone = await db.ref('users')
-              .orderByChild('phone')
-              .equalTo(raw)
-              .once('value');
-            if (snapPhone.exists()) {
-              const rec = snapPhone.val();
-              dbUid = Object.keys(rec)[0];
-              ({ name, phone } = rec[dbUid]);
-            }
-          }
-          // 3) Fallback: email lookup
-          if (!dbUid && user.email) {
-            const snapEmail = await db.ref('users')
-              .orderByChild('email')
-              .equalTo(user.email)
-              .once('value');
-            if (snapEmail.exists()) {
-              const rec = snapEmail.val();
-              dbUid = Object.keys(rec)[0];
-              ({ name, phone } = rec[dbUid]);
-            }
-          }
-        }
-
-        if (!dbUid) {
+        // Fetch user profile
+        const uid = user.uid;
+        const snap = await db.ref(`users/${uid}`).once('value');
+        if (!snap.exists()) {
           summaryEl.innerHTML = '<div>Profile not found. Cannot proceed.</div>';
           payBtn.disabled = true;
           return;
         }
 
-        // Render booking summary with user info
+        const { name, phone } = snap.val();
+
+        // Render booking summary
         summaryEl.innerHTML = `
           <div><strong>Name:</strong> ${name}</div>
           <div><strong>Phone:</strong> ${phone}</div>
@@ -179,7 +148,6 @@
 
         if (!bound) {
           bound = true;
-          // Enable button when T&C checked
           termsChk.addEventListener('change', () => {
             payBtn.disabled = !termsChk.checked;
           });
@@ -203,53 +171,44 @@
                 // Safely decrement seats
                 const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
                 slotRef.transaction(cur => {
-                  if (!cur || typeof cur.seats !== 'number') {
-                    return cur;
-                  }
-                  return {
-                    ...cur,
-                    seats: Math.max(0, cur.seats - booking.seatsRequested)
-                  };
-                }).finally(async () => {
-                  // Write booking under driverId
-                  const bookingsRef = db.ref(`bookings/${booking.driverId}`);
-                  const newBookingRef = bookingsRef.push();
-                  const bookingData = {
-                    ...booking,
-                    userId: dbUid,
-                    userName: name,
-                    userPhone: phone,
-                    paymentId: res.razorpay_payment_id,
-                    bookedAt: new Date().toISOString(),
-                    status: 'confirmed'
-                  };
-                  newBookingRef.set(bookingData)
-                    .then(() => {
-                      // Now create driverWallet entry at 50% amount
-                      const walletRef = db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`);
-                      walletRef.set({
-                        amount: booking.fare * 0.5,
-                        date: new Date().toISOString(),
-                        paidout: false
-                      })
-                      .then(() => {
-                        alert('Payment successful & booking confirmed!');
-                        localStorage.removeItem('selectedBooking');
-                        window.location = 'mybookings.html';
-                      })
-                      .catch(err => {
-                        console.error(err);
-                        alert('Booking saved but wallet entry failed. Please contact support.');
-                      });
-                    })
-                    .catch(err => {
-                      console.error(err);
-                      alert('Error saving booking. Please contact support.');
-                    });
-                });
+                  if (!cur || typeof cur.seats !== 'number') return cur;
+                  return { ...cur, seats: Math.max(0, cur.seats - booking.seatsRequested) };
+                }).finally(() => saveBooking(uid, name, phone, res.razorpay_payment_id));
               }
             }).open();
           });
+        }
+
+        async function saveBooking(userId, userName, userPhone, paymentId) {
+          try {
+            const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+            const newBookingRef = bookingsRef.push();
+            const bookingData = {
+              ...booking,
+              userId,
+              userName,
+              userPhone,
+              paymentId,
+              bookedAt: new Date().toISOString(),
+              status: 'confirmed'
+            };
+
+            await newBookingRef.set(bookingData);
+
+            // Store full booking details in driver wallet
+            await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
+              ...bookingData,
+              amount: booking.fare * 0.5, // commission amount
+              paidout: false
+            });
+
+            alert('Payment successful & booking confirmed!');
+            localStorage.removeItem('selectedBooking');
+            window.location = 'mybookings.html';
+          } catch (err) {
+            console.error(err);
+            alert('Error saving booking or wallet entry.');
+          }
         }
       });
     }
