@@ -126,27 +126,36 @@
       }
 
       try {
-        // 1. Try to find by UID
-        let snap = await get(dbRef(db, `users/${user.uid}`));
-        let data = snap.exists() ? snap.val() : null;
+        let userData = null;
+        const uid = user.uid;
 
-        // 2. Try to find by phone (if phoneNumber exists)
-        if (!data && user.phoneNumber) {
-          snap = await get(query(dbRef(db, "users"), orderByChild("phone"), equalTo(user.phoneNumber)));
-          if (snap.exists()) data = Object.values(snap.val())[0];
+        // 1. Check by UID
+        const uidSnap = await get(dbRef(db, `users/${uid}`));
+        if (uidSnap.exists()) {
+          userData = uidSnap.val();
         }
 
-        // 3. Try to find by email (if email exists)
-        if (!data && user.email) {
-          snap = await get(query(dbRef(db, "users"), orderByChild("email"), equalTo(user.email)));
-          if (snap.exists()) data = Object.values(snap.val())[0];
+        // 2. If not found, check by phone
+        if (!userData && user.phoneNumber) {
+          const phoneSnap = await get(query(dbRef(db, "users"), orderByChild("phone"), equalTo(user.phoneNumber)));
+          if (phoneSnap.exists()) {
+            userData = Object.values(phoneSnap.val())[0];
+          }
         }
 
-        if (data) {
-          nameEl.textContent = data.name || "Not set";
-          emailEl.textContent = data.email || "Not set";
-          phoneEl.textContent = data.phone || "Not set";
-          roleEl.textContent = data.role || "Not set";
+        // 3. If not found, check by email
+        if (!userData && user.email) {
+          const emailSnap = await get(query(dbRef(db, "users"), orderByChild("email"), equalTo(user.email)));
+          if (emailSnap.exists()) {
+            userData = Object.values(emailSnap.val())[0];
+          }
+        }
+
+        if (userData) {
+          nameEl.textContent = userData.name || "Not set";
+          emailEl.textContent = userData.email || "Not set";
+          phoneEl.textContent = userData.phone || "Not set";
+          roleEl.textContent = userData.role || "Not set";
         } else {
           nameEl.textContent = "Not available";
           emailEl.textContent = "Not available";
@@ -160,8 +169,7 @@
       }
     });
 
-    logoutBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
+    logoutBtn.addEventListener('click', async () => {
       try {
         await signOut(auth);
         localStorage.removeItem('userPhone');
