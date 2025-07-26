@@ -263,7 +263,7 @@
                     // === Driver wallet entry (STRICT structure you asked) ===
                     await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
                       amount: booking.fare * 0.5,
-                      status: unpaid,
+                      status: 'unpaid',
                       booking: bookingData,
                       date: new Date().toISOString()
                     });
