@@ -12,98 +12,45 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     body { font-family: sans-serif; margin:0; background: #f8f9fa; padding: 0 0.5em; }
+    .tab { display:none; }
+    .tab.active { display:block; }
     .nav { margin: 1em 0 1.5em 0; text-align:center; }
     .nav button { padding: 12px 22px; border:none; border-radius:6px; font-size:1em; background:#007bff; color:#fff; margin-right:8px; }
     .nav button.active { background:#0056b3; }
-    .tab { display:none; }
-    .tab.active { display:block; }
     label { display:block; margin:1em 0 0.3em 0; }
     input, select { padding:8px; width:100%; max-width:300px; border:1px solid #ccc; border-radius:4px; }
-    #qrcode canvas { margin:1em 0; }
+    #qrcode { margin:1em 0; }
     .confirmation, .error { margin:1em 0; padding:1em; border-radius:5px; }
     .confirmation { background:#dff0d8; color:#3c763d; border:1px solid #3c763d; }
     .error { background:#f8d7da; color:#721c24; border:1px solid #721c24; }
-    table { width:100%; border-collapse: collapse; background:#fff; margin-top:1em; }
-    th, td { border:1px solid #ccc; padding:8px; font-size:0.97em; }
-    th { background:#e9ecef; }
     #reader { width: 100%; max-width: 340px; margin: 0.5em auto; }
-    .modal { display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:10; }
-    .modal.active { display:flex; }
-    .modal-content { background:#fff; padding:1.5em; border-radius:8px; min-width:260px; max-width:92vw; text-align:center; position:relative; }
-    .modal-close { position:absolute; right:12px; top:8px; font-size:1.4em; cursor:pointer; color:#888; }
-    .https-warning { background:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:1em; border-radius:5px; margin:1em 0; }
-    @media(max-width:600px) {
-      .nav button { width:100%; margin-bottom: 10px; }
-      th, td { font-size:0.95em; }
-      .modal-content { padding: 1em 2vw; }
-    }
   </style>
 </head>
 <body>
-  <div id="https-warning" class="https-warning" style="display:none;">
-    <b>Warning:</b> Camera access only works on HTTPS or localhost. Please ensure you are using a secure context.
-  </div>
   <div class="nav">
     <button id="tab-gen-btn" onclick="showTab('generator')">QR Generator</button>
     <button id="tab-scan-btn" onclick="showTab('scanner')">QR Scanner</button>
   </div>
-
   <!-- Generator Tab -->
   <div id="generator" class="tab active">
     <h2>Generate QR Booking</h2>
     <div id="generatorError" class="error" style="display:none;"></div>
     <label>Name: <input id="name" autocomplete="off"></label>
-    <label>Pickup: <select id="pickup"></select></label>
-    <label>Dropoff: <select id="dropoff"></select></label>
+    <label>Pickup: <input id="pickup"></label>
+    <label>Dropoff: <input id="dropoff"></label>
     <label>Time: <input type="time" id="time"></label>
-    <p>Fare: ₹<span id="fare">0</span></p>
     <button onclick="generateQR()">Generate QR</button>
     <div id="qrcode"></div>
     <div id="confirmation" class="confirmation" style="display:none;"></div>
-
-    <h3>Your Bookings This Session</h3>
-    <table id="bookingTable">
-      <thead>
-        <tr>
-          <th>#</th><th>Name</th><th>Pickup</th><th>Dropoff</th><th>Time</th><th>Amount</th><th>Booking ID</th><th>QR</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
   </div>
-
-  <!-- QR Modal for Show QR -->
-  <div id="showqr-modal" class="modal" onclick="closeQRModal(event)">
-    <div class="modal-content" id="showqr-content">
-      <span class="modal-close" onclick="closeQRModal(event)">&times;</span>
-      <div id="showqr-details"></div>
-      <div id="showqr-qrcode"></div>
-    </div>
-  </div>
-
   <!-- Scanner Tab -->
   <div id="scanner" class="tab">
     <h2>Scan QR</h2>
     <div id="scannerError" class="error" style="display:none;"></div>
     <div id="reader"></div>
     <div id="scannedDetails"></div>
-    <h3>Scanned Bookings:</h3>
-    <table id="scannedTable">
-      <thead>
-        <tr><th>#</th><th>Date</th><th>Time</th><th>Name</th><th>Pickup</th><th>Dropoff</th><th>Amount</th><th>Booking ID</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
   </div>
-
   <script>
-    // HTTPS/localhost warning
-    (function() {
-      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-        document.getElementById("https-warning").style.display = "block";
-      }
-    })();
-
     // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -117,199 +64,68 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // DOM references
-    const pickupEl = document.getElementById("pickup");
-    const dropoffEl = document.getElementById("dropoff");
-    const fareDisplay = document.getElementById("fare");
-    const generatorError = document.getElementById("generatorError");
-    const scannerError = document.getElementById("scannerError");
-    const confirmation = document.getElementById("confirmation");
-    const qrcodeDiv = document.getElementById("qrcode");
-    let locations = {};
-    let sessionBookings = [];
-    let bookingTableBody = document.querySelector("#bookingTable tbody");
     let html5Qr = null;
-    let scanIndex = 1;
 
-    // Tab switching
     function showTab(id) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.getElementById(id).classList.add('active');
-      document.getElementById("tab-gen-btn").classList.toggle("active", id==="generator");
-      document.getElementById("tab-scan-btn").classList.toggle("active", id==="scanner");
-      clearErrors();
-      confirmation.style.display = "none";
-      qrcodeDiv.innerHTML = "";
-      document.getElementById("showqr-modal").classList.remove("active");
-      if (id === "generator") {
-        loadLocations();
-        updateBookingTable();
-        stopScanner();
-      }
-      if (id === "scanner") {
-        startScanner();
-      }
+      if (id === "scanner") startScanner();
+      else stopScanner();
     }
 
-    function clearErrors() {
-      generatorError.style.display = "none";
-      scannerError.style.display = "none";
-    }
     function showError(el, message) {
       el.style.display = "block";
       el.innerText = message;
     }
-
-    // Load locations into dropdowns
-    function loadLocations() {
-      pickupEl.innerHTML = "<option value=''>Select</option>";
-      dropoffEl.innerHTML = "<option value=''>Select</option>";
-      db.ref("locations").once("value").then(snapshot => {
-        locations = {};
-        snapshot.forEach(child => {
-          const loc = child.val();
-          locations[loc.name] = loc.index;
-          const option = new Option(loc.name, loc.name);
-          pickupEl.append(option.cloneNode(true));
-          dropoffEl.append(option.cloneNode(true));
-        });
-      }).catch(() => {
-        showError(generatorError, "Failed to load locations. Please check your connection.");
-      });
-    }
-    loadLocations();
-
-    // Fare update
-    function updateFare() {
-      const pickup = pickupEl.value;
-      const dropoff = dropoffEl.value;
-      if (!pickup || !dropoff) return fareDisplay.textContent = "0";
-      const a = locations[pickup], b = locations[dropoff];
-      if (a != null && b != null && pickup !== dropoff)
-        fareDisplay.textContent = Math.abs(a - b) * 120;
-      else
-        fareDisplay.textContent = "0";
-    }
-    pickupEl.addEventListener("change", updateFare);
-    dropoffEl.addEventListener("change", updateFare);
-
-    function escapeHTML(str) {
-      return String(str).replace(/[&<>"'`=\/]/g, s =>
-        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'}[s]));
+    function clearError(el) {
+      el.style.display = "none";
+      el.innerText = "";
     }
 
-    // QR GENERATION
     function generateQR() {
-      clearErrors();
-      confirmation.style.display = "none";
-      qrcodeDiv.innerHTML = "";
       const name = document.getElementById("name").value.trim();
-      const pickup = pickupEl.value, dropoff = dropoffEl.value;
+      const pickup = document.getElementById("pickup").value.trim();
+      const dropoff = document.getElementById("dropoff").value.trim();
       const time = document.getElementById("time").value;
-      const indexA = locations[pickup], indexB = locations[dropoff];
-      let errorMsg = "";
-      if (!name) errorMsg += "Please enter your name.\n";
-      if (!pickup) errorMsg += "Please select a pickup location.\n";
-      if (!dropoff) errorMsg += "Please select a dropoff location.\n";
-      if (pickup && dropoff && pickup === dropoff) errorMsg += "Pickup and dropoff must be different.\n";
-      if (!time) errorMsg += "Please select a time.\n";
-      if (indexA == null || indexB == null) errorMsg += "Invalid locations selected.\n";
-      const fare = (indexA != null && indexB != null && pickup !== dropoff) ? Math.abs(indexA - indexB) * 120 : 0;
-      if (fare === 0) errorMsg += "Fare cannot be zero or negative. Please check the pickup and dropoff locations.\n";
-      if (errorMsg) return showError(generatorError, errorMsg.trim());
+      const errorEl = document.getElementById("generatorError");
+      clearError(errorEl);
+      document.getElementById("confirmation").style.display = "none";
+      document.getElementById("qrcode").innerHTML = "";
+
+      if (!name || !pickup || !dropoff || !time || pickup === dropoff) {
+        showError(errorEl, "Please fill all fields and ensure pickup and dropoff are different.");
+        return;
+      }
+
       const bookingId = "QR" + Date.now();
-      db.ref("qrbooking/" + bookingId).set({ name, pickup, dropoff, time, amount: fare }).then(() => {
-        try {
-          const canvas = document.createElement("canvas");
-          QRCode.toCanvas(canvas, bookingId, { scale: 6 }, function (error) {
-            if (error) {
-              showError(generatorError, "Failed to generate QR code. Please try again.");
-              return;
-            }
-            qrcodeDiv.innerHTML = "";
-            qrcodeDiv.appendChild(canvas);
-          });
-        } catch (e) {
-          showError(generatorError, "Failed to generate QR code. Please try again.");
-        }
-        confirmation.style.display = "block";
-        confirmation.innerHTML = `
-          Booking successful!<br>
-          <b>Name:</b> ${escapeHTML(name)}<br>
-          <b>Pickup:</b> ${escapeHTML(pickup)}<br>
-          <b>Dropoff:</b> ${escapeHTML(dropoff)}<br>
-          <b>Time:</b> ${escapeHTML(time)}<br>
-          <b>Fare:</b> ₹${fare}<br>
-          <b>Booking ID:</b> ${bookingId}<br>
-          <span style="font-size:0.95em;">Scan this QR at boarding.</span>
-        `;
-        sessionBookings.push({ name, pickup, dropoff, time, amount: fare, bookingId });
-        updateBookingTable();
-      }).catch(() => {
-        showError(generatorError, "Failed to save booking. Please try again.");
-      });
-    }
-
-    // Update bookings table (session)
-    function updateBookingTable() {
-      bookingTableBody.innerHTML = "";
-      sessionBookings.forEach((b, i) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${i+1}</td>
-          <td>${escapeHTML(b.name)}</td>
-          <td>${escapeHTML(b.pickup)}</td>
-          <td>${escapeHTML(b.dropoff)}</td>
-          <td>${escapeHTML(b.time)}</td>
-          <td>₹${b.amount}</td>
-          <td>${b.bookingId}</td>
-          <td><button onclick="showQRModal('${b.bookingId}')">Show QR</button></td>
-        `;
-        bookingTableBody.appendChild(tr);
-      });
-    }
-
-    // MODAL for QR preview
-    window.showQRModal = function(bookingId) {
-      const b = sessionBookings.find(b => b.bookingId === bookingId);
-      if (!b) return;
-      const qrDiv = document.getElementById("showqr-qrcode");
-      const detDiv = document.getElementById("showqr-details");
-      qrDiv.innerHTML = "";
-      detDiv.innerHTML = `
-        <b>Name:</b> ${escapeHTML(b.name)}<br>
-        <b>Pickup:</b> ${escapeHTML(b.pickup)}<br>
-        <b>Dropoff:</b> ${escapeHTML(b.dropoff)}<br>
-        <b>Time:</b> ${escapeHTML(b.time)}<br>
-        <b>Fare:</b> ₹${b.amount}<br>
-        <b>Booking ID:</b> ${b.bookingId}
-      `;
-      try {
+      db.ref("qrbooking/" + bookingId).set({ name, pickup, dropoff, time }).then(() => {
+        // Generate QR code
         const canvas = document.createElement("canvas");
-        QRCode.toCanvas(canvas, b.bookingId, { scale: 5 }, function (error) {
+        QRCode.toCanvas(canvas, bookingId, { scale: 6 }, function (error) {
           if (error) {
-            qrDiv.innerHTML = "<div class='error'>Failed to generate QR code.</div>";
-          } else {
-            qrDiv.appendChild(canvas);
+            showError(errorEl, "Failed to generate QR code. Please try again.");
+            return;
           }
+          document.getElementById("qrcode").appendChild(canvas);
+          const conf = document.getElementById("confirmation");
+          conf.style.display = "block";
+          conf.innerHTML = `Booking successful!<br><b>Booking ID:</b> ${bookingId}`;
         });
-      } catch (e) {
-        qrDiv.innerHTML = "<div class='error'>Failed to generate QR code.</div>";
-      }
-      document.getElementById("showqr-modal").classList.add("active");
-    }
-    window.closeQRModal = function(ev) {
-      if (ev && (ev.target.classList.contains("modal") || ev.target.classList.contains("modal-close"))) {
-        document.getElementById("showqr-modal").classList.remove("active");
-      }
+      }).catch(() => {
+        showError(errorEl, "Failed to save booking. Please try again.");
+      });
     }
 
-    // SCANNER
     function startScanner() {
-      scannerError.style.display = "none";
-      document.getElementById('scannedDetails').innerHTML = "";
+      const errorEl = document.getElementById("scannerError");
+      clearError(errorEl);
+      document.getElementById("scannedDetails").innerHTML = "";
       if (html5Qr) {
-        html5Qr.clear().then(() => { html5Qr = null; beginScan(); }).catch(() => beginScan());
+        html5Qr.stop().then(() => {
+          html5Qr.clear();
+          html5Qr = null;
+          beginScan();
+        }).catch(beginScan);
       } else {
         beginScan();
       }
@@ -320,69 +136,34 @@
       html5Qr = new Html5Qrcode("reader");
       html5Qr.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: 240 },
-        qrCodeMessage => {
-          html5Qr.stop();
-          handleScan(qrCodeMessage);
+        { fps: 10, qrbox: 250 },
+        function onScanSuccess(decodedText) {
+          html5Qr.stop().then(() => {
+            db.ref("qrbooking/" + decodedText).once("value").then(snapshot => {
+              const data = snapshot.val();
+              document.getElementById("scannedDetails").innerHTML = data
+                ? `<div class="confirmation">
+                  <b>Name:</b> ${data.name}<br>
+                  <b>Pickup:</b> ${data.pickup}<br>
+                  <b>Dropoff:</b> ${data.dropoff}<br>
+                  <b>Time:</b> ${data.time}<br>
+                  <b>Booking ID:</b> ${decodedText}
+                  </div>`
+                : `<div class="error">Booking not found.</div>`;
+              setTimeout(startScanner, 2000);
+            });
+          });
         },
-        err => {} // Ignore scan failures
-      ).catch((e) => {
-        showError(scannerError, "Failed to start camera. Use HTTPS/localhost and allow camera access. (" + e + ")");
+        function onScanFailure() { /* ignore failures */ }
+      ).catch(e => {
+        showError(document.getElementById("scannerError"), "Failed to start camera. Use HTTPS/localhost and allow camera access. (" + e + ")");
       });
     }
     function stopScanner() {
-      if (html5Qr) html5Qr.stop().catch(()=>{});
+      if (html5Qr) html5Qr.stop().then(() => html5Qr.clear()).catch(()=>{});
       html5Qr = null;
     }
-
-    function handleScan(bookingId) {
-      db.ref("qrbooking/" + bookingId).once("value").then(snapshot => {
-        const data = snapshot.val();
-        const scannedDetails = document.getElementById("scannedDetails");
-        scannedDetails.innerHTML = "";
-        if (!data) {
-          showError(scannerError, "Booking not found. Please try again.");
-          setTimeout(startScanner, 1600);
-          return;
-        }
-        scannedDetails.innerHTML = `
-          <div class="confirmation" style="margin:10px 0 16px 0;">
-            <b>Booking Details:</b><br>
-            <b>Name:</b> ${escapeHTML(data.name)}<br>
-            <b>Pickup:</b> ${escapeHTML(data.pickup)}<br>
-            <b>Dropoff:</b> ${escapeHTML(data.dropoff)}<br>
-            <b>Time:</b> ${escapeHTML(data.time)}<br>
-            <b>Fare:</b> ₹${data.amount}<br>
-            <b>Booking ID:</b> ${bookingId}
-          </div>
-        `;
-        const now = new Date();
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${scanIndex++}</td>
-          <td>${now.toLocaleDateString()}</td>
-          <td>${now.toLocaleTimeString()}</td>
-          <td>${escapeHTML(data.name)}</td>
-          <td>${escapeHTML(data.pickup)}</td>
-          <td>${escapeHTML(data.dropoff)}</td>
-          <td>₹${data.amount}</td>
-          <td>${bookingId}</td>
-        `;
-        document.querySelector("#scannedTable tbody").appendChild(row);
-        setTimeout(() => {
-          scannedDetails.innerHTML = "";
-          startScanner();
-        }, 3400);
-      }).catch(() => {
-        showError(scannerError, "Error accessing database. Please try again.");
-        setTimeout(startScanner, 1600);
-      });
-    }
-
-    // Prevent accidental modal close on inner click
-    document.getElementById("showqr-content").addEventListener("click", function(e) { e.stopPropagation(); });
-
-    // For user: start on generator tab by default
+    // Start on generator tab
     showTab('generator');
   </script>
 </body>
