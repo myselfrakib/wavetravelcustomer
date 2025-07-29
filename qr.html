@@ -287,7 +287,11 @@
 
       db.ref("qrbooking/" + bookingId).set({ name, pickup, dropoff, time, amount: fare }).then(() => {
         QRCode.toCanvas(document.getElementById("qrcode"), bookingId, { scale: 6 }, function (error) {
-          if (error) showError(generatorError, "Failed to generate QR code.");
+          if (error) {
+            showError(generatorError, "Failed to generate QR code. Please try again.");
+            qrcodeDiv.innerHTML = "";
+            return;
+          }
         });
         confirmation.style.display = "block";
         confirmation.innerHTML = `
@@ -345,7 +349,11 @@
         <b>Booking ID:</b> ${booking.bookingId}
       `;
       // Show QR
-      QRCode.toCanvas(qrDiv, booking.bookingId, { scale: 5 });
+      QRCode.toCanvas(qrDiv, booking.bookingId, { scale: 5 }, function (error) {
+        if (error) {
+          qrDiv.innerHTML = "<div class='error'>Failed to generate QR code.</div>";
+        }
+      });
       document.getElementById("showqr-modal").classList.add("active");
     }
 
@@ -360,6 +368,7 @@
     let scanIndex = 1;
     function startScanner() {
       scannerError.style.display = "none";
+      document.getElementById('scannedDetails').innerHTML = "";
       if (html5Qr) {
         html5Qr.clear().then(() => {
           html5Qr = null;
@@ -382,7 +391,7 @@
         },
         errorMsg => { /* ignore scan errors */ }
       ).catch(() => {
-        showError(scannerError, "Failed to start camera. Please check permissions.");
+        showError(scannerError, "Failed to start camera. Please check permissions and use HTTPS or localhost.");
       });
     }
     function stopScanner() {
