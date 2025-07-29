@@ -67,10 +67,35 @@
     }
     th { background: #e9ecef; }
     #reader { width: 100%; max-width: 320px; margin: 0 auto; }
+    .showqr-modal {
+      display: none;
+      position: fixed;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+      z-index: 11;
+    }
+    .showqr-modal.active {
+      display: flex;
+    }
+    .showqr-content {
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 8px;
+      min-width: 290px;
+      max-width: 95vw;
+      text-align: center;
+      position: relative;
+    }
+    .showqr-close {
+      position: absolute; right: 10px; top: 10px; font-size: 1.5em; cursor: pointer; color: #888;
+    }
     @media (max-width: 600px) {
       input, select { min-width: 120px; width: 100%; }
       .nav button { font-size: 1em; width: 100%; margin-bottom: 10px;}
       table, th, td { font-size: 0.92em; }
+      .showqr-content { padding: 10px 5vw; }
     }
   </style>
 </head>
@@ -92,6 +117,26 @@
     <button onclick="generateQR()">Generate QR</button>
     <div id="qrcode"></div>
     <div id="confirmation" class="confirmation" style="display:none;"></div>
+
+    <h3>Your Bookings This Session</h3>
+    <table id="bookingTable">
+      <thead>
+        <tr>
+          <th>#</th><th>Name</th><th>Pickup</th><th>Dropoff</th><th>Time</th><th>Amount</th><th>Booking ID</th><th>Show QR</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- QR Modal for Show QR -->
+  <div id="showqr-modal" class="showqr-modal" onclick="closeQRModal(event)">
+    <div class="showqr-content" id="showqr-content">
+      <span class="showqr-close" onclick="closeQRModal(event)">&times;</span>
+      <div id="showqr-details"></div>
+      <div id="showqr-qrcode"></div>
+    </div>
   </div>
 
   <!-- Scanner Tab -->
@@ -99,6 +144,7 @@
     <h2>Scan QR</h2>
     <div id="scannerError" class="error" style="display:none;"></div>
     <div id="reader"></div>
+    <div id="scannedDetails"></div>
     <h3>Scanned Bookings:</h3>
     <table id="scannedTable">
       <thead>
@@ -108,8 +154,6 @@
     </table>
   </div>
 
-  <audio id="beep-success" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfa1c2e.mp3"></audio>
-  <audio id="beep-error" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfa1c2e.mp3"></audio>
   <script>
     // Firebase config
     const firebaseConfig = {
@@ -134,6 +178,8 @@
     const qrcodeDiv = document.getElementById("qrcode");
 
     let locations = {};
+    let sessionBookings = []; // Store bookings created in this session
+    let bookingTableBody = document.querySelector("#bookingTable tbody");
 
     // Load locations into dropdowns
     function loadLocations() {
@@ -160,8 +206,10 @@
       clearErrors();
       confirmation.style.display = "none";
       qrcodeDiv.innerHTML = "";
+      document.getElementById("showqr-modal").classList.remove("active");
       if (id === "generator") {
         loadLocations();
+        updateBookingTable();
       }
       if (id === "scanner") {
         startScanner();
@@ -170,7 +218,6 @@
       }
     }
 
-    // Clear error messages
     function clearErrors() {
       generatorError.style.display = "none";
       scannerError.style.display = "none";
@@ -198,6 +245,15 @@
     }
     pickupEl.addEventListener("change", updateFare);
     dropoffEl.addEventListener("change", updateFare);
+
+    function escapeHTML(str) {
+      return String(str).replace(/[&<>"'`=\/]/g, function (s) {
+        return ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+          "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'
+        })[s];
+      });
+    }
 
     // Generate QR code with validation and confirmation
     function generateQR() {
@@ -236,17 +292,67 @@
         confirmation.style.display = "block";
         confirmation.innerHTML = `
           Booking successful!<br>
-          <b>Name:</b> ${name}<br>
-          <b>Pickup:</b> ${pickup}<br>
-          <b>Dropoff:</b> ${dropoff}<br>
-          <b>Time:</b> ${time}<br>
+          <b>Name:</b> ${escapeHTML(name)}<br>
+          <b>Pickup:</b> ${escapeHTML(pickup)}<br>
+          <b>Dropoff:</b> ${escapeHTML(dropoff)}<br>
+          <b>Time:</b> ${escapeHTML(time)}<br>
           <b>Fare:</b> ₹${fare}<br>
           <b>Booking ID:</b> ${bookingId}<br>
           <span style="font-size:0.95em;">Scan this QR at boarding.</span>
         `;
+        // Add to session bookings
+        sessionBookings.push({
+          name, pickup, dropoff, time, amount: fare, bookingId
+        });
+        updateBookingTable();
       }).catch(() => {
         showError(generatorError, "Failed to save booking. Please try again.");
       });
+    }
+
+    // Booking Table for the session
+    function updateBookingTable() {
+      bookingTableBody.innerHTML = "";
+      sessionBookings.forEach((booking, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${escapeHTML(booking.name)}</td>
+          <td>${escapeHTML(booking.pickup)}</td>
+          <td>${escapeHTML(booking.dropoff)}</td>
+          <td>${escapeHTML(booking.time)}</td>
+          <td>₹${booking.amount}</td>
+          <td>${booking.bookingId}</td>
+          <td><button onclick="showQRModal('${booking.bookingId}')">Show QR</button></td>
+        `;
+        bookingTableBody.appendChild(tr);
+      });
+    }
+
+    // Modal for showing QR and booking details
+    window.showQRModal = function(bookingId) {
+      const booking = sessionBookings.find(b => b.bookingId === bookingId);
+      if (!booking) return;
+      const qrDiv = document.getElementById("showqr-qrcode");
+      const detailsDiv = document.getElementById("showqr-details");
+      qrDiv.innerHTML = "";
+      detailsDiv.innerHTML = `
+        <b>Name:</b> ${escapeHTML(booking.name)}<br>
+        <b>Pickup:</b> ${escapeHTML(booking.pickup)}<br>
+        <b>Dropoff:</b> ${escapeHTML(booking.dropoff)}<br>
+        <b>Time:</b> ${escapeHTML(booking.time)}<br>
+        <b>Fare:</b> ₹${booking.amount}<br>
+        <b>Booking ID:</b> ${booking.bookingId}
+      `;
+      // Show QR
+      QRCode.toCanvas(qrDiv, booking.bookingId, { scale: 5 });
+      document.getElementById("showqr-modal").classList.add("active");
+    }
+
+    window.closeQRModal = function(ev) {
+      if (ev && (ev.target.classList.contains("showqr-modal") || ev.target.classList.contains("showqr-close"))) {
+        document.getElementById("showqr-modal").classList.remove("active");
+      }
     }
 
     // QR Scanner logic
@@ -286,17 +392,27 @@
 
     // Handle QR scan
     function handleScan(bookingId) {
-      const beepSuccess = document.getElementById("beep-success");
-      const beepError = document.getElementById("beep-error");
       db.ref("qrbooking/" + bookingId).once("value").then(snapshot => {
         const data = snapshot.val();
+        const scannedDetails = document.getElementById("scannedDetails");
+        scannedDetails.innerHTML = "";
         if (!data) {
-          beepError.play();
           showError(scannerError, "Booking not found. Please try again.");
           setTimeout(startScanner, 1500);
           return;
         }
-        beepSuccess.play();
+        // Show scanned booking details
+        scannedDetails.innerHTML = `
+          <div class="confirmation" style="margin:10px 0 16px 0;">
+            <b>Booking Details:</b><br>
+            <b>Name:</b> ${escapeHTML(data.name)}<br>
+            <b>Pickup:</b> ${escapeHTML(data.pickup)}<br>
+            <b>Dropoff:</b> ${escapeHTML(data.dropoff)}<br>
+            <b>Time:</b> ${escapeHTML(data.time)}<br>
+            <b>Fare:</b> ₹${data.amount}<br>
+            <b>Booking ID:</b> ${bookingId}
+          </div>
+        `;
         const now = new Date();
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -310,21 +426,13 @@
           <td>${bookingId}</td>
         `;
         document.querySelector("#scannedTable tbody").appendChild(row);
-        setTimeout(startScanner, 1200);
+        setTimeout(() => {
+          scannedDetails.innerHTML = "";
+          startScanner();
+        }, 3500);
       }).catch(() => {
-        beepError.play();
         showError(scannerError, "Error accessing database. Please try again.");
         setTimeout(startScanner, 1500);
-      });
-    }
-
-    // Escape HTML for table display
-    function escapeHTML(str) {
-      return String(str).replace(/[&<>"'`=\/]/g, function (s) {
-        return ({
-          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
-          "'": '&#39;', '/': '&#x2F;', '`': '&#x60;', '=': '&#x3D;'
-        })[s];
       });
     }
   </script>
