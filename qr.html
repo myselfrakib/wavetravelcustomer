@@ -1,204 +1,218 @@
 <!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WaveTravel QR</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WaveTravel QR System</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
-      background: #f5f7fa;
+      background: #f4f6f9;
       color: #333;
-    }
-    nav {
-      background-color: #0066cc;
-      padding: 1rem;
-      text-align: center;
-      color: white;
-      font-size: 1.25rem;
     }
     .tabs {
       display: flex;
       justify-content: center;
-      background: #e3e3e3;
-      padding: 10px;
+      background: #007bff;
     }
-    .tab {
-      padding: 10px 20px;
-      cursor: pointer;
-      border-radius: 8px;
-      margin: 0 10px;
-      background-color: #fff;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .tab.active {
-      background-color: #0066cc;
+    .tabs button {
+      flex: 1;
+      padding: 15px;
+      border: none;
+      background: #007bff;
       color: white;
       font-weight: bold;
+      cursor: pointer;
     }
-    .content {
-      max-width: 600px;
-      margin: 20px auto;
+    .tabs button.active {
+      background: #0056b3;
+    }
+    .tab-content {
+      display: none;
       padding: 20px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
-    input, select, button {
+    .tab-content.active {
+      display: block;
+    }
+    .card {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    input, select {
       width: 100%;
-      margin-bottom: 15px;
       padding: 10px;
+      margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 8px;
     }
-    button {
-      background: #0066cc;
+    button.submit {
+      background: #28a745;
       color: white;
-      font-weight: bold;
       border: none;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 8px;
       cursor: pointer;
-    }
-    button:hover {
-      background: #004b99;
     }
     table {
       width: 100%;
-      border-collapse: collapse;
       margin-top: 20px;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
     }
     th, td {
-      border: 1px solid #ccc;
       padding: 10px;
       text-align: center;
     }
-    th {
-      background-color: #0066cc;
-      color: white;
-    }
-    #reader {
-      width: 100%;
-      margin-bottom: 20px;
-    }
   </style>
 </head>
-<body>
-  <nav>WaveTravel QR Booking</nav>
-  <div class="tabs">
-    <div class="tab active" onclick="showTab('generate')">Generate QR</div>
-    <div class="tab" onclick="showTab('scan')">Scan QR</div>
-  </div>  <div id="generate" class="content">
+<body><div class="tabs">
+  <button class="active" id="generate-tab">Generate QR</button>
+  <button id="scan-tab">Scan QR</button>
+</div><div id="generate" class="tab-content active">
+  <div class="card">
     <h2>Generate Booking QR</h2>
-    <input type="text" id="name" placeholder="Customer Name" />
+    <input type="text" id="name" placeholder="Customer Name" required />
     <select id="pickup"></select>
     <select id="dropoff"></select>
-    <input type="time" id="time" />
-    <p id="fareDisplay">Fare: ₹0</p>
-    <button onclick="generateQR()">Generate QR</button>
-    <div id="qrcode" style="margin-top: 20px;"></div>
-  </div>  <div id="scan" class="content" style="display:none">
-    <h2>Scan QR</h2>
-    <div id="reader"></div>
+    <input type="time" id="time" required />
+    <p>Fare: ₹<span id="fare">0</span></p>
+    <button class="submit" onclick="generateQR()">Generate QR</button>
+    <div id="qrcode" style="text-align:center;margin-top:20px;"></div>
+  </div>
+</div><div id="scan" class="tab-content">
+  <div class="card">
+    <h2>Scan Booking QR</h2>
+    <div id="reader" style="width: 100%;"></div>
     <table>
       <thead>
-        <tr><th>#</th><th>Date</th><th>Time</th><th>Name</th><th>Pickup</th><th>Dropoff</th><th>Fare</th></tr>
+        <tr><th>#</th><th>Date</th><th>Time</th><th>Name</th><th>From</th><th>To</th><th>Fare</th></tr>
       </thead>
-      <tbody id="scannedData"></tbody>
+      <tbody id="scanned-list"></tbody>
     </table>
-  </div>  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
+  </div>
+</div><script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  const pickupSelect = document.getElementById("pickup");
+  const dropoffSelect = document.getElementById("dropoff");
+  const fareDisplay = document.getElementById("fare");
+  let locations = {};
 
-    const pickup = document.getElementById("pickup");
-    const dropoff = document.getElementById("dropoff");
-    const fareDisplay = document.getElementById("fareDisplay");
+  db.ref("locations").once("value", snap => {
+    const data = snap.val();
+    for (const key in data) {
+      const { name } = data[key];
+      pickupSelect.innerHTML += `<option value="${key}">${name}</option>`;
+      dropoffSelect.innerHTML += `<option value="${key}">${name}</option>`;
+    }
+    locations = data;
+  });
 
-    let locations = {};
+  pickupSelect.addEventListener("change", updateFare);
+  dropoffSelect.addEventListener("change", updateFare);
 
-    db.ref("/locations").once("value", (snap) => {
-      snap.forEach((child) => {
-        const loc = child.val();
-        locations[loc.name] = loc.index;
-        const opt1 = new Option(loc.name, loc.name);
-        const opt2 = new Option(loc.name, loc.name);
-        pickup.appendChild(opt1);
-        dropoff.appendChild(opt2);
-      });
+  function updateFare() {
+    const a = locations[pickupSelect.value]?.index;
+    const b = locations[dropoffSelect.value]?.index;
+    if (a !== undefined && b !== undefined) {
+      const fare = Math.abs(a - b) * 120;
+      fareDisplay.textContent = fare;
+    }
+  }
+
+  function generateQR() {
+    const name = document.getElementById("name").value.trim();
+    const pickup = pickupSelect.value;
+    const dropoff = dropoffSelect.value;
+    const time = document.getElementById("time").value;
+    const fare = +fareDisplay.textContent;
+    if (!name || !pickup || !dropoff || !time) return alert("Fill all fields");
+
+    const ref = db.ref("qrbooking").push();
+    const bookingId = ref.key;
+    ref.set({ name, pickup, dropoff, time, fare });
+
+    document.getElementById("qrcode").innerHTML = "";
+    new QRCode(document.getElementById("qrcode"), {
+      text: bookingId,
+      width: 200,
+      height: 200
     });
+  }
 
-    pickup.onchange = dropoff.onchange = () => {
-      const indexA = locations[pickup.value];
-      const indexB = locations[dropoff.value];
-      if (indexA != null && indexB != null) {
-        const fare = Math.abs(indexA - indexB) * 120;
-        fareDisplay.innerText = `Fare: ₹${fare}`;
-      }
-    };
+  // TAB SWITCHING
+  document.querySelectorAll(".tabs button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(btn.id.replace("-tab", "")).classList.add("active");
+      if (btn.id === "scan-tab") startScanner();
+    });
+  });
 
-    function generateQR() {
-      const name = document.getElementById("name").value;
-      const pickupVal = pickup.value;
-      const dropoffVal = dropoff.value;
-      const time = document.getElementById("time").value;
-      const indexA = locations[pickupVal];
-      const indexB = locations[dropoffVal];
-      const fare = Math.abs(indexA - indexB) * 120;
+  let html5QrcodeScanner;
+  let scanCount = 0;
 
-      const ref = db.ref("qrbooking").push();
-      const bookingId = ref.key;
-      ref.set({ name, pickup: pickupVal, dropoff: dropoffVal, time, fare });
-
-      document.getElementById("qrcode").innerHTML = "";
-      new QRCode(document.getElementById("qrcode"), {
-        text: bookingId,
-        width: 200,
-        height: 200
-      });
-    }
-
-    function showTab(tab) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.content').forEach(c => c.style.display = 'none');
-      document.getElementById(tab).style.display = 'block';
-      event.target.classList.add('active');
-      if (tab === 'scan') startScanner();
-    }
-
-    let scanner = null;
-    function startScanner() {
-      if (scanner) scanner.clear();
-      scanner = new Html5Qrcode("reader");
-      scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        (decodedText) => {
-          scanner.pause();
-          db.ref("qrbooking/" + decodedText).once("value", snap => {
-            const data = snap.val();
+  function startScanner() {
+    const reader = document.getElementById("reader");
+    reader.innerHTML = "";
+    html5QrcodeScanner = new Html5Qrcode("reader");
+    html5QrcodeScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      (decodedText) => {
+        html5QrcodeScanner.stop();
+        db.ref("qrbooking/" + decodedText).once("value", snap => {
+          const data = snap.val();
+          if (data) {
+            scanCount++;
             const now = new Date();
-            const row = document.createElement("tr");
-            row.innerHTML = `<td>#</td><td>${now.toLocaleDateString()}</td><td>${now.toLocaleTimeString()}</td>
-              <td>${data.name}</td><td>${data.pickup}</td><td>${data.dropoff}</td><td>₹${data.fare}</td>`;
-            document.getElementById("scannedData").appendChild(row);
-            setTimeout(() => scanner.resume(), 1500);
-          });
-        },
-        (err) => {}
-      );
-    }
-  </script></body>
+            document.getElementById("scanned-list").innerHTML += `
+              <tr>
+                <td>${scanCount}</td>
+                <td>${now.toLocaleDateString()}</td>
+                <td>${now.toLocaleTimeString()}</td>
+                <td>${data.name}</td>
+                <td>${locations[data.pickup]?.name || data.pickup}</td>
+                <td>${locations[data.dropoff]?.name || data.dropoff}</td>
+                <td>₹${data.fare}</td>
+              </tr>`;
+          } else {
+            alert("Invalid QR code");
+          }
+          setTimeout(startScanner, 1500);
+        });
+      },
+      (errorMessage) => {
+        // console.warn(errorMessage);
+      }
+    ).catch(err => {
+      console.error("Camera error:", err);
+    });
+  }
+</script></body>
 </html>
