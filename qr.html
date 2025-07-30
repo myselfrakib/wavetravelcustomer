@@ -3,43 +3,54 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WaveTravel QR Booking</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: #f9f9f9;
       margin: 0;
-      padding: 0;
-      background-color: #f0f2f5;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
     }
     .tabs {
       display: flex;
       justify-content: center;
-      background-color: #333;
+      margin-bottom: 20px;
     }
-    .tab {
-      padding: 15px 25px;
+    .tabs button {
+      padding: 10px 20px;
+      margin: 0 10px;
+      border: none;
+      background: #007bff;
       color: white;
+      border-radius: 5px;
       cursor: pointer;
     }
-    .tab.active {
-      background-color: #555;
+    .tabs button.active {
+      background: #0056b3;
     }
-    .container {
-      max-width: 600px;
-      margin: 20px auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    .tab-content {
+      display: none;
     }
-    input, select, button {
+    .tab-content.active {
       display: block;
-      width: 100%;
+    }
+    .form-group {
       margin: 10px 0;
-      padding: 10px;
-      border-radius: 5px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .form-group input,
+    .form-group select {
+      padding: 8px;
+      width: 100%;
+      border-radius: 4px;
       border: 1px solid #ccc;
     }
     table {
@@ -49,146 +60,110 @@
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 10px;
+      padding: 8px;
       text-align: center;
     }
-    .qr-box {
+    #qrCodeDisplay {
+      margin-top: 20px;
       text-align: center;
-      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="tabs">
-    <div class="tab active" id="generate-tab">Generate QR</div>
-    <div class="tab" id="scan-tab">Scan QR</div>
-  </div>  <div class="container" id="generate-container">
-    <h2>Generate QR Booking</h2>
-    <input type="text" id="name" placeholder="Customer Name" />
-    <select id="pickup"></select>
-    <select id="dropoff"></select>
-    <input type="time" id="time" />
-    <input type="text" id="fare" readonly placeholder="Fare" />
-    <button id="generateBtn">Generate QR</button>
-    <div class="qr-box" id="qrResult"></div>
-    <table id="bookingTable">
-      <thead>
-        <tr><th>#</th><th>Name</th><th>Pickup</th><th>Dropoff</th><th>Time</th><th>Fare</th><th>QR</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>  <div class="container" id="scan-container" style="display:none;">
-    <h2>Scan QR</h2>
-    <div id="reader" style="width:100%;"></div>
-    <table id="scanResultTable">
-      <thead>
-        <tr><th>#</th><th>Name</th><th>Pickup</th><th>Dropoff</th><th>Time</th><th>Fare</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+<h2>WaveTravel QR Booking</h2>
+<div class="tabs">
+  <button id="generate-tab" class="active">Generate QR</button>
+  <button id="scan-tab">Scan QR</button>
+</div>
+<div id="generate" class="tab-content active">
+  <div class="form-group">
+    <label>Name</label>
+    <input type="text" id="nameInput" />
+  </div>
+  <div class="form-group">
+    <label>Pickup Location</label>
+    <select id="pickupSelect"></select>
+  </div>
+  <div class="form-group">
+    <label>Dropoff Location</label>
+    <select id="dropoffSelect"></select>
+  </div>
+  <div class="form-group">
+    <label>Time</label>
+    <input type="time" id="timeInput" />
+  </div>
+  <div class="form-group">
+    <label>Fare (auto-calculated)</label>
+    <input type="text" id="fareDisplay" disabled />
+  </div>
+  <button onclick="generateBooking()">Generate QR</button>
+  <table id="bookingTable">
+    <thead>
+      <tr><th>#</th><th>Name</th><th>Pickup</th><th>Dropoff</th><th>Time</th><th>Fare</th><th>QR</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div id="qrCodeDisplay"></div>
+</div>
+<div id="scan" class="tab-content">
+  <div id="reader" style="width: 300px; margin:auto;"></div>
+  <table id="scanTable">
+    <thead>
+      <tr><th>#</th><th>Date</th><th>Time</th><th>Name</th><th>Pickup</th><th>Dropoff</th><th>Fare</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+    authDomain: "wavetravel-3c4c4.firebaseapp.com",
+    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+    projectId: "wavetravel-3c4c4",
+    storageBucket: "wavetravel-3c4c4.appspot.com",
+    messagingSenderId: "298226098137",
+    appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();const pickupSelect = document.getElementById("pickupSelect"); const dropoffSelect = document.getElementById("dropoffSelect"); const fareDisplay = document.getElementById("fareDisplay"); let locationMap = {};
 
-    const pickup = document.getElementById("pickup");
-    const dropoff = document.getElementById("dropoff");
-    const fareInput = document.getElementById("fare");
+db.ref("/locations").once("value", snap => { snap.forEach(loc => { const opt = document.createElement("option"); opt.value = loc.key; opt.textContent = loc.val().name; pickupSelect.appendChild(opt.cloneNode(true)); dropoffSelect.appendChild(opt); locationMap[loc.key] = loc.val(); }); });
 
-    let locationMap = {};
+pickupSelect.addEventListener("change", updateFare); dropoffSelect.addEventListener("change", updateFare); function updateFare() { const a = locationMap[pickupSelect.value]?.index; const b = locationMap[dropoffSelect.value]?.index; if (a !== undefined && b !== undefined) { const fare = Math.abs(a - b) * 120; fareDisplay.value = fare; } }
 
-    // Load locations
-    firebase.database().ref("locations").once("value").then(snapshot => {
-      snapshot.forEach(child => {
-        const val = child.val();
-        const option = new Option(val.name, child.key);
-        pickup.append(option.cloneNode(true));
-        dropoff.append(option);
-        locationMap[child.key] = val.index;
-      });
-    });
+function generateBooking() { const name = document.getElementById("nameInput").value; const pickup = pickupSelect.value; const dropoff = dropoffSelect.value; const time = document.getElementById("timeInput").value; const fare = fareDisplay.value; const bookingId = Date.now().toString();
 
-    pickup.addEventListener("change", calculateFare);
-    dropoff.addEventListener("change", calculateFare);
+const booking = {
+  name,
+  pickup: locationMap[pickup].name,
+  dropoff: locationMap[dropoff].name,
+  time,
+  fare: parseInt(fare),
+  bookedAt: new Date().toISOString()
+};
+db.ref("/qrbooking/" + bookingId).set(booking);
 
-    function calculateFare() {
-      const from = pickup.value;
-      const to = dropoff.value;
-      if (from && to && locationMap[from] != null && locationMap[to] != null) {
-        const fare = Math.abs(locationMap[from] - locationMap[to]) * 120;
-        fareInput.value = fare;
-      }
-    }
+const table = document.querySelector("#bookingTable tbody");
+const row = table.insertRow();
+row.innerHTML = `
+  <td>${table.rows.length}</td>
+  <td>${booking.name}</td>
+  <td>${booking.pickup}</td>
+  <td>${booking.dropoff}</td>
+  <td>${booking.time}</td>
+  <td>${booking.fare}</td>
+  <td><button onclick="showQRCode('${bookingId}')">Show QR</button></td>
+`;
 
-    function generateBookingId() {
-      return firebase.database().ref().child("qrbooking").push().key;
-    }
+}
 
-    document.getElementById("generateBtn").addEventListener("click", () => {
-      const name = document.getElementById("name").value;
-      const pickupText = pickup.options[pickup.selectedIndex].text;
-      const dropoffText = dropoff.options[dropoff.selectedIndex].text;
-      const time = document.getElementById("time").value;
-      const fare = fareInput.value;
+function showQRCode(bookingId) { const qrDisplay = document.getElementById("qrCodeDisplay"); qrDisplay.innerHTML = ""; new Html5QrcodeQRCodeGenerator(qrDisplay).generate(bookingId); }
 
-      if (!name || !pickup.value || !dropoff.value || !time || !fare) return alert("Fill all fields");
+let scanner; document.getElementById("scan-tab").addEventListener("click", () => { switchTab("scan"); if (!scanner) { scanner = new Html5Qrcode("reader"); scanner.start( { facingMode: "environment" }, { fps: 10, qrbox: 250 }, qrCodeMessage => { db.ref("/qrbooking/" + qrCodeMessage).once("value", snap => { const booking = snap.val(); if (booking) { const t = document.querySelector("#scanTable tbody"); const r = t.insertRow(); const now = new Date(); r.innerHTML = <td>${t.rows.length}</td> <td>${now.toLocaleDateString()}</td> <td>${now.toLocaleTimeString()}</td> <td>${booking.name}</td> <td>${booking.pickup}</td> <td>${booking.dropoff}</td> <td>${booking.fare}</td>; } }); scanner.stop().then(() => { scanner.start( { facingMode: "environment" }, { fps: 10, qrbox: 250 }, qrCodeMessage => console.log("Rescanned", qrCodeMessage) ); }); } ); } });
 
-      const bookingId = generateBookingId();
-      const bookingData = { name, pickup: pickupText, dropoff: dropoffText, time, fare };
+document.getElementById("generate-tab").addEventListener("click", () => switchTab("generate"));
 
-      firebase.database().ref("qrbooking/" + bookingId).set(bookingData).then(() => {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>#</td><td>${name}</td><td>${pickupText}</td><td>${dropoffText}</td><td>${time}</td><td>${fare}</td><td><button onclick="showQR('${bookingId}')">Show QR</button></td>`;
-        document.querySelector("#bookingTable tbody").appendChild(row);
-      });
-    });
+function switchTab(tabId) { document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active")); document.querySelectorAll(".tabs button").forEach(t => t.classList.remove("active")); document.getElementById(tabId).classList.add("active"); document.getElementById(tabId + "-tab").classList.add("active"); } </script>
 
-    function showQR(id) {
-      const resultDiv = document.getElementById("qrResult");
-      resultDiv.innerHTML = "";
-      new Html5Qrcode("qrResult").clear(); // Clear previous QR
-      const qr = document.createElement("div");
-      new Html5Qrcode("qrResult").stop();
-      new QRCode(resultDiv, {
-        text: id,
-        width: 200,
-        height: 200,
-      });
-    }
-
-    // QR Scanner
-    let html5Qr;
-    const scanResultTable = document.querySelector("#scanResultTable tbody");
-    document.getElementById("scan-tab").addEventListener("click", () => {
-      document.getElementById("generate-container").style.display = "none";
-      document.getElementById("scan-container").style.display = "block";
-      html5Qr = new Html5Qrcode("reader");
-      html5Qr.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        (decodedText) => {
-          html5Qr.stop();
-          db.ref("qrbooking/" + decodedText).once("value").then(snap => {
-            const b = snap.val();
-            const row = document.createElement("tr");
-            row.innerHTML = `<td>#</td><td>${b.name}</td><td>${b.pickup}</td><td>${b.dropoff}</td><td>${b.time}</td><td>${b.fare}</td>`;
-            scanResultTable.appendChild(row);
-          });
-        }
-      );
-    });
-
-    document.getElementById("generate-tab").addEventListener("click", () => {
-      document.getElementById("generate-container").style.display = "block";
-      document.getElementById("scan-container").style.display = "none";
-    });
-  </script></body>
+</body>
 </html>
