@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WaveTravel QR System</title>
+  <title>WaveTravel Booking System</title>
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
@@ -96,7 +96,7 @@
               scanBooking(decodedText.trim());
             },
             errorMsg => {
-              // console.warn(errorMsg); // optional error output
+              // Optionally handle scan errors
             }
           );
         }
@@ -104,24 +104,23 @@
     }
 
     window.generateBooking = generateBooking;
-
   </script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f2f2f2; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
     .tabs { display: flex; }
     .tab-btn {
       flex: 1;
-      padding: 10px;
-      text-align: center;
+      padding: 12px;
       background: #333;
       color: white;
       cursor: pointer;
+      text-align: center;
     }
     .tab-btn.active { background: #007bff; }
     .tab-content { display: none; padding: 20px; }
     .tab-content.active { display: block; }
 
-    input, select, button { margin: 10px 5px; padding: 8px; }
+    input, select, button { margin: 8px; padding: 10px; font-size: 16px; }
     button { background: #007bff; color: white; border: none; cursor: pointer; }
     button:hover { background: #0056b3; }
 
@@ -133,6 +132,7 @@
   </style>
 </head>
 <body>
+
   <div class="tabs">
     <div class="tab-btn active" onclick="showTab(0)">Generate Booking</div>
     <div class="tab-btn" onclick="showTab(1)">Scan QR</div>
@@ -185,5 +185,6 @@
       });
     }
   </script>
+
 </body>
 </html>
