@@ -2,44 +2,113 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WaveTravel QR Tool</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <title>WaveTravel QR</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .tab { display: none; }
-    .tab.active { display: block; }
-    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 6px; }
-    select, input { padding: 6px; margin: 5px 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f7fa;
+      color: #333;
+    }
+    nav {
+      background-color: #0066cc;
+      padding: 1rem;
+      text-align: center;
+      color: white;
+      font-size: 1.25rem;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      background: #e3e3e3;
+      padding: 10px;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 8px;
+      margin: 0 10px;
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .tab.active {
+      background-color: #0066cc;
+      color: white;
+      font-weight: bold;
+    }
+    .content {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    input, select, button {
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      background: #0066cc;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #004b99;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #0066cc;
+      color: white;
+    }
+    #reader {
+      width: 100%;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
-  <button onclick="showTab('scanTab')">Scan QR</button>
-  <button onclick="showTab('generateTab')">Generate QR</button>  <div id="scanTab" class="tab active">
-    <h2>Scan QR Code</h2>
-    <video id="preview" width="300" height="200"></video>
-    <table id="scanTable">
+  <nav>WaveTravel QR Booking</nav>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('generate')">Generate QR</div>
+    <div class="tab" onclick="showTab('scan')">Scan QR</div>
+  </div>  <div id="generate" class="content">
+    <h2>Generate Booking QR</h2>
+    <input type="text" id="name" placeholder="Customer Name" />
+    <select id="pickup"></select>
+    <select id="dropoff"></select>
+    <input type="time" id="time" />
+    <p id="fareDisplay">Fare: ₹0</p>
+    <button onclick="generateQR()">Generate QR</button>
+    <div id="qrcode" style="margin-top: 20px;"></div>
+  </div>  <div id="scan" class="content" style="display:none">
+    <h2>Scan QR</h2>
+    <div id="reader"></div>
+    <table>
       <thead>
-        <tr><th>#</th><th>Date</th><th>Time</th><th>Booking ID</th><th>Name</th><th>Pickup</th><th>Dropoff</th><th>Fare</th></tr>
+        <tr><th>#</th><th>Date</th><th>Time</th><th>Name</th><th>Pickup</th><th>Dropoff</th><th>Fare</th></tr>
       </thead>
-      <tbody></tbody>
+      <tbody id="scannedData"></tbody>
     </table>
-  </div>  <div id="generateTab" class="tab">
-    <h2>Generate QR Code</h2>
-    <form id="qrForm">
-      <label>Name: <input type="text" id="name" required></label><br>
-      <label>Pickup:
-        <select id="pickup" required></select>
-      </label><br>
-      <label>Dropoff:
-        <select id="dropoff" required></select>
-      </label><br>
-      <label>Time: <input type="datetime-local" id="time" required></label><br>
-      <p>Fare: ₹<span id="fareDisplay">0</span></p>
-      <button type="submit">Generate QR</button>
-    </form>
-    <div id="qrcode"></div>
   </div>  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -50,88 +119,86 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    function showTab(id) {
-      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
+    const pickup = document.getElementById("pickup");
+    const dropoff = document.getElementById("dropoff");
+    const fareDisplay = document.getElementById("fareDisplay");
 
-    const locationData = {};
+    let locations = {};
+
     db.ref("/locations").once("value", (snap) => {
-      snap.forEach(loc => {
-        const val = loc.val();
-        locationData[val.name] = val.index;
-        const option = `<option value="${val.name}">${val.name}</option>`;
-        document.getElementById("pickup").innerHTML += option;
-        document.getElementById("dropoff").innerHTML += option;
+      snap.forEach((child) => {
+        const loc = child.val();
+        locations[loc.name] = loc.index;
+        const opt1 = new Option(loc.name, loc.name);
+        const opt2 = new Option(loc.name, loc.name);
+        pickup.appendChild(opt1);
+        dropoff.appendChild(opt2);
       });
     });
 
-    document.getElementById("pickup").addEventListener("change", updateFare);
-    document.getElementById("dropoff").addEventListener("change", updateFare);
-
-    function updateFare() {
-      const pickup = document.getElementById("pickup").value;
-      const dropoff = document.getElementById("dropoff").value;
-      if (pickup && dropoff && locationData[pickup] !== undefined && locationData[dropoff] !== undefined) {
-        const fare = Math.abs(locationData[pickup] - locationData[dropoff]) * 120;
-        document.getElementById("fareDisplay").textContent = fare;
+    pickup.onchange = dropoff.onchange = () => {
+      const indexA = locations[pickup.value];
+      const indexB = locations[dropoff.value];
+      if (indexA != null && indexB != null) {
+        const fare = Math.abs(indexA - indexB) * 120;
+        fareDisplay.innerText = `Fare: ₹${fare}`;
       }
-    }
+    };
 
-    document.getElementById("qrForm").addEventListener("submit", function(e) {
-      e.preventDefault();
+    function generateQR() {
       const name = document.getElementById("name").value;
-      const pickup = document.getElementById("pickup").value;
-      const dropoff = document.getElementById("dropoff").value;
+      const pickupVal = pickup.value;
+      const dropoffVal = dropoff.value;
       const time = document.getElementById("time").value;
-      const fare = parseInt(document.getElementById("fareDisplay").textContent);
+      const indexA = locations[pickupVal];
+      const indexB = locations[dropoffVal];
+      const fare = Math.abs(indexA - indexB) * 120;
+
       const ref = db.ref("qrbooking").push();
       const bookingId = ref.key;
-      ref.set({ name, pickup, dropoff, time, fare });
+      ref.set({ name, pickup: pickupVal, dropoff: dropoffVal, time, fare });
+
       document.getElementById("qrcode").innerHTML = "";
       new QRCode(document.getElementById("qrcode"), {
         text: bookingId,
         width: 200,
         height: 200
       });
-    });
+    }
 
-    // QR SCANNING (using Instascan)
-    const video = document.getElementById("preview");
-    let scanner = new Instascan.Scanner({ video: video });
-    let scanCount = 1;
+    function showTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.content').forEach(c => c.style.display = 'none');
+      document.getElementById(tab).style.display = 'block';
+      event.target.classList.add('active');
+      if (tab === 'scan') startScanner();
+    }
 
-    scanner.addListener('scan', function (bookingId) {
-      db.ref("qrbooking/" + bookingId).once("value", snap => {
-        const data = snap.val();
-        if (data) {
-          const now = new Date();
-          const row = `<tr>
-            <td>${scanCount++}</td>
-            <td>${now.toLocaleDateString()}</td>
-            <td>${now.toLocaleTimeString()}</td>
-            <td>${bookingId}</td>
-            <td>${data.name}</td>
-            <td>${data.pickup}</td>
-            <td>${data.dropoff}</td>
-            <td>₹${data.fare}</td>
-          </tr>`;
-          document.querySelector("#scanTable tbody").innerHTML += row;
-        }
-      });
-    });
-
-    Instascan.Camera.getCameras().then(function (cameras) {
-      if (cameras.length > 0) {
-        scanner.start(cameras[0]);
-      } else {
-        alert('No cameras found.');
-      }
-    }).catch(function (e) {
-      console.error(e);
-    });
-  </script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/instascan/1.0.0/instascan.min.js"></script></body>
+    let scanner = null;
+    function startScanner() {
+      if (scanner) scanner.clear();
+      scanner = new Html5Qrcode("reader");
+      scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+          scanner.pause();
+          db.ref("qrbooking/" + decodedText).once("value", snap => {
+            const data = snap.val();
+            const now = new Date();
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>#</td><td>${now.toLocaleDateString()}</td><td>${now.toLocaleTimeString()}</td>
+              <td>${data.name}</td><td>${data.pickup}</td><td>${data.dropoff}</td><td>₹${data.fare}</td>`;
+            document.getElementById("scannedData").appendChild(row);
+            setTimeout(() => scanner.resume(), 1500);
+          });
+        },
+        (err) => {}
+      );
+    }
+  </script></body>
 </html>
