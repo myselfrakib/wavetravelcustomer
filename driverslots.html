@@ -31,8 +31,6 @@
       padding: 16px;
       max-width: 600px;
       margin: 0 auto;
-      transform: scale(0.9); /* Zoom out */
-      transform-origin: top center;
     }
 
     h1 {
@@ -81,35 +79,33 @@
     }
     #withdraw-btn:disabled { opacity: .6; cursor: not-allowed; }
 
-    .table-wrapper { overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.95rem;
-      min-width: 520px;
-    }
-    table th, table td {
-      border: 1px solid var(--muted-border);
-      padding: 8px;
-      text-align: center;
-    }
-    table th { background: rgba(255,255,255,0.06); font-weight:600; }
+    /* Hide table, force card view */
+    .table-wrapper { display: none !important; }
 
-    .card-list { display:none; gap:12px; flex-direction:column; }
+    .card-list {
+      display: flex !important;
+      flex-direction: column;
+      gap: 12px;
+    }
+
     .entry-card {
       background: rgba(255,255,255,0.04);
       padding: 12px;
       border-radius: 10px;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      border:1px solid rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
+
     .entry-row {
-      display:flex; justify-content:space-between; align-items:center;
-      gap:8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
     }
-    .muted { opacity:0.85; font-size:0.9rem; }
+
+    .muted { opacity: 0.85; font-size: 0.9rem; }
 
     .modal {
       position: fixed;
@@ -152,14 +148,6 @@
       align-items: center;
     }
     .navbar a i { font-size: 1.15rem; margin-bottom: 4px; }
-
-    @media (max-width: 520px) {
-      table { display: none; }
-      .card-list { display: flex; }
-    }
-    @media (min-width: 521px) {
-      .card-list { display: none; }
-    }
   </style>
 </head>
 <body>
@@ -175,27 +163,15 @@
     <div class="dashboard-card">
       <h2>Wallet History</h2>
       <div class="table-wrapper">
-        <table id="history-table" aria-label="Wallet history table">
-          <thead>
-            <tr>
-              <th>SL</th>
-              <th>Booking ID</th>
-              <th>Amount</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td colspan="6">Loading…</td></tr>
-          </tbody>
+        <table id="history-table">
+          <tbody></tbody>
         </table>
       </div>
-      <div class="card-list" id="cardList" aria-hidden="true"></div>
+      <div class="card-list" id="cardList"></div>
     </div>
   </div>
 
-  <div class="modal" id="bookingModal" role="dialog" aria-modal="true">
+  <div class="modal" id="bookingModal">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong>Booking Details</strong>
@@ -253,14 +229,13 @@
       if (!ts) return "-";
       const d = new Date(ts);
       if (isNaN(d)) return ts;
-      return d.toLocaleDateString(); // Date only
+      return d.toLocaleDateString();
     }
 
     function renderWallet() {
       const entries = Object.entries(walletData || {});
       if (!entries.length) {
         balanceEl.textContent = "₹0";
-        historyTbody.innerHTML = `<tr><td colspan="6">No wallet entries</td></tr>`;
         cardList.innerHTML = `<div class="entry-card muted">No wallet entries</div>`;
         withdrawBtn.disabled = true;
         return;
@@ -270,23 +245,6 @@
       const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
       balanceEl.textContent = `₹${total.toFixed(2)}`;
       withdrawBtn.disabled = total <= 0;
-
-      historyTbody.innerHTML = "";
-      entries.forEach(([id, e], idx) => {
-        const tr = document.createElement("tr");
-        const status = e.status || (e.paidout ? (e.paidout === true || e.paidout === "true" ? "paid" : e.paidout) : "unpaid");
-        tr.innerHTML = `
-          <td>${idx+1}</td>
-          <td style="max-width:130px;word-break:break-all">${id}</td>
-          <td>₹${Number(e.amount || 0).toFixed(2)}</td>
-          <td>${formatDate(e.date || e.bookedAt || e.createdAt)}</td>
-          <td>${status}</td>
-          <td>
-            <button data-booking="${id}" class="showBookingBtn" style="padding:6px 8px;border-radius:6px;border:none;cursor:pointer;background:#fff;color:#222;font-weight:600">Show</button>
-          </td>
-        `;
-        historyTbody.appendChild(tr);
-      });
 
       cardList.innerHTML = "";
       entries.forEach(([id, e]) => {
@@ -351,8 +309,6 @@
     onAuthStateChanged(auth, user => {
       if (!user) {
         balanceEl.textContent = "Please log in.";
-        withdrawBtn.disabled = true;
-        historyTbody.innerHTML = `<tr><td colspan="6">Log in to see data</td></tr>`;
         cardList.innerHTML = `<div class="entry-card muted">Log in to see data</div>`;
         driverId = null;
         return;
