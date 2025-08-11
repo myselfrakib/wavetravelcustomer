@@ -1,72 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Driver Dashboard</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Driver Dashboard — WaveTravel</title>
+
+  <!-- Font Awesome (icons) -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+
   <style>
+    /* Base layout using your driverslots style */
+    :root {
+      --accent-a: #8e2de2;
+      --accent-b: #4a00e0;
+      --card-bg: rgba(255,255,255,0.08);
+      --muted-border: rgba(255,255,255,0.12);
+    }
+    html,body { height:100%; }
     body {
       font-family: 'Segoe UI', sans-serif;
       margin: 0; padding: 0;
-      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      background: linear-gradient(to right, var(--accent-a), var(--accent-b));
       color: white;
       min-height: 100vh;
-      padding-bottom: 80px;
+      padding-bottom: 92px; /* leave space for navbar */
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
     }
+
     .container {
       padding: 16px;
       max-width: 600px;
       margin: 0 auto;
     }
+
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       text-align: center;
-      margin-bottom: 16px;
+      margin: 6px 0 14px;
     }
+
     .dashboard-card {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 16px;
+      background: var(--card-bg);
+      padding: 14px;
       border-radius: 10px;
-      margin-bottom: 15px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
     .dashboard-card h2 {
-      margin-bottom: 10px;
-      font-size: 1.2rem;
+      margin: 0 0 8px;
+      font-size: 1.05rem;
     }
+
+    /* Sticky wallet card */
+    .wallet-card {
+      position: sticky;
+      top: 8px;
+      z-index: 90;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    #balance {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 6px 0;
+    }
+
     #withdraw-btn {
       margin-top: 10px;
       padding: 12px;
       width: 100%;
       background: #ffd700;
       color: black;
-      font-weight: bold;
+      font-weight: 700;
       border: none;
       border-radius: 8px;
       font-size: 1rem;
       cursor: pointer;
     }
-    #withdraw-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .table-wrapper {
-      overflow-x: auto;
-    }
+    #withdraw-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    .table-wrapper { overflow-x: auto; }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.9rem;
-      min-width: 500px;
+      font-size: 0.95rem;
+      min-width: 520px;
     }
     table th, table td {
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 1px solid var(--muted-border);
       padding: 8px;
       text-align: center;
     }
-    table th {
-      background: rgba(255,255,255,0.2);
+    table th { background: rgba(255,255,255,0.06); font-weight:600; }
+
+    /* Mobile card style for very narrow screens */
+    .card-list { display:none; gap:12px; flex-direction:column; }
+    .entry-card {
+      background: rgba(255,255,255,0.04);
+      padding: 12px;
+      border-radius: 10px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      border:1px solid rgba(255,255,255,0.05);
     }
+    .entry-row {
+      display:flex; justify-content:space-between; align-items:center;
+      gap:8px;
+    }
+    .muted { opacity:0.85; font-size:0.9rem; }
+
+    /* Booking details modal (simple) */
+    .modal {
+      position: fixed;
+      left: 0; top: 0; right: 0; bottom: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+    }
+    .modal .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      color: #fff;
+      padding: 16px;
+      width: 92%;
+      max-width: 520px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .modal .card pre { white-space:pre-wrap; word-break:break-word; margin:10px 0 0; font-size:0.92rem; }
+
+    /* Navbar (driverslots style) */
     .navbar {
       position: fixed;
       bottom: 0;
@@ -87,17 +154,15 @@
       flex-direction: column;
       align-items: center;
     }
-    .navbar a i {
-      font-size: 1.2rem;
-      margin-bottom: 2px;
+    .navbar a i { font-size: 1.15rem; margin-bottom: 4px; }
+
+    /* Responsive rules */
+    @media (max-width: 520px) {
+      table { display: none; }
+      .card-list { display: flex; }
     }
-    /* Sticky wallet card */
-    .wallet-card {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+    @media (min-width: 521px) {
+      .card-list { display: none; }
     }
   </style>
 </head>
@@ -107,14 +172,16 @@
 
     <div class="dashboard-card wallet-card">
       <h2>Wallet Balance</h2>
-      <p id="balance">Loading…</p>
-      <button id="withdraw-btn" disabled>Withdraw</button>
+      <div id="balance">Loading…</div>
+      <button id="withdraw-btn" disabled>Request Withdraw</button>
     </div>
 
     <div class="dashboard-card">
       <h2>Wallet History</h2>
+
+      <!-- Table for larger screens -->
       <div class="table-wrapper">
-        <table id="history-table">
+        <table id="history-table" aria-label="Wallet history table">
           <thead>
             <tr>
               <th>SL</th>
@@ -122,16 +189,32 @@
               <th>Amount</th>
               <th>Date</th>
               <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="5">Loading…</td></tr>
+            <tr><td colspan="6">Loading…</td></tr>
           </tbody>
         </table>
       </div>
+
+      <!-- Cards for small screens -->
+      <div class="card-list" id="cardList" aria-hidden="true"></div>
     </div>
   </div>
 
+  <!-- Simple modal to show booking details -->
+  <div class="modal" id="bookingModal" role="dialog" aria-modal="true">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong>Booking Details</strong>
+        <button id="closeModal" style="background:transparent;border:none;color:white;font-size:1.1rem;cursor:pointer;">✕</button>
+      </div>
+      <pre id="bookingContent">Loading…</pre>
+    </div>
+  </div>
+
+  <!-- Navbar -->
   <div class="navbar">
     <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
     <a href="drivermybookings.html"><i class="fas fa-list"></i><span>My Bookings</span></a>
@@ -140,79 +223,172 @@
     <a href="driverprofile.html"><i class="fas fa-user"></i><span>Profile</span></a>
   </div>
 
+  <!-- Firebase + JS -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
+    // ---------- CONFIG (your project) ----------
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
       databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
       projectId: "wavetravel-3c4c4"
     };
+    const BOOKING_PATH_BASE = "bookings"; // change if your bookings live somewhere else
+
+    // ---------- INIT ----------
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth(app);
 
-    const balanceEl = document.getElementById('balance');
-    const withdrawBtn = document.getElementById('withdraw-btn');
-    const historyTableBody = document.querySelector('#history-table tbody');
+    // ---------- DOM ----------
+    const balanceEl = document.getElementById("balance");
+    const withdrawBtn = document.getElementById("withdraw-btn");
+    const historyTbody = document.querySelector("#history-table tbody");
+    const cardList = document.getElementById("cardList");
+    const bookingModal = document.getElementById("bookingModal");
+    const bookingContent = document.getElementById("bookingContent");
+    const closeModalBtn = document.getElementById("closeModal");
 
     let driverId = null;
-    let walletData = {};
+    let walletData = {}; // snapshot of entries
 
+    // Utility: decide if an entry is unpaid
+    function isUnpaid(entry) {
+      // Cases: { paidout: false }, { paidout: "false" }, { status: "unpaid" }, { status: "pending" } etc.
+      if (!entry) return false;
+      if (entry.paidout === false || entry.paidout === "false") return true;
+      if (entry.status && String(entry.status).toLowerCase() === "unpaid") return true;
+      // if paidout missing and no status, treat as unpaid if amount present and not marked paid
+      if (entry.paidout === undefined && !entry.status) return true;
+      return false;
+    }
+
+    function formatDate(ts) {
+      if (!ts) return "-";
+      const d = new Date(ts);
+      if (isNaN(d)) return ts; // maybe already string
+      return d.toLocaleString();
+    }
+
+    // Render wallet UI (table + mobile cards) from walletData
     function renderWallet() {
-      const entries = Object.entries(walletData);
+      const entries = Object.entries(walletData || {});
       if (!entries.length) {
         balanceEl.textContent = "₹0";
-        historyTableBody.innerHTML = `<tr><td colspan="5">No wallet entries</td></tr>`;
+        historyTbody.innerHTML = `<tr><td colspan="6">No wallet entries</td></tr>`;
+        cardList.innerHTML = `<div class="entry-card muted">No wallet entries</div>`;
         withdrawBtn.disabled = true;
         return;
       }
 
-      const unpaidEntries = entries.filter(([_, e]) => e.status === "unpaid");
-      const total = unpaidEntries.reduce((sum, [_, e]) => sum + parseFloat(e.amount || 0), 0);
-      balanceEl.textContent = `₹${total}`;
+      // compute total unpaid
+      const unpaidEntries = entries.filter(([_, e]) => isUnpaid(e));
+      const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
+      balanceEl.textContent = `₹${total.toFixed(2)}`;
       withdrawBtn.disabled = total <= 0;
 
-      historyTableBody.innerHTML = "";
-      entries.forEach(([id, e], i) => {
+      // TABLE (desktop)
+      historyTbody.innerHTML = "";
+      entries.forEach(([id, e], idx) => {
         const tr = document.createElement("tr");
+        const status = e.status || (e.paidout ? (e.paidout === true || e.paidout === "true" ? "paid" : e.paidout) : "unpaid");
         tr.innerHTML = `
-          <td>${i + 1}</td>
-          <td>${id}</td>
-          <td>₹${e.amount || 0}</td>
-          <td>${new Date(e.date || "").toLocaleString()}</td>
-          <td>${e.status}</td>
+          <td>${idx+1}</td>
+          <td style="max-width:130px;word-break:break-all">${id}</td>
+          <td>₹${Number(e.amount || 0).toFixed(2)}</td>
+          <td>${formatDate(e.date || e.bookedAt || e.createdAt)}</td>
+          <td>${status}</td>
+          <td>
+            <button data-booking="${id}" class="showBookingBtn" style="padding:6px 8px;border-radius:6px;border:none;cursor:pointer;background:#fff;color:#222;font-weight:600">Show</button>
+          </td>
         `;
-        historyTableBody.appendChild(tr);
+        historyTbody.appendChild(tr);
+      });
+
+      // CARDS (mobile)
+      cardList.innerHTML = "";
+      entries.forEach(([id, e], idx) => {
+        const status = e.status || (e.paidout ? (e.paidout === true || e.paidout === "true" ? "paid" : e.paidout) : "unpaid");
+        const div = document.createElement("div");
+        div.className = "entry-card";
+        div.innerHTML = `
+          <div class="entry-row"><div><strong>Booking</strong><div class="muted" style="font-size:0.95rem">${id}</div></div><div><strong>₹${Number(e.amount||0).toFixed(2)}</strong></div></div>
+          <div class="entry-row"><div class="muted">Date</div><div class="muted">${formatDate(e.date || e.bookedAt || e.createdAt)}</div></div>
+          <div class="entry-row"><div class="muted">Status</div><div class="muted">${status}</div></div>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <button data-booking="${id}" class="showBookingBtn" style="flex:1;padding:8px;border-radius:8px;border:none;background:#ffd700;color:#000;font-weight:700;cursor:pointer">Show</button>
+          </div>
+        `;
+        cardList.appendChild(div);
+      });
+
+      // attach listeners for Show buttons
+      document.querySelectorAll(".showBookingBtn").forEach(btn => {
+        btn.onclick = () => {
+          const bookingId = btn.dataset.booking;
+          showBookingDetails(bookingId);
+        };
       });
     }
 
+    // Fetch booking details and show modal. Adjust BOOKING_PATH_BASE if needed.
+    async function showBookingDetails(bookingId) {
+      if (!bookingId) return;
+      try {
+        bookingContent.textContent = "Loading booking...";
+        bookingModal.style.display = "flex";
+        const snap = await get(child(ref(db), `${BOOKING_PATH_BASE}/${bookingId}`));
+        if (!snap.exists()) {
+          bookingContent.textContent = `No booking found at /${BOOKING_PATH_BASE}/${bookingId}`;
+          return;
+        }
+        const data = snap.val();
+        // Pretty-print booking object
+        bookingContent.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        bookingContent.textContent = `Error fetching booking: ${err.message || err}`;
+      }
+    }
+
+    // Withdraw button handler: set each unpaid entry's status => "processing"
     withdrawBtn.onclick = async () => {
-      if (!driverId) return;
+      if (!driverId) return alert("No driver logged in.");
       const updates = {};
-      for (const [id, e] of Object.entries(walletData)) {
-        if (e.status === "unpaid") {
+      for (const [id, entry] of Object.entries(walletData || {})) {
+        if (isUnpaid(entry)) {
+          // Write a safe status flag instead of directly marking paid.
           updates[`driverWallet/${driverId}/${id}/status`] = "processing";
         }
       }
-      if (Object.keys(updates).length) {
+      if (!Object.keys(updates).length) return alert("No unpaid balance to withdraw.");
+      try {
         await update(ref(db), updates);
-        alert("Withdrawal request sent! Status changed to 'processing'.");
+        alert("Withdrawal request sent — entries marked as 'processing'.");
+      } catch (err) {
+        alert("Failed to send withdraw request: " + (err.message || err));
       }
     };
 
+    // Close modal
+    closeModalBtn.onclick = () => bookingModal.style.display = "none";
+    bookingModal.onclick = (e) => { if (e.target === bookingModal) bookingModal.style.display = "none"; };
+
+    // Firebase auth listener -> subscribe to driverWallet
     onAuthStateChanged(auth, user => {
       if (!user) {
         balanceEl.textContent = "Please log in.";
         withdrawBtn.disabled = true;
-        historyTableBody.innerHTML = `<tr><td colspan="5">Log in to see data</td></tr>`;
+        historyTbody.innerHTML = `<tr><td colspan="6">Log in to see data</td></tr>`;
+        cardList.innerHTML = `<div class="entry-card muted">Log in to see data</div>`;
+        driverId = null;
         return;
       }
       driverId = user.uid;
-      onValue(ref(db, `driverWallet/${driverId}`), snap => {
+      const walletRef = ref(db, `driverWallet/${driverId}`);
+      onValue(walletRef, snap => {
         walletData = snap.val() || {};
         renderWallet();
       });
@@ -220,3 +396,5 @@
   </script>
 </body>
 </html>
+
+
