@@ -39,7 +39,7 @@
       font-size: 0.85rem;
       font-weight: bold;
     }
-    .value {
+    .value, input[type="text"] {
       width: 100%;
       padding: 8px;
       border: none;
@@ -48,6 +48,9 @@
       background: rgba(255,255,255,0.2);
       color: white;
       font-size: 0.9rem;
+    }
+    input[type="text"]::placeholder {
+      color: #ddd;
     }
     button, .btn-logout {
       display: block;
@@ -108,11 +111,18 @@
       background: transparent;
       color: #ffd700;
       font-size: 1.2rem;
+      border: none;
+      cursor: pointer;
+    }
+    .save-message {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      min-height: 20px;
     }
     @media (min-width: 768px) {
       .container { padding: 20px; }
       h1 { font-size: 1.7rem; }
-      .value, button { font-size: 1rem; }
+      .value, button, input[type="text"] { font-size: 1rem; }
       .navbar a { font-size: 0.8rem; }
       .navbar a i { font-size: 1.3rem; }
     }
@@ -122,7 +132,7 @@
   <div class="container">
     <div class="header">
       <h1>Driver Profile</h1>
-      <button class="btn-logout" id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button>
+      <button class="btn-logout" id="logoutBtn" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
     </div>
     <div class="field">
       <div class="label">Driver ID</div>
@@ -144,9 +154,17 @@
       <div class="label">Phone</div>
       <div id="phone" class="value">Loading…</div>
     </div>
+
+    <!-- New UPI ID input -->
+    <div class="field">
+      <label for="upiIdInput" class="label">UPI ID</label>
+      <input type="text" id="upiIdInput" placeholder="Enter your UPI ID" autocomplete="off" />
+      <button id="saveUpiBtn">Save UPI ID</button>
+      <div id="saveMessage" class="save-message"></div>
+    </div>
   </div>
 
-  <!-- New navbar identical to driverdashboard -->
+  <!-- Navbar -->
   <div class="navbar">
     <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
     <a href="drivermybookings.html"><i class="fas fa-list"></i><span>Bookings</span></a>
@@ -157,7 +175,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -179,7 +197,12 @@
     const nameEl = document.getElementById('name');
     const emailEl = document.getElementById('email');
     const phoneEl = document.getElementById('phone');
+    const upiIdInput = document.getElementById('upiIdInput');
+    const saveUpiBtn = document.getElementById('saveUpiBtn');
+    const saveMessage = document.getElementById('saveMessage');
     const logoutBtn = document.getElementById('logoutBtn');
+
+    let currentUid = null;
 
     logoutBtn.addEventListener('click', () => {
       signOut(auth).then(() => window.location = 'driverlogin.html');
@@ -187,12 +210,12 @@
 
     onAuthStateChanged(auth, user => {
       if (!user) return window.location = 'driverlogin.html';
-      const uid = user.uid;
+      currentUid = user.uid;
 
-      get(ref(db, `driverdetails/${uid}`))
+      get(ref(db, `driverdetails/${currentUid}`))
         .then(snap => {
           const d = snap.val() || {};
-          driverIdEl.textContent = d.driverId || uid;
+          driverIdEl.textContent = d.driverId || currentUid;
           createdAtEl.textContent = d.createdAt
             ? new Date(d.createdAt).toLocaleString('en-IN', {
                 day: '2-digit',
@@ -205,10 +228,41 @@
           nameEl.textContent = d.name || 'N/A';
           emailEl.textContent = d.email || 'N/A';
           phoneEl.textContent = d.phone || 'N/A';
+
+          upiIdInput.value = d.upiId || '';
+          saveMessage.textContent = '';
         })
         .catch(() => {
-          driverIdEl.textContent = uid;
+          driverIdEl.textContent = currentUid;
           [createdAtEl, nameEl, emailEl, phoneEl].forEach(el => el.textContent = 'Error');
+          upiIdInput.value = '';
+          saveMessage.textContent = 'Failed to load profile data.';
+        });
+    });
+
+    saveUpiBtn.addEventListener('click', () => {
+      const newUpiId = upiIdInput.value.trim();
+
+      if (newUpiId.length === 0) {
+        saveMessage.style.color = '#ffd700';
+        saveMessage.textContent = 'Please enter a valid UPI ID.';
+        return;
+      }
+
+      saveMessage.style.color = 'white';
+      saveMessage.textContent = 'Saving...';
+
+      const updates = {};
+      updates[`driverdetails/${currentUid}/upiId`] = newUpiId;
+
+      update(ref(db), updates)
+        .then(() => {
+          saveMessage.style.color = '#00ff00';
+          saveMessage.textContent = 'UPI ID saved successfully!';
+        })
+        .catch((err) => {
+          saveMessage.style.color = '#ff4c4c';
+          saveMessage.textContent = 'Failed to save UPI ID: ' + (err.message || err);
         });
     });
   </script>
