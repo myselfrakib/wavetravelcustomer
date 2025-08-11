@@ -9,7 +9,6 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
 
   <style>
-    /* Base layout using your driverslots style */
     :root {
       --accent-a: #8e2de2;
       --accent-b: #4a00e0;
@@ -23,7 +22,7 @@
       background: linear-gradient(to right, var(--accent-a), var(--accent-b));
       color: white;
       min-height: 100vh;
-      padding-bottom: 92px; /* leave space for navbar */
+      padding-bottom: 92px;
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
     }
@@ -32,6 +31,8 @@
       padding: 16px;
       max-width: 600px;
       margin: 0 auto;
+      transform: scale(0.9); /* Zoom out */
+      transform-origin: top center;
     }
 
     h1 {
@@ -52,7 +53,6 @@
       font-size: 1.05rem;
     }
 
-    /* Sticky wallet card */
     .wallet-card {
       position: sticky;
       top: 8px;
@@ -95,7 +95,6 @@
     }
     table th { background: rgba(255,255,255,0.06); font-weight:600; }
 
-    /* Mobile card style for very narrow screens */
     .card-list { display:none; gap:12px; flex-direction:column; }
     .entry-card {
       background: rgba(255,255,255,0.04);
@@ -112,7 +111,6 @@
     }
     .muted { opacity:0.85; font-size:0.9rem; }
 
-    /* Booking details modal (simple) */
     .modal {
       position: fixed;
       left: 0; top: 0; right: 0; bottom: 0;
@@ -133,7 +131,6 @@
     }
     .modal .card pre { white-space:pre-wrap; word-break:break-word; margin:10px 0 0; font-size:0.92rem; }
 
-    /* Navbar (driverslots style) */
     .navbar {
       position: fixed;
       bottom: 0;
@@ -156,7 +153,6 @@
     }
     .navbar a i { font-size: 1.15rem; margin-bottom: 4px; }
 
-    /* Responsive rules */
     @media (max-width: 520px) {
       table { display: none; }
       .card-list { display: flex; }
@@ -178,8 +174,6 @@
 
     <div class="dashboard-card">
       <h2>Wallet History</h2>
-
-      <!-- Table for larger screens -->
       <div class="table-wrapper">
         <table id="history-table" aria-label="Wallet history table">
           <thead>
@@ -197,13 +191,10 @@
           </tbody>
         </table>
       </div>
-
-      <!-- Cards for small screens -->
       <div class="card-list" id="cardList" aria-hidden="true"></div>
     </div>
   </div>
 
-  <!-- Simple modal to show booking details -->
   <div class="modal" id="bookingModal" role="dialog" aria-modal="true">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -214,7 +205,6 @@
     </div>
   </div>
 
-  <!-- Navbar -->
   <div class="navbar">
     <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
     <a href="drivermybookings.html"><i class="fas fa-list"></i><span>My Bookings</span></a>
@@ -223,27 +213,23 @@
     <a href="driverprofile.html"><i class="fas fa-user"></i><span>Profile</span></a>
   </div>
 
-  <!-- Firebase + JS -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import { getDatabase, ref, onValue, update, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
-    // ---------- CONFIG (your project) ----------
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
       databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
       projectId: "wavetravel-3c4c4"
     };
-    const BOOKING_PATH_BASE = "bookings"; // change if your bookings live somewhere else
+    const BOOKING_PATH_BASE = "bookings";
 
-    // ---------- INIT ----------
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth(app);
 
-    // ---------- DOM ----------
     const balanceEl = document.getElementById("balance");
     const withdrawBtn = document.getElementById("withdraw-btn");
     const historyTbody = document.querySelector("#history-table tbody");
@@ -253,15 +239,12 @@
     const closeModalBtn = document.getElementById("closeModal");
 
     let driverId = null;
-    let walletData = {}; // snapshot of entries
+    let walletData = {};
 
-    // Utility: decide if an entry is unpaid
     function isUnpaid(entry) {
-      // Cases: { paidout: false }, { paidout: "false" }, { status: "unpaid" }, { status: "pending" } etc.
       if (!entry) return false;
       if (entry.paidout === false || entry.paidout === "false") return true;
       if (entry.status && String(entry.status).toLowerCase() === "unpaid") return true;
-      // if paidout missing and no status, treat as unpaid if amount present and not marked paid
       if (entry.paidout === undefined && !entry.status) return true;
       return false;
     }
@@ -269,11 +252,10 @@
     function formatDate(ts) {
       if (!ts) return "-";
       const d = new Date(ts);
-      if (isNaN(d)) return ts; // maybe already string
-      return d.toLocaleString();
+      if (isNaN(d)) return ts;
+      return d.toLocaleDateString(); // Date only
     }
 
-    // Render wallet UI (table + mobile cards) from walletData
     function renderWallet() {
       const entries = Object.entries(walletData || {});
       if (!entries.length) {
@@ -284,13 +266,11 @@
         return;
       }
 
-      // compute total unpaid
       const unpaidEntries = entries.filter(([_, e]) => isUnpaid(e));
       const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
       balanceEl.textContent = `₹${total.toFixed(2)}`;
       withdrawBtn.disabled = total <= 0;
 
-      // TABLE (desktop)
       historyTbody.innerHTML = "";
       entries.forEach(([id, e], idx) => {
         const tr = document.createElement("tr");
@@ -308,9 +288,8 @@
         historyTbody.appendChild(tr);
       });
 
-      // CARDS (mobile)
       cardList.innerHTML = "";
-      entries.forEach(([id, e], idx) => {
+      entries.forEach(([id, e]) => {
         const status = e.status || (e.paidout ? (e.paidout === true || e.paidout === "true" ? "paid" : e.paidout) : "unpaid");
         const div = document.createElement("div");
         div.className = "entry-card";
@@ -325,7 +304,6 @@
         cardList.appendChild(div);
       });
 
-      // attach listeners for Show buttons
       document.querySelectorAll(".showBookingBtn").forEach(btn => {
         btn.onclick = () => {
           const bookingId = btn.dataset.booking;
@@ -334,7 +312,6 @@
       });
     }
 
-    // Fetch booking details and show modal. Adjust BOOKING_PATH_BASE if needed.
     async function showBookingDetails(bookingId) {
       if (!bookingId) return;
       try {
@@ -345,21 +322,17 @@
           bookingContent.textContent = `No booking found at /${BOOKING_PATH_BASE}/${bookingId}`;
           return;
         }
-        const data = snap.val();
-        // Pretty-print booking object
-        bookingContent.textContent = JSON.stringify(data, null, 2);
+        bookingContent.textContent = JSON.stringify(snap.val(), null, 2);
       } catch (err) {
         bookingContent.textContent = `Error fetching booking: ${err.message || err}`;
       }
     }
 
-    // Withdraw button handler: set each unpaid entry's status => "processing"
     withdrawBtn.onclick = async () => {
       if (!driverId) return alert("No driver logged in.");
       const updates = {};
       for (const [id, entry] of Object.entries(walletData || {})) {
         if (isUnpaid(entry)) {
-          // Write a safe status flag instead of directly marking paid.
           updates[`driverWallet/${driverId}/${id}/status`] = "processing";
         }
       }
@@ -372,11 +345,9 @@
       }
     };
 
-    // Close modal
     closeModalBtn.onclick = () => bookingModal.style.display = "none";
     bookingModal.onclick = (e) => { if (e.target === bookingModal) bookingModal.style.display = "none"; };
 
-    // Firebase auth listener -> subscribe to driverWallet
     onAuthStateChanged(auth, user => {
       if (!user) {
         balanceEl.textContent = "Please log in.";
@@ -396,5 +367,3 @@
   </script>
 </body>
 </html>
-
-
