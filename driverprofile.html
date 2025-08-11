@@ -14,7 +14,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding-bottom: 60px;
+      padding-bottom: 70px; /* slightly larger padding for dashboard navbar */
       font-size: 0.85rem;
     }
     .container {
@@ -28,11 +28,6 @@
       font-size: 1.3rem;
       text-align: center;
       margin-bottom: 14px;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-      font-size: 0.85rem;
     }
     .field .label {
       margin-top: 10px;
@@ -62,30 +57,6 @@
       font-size: 0.9rem;
       cursor: pointer;
     }
-    .slot-list { margin-top: 20px; }
-    .navbar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 60px;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(8px);
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 0 10px;
-      z-index: 1000;
-    }
-    .navbar a {
-      color: #fff;
-      text-decoration: none;
-      font-size: 0.7rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .navbar a i { font-size: 1rem; margin-bottom: 2px; }
     .header {
       display: flex;
       justify-content: space-between;
@@ -98,12 +69,47 @@
       color: #ffd700;
       font-size: 1.2rem;
     }
+
+    /* DASHBOARD-STYLE NAVBAR */
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 70px;
+      background: #111;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 2px solid #ffd700;
+      z-index: 1000;
+    }
+    .navbar a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: color 0.3s;
+    }
+    .navbar a i {
+      font-size: 1.4rem;
+      margin-bottom: 4px;
+    }
+    .navbar a:hover {
+      color: #ffd700;
+    }
+    .navbar a.active {
+      color: #ffd700;
+    }
+
     @media (min-width: 768px) {
       .container { padding: 20px; }
       h1 { font-size: 1.7rem; }
       .value, button { font-size: 1rem; }
-      .navbar a { font-size: 0.8rem; }
-      .navbar a i { font-size: 1.3rem; }
+      .navbar a { font-size: 0.85rem; }
+      .navbar a i { font-size: 1.6rem; }
     }
   </style>
 </head>
@@ -134,17 +140,21 @@
       <div id="phone" class="value">Loading…</div>
     </div>
   </div>
+
+  <!-- Dashboard-Style Navbar -->
   <div class="navbar">
     <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
     <a href="drivermybookings.html"><i class="fas fa-list"></i><span>Bookings</span></a>
     <a href="driverslots.html"><i class="fas fa-calendar-alt"></i><span>Slots</span></a>
     <a href="drivermycars.html"><i class="fas fa-car"></i><span>Cars</span></a>
-    <a href="driverprofile.html"><i class="fas fa-user"></i><span>Profile</span></a>
+    <a href="driverprofile.html" class="active"><i class="fas fa-user"></i><span>Profile</span></a>
   </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -154,16 +164,22 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth(app);
+
     const driverIdEl = document.getElementById('driverId');
     const createdAtEl = document.getElementById('createdAt');
     const nameEl = document.getElementById('name');
     const emailEl = document.getElementById('email');
     const phoneEl = document.getElementById('phone');
     const logoutBtn = document.getElementById('logoutBtn');
-    logoutBtn.addEventListener('click', () => signOut(auth).then(() => window.location = 'driverlogin.html'));
+
+    logoutBtn.addEventListener('click', () => 
+      signOut(auth).then(() => window.location = 'driverlogin.html')
+    );
+
     onAuthStateChanged(auth, user => {
       if (!user) return window.location = 'driverlogin.html';
       const uid = user.uid;
