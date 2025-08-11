@@ -271,13 +271,14 @@
     }
 
     async function showBookingDetails(bookingId) {
-      if (!bookingId) return;
+      if (!bookingId || !driverId) return;
       try {
         bookingContent.textContent = "Loading booking...";
         bookingModal.style.display = "flex";
-        const snap = await get(child(ref(db), `${BOOKING_PATH_BASE}/${bookingId}`));
+        // Correct path to bookings under driverId
+        const snap = await get(child(ref(db), `${BOOKING_PATH_BASE}/${driverId}/${bookingId}`));
         if (!snap.exists()) {
-          bookingContent.textContent = `No booking found at /${BOOKING_PATH_BASE}/${bookingId}`;
+          bookingContent.textContent = `No booking found at /${BOOKING_PATH_BASE}/${driverId}/${bookingId}`;
           return;
         }
         bookingContent.textContent = JSON.stringify(snap.val(), null, 2);
