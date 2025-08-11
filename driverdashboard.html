@@ -8,44 +8,104 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      margin:0; padding:0;
+      margin: 0;
+      padding: 0;
       background: linear-gradient(to right, #8e2de2, #4a00e0);
-      color:#fff;
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
-    .container { padding:20px; flex-grow:1; }
-    h1 { text-align:center; margin-bottom:20px; }
+    .container {
+      padding: 20px;
+      flex-grow: 1;
+      max-width: 1000px;
+      margin: auto;
+      width: 100%;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: clamp(1.4rem, 2vw, 2rem);
+    }
     .dashboard-card {
-      background:rgba(255,255,255,0.1);
-      padding:15px; border-radius:10px;
-      margin-bottom:20px; text-align:center;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      text-align: center;
     }
-    .dashboard-card h2 { margin-bottom:10px; }
+    .dashboard-card h2 {
+      margin-bottom: 10px;
+      font-size: clamp(1.2rem, 2vw, 1.5rem);
+    }
     #withdraw-btn {
-      background:#ffd700; color:#4a00e0; border:none;
-      padding:10px 20px; border-radius:5px; font-weight:bold;
-      cursor:pointer;
+      background: #ffd700;
+      color: #4a00e0;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: clamp(0.9rem, 1.5vw, 1rem);
     }
-    #withdraw-btn:disabled { opacity:.6; cursor:not-allowed; }
+    #withdraw-btn:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    /* Table styling */
+    .table-wrapper {
+      overflow-x: auto;
+    }
     table {
-      width:100%; border-collapse:collapse; margin-top:10px;
-      font-size:14px;
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+      min-width: 500px;
     }
     table th, table td {
-      border:1px solid rgba(255,255,255,0.2);
-      padding:8px;
-      text-align:center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px;
+      text-align: center;
     }
-    table th { background: rgba(255,255,255,0.2); }
+    table th {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Navbar styling */
     .navbar {
-      position:fixed; bottom:0; width:100%;
-      background:rgba(0,0,0,0.6);
-      display:flex; justify-content:space-around; padding:12px 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
     }
-    .navbar a { color:#fff; text-decoration:none; font-size:14px; text-align:center; }
-    .navbar a i { display:block; margin-bottom:4px; font-size:20px; }
+    .navbar a {
+      color: #fff;
+      text-decoration: none;
+      font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+      text-align: center;
+      flex: 1;
+    }
+    .navbar a i {
+      display: block;
+      margin-bottom: 4px;
+      font-size: clamp(1rem, 4vw, 1.3rem);
+    }
+
+    /* Small screen tweaks */
+    @media (max-width: 600px) {
+      .dashboard-card {
+        padding: 12px;
+      }
+      table th, table td {
+        padding: 6px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -60,20 +120,22 @@
 
     <div class="dashboard-card">
       <h2>Wallet History</h2>
-      <table id="history-table">
-        <thead>
-          <tr>
-            <th>SL</th>
-            <th>Booking ID</th>
-            <th>Amount</th>
-            <th>Date</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td colspan="5">Loading…</td></tr>
-        </tbody>
-      </table>
+      <div class="table-wrapper">
+        <table id="history-table">
+          <thead>
+            <tr>
+              <th>SL</th>
+              <th>Booking ID</th>
+              <th>Amount</th>
+              <th>Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="5">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -115,13 +177,11 @@
         return;
       }
 
-      // Total unpaid balance
       const unpaidEntries = entries.filter(([_, e]) => e.status === "unpaid");
       const total = unpaidEntries.reduce((sum, [_, e]) => sum + parseFloat(e.amount || 0), 0);
       balanceEl.textContent = `₹${total}`;
       withdrawBtn.disabled = total <= 0;
 
-      // Render table rows
       historyTableBody.innerHTML = "";
       entries.forEach(([id, e], i) => {
         const tr = document.createElement("tr");
