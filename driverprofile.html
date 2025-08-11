@@ -14,7 +14,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding-bottom: 70px; /* slightly larger padding for dashboard navbar */
+      padding-bottom: 60px;
       font-size: 0.85rem;
     }
     .container {
@@ -28,6 +28,11 @@
       font-size: 1.3rem;
       text-align: center;
       margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 0.85rem;
     }
     .field .label {
       margin-top: 10px;
@@ -57,6 +62,41 @@
       font-size: 0.9rem;
       cursor: pointer;
     }
+    .slot-list { margin-top: 20px; }
+    
+    /* Updated navbar styling to match driverdashboard */
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 6px 0;
+      z-index: 1000;
+      height: 60px;
+    }
+    .navbar a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: color 0.2s ease;
+    }
+    .navbar a i {
+      font-size: 1.2rem;
+      margin-bottom: 3px;
+    }
+    .navbar a.active,
+    .navbar a:hover {
+      color: #ffd700;
+    }
+    
     .header {
       display: flex;
       justify-content: space-between;
@@ -69,47 +109,12 @@
       color: #ffd700;
       font-size: 1.2rem;
     }
-
-    /* DASHBOARD-STYLE NAVBAR */
-    .navbar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 70px;
-      background: #111;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      border-top: 2px solid #ffd700;
-      z-index: 1000;
-    }
-    .navbar a {
-      color: #fff;
-      text-decoration: none;
-      font-size: 0.75rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: color 0.3s;
-    }
-    .navbar a i {
-      font-size: 1.4rem;
-      margin-bottom: 4px;
-    }
-    .navbar a:hover {
-      color: #ffd700;
-    }
-    .navbar a.active {
-      color: #ffd700;
-    }
-
     @media (min-width: 768px) {
       .container { padding: 20px; }
       h1 { font-size: 1.7rem; }
       .value, button { font-size: 1rem; }
-      .navbar a { font-size: 0.85rem; }
-      .navbar a i { font-size: 1.6rem; }
+      .navbar a { font-size: 0.8rem; }
+      .navbar a i { font-size: 1.3rem; }
     }
   </style>
 </head>
@@ -141,7 +146,7 @@
     </div>
   </div>
 
-  <!-- Dashboard-Style Navbar -->
+  <!-- New navbar identical to driverdashboard -->
   <div class="navbar">
     <a href="driverdashboard.html"><i class="fas fa-home"></i><span>Home</span></a>
     <a href="drivermybookings.html"><i class="fas fa-list"></i><span>Bookings</span></a>
@@ -176,25 +181,32 @@
     const phoneEl = document.getElementById('phone');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    logoutBtn.addEventListener('click', () => 
-      signOut(auth).then(() => window.location = 'driverlogin.html')
-    );
+    logoutBtn.addEventListener('click', () => {
+      signOut(auth).then(() => window.location = 'driverlogin.html');
+    });
 
     onAuthStateChanged(auth, user => {
       if (!user) return window.location = 'driverlogin.html';
       const uid = user.uid;
+
       get(ref(db, `driverdetails/${uid}`))
         .then(snap => {
           const d = snap.val() || {};
           driverIdEl.textContent = d.driverId || uid;
           createdAtEl.textContent = d.createdAt
-            ? new Date(d.createdAt).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+            ? new Date(d.createdAt).toLocaleString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })
             : 'N/A';
           nameEl.textContent = d.name || 'N/A';
           emailEl.textContent = d.email || 'N/A';
           phoneEl.textContent = d.phone || 'N/A';
         })
-        .catch(_ => {
+        .catch(() => {
           driverIdEl.textContent = uid;
           [createdAtEl, nameEl, emailEl, phoneEl].forEach(el => el.textContent = 'Error');
         });
