@@ -115,17 +115,64 @@
       justify-content: center;
       background: rgba(0,0,0,0.5);
       z-index: 200;
+      padding: 16px;
     }
     .modal .card {
       background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
       color: #fff;
-      padding: 16px;
-      width: 92%;
+      padding: 20px 24px;
+      width: 100%;
       max-width: 520px;
       border-radius: 10px;
       border: 1px solid rgba(255,255,255,0.06);
+      box-sizing: border-box;
+      max-height: 90vh;
+      overflow-y: auto;
     }
-    .modal .card pre { white-space:pre-wrap; word-break:break-word; margin:10px 0 0; font-size:0.92rem; }
+    .modal .card pre { 
+      white-space: pre-wrap; 
+      word-break: break-word; 
+      margin: 10px 0 0; 
+      font-size: 0.92rem; 
+      background: rgba(255 255 255 / 0.1);
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .modal-header strong {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .booking-detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      font-size: 1rem;
+    }
+    .booking-detail-label {
+      font-weight: 600;
+      opacity: 0.85;
+    }
+    .booking-detail-value {
+      max-width: 60%;
+      text-align: right;
+      word-wrap: break-word;
+    }
 
     .navbar {
       position: fixed;
@@ -173,11 +220,11 @@
 
   <div class="modal" id="bookingModal">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="modal-header">
         <strong>Booking Details</strong>
-        <button id="closeModal" style="background:transparent;border:none;color:white;font-size:1.1rem;cursor:pointer;">✕</button>
+        <button id="closeModal" class="modal-close-btn" aria-label="Close modal">✕</button>
       </div>
-      <pre id="bookingContent">Loading…</pre>
+      <div id="bookingContent">Loading…</div>
     </div>
   </div>
 
@@ -229,7 +276,7 @@
       if (!ts) return "-";
       const d = new Date(ts);
       if (isNaN(d)) return ts;
-      return d.toLocaleDateString();
+      return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
     }
 
     function renderWallet() {
@@ -270,18 +317,68 @@
       });
     }
 
+    function createDetailRow(label, value) {
+      const row = document.createElement('div');
+      row.className = 'booking-detail-row';
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'booking-detail-label';
+      labelDiv.textContent = label;
+      const valueDiv = document.createElement('div');
+      valueDiv.className = 'booking-detail-value';
+      valueDiv.textContent = value ?? '-';
+      row.appendChild(labelDiv);
+      row.appendChild(valueDiv);
+      return row;
+    }
+
     async function showBookingDetails(bookingId) {
       if (!bookingId || !driverId) return;
       try {
         bookingContent.textContent = "Loading booking...";
         bookingModal.style.display = "flex";
-        // Correct path to bookings under driverId
+
         const snap = await get(child(ref(db), `${BOOKING_PATH_BASE}/${driverId}/${bookingId}`));
         if (!snap.exists()) {
           bookingContent.textContent = `No booking found at /${BOOKING_PATH_BASE}/${driverId}/${bookingId}`;
           return;
         }
-        bookingContent.textContent = JSON.stringify(snap.val(), null, 2);
+        const booking = snap.val();
+
+        // Clear existing content
+        bookingContent.innerHTML = '';
+
+        // Add a few key fields - customize based on your actual booking data structure
+        bookingContent.appendChild(createDetailRow('Booking ID', bookingId));
+        bookingContent.appendChild(createDetailRow('Name', booking.name || booking.customerName || booking.userName));
+        bookingContent.appendChild(createDetailRow('Pickup Location', booking.pickup || booking.pickupLocation));
+        bookingContent.appendChild(createDetailRow('Dropoff Location', booking.dropoff || booking.dropoffLocation));
+        bookingContent.appendChild(createDetailRow('Pickup Time', booking.time || booking.pickupTime ? new Date(booking.time || booking.pickupTime).toLocaleString() : '-'));
+        bookingContent.appendChild(createDetailRow('Fare', booking.fare ? `₹${booking.fare}` : (booking.amount ? `₹${booking.amount}` : '-')));
+        bookingContent.appendChild(createDetailRow('Status', booking.status || (booking.paidout ? (booking.paidout === true || booking.paidout === "true" ? "Paid" : booking.paidout) : "Unpaid")));
+        bookingContent.appendChild(createDetailRow('Booked At', booking.bookedAt ? new Date(booking.bookedAt).toLocaleString() : '-'));
+
+        // If you want, also show any notes or extra data:
+        if (booking.notes) {
+          bookingContent.appendChild(createDetailRow('Notes', booking.notes));
+        }
+
+        // If there are keys that you did not show, you can optionally add a JSON view below:
+        const keysShown = ['name', 'customerName', 'userName', 'pickup', 'pickupLocation', 'dropoff', 'dropoffLocation', 'time', 'pickupTime', 'fare', 'amount', 'status', 'paidout', 'bookedAt', 'notes'];
+        const extraData = {};
+        for (const key in booking) {
+          if (!keysShown.includes(key)) {
+            extraData[key] = booking[key];
+          }
+        }
+        if (Object.keys(extraData).length) {
+          const extraPre = document.createElement('pre');
+          extraPre.textContent = JSON.stringify(extraData, null, 2);
+          extraPre.style.marginTop = '20px';
+          bookingContent.appendChild(document.createElement('hr'));
+          bookingContent.appendChild(document.createTextNode('Additional Data:'));
+          bookingContent.appendChild(extraPre);
+        }
+
       } catch (err) {
         bookingContent.textContent = `Error fetching booking: ${err.message || err}`;
       }
