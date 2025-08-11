@@ -1,132 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Driver Dashboard — WaveTravel</title>
-
-  <!-- Font Awesome (icons) -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Driver Slot Management</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
-    :root {
-      --accent-a: #8e2de2;
-      --accent-b: #4a00e0;
-      --card-bg: rgba(255,255,255,0.08);
-      --muted-border: rgba(255,255,255,0.12);
-    }
-    html,body { height:100%; }
     body {
       font-family: 'Segoe UI', sans-serif;
       margin: 0; padding: 0;
-      background: linear-gradient(to right, var(--accent-a), var(--accent-b));
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
       color: white;
       min-height: 100vh;
-      padding-bottom: 92px;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
+      padding-bottom: 80px;
     }
-
     .container {
       padding: 16px;
       max-width: 600px;
       margin: 0 auto;
     }
-
     h1 {
-      font-size: 1.4rem;
+      font-size: 1.5rem;
       text-align: center;
-      margin: 6px 0 14px;
+      margin-bottom: 16px;
     }
-
-    .dashboard-card {
-      background: var(--card-bg);
-      padding: 14px;
-      border-radius: 10px;
-      margin-bottom: 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    label {
+      display: block;
+      margin-top: 12px;
+      font-size: 0.9rem;
     }
-    .dashboard-card h2 {
-      margin: 0 0 8px;
-      font-size: 1.05rem;
+    select, input {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin-top: 6px;
+      font-size: 1rem;
     }
-
-    .wallet-card {
-      position: sticky;
-      top: 8px;
-      z-index: 90;
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-    }
-
-    #balance {
-      font-size: 1.4rem;
-      font-weight: 700;
-      margin: 6px 0;
-    }
-
-    #withdraw-btn {
-      margin-top: 10px;
+    button {
+      margin-top: 20px;
       padding: 12px;
       width: 100%;
       background: #ffd700;
       color: black;
-      font-weight: 700;
+      font-weight: bold;
       border: none;
       border-radius: 8px;
       font-size: 1rem;
       cursor: pointer;
     }
-    #withdraw-btn:disabled { opacity: .6; cursor: not-allowed; }
-
-    /* Hide table, force card view */
-    .table-wrapper { display: none !important; }
-
-    .card-list {
-      display: flex !important;
-      flex-direction: column;
-      gap: 12px;
+    .slot-list {
+      margin-top: 24px;
     }
-
-    .entry-card {
-      background: rgba(255,255,255,0.04);
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.05);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .entry-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .muted { opacity: 0.85; font-size: 0.9rem; }
-
-    .modal {
-      position: fixed;
-      left: 0; top: 0; right: 0; bottom: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.5);
-      z-index: 200;
-    }
-    .modal .card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-      color: #fff;
+    .slot-card {
+      background: rgba(255,255,255,0.1);
       padding: 16px;
-      width: 92%;
-      max-width: 520px;
       border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 15px;
     }
-    .modal .card pre { white-space:pre-wrap; word-break:break-word; margin:10px 0 0; font-size:0.92rem; }
-
+    .slot-card p {
+      margin: 6px 0;
+      font-size: 0.9rem;
+    }
+    .slot-card button {
+      background: #ff4d4d;
+      color: white;
+      padding: 8px 12px;
+      margin-top: 10px;
+      font-size: 0.85rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
     .navbar {
       position: fixed;
       bottom: 0;
@@ -147,38 +92,47 @@
       flex-direction: column;
       align-items: center;
     }
-    .navbar a i { font-size: 1.15rem; margin-bottom: 4px; }
+    .navbar a i {
+      font-size: 1.2rem;
+      margin-bottom: 2px;
+    }
+    .time-select-group {
+      display: flex;
+      gap: 10px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Your Dashboard</h1>
+    <h1>Add Available Slot</h1>
 
-    <div class="dashboard-card wallet-card">
-      <h2>Wallet Balance</h2>
-      <div id="balance">Loading…</div>
-      <button id="withdraw-btn" disabled>Request Withdraw</button>
+    <label for="pickup">Pickup Location</label>
+    <select id="pickup"></select>
+
+    <label for="dropoff">Dropoff Location</label>
+    <select id="dropoff"></select>
+
+    <label for="car">Select Car</label>
+    <select id="car">
+      <option disabled selected>Loading cars...</option>
+    </select>
+
+    <label for="date">Date</label>
+    <input type="date" id="date"/>
+
+    <label>Time</label>
+    <div class="time-select-group">
+      <select id="hour"></select>
+      <select id="minute"></select>
+      <select id="ampm">
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
     </div>
 
-    <div class="dashboard-card">
-      <h2>Wallet History</h2>
-      <div class="table-wrapper">
-        <table id="history-table">
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="card-list" id="cardList"></div>
-    </div>
-  </div>
+    <button id="addSlotBtn">Add Slot</button>
 
-  <div class="modal" id="bookingModal">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <strong>Booking Details</strong>
-        <button id="closeModal" style="background:transparent;border:none;color:white;font-size:1.1rem;cursor:pointer;">✕</button>
-      </div>
-      <pre id="bookingContent">Loading…</pre>
-    </div>
+    <div class="slot-list" id="slotList"></div>
   </div>
 
   <div class="navbar">
@@ -191,136 +145,152 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import {
+      getDatabase, ref, push, get, onValue, remove
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
       databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4"
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-    const BOOKING_PATH_BASE = "bookings";
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const auth = getAuth(app);
+    const auth = getAuth();
 
-    const balanceEl = document.getElementById("balance");
-    const withdrawBtn = document.getElementById("withdraw-btn");
-    const historyTbody = document.querySelector("#history-table tbody");
-    const cardList = document.getElementById("cardList");
-    const bookingModal = document.getElementById("bookingModal");
-    const bookingContent = document.getElementById("bookingContent");
-    const closeModalBtn = document.getElementById("closeModal");
+    const pickup = document.getElementById("pickup");
+    const dropoff = document.getElementById("dropoff");
+    const car = document.getElementById("car");
+    const date = document.getElementById("date");
+    const hour = document.getElementById("hour");
+    const minute = document.getElementById("minute");
+    const ampm = document.getElementById("ampm");
+    const slotList = document.getElementById("slotList");
+    const addBtn = document.getElementById("addSlotBtn");
 
-    let driverId = null;
-    let walletData = {};
-
-    function isUnpaid(entry) {
-      if (!entry) return false;
-      if (entry.paidout === false || entry.paidout === "false") return true;
-      if (entry.status && String(entry.status).toLowerCase() === "unpaid") return true;
-      if (entry.paidout === undefined && !entry.status) return true;
-      return false;
+    // Populate hour/minute selectors
+    for (let i = 1; i <= 12; i++) hour.innerHTML += `<option>${i}</option>`;
+    for (let i = 0; i < 60; i += 5) {
+      const v = i.toString().padStart(2, '0');
+      minute.innerHTML += `<option>${v}</option>`;
     }
 
-    function formatDate(ts) {
-      if (!ts) return "-";
-      const d = new Date(ts);
-      if (isNaN(d)) return ts;
-      return d.toLocaleDateString();
+    // Default date to today
+    const today = new Date();
+    const iso = today.toISOString().split("T")[0];
+    date.min = date.value = iso;
+
+    function to24(h, m, ap) {
+      let hh = parseInt(h, 10);
+      if (ap === "PM" && hh < 12) hh += 12;
+      if (ap === "AM" && hh === 12) hh = 0;
+      return `${hh.toString().padStart(2, '0')}:${m}`;
+    }
+    function fmt12(t) {
+      let [hh, mm] = t.split(":").map(Number);
+      const ap = hh >= 12 ? "PM" : "AM";
+      hh = hh % 12 || 12;
+      return `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')} ${ap}`;
     }
 
-    function renderWallet() {
-      const entries = Object.entries(walletData || {});
-      if (!entries.length) {
-        balanceEl.textContent = "₹0";
-        cardList.innerHTML = `<div class="entry-card muted">No wallet entries</div>`;
-        withdrawBtn.disabled = true;
-        return;
-      }
+    let driverId = "";
 
-      const unpaidEntries = entries.filter(([_, e]) => isUnpaid(e));
-      const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
-      balanceEl.textContent = `₹${total.toFixed(2)}`;
-      withdrawBtn.disabled = total <= 0;
-
-      cardList.innerHTML = "";
-      entries.forEach(([id, e], index) => {
-        const slNo = index + 1;
-        const status = e.status || (e.paidout ? (e.paidout === true || e.paidout === "true" ? "paid" : e.paidout) : "unpaid");
-        const div = document.createElement("div");
-        div.className = "entry-card";
-        div.innerHTML = `
-          <div class="entry-row"><div><strong>Sl. No:</strong> ${slNo}</div><div><strong>₹${Number(e.amount||0).toFixed(2)}</strong></div></div>
-          <div class="entry-row"><div><strong>Booking</strong><div class="muted" style="font-size:0.95rem">${id}</div></div></div>
-          <div class="entry-row"><div class="muted">Date</div><div class="muted">${formatDate(e.date || e.bookedAt || e.createdAt)}</div></div>
-          <div class="entry-row"><div class="muted">Status</div><div class="muted">${status}</div></div>
-          <div style="display:flex;gap:8px;margin-top:6px;">
-            <button data-booking="${id}" class="showBookingBtn" style="flex:1;padding:8px;border-radius:8px;border:none;background:#ffd700;color:#000;font-weight:700;cursor:pointer">Show</button>
-          </div>
-        `;
-        cardList.appendChild(div);
-      });
-
-      document.querySelectorAll(".showBookingBtn").forEach(btn => {
-        btn.onclick = () => {
-          const bookingId = btn.dataset.booking;
-          showBookingDetails(bookingId);
-        };
+    function loadLocations() {
+      onValue(ref(db, "locations"), snap => {
+        const locs = snap.val() || [];
+        let opts = "";
+        locs.forEach(l => opts += `<option>${l.name}</option>`);
+        pickup.innerHTML = dropoff.innerHTML = opts;
       });
     }
 
-    async function showBookingDetails(bookingId) {
-      if (!bookingId) return;
-      try {
-        bookingContent.textContent = "Loading booking...";
-        bookingModal.style.display = "flex";
-        const snap = await get(child(ref(db), `${BOOKING_PATH_BASE}/${bookingId}`));
-        if (!snap.exists()) {
-          bookingContent.textContent = `No booking found at /${BOOKING_PATH_BASE}/${bookingId}`;
-          return;
-        }
-        bookingContent.textContent = JSON.stringify(snap.val(), null, 2);
-      } catch (err) {
-        bookingContent.textContent = `Error fetching booking: ${err.message || err}`;
-      }
+    function loadSlots(uid) {
+      onValue(ref(db, `availableslots/${uid}`), snap => {
+        let cnt = 1, html = "";
+        snap.forEach(ch => {
+          const s = ch.val();
+          html += `
+            <div class="slot-card">
+              <p><strong>Sl No. ${cnt++}</strong></p>
+              <p><strong>${s.pickup}</strong> ➝ <strong>${s.dropoff}</strong></p>
+              <p>Date: ${s.date}, Time: ${fmt12(s.time)}</p>
+              <p>Seats: ${s.seats}</p>
+              <p>Car: ${s.carBrand} (${s.carReg})</p>
+              <p>Driver: ${s.driverName}</p>
+              <button onclick="deleteSlot('${ch.key}')">Delete</button>
+            </div>`;
+        });
+        slotList.innerHTML = html;
+      });
     }
 
-    withdrawBtn.onclick = async () => {
-      if (!driverId) return alert("No driver logged in.");
-      const updates = {};
-      for (const [id, entry] of Object.entries(walletData || {})) {
-        if (isUnpaid(entry)) {
-          updates[`driverWallet/${driverId}/${id}/status`] = "processing";
-        }
-      }
-      if (!Object.keys(updates).length) return alert("No unpaid balance to withdraw.");
-      try {
-        await update(ref(db), updates);
-        alert("Withdrawal request sent — entries marked as 'processing'.");
-      } catch (err) {
-        alert("Failed to send withdraw request: " + (err.message || err));
+    window.deleteSlot = function(key) {
+      if (!driverId) return;
+      if (confirm("Are you sure to delete this slot?")) {
+        remove(ref(db, `availableslots/${driverId}/${key}`));
       }
     };
 
-    closeModalBtn.onclick = () => bookingModal.style.display = "none";
-    bookingModal.onclick = (e) => { if (e.target === bookingModal) bookingModal.style.display = "none"; };
-
     onAuthStateChanged(auth, user => {
       if (!user) {
-        balanceEl.textContent = "Please log in.";
-        cardList.innerHTML = `<div class="entry-card muted">Log in to see data</div>`;
-        driverId = null;
-        return;
+        alert("Please log in.");
+        return window.location.href = "login.html";
       }
       driverId = user.uid;
-      const walletRef = ref(db, `driverWallet/${driverId}`);
-      onValue(walletRef, snap => {
-        walletData = snap.val() || {};
-        renderWallet();
+
+      loadLocations();
+      loadSlots(driverId);
+
+      // Load this driver's cars, showing seat count in the dropdown
+      onValue(ref(db, `approvedcars/${driverId}`), snap => {
+        let opts = "";
+        snap.forEach(ch => {
+          const d = ch.val();
+          const seatText = d.seats ? `${d.seats} seats` : "Unknown seats";
+          opts += `<option value="${ch.key}">${d.carBrand} (${seatText})</option>`;
+        });
+        car.innerHTML = opts || `<option disabled>No approved cars</option>`;
       });
+
+      addBtn.onclick = async () => {
+        const cid = car.value,
+              pu = pickup.value,
+              dr = dropoff.value,
+              dt = date.value,
+              h  = hour.value,
+              mi = minute.value,
+              ap = ampm.value;
+        if (!cid || !pu || !dr || !dt || !h || !mi || !ap) {
+          return alert("All fields are required");
+        }
+
+        // Fetch car details (including seats) from approvedcars
+        const carSnap = await get(ref(db, `approvedcars/${driverId}/${cid}`));
+        const cd = carSnap.val() || {};
+        const seatCount = cd.seats || 0;
+
+        const t24 = to24(h, mi, ap);
+        const slotData = {
+          pickup: pu,
+          dropoff: dr,
+          date: dt,
+          time: t24,
+          seats: seatCount,
+          driverName: cd.driverName || "",
+          driverNumber: cd.driverNumber || "",
+          carBrand: cd.carBrand || "",
+          carReg: cd.carReg || ""
+        };
+
+        await push(ref(db, `availableslots/${driverId}`), slotData);
+        alert("Slot added successfully");
+      };
     });
   </script>
 </body>
