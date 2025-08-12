@@ -33,13 +33,16 @@
     .wallet-actions { margin-top:0.6rem; display:flex; gap:8px; flex-wrap:wrap; }
     .wallet-actions button { flex: none; }
 
+    /* Pending withdrawals driver card full width */
+    .withdrawal-driver-card { background:rgba(255,255,255,0.08); padding:1rem; border-radius:8px; width:100%; color:#fff; }
+
     /* QR modal center */
     #qrModal .modal-content { background: #0b1220; color: #ffd700; text-align:center; }
     #qrCode { margin: 0 auto 8px; }
 
     /* Booking details modal */
     #bookingDetailsModal .modal-content { color:#111; }
-    /* smaller screens */
+
     @media (max-width:520px) {
       .wallet-card { width:100%; }
     }
@@ -136,14 +139,14 @@
     </table>
   </div>
 
-  <!-- DRIVER WALLETS (upgraded) -->
+  <!-- DRIVER WALLETS (unchanged layout) -->
   <div id="driver-wallets-tab" class="tab-pane">
     <h2>Driver Wallets</h2>
     <div id="wallets-loading" class="loading">Loading wallets…</div>
     <div id="driver-wallets-container" style="display:none;"></div>
   </div>
 
-  <!-- PENDING WITHDRAWALS -->
+  <!-- PENDING WITHDRAWALS (grouped per driver) -->
   <div id="pending-withdrawals-tab" class="tab-pane">
     <h2>Pending Withdrawals</h2>
     <div id="withdrawals-loading" class="loading">Loading pending withdrawals…</div>
@@ -231,7 +234,7 @@
 
     window.logout = () => signOut(auth).then(() => location.href='adminlogin.html');
 
-    // CRUD helper functions (from your original)
+    // CRUD helper functions (as before)
     window.deleteUser = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
     window.deleteDriver = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
     window.deletePending = async (did,cid) => { await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); };
@@ -246,22 +249,26 @@
       loadPending();
     };
 
-    // Wallet Approve/Reject logic (keeps same behavior)
+    // Wallet Approve/Reject (keeps same behavior, but Mark Paid now confirmed)
     window.approveWalletEntry = async (driverId, bookingId) => {
+      if (!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid?`)) return;
       await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { paidout: true, status: 'paid' });
       loadWallets();
     };
     window.rejectWalletEntry = async (driverId, bookingId, amount) => {
+      if (!confirm(`Reject wallet entry ${bookingId} and reset amount to ${amount}?`)) return;
       await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { status: 'available', amount });
       loadWallets();
     };
 
     // Pending Withdrawals Approve/Reject
     window.approveWithdrawal = async (driverId, bookingId) => {
+      if (!confirm(`Approve withdrawal ${bookingId} for driver ${driverId}?`)) return;
       await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'approved' });
       loadWithdrawals();
     };
     window.rejectWithdrawal = async (driverId, bookingId) => {
+      if (!confirm(`Reject withdrawal ${bookingId} for driver ${driverId}?`)) return;
       await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'rejected' });
       loadWithdrawals();
     };
@@ -345,7 +352,7 @@
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
-    // ------------------ UPGRADED Driver Wallets ------------------
+    // ------------------ Driver Wallets (unchanged) ------------------
     async function loadWallets(){
       $('#driver-wallets-container').hide(); $('#wallets-loading').show();
       const container = document.getElementById('driver-wallets-container');
@@ -359,58 +366,56 @@
       }
 
       let sl = 1;
-      // iterate drivers
       for(const [driverId, entries] of Object.entries(snap.val())){
-        // compute driver total (sum of unpaid amounts maybe)
+        // fetch driver's upi and name once
+        let upi = null, driverName = null;
+        try {
+          const uSnap = await get(ref(db, `driverdetails/${driverId}`));
+          if(uSnap.exists()){
+            const d = uSnap.val();
+            upi = d.upiId || null;
+            driverName = d.name || null;
+          }
+        } catch (e){
+          upi = null; driverName = null;
+        }
+
+        // driver header
         let driverTotal = 0;
         for(const e of Object.values(entries)) driverTotal += parseFloat(e.amount)||0;
-
-        // optional header card for driver
         const headerCard = document.createElement('div');
         headerCard.className = 'wallet-card';
         headerCard.style.width = '100%';
-        headerCard.innerHTML = `<h3>Driver: ${driverId} | Total: ₹${driverTotal.toFixed(2)}</h3><small>UPI: <span id="upi-${driverId}">loading…</span></small>`;
+        headerCard.innerHTML = `<h3>Driver: ${driverId} | Total: ₹${driverTotal.toFixed(2)}</h3>
+                                <small>UPI: <span id="upi-${driverId}">${upi ? upi : '—'}</span> ${driverName ? ` | ${driverName}` : ''}</small>`;
         container.appendChild(headerCard);
 
-        // try preload UPI (display) but don't block cards
-        (async () => {
-          try {
-            const uSnap = await get(ref(db, `driverdetails/${driverId}/upiId`));
-            const upi = uSnap.exists() ? uSnap.val() : '—';
-            const el = document.getElementById(`upi-${driverId}`);
-            if(el) el.textContent = upi;
-          } catch (e){
-            const el = document.getElementById(`upi-${driverId}`);
-            if(el) el.textContent = 'error';
-          }
-        })();
-
-        // cards per booking
         for(const [bookingId, entry] of Object.entries(entries)){
           const card = document.createElement('div');
           card.className = 'wallet-card';
-          // create booking summary fields (some entries use 'bookingdata' or 'booking' as nested)
-          const amount = entry.amount || entry.amount === 0 ? entry.amount : 'N/A';
-          const fare = entry.fare ?? (entry.booking?.fare ?? 'N/A');
+          const amount = entry.amount !== undefined ? Number(entry.amount) : NaN;
+          const fare = (entry.fare ?? (entry.booking?.fare)) ?? 'N/A';
           const status = entry.status ?? (entry.paidout ? 'paid' : 'unpaid') ?? 'unpaid';
-
-          // Build booking short info (pickup/dropoff from bookingdata or inline)
           const bookingData = entry.booking || entry.bookingdata || {};
-          const pickup = bookingData.pickup || entry.pickup || bookingData.Pickup || 'N/A';
+          const pickup = bookingData.pickup || entry.pickup || 'N/A';
           const dropoff = bookingData.dropoff || entry.dropoff || 'N/A';
-          const bookedAt = bookingData.bookedAt || bookingData.bookedAt || entry.date || entry.bookedAt || 'N/A';
+
+          const qrDisabled = !upi;
+          const btnShow = `<button class="btn btn-sm btn-info" onclick="showBookingModal('${driverId}','${bookingId}')">Show</button>`;
+          const btnQr = `<button class="btn btn-sm btn-primary ${qrDisabled ? 'disabled' : ''}" ${qrDisabled ? 'title="UPI missing"' : `onclick="showQrModal('${driverId}', ${isNaN(amount) ? 0 : amount}, '${bookingId}')"`}>Show QR</button>`;
+          const btnPaid = `<button class="btn btn-sm btn-success" onclick="markPaidEntry('${driverId}','${bookingId}')">Mark Paid</button>`;
 
           card.innerHTML = `
-            <h3>SL #${sl} — ₹${Number(amount).toFixed(2)}</h3>
+            <h3>SL #${sl} — ₹${isNaN(amount) ? '0.00' : amount.toFixed(2)}</h3>
             <p><strong>Booking ID:</strong> ${bookingId}</p>
             <p><strong>Fare:</strong> ₹${fare}</p>
             <p><strong>Status:</strong> ${status}</p>
             <p><strong>Pickup:</strong> ${pickup}</p>
             <p><strong>Dropoff:</strong> ${dropoff}</p>
             <div class="wallet-actions">
-              <button class="btn btn-sm btn-info" onclick="showBookingModal('${driverId}','${bookingId}')">Show</button>
-              <button class="btn btn-sm btn-primary" onclick="showQrModal('${driverId}', ${Number(amount) || 0}, '${bookingId}')">Show QR</button>
-              <button class="btn btn-sm btn-success" onclick="markPaidEntry('${driverId}','${bookingId}')">Mark Paid</button>
+              ${btnShow}
+              ${btnQr}
+              ${btnPaid}
             </div>
           `;
           container.appendChild(card);
@@ -424,7 +429,6 @@
     // show booking modal — build a table with representable fields
     async function showBookingModal(driverId, bookingId){
       try {
-        // try both driverWallet/{driverId}/{bookingId}/booking and driverWallet/{driverId}/{bookingId}/bookingdata or fields
         const snap = await get(ref(db, `driverWallet/${driverId}/${bookingId}`));
         if(!snap.exists()){
           document.getElementById('bookingDetailsBody').innerHTML = `<div class="alert alert-warning">No booking data found for ${bookingId}</div>`;
@@ -432,9 +436,8 @@
           return;
         }
         const entry = snap.val();
-        const b = entry.booking || entry.bookingdata || entry; // fallback to top-level fields
+        const b = entry.booking || entry.bookingdata || entry;
 
-        // fields to show (pick commonly used ones)
         const rows = [
           ['Booking ID', bookingId],
           ['Driver ID', b.driverId || entry.driverId || driverId],
@@ -465,20 +468,28 @@
       }
     }
 
-    // Show QR modal: fetch driver's UPI id from /driverdetails/{driverId}/upiId and generate QR
+    // Show QR modal: fetch driver's UPI id and name and generate QR
     async function showQrModal(driverId, amount, bookingId){
       try {
-        const snap = await get(ref(db, `driverdetails/${driverId}/upiId`));
-        if(!snap.exists() || !snap.val()){
-          alert('UPI ID not found for driver ' + driverId);
+        const dSnap = await get(ref(db, `driverdetails/${driverId}`));
+        if(!dSnap.exists()){
+          alert('Driver details not found for ' + driverId);
           return;
         }
-        const upiId = snap.val();
+        const d = dSnap.val();
+        const upiId = d.upiId;
+        const driverName = d.name || '';
 
-        // Build simple UPI URI
-        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&am=${encodeURIComponent(Number(amount).toFixed(2))}&cu=INR&tn=${encodeURIComponent('Payment for '+bookingId)}`;
+        if(!upiId){
+          alert('UPI ID not set for this driver.');
+          return;
+        }
 
-        // render qr
+        const amountStr = Number(amount) ? Number(amount).toFixed(2) : '0.00';
+        const tn = bookingId ? `Payment for ${bookingId}` : 'Withdrawal payment';
+        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(driverName)}&am=${encodeURIComponent(amountStr)}&tn=${encodeURIComponent(tn)}&cu=INR`;
+
+        // clear previous
         document.getElementById('qrCode').innerHTML = '';
         new QRCode(document.getElementById('qrCode'), {
           text: upiUri,
@@ -488,58 +499,114 @@
           colorLight: '#ffffff'
         });
 
-        document.getElementById('qrInfo').innerHTML = `<small style="color:#fff">UPI: ${upiId} — Amount: ₹${Number(amount).toFixed(2)}</small>`;
+        document.getElementById('qrInfo').innerHTML = `<small style="color:#fff">UPI: ${upiId} — ${driverName ? driverName + ' — ' : ''}Amount: ₹${amountStr}</small>`;
         new bootstrap.Modal(document.getElementById('qrModal')).show();
       } catch (err) {
         alert('Failed to generate QR: ' + (err.message || err));
       }
     }
 
-    // mark paid for an entry
+    // mark paid for an entry with confirmation
     async function markPaidEntry(driverId, bookingId){
+      if(!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid? This will set paidout=true.`)) return;
       try {
         await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { paidout:true, status: 'paid' });
-        // reload wallets tab to reflect changes
         loadWallets();
       } catch (err) {
         alert('Failed to mark paid: ' + (err.message || err));
       }
     }
 
-    // ------------------ Withdrawals (kept as before) ------------------
+    // ------------------ Withdrawals (GROUPED PER DRIVER) ------------------
     async function loadWithdrawals(){
       $('#withdrawals-container').hide(); $('#withdrawals-loading').show();
       const container = document.getElementById('withdrawals-container');
       container.innerHTML='';
-      const snap = await get(ref(db,'pendingWithdrawals'));
-      if(snap.exists()){
-        for(const [driverId, bookings] of Object.entries(snap.val())){
-          const driverHeader = document.createElement('div');
-          driverHeader.className='wallet-card';
-          driverHeader.style.width='100%';
-          driverHeader.innerHTML = `<h3>Driver: ${driverId}</h3>`;
-          container.appendChild(driverHeader);
 
-          for(const [bookingId, data] of Object.entries(bookings)){
-            const card = document.createElement('div');
-            card.className='wallet-card';
-            card.innerHTML = `
-              <h3>Booking: ${bookingId}</h3>
-              <p>Amount: ₹${data.amount}</p>
-              <p>Fare: ₹${data.fare}</p>
-              <p>Status: ${data.status}</p>
-              <p>Pickup: ${data.booking?.pickup || 'N/A'}</p>
-              <p>Dropoff: ${data.booking?.dropoff || 'N/A'}</p>
-              <div class="wallet-actions">
-                <button class="btn btn-sm btn-success" onclick="approveWithdrawal('${driverId}','${bookingId}')">Approve</button>
-                <button class="btn btn-sm btn-danger" onclick="rejectWithdrawal('${driverId}','${bookingId}')">Reject</button>
-                <button class="btn btn-sm btn-primary" onclick="showQrModal('${driverId}', ${Number(data.amount)||0}, '${bookingId}')">Show QR</button>
-              </div>
-            `;
-            container.appendChild(card);
+      const snap = await get(ref(db,'pendingWithdrawals'));
+      if(!snap.exists()){
+        container.textContent = 'No pending withdrawals found.';
+        $('#withdrawals-loading').hide(); $('#withdrawals-container').show();
+        return;
+      }
+
+      // snap.val() structure: { driverId: { bookingId: {amount, fare, status, booking: {...}} } }
+      const byDriver = snap.val();
+
+      // Iterate each driver and create a single card for them
+      for(const [driverId, bookingsObj] of Object.entries(byDriver)){
+        // compute total
+        let total = 0;
+        for(const b of Object.values(bookingsObj)) total += Number(b.amount) || 0;
+
+        // fetch driver details for name & upi
+        let driverName = null, upi = null;
+        try {
+          const dSnap = await get(ref(db, `driverdetails/${driverId}`));
+          if(dSnap.exists()){
+            const d = dSnap.val();
+            driverName = d.name || null;
+            upi = d.upiId || null;
           }
+        } catch (e) {
+          driverName = null; upi = null;
+        }
+
+        const driverCard = document.createElement('div');
+        driverCard.className = 'withdrawal-driver-card';
+        // header with total and UPI
+        driverCard.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div>
+              <h4 style="margin:0;color:#ffd700">Driver: ${driverId}${driverName ? ` — ${driverName}` : ''}</h4>
+              <small style="color:#cbd5e1">UPI: ${upi ? upi : '—'}</small>
+            </div>
+            <div style="text-align:right;">
+              <h4 style="margin:0">Total: ₹${total.toFixed(2)}</h4>
+              <div style="margin-top:6px;">
+                <button class="btn btn-sm btn-primary" ${upi ? '' : 'disabled title="UPI missing"'} onclick='showQrModal("${driverId}", ${total.toFixed(2)}, "")'>Show QR (Total)</button>
+              </div>
+            </div>
+          </div>
+          <hr style="border-color: rgba(255,255,255,0.06)">
+          <div id="withdrawals-list-${driverId}"></div>
+        `;
+        container.appendChild(driverCard);
+
+        // create list/table for bookings inside this card
+        const listEl = driverCard.querySelector(`#withdrawals-list-${driverId}`);
+        // table
+        const tbl = document.createElement('table');
+        tbl.className = 'table table-sm table-striped';
+        tbl.innerHTML = `<thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`;
+        listEl.appendChild(tbl);
+        const tbody = tbl.querySelector('tbody');
+
+        let i=1;
+        for(const [bookingId, data] of Object.entries(bookingsObj)){
+          const tr = document.createElement('tr');
+          const pickup = (data.booking && data.booking.pickup) ? data.booking.pickup : (data.pickup || 'N/A');
+          const dropoff = (data.booking && data.booking.dropoff) ? data.booking.dropoff : (data.dropoff || 'N/A');
+          const amount = Number(data.amount) ? Number(data.amount).toFixed(2) : '0.00';
+          const fare = data.fare ?? 'N/A';
+          const status = data.status ?? 'pending';
+
+          // actions: approve/reject, show qr for booking
+          const btnApprove = `<button class="btn btn-sm btn-success" onclick="approveWithdrawal('${driverId}','${bookingId}')">Approve</button>`;
+          const btnReject = `<button class="btn btn-sm btn-danger" onclick="rejectWithdrawal('${driverId}','${bookingId}')">Reject</button>`;
+          const btnQr = `<button class="btn btn-sm btn-primary" ${upi ? '' : 'disabled title="UPI missing"'} onclick='showQrModal("${driverId}", ${amount}, "${bookingId}")'>Show QR</button>`;
+          const btnShowBooking = `<button class="btn btn-sm btn-info" onclick="showBookingModal('${driverId}','${bookingId}')">Show</button>`;
+
+          tr.innerHTML = `<td>${i++}</td>
+                          <td style="min-width:180px"><div><strong>${bookingId}</strong></div><small>${pickup} → ${dropoff}</small></td>
+                          <td>₹${amount}</td>
+                          <td>₹${fare}</td>
+                          <td>${status}</td>
+                          <td style="white-space:nowrap">${btnShowBooking} ${btnQr} ${btnApprove} ${btnReject}</td>`;
+          tbody.appendChild(tr);
         }
       }
+
       $('#withdrawals-loading').hide(); $('#withdrawals-container').show();
     }
 
@@ -577,10 +644,9 @@
       }
     };
 
-    // ensure admin is logged in, else redirect
+    // on auth state - default to users tab if logged
     onAuthStateChanged(auth, user => {
       if(user) {
-        // default tab
         openTab('users');
       } else {
         location.href = 'adminlogin.html';
