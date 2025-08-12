@@ -546,7 +546,9 @@
         }
         const d = dSnap.val();
         const upiId = d.upiId;
-        const driverName = d.name || '';
+        // Use driver's name for pn; fallback to driverId if missing
+        const driverNameRaw = d.name || driverId || 'Payee';
+        const payeeName = String(driverNameRaw).trim();
 
         if(!upiId){
           showToast('UPI ID not set for this driver.','warning');
@@ -555,7 +557,11 @@
 
         const amountStr = Number(amount) ? Number(amount).toFixed(2) : '0.00';
         const tn = bookingId ? `Payment for ${bookingId}` : 'Withdrawal payment';
-        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(driverName)}&am=${encodeURIComponent(amountStr)}&tn=${encodeURIComponent(tn)}&cu=INR`;
+        // Use bookingId or timestamp as transaction reference
+        const tr = bookingId ? bookingId : `txn${Date.now()}`;
+
+        // Build UPI URI — ensure pn and tr are present and encoded
+        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${encodeURIComponent(amountStr)}&tn=${encodeURIComponent(tn)}&tr=${encodeURIComponent(tr)}&cu=INR`;
 
         // clear previous
         document.getElementById('qrCode').innerHTML = '';
@@ -567,7 +573,7 @@
           colorLight: '#ffffff'
         });
 
-        document.getElementById('qrInfo').innerHTML = `<small style="color:#fff">UPI: ${upiId} — ${driverName ? driverName + ' — ' : ''}Amount: ₹${amountStr}</small>`;
+        document.getElementById('qrInfo').innerHTML = `<small style="color:#fff">UPI: ${upiId} — ${payeeName ? payeeName + ' — ' : ''}Amount: ₹${amountStr}</small>`;
         new bootstrap.Modal(document.getElementById('qrModal')).show();
       } catch (err) {
         showToast('Failed to generate QR: ' + (err.message || err),'danger');
@@ -657,7 +663,6 @@
             }
           });
         } else {
-          // disable markAllPaid if no upi? Not necessary — keep available but show confirm
           document.getElementById(`markAllPaid-${driverId}`).addEventListener('click', () => markAllPaidForDriver(driverId));
         }
         // markAllPaid listener
@@ -723,9 +728,6 @@
           tr.querySelector('td:last-child').appendChild(actionsWrapper);
           tbody.appendChild(tr);
         }
-
-        // attach exportRows to the driver card element for later export by per-driver if needed
-        driverCard._exportRows = exportRows.filter(r => r.driverId === driverId);
       }
 
       // Attach the global export CSV button
@@ -776,7 +778,6 @@
         // Build CSV header rows: driver grouping with booking rows below
         let rows = [['Driver ID','Driver Name','UPI','Booking ID','Amount','Fare','Status']];
         for(const [driverId, bookingsObj] of Object.entries(dataByDriver)){
-          // fetch driver details sync isn't possible here; use what's in bookingsObj entries
           for(const [bookingId, data] of Object.entries(bookingsObj)){
             const driverName = (data.driverName || '');
             const upi = (data.upi || '');
