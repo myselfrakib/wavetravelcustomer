@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>WaveTravel Admin Dashboard</title>
 
   <!-- Normalize & DataTables CSS -->
@@ -11,29 +11,38 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css" />
   <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css" />
 
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
   <style>
     body { font-family:Arial,sans-serif; margin:0; background:linear-gradient(to right,#2c3e50,#3498db); color:#fff; }
-    .navbar { display:flex; flex-wrap:wrap; background:#1f2c3f; padding:1rem; gap:.5rem; }
+    .navbar { display:flex; flex-wrap:wrap; background:#1f2c3f; padding:1rem; gap:.5rem; position:sticky; top:0; z-index:1000; }
     .navbar button { flex:1; padding:.5rem 1rem; border:none; border-radius:4px; background:#3498db; color:#fff; cursor:pointer; }
     .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px); }
     .tab-pane.active { display:block; }
     .loading { text-align:center; margin:2rem; color:#ffd700; }
-    table.dataTable { background:rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; }
+    table.dataTable { background:rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; color:#000; }
     .dt-button, .dataTables_length select, .dataTables_filter input { color:#000 !important; }
-    #wallets-container, #withdrawals-container { display:flex; flex-wrap:wrap; gap:1rem; }
-    .wallet-card { background:rgba(255,255,255,0.1); padding:1rem; border-radius:8px; width:280px; }
-    .wallet-card h3 { margin:0 0 .5rem; color:#ffd700; font-size:1.1rem; }
-    .wallet-card p { margin:0.25rem 0; font-size:0.95rem; }
-    .wallet-card button {
-      margin-top:0.5rem;
-      padding:0.4rem 0.8rem;
-      border:none;
-      border-radius:4px;
-      background:#3498db;
-      color:#fff;
-      cursor:pointer;
+
+    /* Wallet cards & layout */
+    #driver-wallets-container, #withdrawals-container { display:flex; flex-wrap:wrap; gap:1rem; }
+    .wallet-card { background:rgba(255,255,255,0.1); padding:1rem; border-radius:8px; width:320px; color:#fff; }
+    .wallet-card h3 { margin:0 0 .5rem; color:#ffd700; font-size:1.05rem; }
+    .wallet-card p { margin:0.25rem 0; font-size:0.95rem; color:#e9eef8; }
+    .wallet-card small { color:#cbd5e1; }
+    .wallet-actions { margin-top:0.6rem; display:flex; gap:8px; flex-wrap:wrap; }
+    .wallet-actions button { flex: none; }
+
+    /* QR modal center */
+    #qrModal .modal-content { background: #0b1220; color: #ffd700; text-align:center; }
+    #qrCode { margin: 0 auto 8px; }
+
+    /* Booking details modal */
+    #bookingDetailsModal .modal-content { color:#111; }
+    /* smaller screens */
+    @media (max-width:520px) {
+      .wallet-card { width:100%; }
     }
-    .wallet-card button.reject { background:#e74c3c; margin-left:5px; }
   </style>
 </head>
 <body>
@@ -127,11 +136,11 @@
     </table>
   </div>
 
-  <!-- DRIVER WALLETS -->
+  <!-- DRIVER WALLETS (upgraded) -->
   <div id="driver-wallets-tab" class="tab-pane">
     <h2>Driver Wallets</h2>
     <div id="wallets-loading" class="loading">Loading wallets…</div>
-    <div id="wallets-container" style="display:none;"></div>
+    <div id="driver-wallets-container" style="display:none;"></div>
   </div>
 
   <!-- PENDING WITHDRAWALS -->
@@ -151,17 +160,48 @@
     </table>
   </div>
 
+  <!-- Booking details modal -->
+  <div class="modal fade" id="bookingDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Booking Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="bookingDetailsBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Modal -->
+  <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center p-3" id="qrModalContent" style="background:#0b1220;color:#ffd700;">
+        <h5>UPI Payment QR</h5>
+        <div id="qrCode" class="my-3"></div>
+        <div id="qrInfo" class="mb-2"></div>
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- jQuery & DataTables JS -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
   <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
 
-  <!-- Firebase & App Logic -->
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- QRCode.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- Firebase modular SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref, get, remove, set, update } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getDatabase, ref, get, child, update, remove, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
     const cfg = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -172,11 +212,26 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-    const app  = initializeApp(cfg);
+    const app = initializeApp(cfg);
     const auth = getAuth(app);
-    const db   = getDatabase(app);
+    const db = getDatabase(app);
+
+    // utilities for DataTables
+    const tables = {};
+    function initTable(id,noSortCols=[]){
+      if(!tables[id]){
+        tables[id] = $(`#${id}`).DataTable({
+          responsive:true,
+          dom:'Bfltip',
+          buttons:['copy','csv','print'],
+          columnDefs: noSortCols.map(c=>({ orderable:false, targets:c }))
+        });
+      } else tables[id].clear().draw();
+    }
 
     window.logout = () => signOut(auth).then(() => location.href='adminlogin.html');
+
+    // CRUD helper functions (from your original)
     window.deleteUser = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
     window.deleteDriver = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
     window.deletePending = async (did,cid) => { await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); };
@@ -191,9 +246,9 @@
       loadPending();
     };
 
-    // Wallet Approve/Reject
+    // Wallet Approve/Reject logic (keeps same behavior)
     window.approveWalletEntry = async (driverId, bookingId) => {
-      await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { status: 'paid' });
+      await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { paidout: true, status: 'paid' });
       loadWallets();
     };
     window.rejectWalletEntry = async (driverId, bookingId, amount) => {
@@ -211,25 +266,14 @@
       loadWithdrawals();
     };
 
-    const tables = {};
-    function initTable(id,noSortCols=[]){
-      if(!tables[id]){
-        tables[id] = $(`#${id}`).DataTable({
-          responsive:true,
-          dom:'Bfltip',
-          buttons:['copy','csv','print'],
-          columnDefs: noSortCols.map(c=>({ orderable:false, targets:c }))
-        });
-      } else tables[id].clear().draw();
-    }
-
+    // --- Load functions for other tabs (kept as before) ---
     async function loadUsers(){
       $('#users-table').hide(); $('#users-loading').show();
       initTable('users-table',[7]);
       const snap = await get(ref(db,'users'));
       let i=1;
       if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())){
-        tables['users-table'].row.add([i++,uid,u.name||'',u.email||'',u.phone||'',u.address||'',u.createdOn||'',`<button onclick="deleteUser('${uid}')">Delete</button>`]).draw(false);
+        tables['users-table'].row.add([i++,uid,u.name||'',u.email||'',u.phone||'',u.address||'',u.createdOn||'',`<button class="btn btn-sm btn-danger" onclick="deleteUser('${uid}')">Delete</button>`]).draw(false);
       }
       $('#users-loading').hide(); $('#users-table').show();
     }
@@ -241,7 +285,7 @@
       let i=1;
       if(snap.exists()) for(const [did,d] of Object.entries(snap.val())){
         const vc = d.vehicles?Object.keys(d.vehicles).length:0;
-        tables['drivers-table'].row.add([i++,did,d.name||'',d.phone||'',vc,`<button onclick="deleteDriver('${did}')">Delete</button>`]).draw(false);
+        tables['drivers-table'].row.add([i++,did,d.name||'',d.phone||'',vc,`<button class="btn btn-sm btn-danger" onclick="deleteDriver('${did}')">Delete</button>`]).draw(false);
       }
       $('#drivers-loading').hide(); $('#drivers-table').show();
     }
@@ -255,7 +299,7 @@
         for(const [cid,c] of Object.entries(cars)){
           tables['pending-table'].row.add([
             i++,did,cid,c.carBrand||'',c.carReg||'',c.driverName||'',c.driverNumber||'',c.ownerName||'',c.seats||'',c.submittedAt||'',
-            `<button onclick="approveCar('${did}','${cid}')">Approve</button> <button onclick="deletePending('${did}','${cid}')">Delete</button>`
+            `<button class="btn btn-sm btn-success" onclick="approveCar('${did}','${cid}')">Approve</button> <button class="btn btn-sm btn-danger" onclick="deletePending('${did}','${cid}')">Delete</button>`
           ]).draw(false);
         }
       }
@@ -269,7 +313,7 @@
       let i=1;
       if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){
         for(const [cid,c] of Object.entries(cars)){
-          tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button onclick="deleteApproved('${did}','${cid}')">Delete</button>`]).draw(false);
+          tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button class="btn btn-sm btn-danger" onclick="deleteApproved('${did}','${cid}')">Delete</button>`]).draw(false);
         }
       }
       $('#approved-loading').hide(); $('#approved-table').show();
@@ -284,7 +328,7 @@
         const dSnap = await get(ref(db,`driverdetails/${did}`));
         const d = dSnap.exists()?dSnap.val():{};
         for(const [sid,s] of Object.entries(slots)){
-          tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button onclick="deleteSlot('${did}','${sid}')">Delete</button>`]).draw(false);
+          tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button class="btn btn-sm btn-danger" onclick="deleteSlot('${did}','${sid}')">Delete</button>`]).draw(false);
         }
       }
       $('#slots-loading').hide(); $('#slots-table').show();
@@ -296,44 +340,173 @@
       const snap = await get(ref(db,'bookings'));
       let i=1;
       if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())){
-        tables['bookings-table'].row.add([i++,bid,b.customerName||'',b.vehicle||'',b.pickup||'',b.dropoff||'',b.duration||'',b.fare||'',b.status||'',`<button onclick="deleteBooking('${bid}')">Delete</button>`]).draw(false);
+        tables['bookings-table'].row.add([i++,bid,b.customerName||'',b.vehicle||'',b.pickup||'',b.dropoff||'',b.duration||'',b.fare||'',b.status||'',`<button class="btn btn-sm btn-danger" onclick="deleteBooking('${bid}')">Delete</button>`]).draw(false);
       }
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
+    // ------------------ UPGRADED Driver Wallets ------------------
     async function loadWallets(){
-      $('#wallets-container').hide(); $('#wallets-loading').show();
-      const container = document.getElementById('wallets-container');
-      container.innerHTML='';
-      const snap = await get(ref(db,'driverWallet'));
-      if(snap.exists()){
-        for(const [driverId, entries] of Object.entries(snap.val())){
-          let driverTotal = 0;
-          for(const e of Object.values(entries)) driverTotal += parseFloat(e.amount)||0;
-          const driverHeader = document.createElement('div');
-          driverHeader.className='wallet-card';
-          driverHeader.style.width='100%';
-          driverHeader.innerHTML = `<h3>Driver: ${driverId} | Total: ₹${driverTotal}</h3>`;
-          container.appendChild(driverHeader);
+      $('#driver-wallets-container').hide(); $('#wallets-loading').show();
+      const container = document.getElementById('driver-wallets-container');
+      container.innerHTML = '';
 
-          for(const [bookingId, entry] of Object.entries(entries)){
-            const card = document.createElement('div');
-            card.className='wallet-card';
-            card.innerHTML = `
-              <h3>Booking: ${bookingId}</h3>
-              <p>Amount: ₹${entry.amount}</p>
-              <p>Fare: ₹${entry.fare}</p>
-              <p>Status: ${entry.status}</p>
-              <button onclick="approveWalletEntry('${driverId}','${bookingId}')">Mark Paid</button>
-              <button class="reject" onclick="rejectWalletEntry('${driverId}','${bookingId}',${entry.amount})">Reject</button>
-            `;
-            container.appendChild(card);
+      const snap = await get(ref(db,'driverWallet'));
+      if(!snap.exists()){
+        container.textContent = 'No wallet entries found.';
+        $('#wallets-loading').hide(); $('#driver-wallets-container').show();
+        return;
+      }
+
+      let sl = 1;
+      // iterate drivers
+      for(const [driverId, entries] of Object.entries(snap.val())){
+        // compute driver total (sum of unpaid amounts maybe)
+        let driverTotal = 0;
+        for(const e of Object.values(entries)) driverTotal += parseFloat(e.amount)||0;
+
+        // optional header card for driver
+        const headerCard = document.createElement('div');
+        headerCard.className = 'wallet-card';
+        headerCard.style.width = '100%';
+        headerCard.innerHTML = `<h3>Driver: ${driverId} | Total: ₹${driverTotal.toFixed(2)}</h3><small>UPI: <span id="upi-${driverId}">loading…</span></small>`;
+        container.appendChild(headerCard);
+
+        // try preload UPI (display) but don't block cards
+        (async () => {
+          try {
+            const uSnap = await get(ref(db, `driverdetails/${driverId}/upiId`));
+            const upi = uSnap.exists() ? uSnap.val() : '—';
+            const el = document.getElementById(`upi-${driverId}`);
+            if(el) el.textContent = upi;
+          } catch (e){
+            const el = document.getElementById(`upi-${driverId}`);
+            if(el) el.textContent = 'error';
           }
+        })();
+
+        // cards per booking
+        for(const [bookingId, entry] of Object.entries(entries)){
+          const card = document.createElement('div');
+          card.className = 'wallet-card';
+          // create booking summary fields (some entries use 'bookingdata' or 'booking' as nested)
+          const amount = entry.amount || entry.amount === 0 ? entry.amount : 'N/A';
+          const fare = entry.fare ?? (entry.booking?.fare ?? 'N/A');
+          const status = entry.status ?? (entry.paidout ? 'paid' : 'unpaid') ?? 'unpaid';
+
+          // Build booking short info (pickup/dropoff from bookingdata or inline)
+          const bookingData = entry.booking || entry.bookingdata || {};
+          const pickup = bookingData.pickup || entry.pickup || bookingData.Pickup || 'N/A';
+          const dropoff = bookingData.dropoff || entry.dropoff || 'N/A';
+          const bookedAt = bookingData.bookedAt || bookingData.bookedAt || entry.date || entry.bookedAt || 'N/A';
+
+          card.innerHTML = `
+            <h3>SL #${sl} — ₹${Number(amount).toFixed(2)}</h3>
+            <p><strong>Booking ID:</strong> ${bookingId}</p>
+            <p><strong>Fare:</strong> ₹${fare}</p>
+            <p><strong>Status:</strong> ${status}</p>
+            <p><strong>Pickup:</strong> ${pickup}</p>
+            <p><strong>Dropoff:</strong> ${dropoff}</p>
+            <div class="wallet-actions">
+              <button class="btn btn-sm btn-info" onclick="showBookingModal('${driverId}','${bookingId}')">Show</button>
+              <button class="btn btn-sm btn-primary" onclick="showQrModal('${driverId}', ${Number(amount) || 0}, '${bookingId}')">Show QR</button>
+              <button class="btn btn-sm btn-success" onclick="markPaidEntry('${driverId}','${bookingId}')">Mark Paid</button>
+            </div>
+          `;
+          container.appendChild(card);
+          sl++;
         }
       }
-      $('#wallets-loading').hide(); $('#wallets-container').show();
+
+      $('#wallets-loading').hide(); $('#driver-wallets-container').show();
     }
 
+    // show booking modal — build a table with representable fields
+    async function showBookingModal(driverId, bookingId){
+      try {
+        // try both driverWallet/{driverId}/{bookingId}/booking and driverWallet/{driverId}/{bookingId}/bookingdata or fields
+        const snap = await get(ref(db, `driverWallet/${driverId}/${bookingId}`));
+        if(!snap.exists()){
+          document.getElementById('bookingDetailsBody').innerHTML = `<div class="alert alert-warning">No booking data found for ${bookingId}</div>`;
+          new bootstrap.Modal(document.getElementById('bookingDetailsModal')).show();
+          return;
+        }
+        const entry = snap.val();
+        const b = entry.booking || entry.bookingdata || entry; // fallback to top-level fields
+
+        // fields to show (pick commonly used ones)
+        const rows = [
+          ['Booking ID', bookingId],
+          ['Driver ID', b.driverId || entry.driverId || driverId],
+          ['Driver Name', b.driverName || entry.driverName || 'N/A'],
+          ['User Name', b.userName || b.customerName || entry.userName || 'N/A'],
+          ['User Phone', b.userPhone || entry.userPhone || 'N/A'],
+          ['Pickup', b.pickup || 'N/A'],
+          ['Dropoff', b.dropoff || 'N/A'],
+          ['Date', b.date || entry.date || 'N/A'],
+          ['Time', b.time || entry.time || 'N/A'],
+          ['Booked At', b.bookedAt || entry.bookedAt || 'N/A'],
+          ['Fare', b.fare || entry.fare || 'N/A'],
+          ['Amount', entry.amount || 'N/A'],
+          ['PaymentId', b.paymentId || entry.paymentId || 'N/A'],
+          ['Status', entry.status || b.status || (entry.paidout ? 'paid' : 'unpaid') || 'N/A']
+        ];
+
+        let html = `<table class="table table-sm table-bordered">`;
+        for(const [label, val] of rows){
+          html += `<tr><th style="width:30%">${label}</th><td>${(val !== undefined && val !== null) ? val : 'N/A'}</td></tr>`;
+        }
+        html += `</table>`;
+        document.getElementById('bookingDetailsBody').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('bookingDetailsModal')).show();
+      } catch (err) {
+        document.getElementById('bookingDetailsBody').innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+        new bootstrap.Modal(document.getElementById('bookingDetailsModal')).show();
+      }
+    }
+
+    // Show QR modal: fetch driver's UPI id from /driverdetails/{driverId}/upiId and generate QR
+    async function showQrModal(driverId, amount, bookingId){
+      try {
+        const snap = await get(ref(db, `driverdetails/${driverId}/upiId`));
+        if(!snap.exists() || !snap.val()){
+          alert('UPI ID not found for driver ' + driverId);
+          return;
+        }
+        const upiId = snap.val();
+
+        // Build simple UPI URI
+        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&am=${encodeURIComponent(Number(amount).toFixed(2))}&cu=INR&tn=${encodeURIComponent('Payment for '+bookingId)}`;
+
+        // render qr
+        document.getElementById('qrCode').innerHTML = '';
+        new QRCode(document.getElementById('qrCode'), {
+          text: upiUri,
+          width: 220,
+          height: 220,
+          colorDark: '#000000',
+          colorLight: '#ffffff'
+        });
+
+        document.getElementById('qrInfo').innerHTML = `<small style="color:#fff">UPI: ${upiId} — Amount: ₹${Number(amount).toFixed(2)}</small>`;
+        new bootstrap.Modal(document.getElementById('qrModal')).show();
+      } catch (err) {
+        alert('Failed to generate QR: ' + (err.message || err));
+      }
+    }
+
+    // mark paid for an entry
+    async function markPaidEntry(driverId, bookingId){
+      try {
+        await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { paidout:true, status: 'paid' });
+        // reload wallets tab to reflect changes
+        loadWallets();
+      } catch (err) {
+        alert('Failed to mark paid: ' + (err.message || err));
+      }
+    }
+
+    // ------------------ Withdrawals (kept as before) ------------------
     async function loadWithdrawals(){
       $('#withdrawals-container').hide(); $('#withdrawals-loading').show();
       const container = document.getElementById('withdrawals-container');
@@ -355,10 +528,13 @@
               <p>Amount: ₹${data.amount}</p>
               <p>Fare: ₹${data.fare}</p>
               <p>Status: ${data.status}</p>
-              <p>Pickup: ${data.booking?.pickup}</p>
-              <p>Dropoff: ${data.booking?.dropoff}</p>
-              <button onclick="approveWithdrawal('${driverId}','${bookingId}')">Approve</button>
-              <button class="reject" onclick="rejectWithdrawal('${driverId}','${bookingId}')">Reject</button>
+              <p>Pickup: ${data.booking?.pickup || 'N/A'}</p>
+              <p>Dropoff: ${data.booking?.dropoff || 'N/A'}</p>
+              <div class="wallet-actions">
+                <button class="btn btn-sm btn-success" onclick="approveWithdrawal('${driverId}','${bookingId}')">Approve</button>
+                <button class="btn btn-sm btn-danger" onclick="rejectWithdrawal('${driverId}','${bookingId}')">Reject</button>
+                <button class="btn btn-sm btn-primary" onclick="showQrModal('${driverId}', ${Number(data.amount)||0}, '${bookingId}')">Show QR</button>
+              </div>
             `;
             container.appendChild(card);
           }
@@ -367,6 +543,7 @@
       $('#withdrawals-loading').hide(); $('#withdrawals-container').show();
     }
 
+    // PROFILE loader (keeps same)
     async function loadProfile(){
       $('#profile-table').hide(); $('#profile-loading').show();
       initTable('profile-table');
@@ -382,6 +559,7 @@
       $('#profile-loading').hide(); $('#profile-table').show();
     }
 
+    // openTab handler used by navbar buttons
     window.openTab = function(tab){
       document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
       const id = tab+'-tab';
@@ -399,7 +577,16 @@
       }
     };
 
-    onAuthStateChanged(auth, user => { if(user) openTab('users'); else location.href='adminlogin.html'; });
+    // ensure admin is logged in, else redirect
+    onAuthStateChanged(auth, user => {
+      if(user) {
+        // default tab
+        openTab('users');
+      } else {
+        location.href = 'adminlogin.html';
+      }
+    });
+
   </script>
 </body>
 </html>
