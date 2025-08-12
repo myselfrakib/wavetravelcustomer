@@ -41,6 +41,7 @@
     /* QR modal center */
     #qrModal .modal-content { background: #0b1220; color: #ffd700; text-align:center; }
     #qrCode { margin: 0 auto 8px; }
+    #upiUriBox { width:100%; word-break:break-all; background:#07101a; color:#fff; padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); }
 
     /* Booking details modal */
     #bookingDetailsModal .modal-content { color:#111; }
@@ -193,7 +194,12 @@
         <h5>UPI Payment QR</h5>
         <div id="qrCode" class="my-3"></div>
         <div id="qrInfo" class="mb-2"></div>
-        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Close</button>
+        <div id="upiUriBox" class="mb-2"></div>
+        <div style="display:flex;gap:8px;justify-content:center;">
+          <button id="copyUpiUriBtn" class="btn btn-sm btn-outline-light">Copy Minimal UPI URI</button>
+          <button id="copyFullUpiUriBtn" class="btn btn-sm btn-outline-light">Copy Full UPI URI</button>
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -232,7 +238,6 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // utilities for DataTables
     const tables = {};
     function initTable(id,noSortCols=[]){
       if(!tables[id]){
@@ -247,7 +252,6 @@
 
     window.logout = () => signOut(auth).then(() => location.href='adminlogin.html');
 
-    // small toast helper
     function showToast(message, type='info', timeout=3000){
       const id = 't' + Date.now();
       const toastHtml = `
@@ -265,36 +269,16 @@
       toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
     }
 
-    // admin action logger
-    async function logAdminAction(adminUid, action, meta = {}){
-      try {
-        const ts = Date.now();
-        await set(ref(db, `adminActions/${ts}`), {
-          adminUid, action, meta, ts
-        });
-      } catch (e) {
-        console.warn('Failed to log admin action', e);
-      }
-    }
-
-    // CRUD helper functions
+    // CRUD and action functions
     window.deleteUser = async uid => { if(!confirm('Delete user?')) return; await remove(ref(db,`users/${uid}`)); loadUsers(); showToast('User deleted','success'); };
     window.deleteDriver = async did => { if(!confirm('Delete driver?')) return; await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); showToast('Driver deleted','success'); };
     window.deletePending = async (did,cid) => { if(!confirm('Delete pending car?')) return; await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); showToast('Pending car deleted','success'); };
     window.deleteApproved = async (did,cid) => { if(!confirm('Delete approved car?')) return; await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); showToast('Approved car deleted','success'); };
     window.deleteSlot = async (did,sid) => { if(!confirm('Delete slot?')) return; await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); showToast('Slot deleted','success'); };
     window.deleteBooking = async bid => { if(!confirm('Delete booking?')) return; await remove(ref(db,`bookings/${bid}`)); loadBookings(); showToast('Booking deleted','success'); };
-    window.approveCar = async (did,cid) => {
-      if(!confirm('Approve car?')) return;
-      const snap = await get(ref(db,`pendingcars/${did}/${cid}`));
-      const car  = snap.val(); if(!car) return;
-      await set(ref(db,`approvedcars/${did}/${cid}`), car);
-      await remove(ref(db,`pendingcars/${did}/${cid}`));
-      loadPending();
-      showToast('Car approved','success');
-    };
+    window.approveCar = async (did,cid) => { if(!confirm('Approve car?')) return; const snap = await get(ref(db,`pendingcars/${did}/${cid}`)); const car = snap.val(); if(!car) return; await set(ref(db,`approvedcars/${did}/${cid}`), car); await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); showToast('Car approved','success'); };
 
-    // Wallet Approve/Reject
+    // Wallet actions
     window.approveWalletEntry = async (driverId, bookingId) => {
       if (!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid?`)) return;
       await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { paidout: true, status: 'paid' });
@@ -310,7 +294,6 @@
       showToast('Wallet entry rejected','warning');
     };
 
-    // Pending Withdrawals Approve/Reject
     window.approveWithdrawal = async (driverId, bookingId) => {
       if (!confirm(`Approve withdrawal ${bookingId} for driver ${driverId}?`)) return;
       await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'approved' });
@@ -326,7 +309,7 @@
       showToast('Withdrawal rejected','warning');
     };
 
-    // DataTable loaders
+    // Data loaders
     async function loadUsers(){
       $('#users-table').hide(); $('#users-loading').show();
       initTable('users-table',[7]);
@@ -429,9 +412,7 @@
             upi = d.upiId || null;
             driverName = d.name || null;
           }
-        } catch (e){
-          upi = null; driverName = null;
-        }
+        } catch (e){ upi = null; driverName = null; }
 
         // driver header
         let driverTotal = 0;
@@ -494,7 +475,7 @@
       $('#wallets-loading').hide(); $('#driver-wallets-container').show();
     }
 
-    // show booking modal — build a table with representable fields
+    // Booking modal builder
     async function showBookingModal(driverId, bookingId){
       try {
         const snap = await get(ref(db, `driverWallet/${driverId}/${bookingId}`));
@@ -536,53 +517,68 @@
       }
     }
 
-    // Show QR modal: fetch driver's UPI id and name and generate QR
+    // Robust QR generation (FIXED: properly encode pa and pn)
     async function showQrModal(driverId, amount, bookingId){
       try {
         const dSnap = await get(ref(db, `driverdetails/${driverId}`));
         if(!dSnap.exists()){
-          showToast('Driver details not found','danger');
-          return;
+          showToast('Driver details not found','danger'); return;
         }
         const d = dSnap.val();
-        const upiId = d.upiId;
-        // Use driver's name for pn; fallback to driverId if missing
-        const driverNameRaw = d.name || driverId || 'Payee';
-        const payeeName = String(driverNameRaw).trim();
+        let upiIdRaw = d.upiId;
+        if(typeof upiIdRaw === 'string') upiIdRaw = upiIdRaw.trim();
+        if(!upiIdRaw){ showToast('UPI ID not set for this driver.','warning'); return; }
 
-        if(!upiId){
-          showToast('UPI ID not set for this driver.','warning');
-          return;
-        }
+        // Normalize and sanitize payee name (capitalize words)
+        const driverNameRaw = (d.name || driverId || 'Payee').trim();
+        const payeeName = driverNameRaw.split(/\s+/).map(s => s ? (s[0].toUpperCase() + s.slice(1)) : '').join(' ');
 
+        // Encode pa (VPA) and pn (payee name)
+        const paEncoded = encodeURIComponent(upiIdRaw); // encodes @ to %40 etc.
+        const pnEncoded = encodeURIComponent(payeeName);
+
+        // format amount
         const amountStr = Number(amount) ? Number(amount).toFixed(2) : '0.00';
+
+        // Build minimal URI (preferred)
+        const minimalUri = `upi://pay?pa=${paEncoded}&pn=${pnEncoded}&am=${encodeURIComponent(amountStr)}&cu=INR`;
+
+        // Full URI fallback (with tn + tr)
         const tn = bookingId ? `Payment for ${bookingId}` : 'Withdrawal payment';
-        // Use bookingId or timestamp as transaction reference
-        const tr = bookingId ? bookingId : `txn${Date.now()}`;
+        const tr = bookingId || `txn${Date.now()}`;
+        const fullUri = `upi://pay?pa=${paEncoded}&pn=${pnEncoded}&am=${encodeURIComponent(amountStr)}&tn=${encodeURIComponent(tn)}&tr=${encodeURIComponent(tr)}&cu=INR`;
 
-        // Build UPI URI — ensure pn and tr are present and encoded
-        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${encodeURIComponent(amountStr)}&tn=${encodeURIComponent(tn)}&tr=${encodeURIComponent(tr)}&cu=INR`;
-
-        // clear previous
+        // Generate QR using minimalUri
         document.getElementById('qrCode').innerHTML = '';
         new QRCode(document.getElementById('qrCode'), {
-          text: upiUri,
-          width: 220,
-          height: 220,
+          text: minimalUri,
+          width: 340,
+          height: 340,
           colorDark: '#000000',
-          colorLight: '#ffffff'
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
         });
 
-        document.getElementById('qrInfo').innerHTML = `<small style="color:#fff">UPI: ${upiId} — ${payeeName ? payeeName + ' — ' : ''}Amount: ₹${amountStr}</small>`;
+        // show info & URIs (display readable pa + name)
+        document.getElementById('qrInfo').innerHTML = `<small style="color:#fff">UPI: ${upiIdRaw} — ${payeeName} — Amount: ₹${amountStr}</small>`;
+        document.getElementById('upiUriBox').innerHTML = `<div style="text-align:left"><strong>Minimal URI (used for QR):</strong><div style="margin-top:6px">${minimalUri}</div><hr style="border-color:rgba(255,255,255,0.06)"><strong>Full URI (fallback):</strong><div style="margin-top:6px">${fullUri}</div></div>`;
+
+        // copy buttons
+        document.getElementById('copyUpiUriBtn').onclick = async () => {
+          try { await navigator.clipboard.writeText(minimalUri); showToast('Minimal UPI URI copied','success'); } catch (e){ showToast('Copy failed','danger'); }
+        };
+        document.getElementById('copyFullUpiUriBtn').onclick = async () => {
+          try { await navigator.clipboard.writeText(fullUri); showToast('Full UPI URI copied','success'); } catch (e){ showToast('Copy failed','danger'); }
+        };
+
         new bootstrap.Modal(document.getElementById('qrModal')).show();
       } catch (err) {
         showToast('Failed to generate QR: ' + (err.message || err),'danger');
       }
     }
 
-    // mark paid for an entry with confirmation
     async function markPaidEntry(driverId, bookingId){
-      if(!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid? This will set paidout=true.`)) return;
+      if(!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid?`)) return;
       try {
         await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { paidout:true, status: 'paid' });
         await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markPaidEntry', driverId, bookingId, ts: Date.now() });
@@ -593,7 +589,7 @@
       }
     }
 
-    // ------------------ Withdrawals (GROUPED PER DRIVER) with Mark All Paid & Export ------------------
+    // ------------------ Withdrawals (GROUPED PER DRIVER) ------------------
     async function loadWithdrawals(){
       $('#withdrawals-container').hide(); $('#withdrawals-loading').show();
       const container = document.getElementById('withdrawals-container');
@@ -608,27 +604,19 @@
 
       const byDriver = snap.val();
 
-      // For export building
-      const exportRows = [];
-
-      // Iterate each driver and create a single card for them
       for(const [driverId, bookingsObj] of Object.entries(byDriver)){
-        // compute total
         let total = 0;
         for(const b of Object.values(bookingsObj)) total += Number(b.amount) || 0;
 
-        // fetch driver details for name & upi
         let driverName = null, upi = null;
         try {
           const dSnap = await get(ref(db, `driverdetails/${driverId}`));
           if(dSnap.exists()){
             const d = dSnap.val();
             driverName = d.name || null;
-            upi = d.upiId || null;
+            upi = (typeof d.upiId === 'string') ? d.upiId.trim() : (d.upiId || null);
           }
-        } catch (e) {
-          driverName = null; upi = null;
-        }
+        } catch (e) { driverName = null; upi = null; }
 
         const driverCard = document.createElement('div');
         driverCard.className = 'withdrawal-driver-card';
@@ -651,24 +639,14 @@
         `;
         container.appendChild(driverCard);
 
-        // add event listeners for header buttons
         if(upi){
           document.getElementById(`qrTotal-${driverId}`).addEventListener('click', () => showQrModal(driverId, total, ''));
           document.getElementById(`copyUpi-${driverId}`).addEventListener('click', async () => {
-            try {
-              await navigator.clipboard.writeText(upi);
-              showToast('UPI copied to clipboard','success');
-            } catch (e) {
-              showToast('Failed to copy UPI: ' + (e.message||e),'danger');
-            }
+            try { await navigator.clipboard.writeText(upi); showToast('UPI copied','success'); } catch (e) { showToast('Copy failed','danger'); }
           });
-        } else {
-          document.getElementById(`markAllPaid-${driverId}`).addEventListener('click', () => markAllPaidForDriver(driverId));
         }
-        // markAllPaid listener
         document.getElementById(`markAllPaid-${driverId}`).addEventListener('click', () => markAllPaidForDriver(driverId));
 
-        // create list/table for bookings inside this card
         const listEl = driverCard.querySelector(`#withdrawals-list-${driverId}`);
         const tbl = document.createElement('table');
         tbl.className = 'table table-sm table-striped';
@@ -678,11 +656,6 @@
 
         let i=1;
         for(const [bookingId, data] of Object.entries(bookingsObj)){
-          // push to export rows
-          exportRows.push({
-            driverId, driverName: driverName || '', upi: upi || '', bookingId, amount: (Number(data.amount)||0).toFixed(2), fare: data.fare || '', status: data.status || ''
-          });
-
           const tr = document.createElement('tr');
           const pickup = (data.booking && data.booking.pickup) ? data.booking.pickup : (data.pickup || 'N/A');
           const dropoff = (data.booking && data.booking.dropoff) ? data.booking.dropoff : (data.dropoff || 'N/A');
@@ -730,52 +703,34 @@
         }
       }
 
-      // Attach the global export CSV button
-      const exportBtn = document.getElementById('exportWithdrawalsBtn');
-      exportBtn.onclick = () => exportWithdrawalsGrouped(byDriver);
+      document.getElementById('exportWithdrawalsBtn').onclick = () => exportWithdrawalsGrouped(byDriver);
 
       $('#withdrawals-loading').hide(); $('#withdrawals-container').show();
     }
 
-    // Mark all pending withdrawals for a driver as approved + mark driverWallet entries as paid
     async function markAllPaidForDriver(driverId){
       if(!confirm(`Mark ALL pending withdrawals for driver ${driverId} as approved and mark their driverWallet entries as paid?`)) return;
       try {
         const snap = await get(ref(db, `pendingWithdrawals/${driverId}`));
-        if(!snap.exists()){
-          showToast('No pending withdrawals for this driver','warning');
-          return;
-        }
+        if(!snap.exists()){ showToast('No pending withdrawals for this driver','warning'); return; }
         const bookingsObj = snap.val();
         const updates = {};
         const bookingIds = [];
-
-        // For each booking: set pendingWithdrawals/{driverId}/{bookingId}/status = 'approved'
-        // And set driverWallet/{driverId}/{bookingId}/paidout = true, status = 'paid'
         for(const [bookingId, data] of Object.entries(bookingsObj)){
           updates[`pendingWithdrawals/${driverId}/${bookingId}/status`] = 'approved';
           updates[`driverWallet/${driverId}/${bookingId}/paidout`] = true;
           updates[`driverWallet/${driverId}/${bookingId}/status`] = 'paid';
           bookingIds.push(bookingId);
         }
-
         await update(ref(db), updates);
-
-        // Log admin action
         await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markAllPaidForDriver', driverId, bookingIds, ts: Date.now() });
-
         showToast(`Marked ${bookingIds.length} booking(s) as paid for ${driverId}`,'success');
-        loadWithdrawals(); // refresh grouped withdrawals
-        loadWallets(); // refresh wallet tab
-      } catch (err) {
-        showToast('Failed to mark all paid: ' + (err.message || err),'danger');
-      }
+        loadWithdrawals(); loadWallets();
+      } catch (err) { showToast('Failed to mark all paid: ' + (err.message || err),'danger'); }
     }
 
-    // Export CSV grouped by driver
     function exportWithdrawalsGrouped(dataByDriver){
       try {
-        // Build CSV header rows: driver grouping with booking rows below
         let rows = [['Driver ID','Driver Name','UPI','Booking ID','Amount','Fare','Status']];
         for(const [driverId, bookingsObj] of Object.entries(dataByDriver)){
           for(const [bookingId, data] of Object.entries(bookingsObj)){
@@ -784,7 +739,6 @@
             rows.push([driverId, driverName, upi, bookingId, (Number(data.amount)||0).toFixed(2), (data.fare||''), (data.status||'')]);
           }
         }
-        // create CSV text
         const csv = rows.map(r => r.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
@@ -795,14 +749,9 @@
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-
-        // Log export action
         set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'exportWithdrawalsGrouped', ts: Date.now() });
-
         showToast('CSV exported','success');
-      } catch (err) {
-        showToast('Export failed: ' + (err.message || err),'danger');
-      }
+      } catch (err) { showToast('Export failed: ' + (err.message || err),'danger'); }
     }
 
     // PROFILE loader
@@ -810,18 +759,11 @@
       $('#profile-table').hide(); $('#profile-loading').show();
       initTable('profile-table');
       const user = auth.currentUser;
-      const profileData = {
-        Name: user?.displayName || 'Admin',
-        Email: user?.email || '',
-        UID: user?.uid || '',
-      };
-      for(const [k,v] of Object.entries(profileData)){
-        tables['profile-table'].row.add([k,v]).draw(false);
-      }
+      const profileData = { Name: user?.displayName || 'Admin', Email: user?.email || '', UID: user?.uid || '' };
+      for(const [k,v] of Object.entries(profileData)) tables['profile-table'].row.add([k,v]).draw(false);
       $('#profile-loading').hide(); $('#profile-table').show();
     }
 
-    // openTab handler used by navbar buttons
     window.openTab = function(tab){
       document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
       const id = tab+'-tab';
@@ -839,15 +781,9 @@
       }
     };
 
-    // on auth state - default to users tab if logged
     onAuthStateChanged(auth, user => {
-      if(user) {
-        openTab('users');
-      } else {
-        location.href = 'adminlogin.html';
-      }
+      if(user) openTab('users'); else location.href='adminlogin.html';
     });
-
   </script>
 </body>
 </html>
