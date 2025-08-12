@@ -430,12 +430,14 @@
 
           const amount = entry.amount !== undefined ? Number(entry.amount) : NaN;
           const fare = (entry.fare ?? (entry.booking?.fare)) ?? 'N/A';
-          const status = entry.status ?? (entry.paidout ? 'paid' : 'unpaid') ?? 'unpaid';
+          const status = (entry.status ?? (entry.paidout ? 'paid' : 'unpaid') ?? 'unpaid');
+          const paidoutFlag = entry.paidout === true;
 
           const bookingData = entry.booking || entry.bookingdata || {};
           const pickup = bookingData.pickup || entry.pickup || 'N/A';
           const dropoff = bookingData.dropoff || entry.dropoff || 'N/A';
 
+          // Buttons
           const btnShow = document.createElement('button');
           btnShow.className = 'btn btn-sm btn-info';
           btnShow.textContent = 'Show';
@@ -444,7 +446,11 @@
           const btnQr = document.createElement('button');
           btnQr.className = 'btn btn-sm btn-primary';
           btnQr.textContent = 'Show QR';
+
+          // Disable QR when upi missing OR already paid (paidout true OR status === 'paid')
+          const isPaid = paidoutFlag || (String(status).toLowerCase() === 'paid');
           if(!upi){ btnQr.disabled = true; btnQr.title = 'UPI missing'; }
+          else if(isPaid){ btnQr.disabled = true; btnQr.title = 'Already paid'; }
           else btnQr.onclick = () => showQrModal(driverId, isNaN(amount) ? 0 : amount, bookingId);
 
           const btnPaid = document.createElement('button');
@@ -528,6 +534,20 @@
         let upiIdRaw = d.upiId;
         if(typeof upiIdRaw === 'string') upiIdRaw = upiIdRaw.trim();
         if(!upiIdRaw){ showToast('UPI ID not set for this driver.','warning'); return; }
+
+        // If bookingId provided, check its paid status to prevent generating QR for paid entries
+        if(bookingId){
+          const wSnap = await get(ref(db, `driverWallet/${driverId}/${bookingId}`));
+          if(wSnap.exists()){
+            const w = wSnap.val();
+            const st = (w.status ?? (w.paidout ? 'paid' : '') ) || '';
+            const paidoutFlag = w.paidout === true;
+            if(paidoutFlag || String(st).toLowerCase() === 'paid'){
+              showToast('Cannot generate QR: entry already paid','warning');
+              return;
+            }
+          }
+        }
 
         // Normalize and sanitize payee name (capitalize words)
         const driverNameRaw = (d.name || driverId || 'Payee').trim();
@@ -618,6 +638,13 @@
           }
         } catch (e) { driverName = null; upi = null; }
 
+        // Determine if driver has any unpaid withdrawal entries
+        const hasUnpaid = Object.values(bookingsObj).some(b => {
+          const st = (b.status || '').toString().toLowerCase();
+          const paidoutFlag = b.paidout === true;
+          return !paidoutFlag && st !== 'paid' && st !== 'approved';
+        });
+
         const driverCard = document.createElement('div');
         driverCard.className = 'withdrawal-driver-card';
         driverCard.innerHTML = `
@@ -629,7 +656,7 @@
             <div style="text-align:right;">
               <h4 style="margin:0">Total: ₹${total.toFixed(2)}</h4>
               <div style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end;">
-                <button class="btn btn-sm btn-primary" ${upi ? '' : 'disabled title="UPI missing"'} id="qrTotal-${driverId}">Show QR (Total)</button>
+                <button class="btn btn-sm btn-primary" ${(!upi || !hasUnpaid) ? 'disabled title="No unpaid withdrawals or UPI missing"' : ''} id="qrTotal-${driverId}">Show QR (Total)</button>
                 <button class="btn btn-sm btn-success" id="markAllPaid-${driverId}">Mark All Paid</button>
               </div>
             </div>
@@ -640,11 +667,16 @@
         container.appendChild(driverCard);
 
         if(upi){
-          document.getElementById(`qrTotal-${driverId}`).addEventListener('click', () => showQrModal(driverId, total, ''));
-          document.getElementById(`copyUpi-${driverId}`).addEventListener('click', async () => {
+          const copyBtn = document.getElementById(`copyUpi-${driverId}`);
+          if(copyBtn) copyBtn.addEventListener('click', async () => {
             try { await navigator.clipboard.writeText(upi); showToast('UPI copied','success'); } catch (e) { showToast('Copy failed','danger'); }
           });
         }
+        const qrTotalBtn = document.getElementById(`qrTotal-${driverId}`);
+        if(qrTotalBtn && upi && hasUnpaid){
+          qrTotalBtn.addEventListener('click', () => showQrModal(driverId, total, ''));
+        }
+
         document.getElementById(`markAllPaid-${driverId}`).addEventListener('click', () => markAllPaidForDriver(driverId));
 
         const listEl = driverCard.querySelector(`#withdrawals-list-${driverId}`);
@@ -662,6 +694,8 @@
           const amount = Number(data.amount) ? Number(data.amount).toFixed(2) : '0.00';
           const fare = data.fare ?? 'N/A';
           const status = data.status ?? 'pending';
+          const paidoutFlag = data.paidout === true;
+          const isPaid = paidoutFlag || (String(status).toLowerCase() === 'paid' || String(status).toLowerCase() === 'approved');
 
           const btnApprove = document.createElement('button');
           btnApprove.className = 'btn btn-sm btn-success';
@@ -677,6 +711,7 @@
           btnQrSingle.className = 'btn btn-sm btn-primary';
           btnQrSingle.textContent = 'Show QR';
           if(!upi){ btnQrSingle.disabled = true; btnQrSingle.title = 'UPI missing'; }
+          else if(isPaid){ btnQrSingle.disabled = true; btnQrSingle.title = 'Already paid or approved'; }
           else btnQrSingle.onclick = () => showQrModal(driverId, Number(amount)||0, bookingId);
 
           const btnShowBooking = document.createElement('button');
@@ -717,11 +752,16 @@
         const updates = {};
         const bookingIds = [];
         for(const [bookingId, data] of Object.entries(bookingsObj)){
+          // Only mark those that are not already paid
+          const st = (data.status || '').toString().toLowerCase();
+          const paidoutFlag = data.paidout === true;
+          if(paidoutFlag || st === 'paid' || st === 'approved') continue;
           updates[`pendingWithdrawals/${driverId}/${bookingId}/status`] = 'approved';
           updates[`driverWallet/${driverId}/${bookingId}/paidout`] = true;
           updates[`driverWallet/${driverId}/${bookingId}/status`] = 'paid';
           bookingIds.push(bookingId);
         }
+        if(Object.keys(updates).length === 0){ showToast('No unpaid withdrawals to mark','info'); return; }
         await update(ref(db), updates);
         await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markAllPaidForDriver', driverId, bookingIds, ts: Date.now() });
         showToast(`Marked ${bookingIds.length} booking(s) as paid for ${driverId}`,'success');
