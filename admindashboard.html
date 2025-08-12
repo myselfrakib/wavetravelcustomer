@@ -801,25 +801,56 @@
       $('#profile-loading').hide(); $('#profile-table').show();
     }
 
+    // Defensive openTab + ensure DOM ready when opening default tab
     window.openTab = function(tab){
-      document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-      const id = tab+'-tab';
-      document.getElementById(id).classList.add('active');
+      // remove active class from all panes
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+      const id = `${tab}-tab`;
+      const el = document.getElementById(id);
+
+      if (!el) {
+        console.warn(`Tab element not found: ${id}`);
+        const first = document.querySelector('.tab-pane');
+        if (first) {
+          first.classList.add('active');
+          if (typeof loadUsers === 'function') loadUsers();
+        }
+        return;
+      }
+
+      el.classList.add('active');
+
       switch(tab){
-        case 'users': loadUsers(); break;
-        case 'drivers': loadDrivers(); break;
-        case 'pending-cars': loadPending(); break;
-        case 'approved-cars': loadApproved(); break;
-        case 'slots': loadSlots(); break;
-        case 'bookings': loadBookings(); break;
-        case 'driver-wallets': loadWallets(); break;
-        case 'pending-withdrawals': loadWithdrawals(); break;
-        case 'profile': loadProfile(); break;
+        case 'users': if (typeof loadUsers === 'function') loadUsers(); break;
+        case 'drivers': if (typeof loadDrivers === 'function') loadDrivers(); break;
+        case 'pending-cars': if (typeof loadPending === 'function') loadPending(); break;
+        case 'approved-cars': if (typeof loadApproved === 'function') loadApproved(); break;
+        case 'slots': if (typeof loadSlots === 'function') loadSlots(); break;
+        case 'bookings': if (typeof loadBookings === 'function') loadBookings(); break;
+        case 'driver-wallets': if (typeof loadWallets === 'function') loadWallets(); break;
+        case 'pending-withdrawals': if (typeof loadWithdrawals === 'function') loadWithdrawals(); break;
+        case 'profile': if (typeof loadProfile === 'function') loadProfile(); break;
+        default:
+          console.warn('Unknown tab:', tab);
+          break;
       }
     };
 
+    // Ensure openTab runs after DOM is ready when auth state is available
     onAuthStateChanged(auth, user => {
-      if(user) openTab('users'); else location.href='adminlogin.html';
+      if (!user) {
+        location.href = 'adminlogin.html';
+        return;
+      }
+
+      const showDefault = () => openTab('users');
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showDefault, { once: true });
+      } else {
+        showDefault();
+      }
     });
   </script>
 </body>
