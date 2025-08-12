@@ -26,7 +26,7 @@
 
     /* Wallet cards & layout */
     #driver-wallets-container, #withdrawals-container { display:flex; flex-wrap:wrap; gap:1rem; }
-    .wallet-card { background:rgba(255,255,255,0.1); padding:1rem; border-radius:8px; width:320px; color:#fff; }
+    .wallet-card { background:rgba(255,255,255,0.1); padding:1rem; border-radius:8px; width:100%; color:#fff; }
     .wallet-card h3 { margin:0 0 .5rem; color:#ffd700; font-size:1.05rem; }
     .wallet-card p { margin:0.25rem 0; font-size:0.95rem; color:#e9eef8; }
     .wallet-card small { color:#cbd5e1; }
@@ -388,7 +388,7 @@
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
-    // ------------------ Driver Wallets ------------------
+    // ------------------ Driver Wallets (GROUPED PER DRIVER) ------------------
     async function loadWallets(){
       $('#driver-wallets-container').hide(); $('#wallets-loading').show();
       const container = document.getElementById('driver-wallets-container');
@@ -401,80 +401,121 @@
         return;
       }
 
-      let sl = 1;
-      for(const [driverId, entries] of Object.entries(snap.val())){
-        // fetch driver's upi and name once
+      const allDrivers = snap.val();
+      // iterate drivers, create a single card per driver containing a table of entries
+      for(const [driverId, entries] of Object.entries(allDrivers)){
+        // fetch driver details
         let upi = null, driverName = null;
         try {
-          const uSnap = await get(ref(db, `driverdetails/${driverId}`));
-          if(uSnap.exists()){
-            const d = uSnap.val();
-            upi = d.upiId || null;
+          const dSnap = await get(ref(db, `driverdetails/${driverId}`));
+          if(dSnap.exists()){
+            const d = dSnap.val();
+            upi = (typeof d.upiId === 'string') ? d.upiId.trim() : (d.upiId || null);
             driverName = d.name || null;
           }
-        } catch (e){ upi = null; driverName = null; }
+        } catch (e) {
+          upi = null; driverName = null;
+        }
 
-        // driver header
+        // compute total
         let driverTotal = 0;
         for(const e of Object.values(entries)) driverTotal += parseFloat(e.amount)||0;
-        const headerCard = document.createElement('div');
-        headerCard.className = 'wallet-card';
-        headerCard.style.width = '100%';
-        headerCard.innerHTML = `<h3>Driver: ${driverId} | Total: ₹${driverTotal.toFixed(2)}</h3>
-                                <small>UPI: <span id="upi-${driverId}">${upi ? upi : '—'}</span> ${driverName ? ` | ${driverName}` : ''}</small>`;
-        container.appendChild(headerCard);
 
+        // build card
+        const card = document.createElement('div');
+        card.className = 'wallet-card';
+
+        // header with copy button and mark all paid
+        const headerHtml = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div>
+              <h3>Driver: ${driverId}${driverName ? ` — ${driverName}` : ''}</h3>
+              <small style="color:#cbd5e1">UPI: <span id="upi-${driverId}">${upi ? upi : '—'}</span></small>
+            </div>
+            <div style="text-align:right;">
+              <h4 style="margin:0;color:#ffd700">Total: ₹${driverTotal.toFixed(2)}</h4>
+              <div style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn btn-sm btn-outline-light" id="copyUpiBtn-${driverId}" ${upi ? '' : 'disabled'}>Copy UPI</button>
+                <button class="btn btn-sm btn-success" id="markAllPaidBtn-${driverId}">Mark All Paid</button>
+              </div>
+            </div>
+          </div>
+          <hr style="border-color: rgba(255,255,255,0.06)">
+        `;
+        card.innerHTML = headerHtml;
+
+        // create table for this driver's entries
+        const tbl = document.createElement('table');
+        tbl.className = 'table table-sm table-striped table-bordered';
+        tbl.style.marginTop = '8px';
+        tbl.innerHTML = `<thead class="table-dark"><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`;
+        const tbody = tbl.querySelector('tbody');
+
+        let i = 1;
         for(const [bookingId, entry] of Object.entries(entries)){
-          const card = document.createElement('div');
-          card.className = 'wallet-card';
-
           const amount = entry.amount !== undefined ? Number(entry.amount) : NaN;
           const fare = (entry.fare ?? (entry.booking?.fare)) ?? 'N/A';
           const status = (entry.status ?? (entry.paidout ? 'paid' : 'unpaid') ?? 'unpaid');
           const paidoutFlag = entry.paidout === true;
+          const isPaid = paidoutFlag || (String(status).toLowerCase() === 'paid');
 
           const bookingData = entry.booking || entry.bookingdata || {};
           const pickup = bookingData.pickup || entry.pickup || 'N/A';
           const dropoff = bookingData.dropoff || entry.dropoff || 'N/A';
 
-          // Buttons
+          const tr = document.createElement('tr');
+
+          const actionsTd = document.createElement('td');
+          actionsTd.style.minWidth = '200px';
+          actionsTd.style.whiteSpace = 'nowrap';
+          // Show button
           const btnShow = document.createElement('button');
-          btnShow.className = 'btn btn-sm btn-info';
+          btnShow.className = 'btn btn-sm btn-info me-1';
           btnShow.textContent = 'Show';
           btnShow.onclick = () => showBookingModal(driverId, bookingId);
 
+          // QR button
           const btnQr = document.createElement('button');
-          btnQr.className = 'btn btn-sm btn-primary';
+          btnQr.className = 'btn btn-sm btn-primary me-1';
           btnQr.textContent = 'Show QR';
-
-          // Disable QR when upi missing OR already paid (paidout true OR status === 'paid')
-          const isPaid = paidoutFlag || (String(status).toLowerCase() === 'paid');
           if(!upi){ btnQr.disabled = true; btnQr.title = 'UPI missing'; }
           else if(isPaid){ btnQr.disabled = true; btnQr.title = 'Already paid'; }
           else btnQr.onclick = () => showQrModal(driverId, isNaN(amount) ? 0 : amount, bookingId);
 
+          // Mark paid button
           const btnPaid = document.createElement('button');
-          btnPaid.className = 'btn btn-sm btn-success';
+          btnPaid.className = 'btn btn-sm btn-success me-1';
           btnPaid.textContent = 'Mark Paid';
           btnPaid.onclick = () => markPaidEntry(driverId, bookingId);
 
-          const actionsDiv = document.createElement('div');
-          actionsDiv.className = 'wallet-actions';
-          actionsDiv.appendChild(btnShow);
-          actionsDiv.appendChild(btnQr);
-          actionsDiv.appendChild(btnPaid);
+          actionsTd.appendChild(btnShow);
+          actionsTd.appendChild(btnQr);
+          actionsTd.appendChild(btnPaid);
 
-          card.innerHTML = `
-            <h3>SL #${sl} — ₹${isNaN(amount) ? '0.00' : amount.toFixed(2)}</h3>
-            <p><strong>Booking ID:</strong> ${bookingId}</p>
-            <p><strong>Fare:</strong> ₹${fare}</p>
-            <p><strong>Status:</strong> ${status}</p>
-            <p><strong>Pickup:</strong> ${pickup}</p>
-            <p><strong>Dropoff:</strong> ${dropoff}</p>
-          `;
-          card.appendChild(actionsDiv);
-          container.appendChild(card);
-          sl++;
+          tr.innerHTML = `<td>${i++}</td>
+                          <td style="min-width:200px"><div><strong>${bookingId}</strong></div><small>${pickup} → ${dropoff}</small></td>
+                          <td>₹${isNaN(amount) ? '0.00' : amount.toFixed(2)}</td>
+                          <td>₹${fare}</td>
+                          <td>${status}</td>`;
+          tr.appendChild(actionsTd);
+          tbody.appendChild(tr);
+        }
+
+        card.appendChild(tbl);
+        container.appendChild(card);
+
+        // attach copy UPI handler
+        const copyBtn = document.getElementById(`copyUpiBtn-${driverId}`);
+        if(copyBtn && upi){
+          copyBtn.addEventListener('click', async () => {
+            try { await navigator.clipboard.writeText(upi); showToast('UPI copied','success'); } catch (e) { showToast('Copy failed','danger'); }
+          });
+        }
+
+        // attach mark all paid
+        const markAllBtn = document.getElementById(`markAllPaidBtn-${driverId}`);
+        if(markAllBtn){
+          markAllBtn.addEventListener('click', () => markAllPaidForDriver(driverId));
         }
       }
 
