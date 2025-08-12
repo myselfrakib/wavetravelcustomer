@@ -36,12 +36,17 @@
     /* Pending withdrawals driver card full width */
     .withdrawal-driver-card { background:rgba(255,255,255,0.08); padding:1rem; border-radius:8px; width:100%; color:#fff; }
 
+    .badge-missing-upi { background:#e74c3c; color:white; padding:3px 8px; border-radius:12px; font-size:0.8rem; margin-left:8px; }
+
     /* QR modal center */
     #qrModal .modal-content { background: #0b1220; color: #ffd700; text-align:center; }
     #qrCode { margin: 0 auto 8px; }
 
     /* Booking details modal */
     #bookingDetailsModal .modal-content { color:#111; }
+
+    /* Toast container */
+    #toast-container { position: fixed; right: 12px; bottom: 72px; z-index: 2200; }
 
     @media (max-width:520px) {
       .wallet-card { width:100%; }
@@ -139,16 +144,21 @@
     </table>
   </div>
 
-  <!-- DRIVER WALLETS (unchanged layout) -->
+  <!-- DRIVER WALLETS -->
   <div id="driver-wallets-tab" class="tab-pane">
     <h2>Driver Wallets</h2>
     <div id="wallets-loading" class="loading">Loading wallets…</div>
     <div id="driver-wallets-container" style="display:none;"></div>
   </div>
 
-  <!-- PENDING WITHDRAWALS (grouped per driver) -->
+  <!-- PENDING WITHDRAWALS -->
   <div id="pending-withdrawals-tab" class="tab-pane">
-    <h2>Pending Withdrawals</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+      <h2>Pending Withdrawals</h2>
+      <div>
+        <button id="exportWithdrawalsBtn" class="btn btn-sm btn-light">Export CSV (Grouped)</button>
+      </div>
+    </div>
     <div id="withdrawals-loading" class="loading">Loading pending withdrawals…</div>
     <div id="withdrawals-container" style="display:none;"></div>
   </div>
@@ -188,6 +198,9 @@
     </div>
   </div>
 
+  <!-- Toast container -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
   <!-- jQuery & DataTables JS -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
@@ -204,7 +217,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref, get, child, update, remove, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getDatabase, ref, get, update, remove, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
     const cfg = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -234,46 +247,86 @@
 
     window.logout = () => signOut(auth).then(() => location.href='adminlogin.html');
 
-    // CRUD helper functions (as before)
-    window.deleteUser = async uid => { await remove(ref(db,`users/${uid}`)); loadUsers(); };
-    window.deleteDriver = async did => { await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); };
-    window.deletePending = async (did,cid) => { await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); };
-    window.deleteApproved = async (did,cid) => { await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); };
-    window.deleteSlot = async (did,sid) => { await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); };
-    window.deleteBooking = async bid => { await remove(ref(db,`bookings/${bid}`)); loadBookings(); };
+    // small toast helper
+    function showToast(message, type='info', timeout=3000){
+      const id = 't' + Date.now();
+      const toastHtml = `
+        <div id="${id}" class="toast align-items-center text-bg-${type} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>`;
+      const container = document.getElementById('toast-container');
+      container.insertAdjacentHTML('beforeend', toastHtml);
+      const toastEl = document.getElementById(id);
+      const bsToast = new bootstrap.Toast(toastEl, { delay: timeout });
+      bsToast.show();
+      toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    // admin action logger
+    async function logAdminAction(adminUid, action, meta = {}){
+      try {
+        const ts = Date.now();
+        await set(ref(db, `adminActions/${ts}`), {
+          adminUid, action, meta, ts
+        });
+      } catch (e) {
+        console.warn('Failed to log admin action', e);
+      }
+    }
+
+    // CRUD helper functions
+    window.deleteUser = async uid => { if(!confirm('Delete user?')) return; await remove(ref(db,`users/${uid}`)); loadUsers(); showToast('User deleted','success'); };
+    window.deleteDriver = async did => { if(!confirm('Delete driver?')) return; await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); showToast('Driver deleted','success'); };
+    window.deletePending = async (did,cid) => { if(!confirm('Delete pending car?')) return; await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); showToast('Pending car deleted','success'); };
+    window.deleteApproved = async (did,cid) => { if(!confirm('Delete approved car?')) return; await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); showToast('Approved car deleted','success'); };
+    window.deleteSlot = async (did,sid) => { if(!confirm('Delete slot?')) return; await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); showToast('Slot deleted','success'); };
+    window.deleteBooking = async bid => { if(!confirm('Delete booking?')) return; await remove(ref(db,`bookings/${bid}`)); loadBookings(); showToast('Booking deleted','success'); };
     window.approveCar = async (did,cid) => {
+      if(!confirm('Approve car?')) return;
       const snap = await get(ref(db,`pendingcars/${did}/${cid}`));
       const car  = snap.val(); if(!car) return;
       await set(ref(db,`approvedcars/${did}/${cid}`), car);
       await remove(ref(db,`pendingcars/${did}/${cid}`));
       loadPending();
+      showToast('Car approved','success');
     };
 
-    // Wallet Approve/Reject (keeps same behavior, but Mark Paid now confirmed)
+    // Wallet Approve/Reject
     window.approveWalletEntry = async (driverId, bookingId) => {
       if (!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid?`)) return;
       await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { paidout: true, status: 'paid' });
+      await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'approveWalletEntry', driverId, bookingId, ts: Date.now() });
       loadWallets();
+      showToast('Marked paid','success');
     };
     window.rejectWalletEntry = async (driverId, bookingId, amount) => {
       if (!confirm(`Reject wallet entry ${bookingId} and reset amount to ${amount}?`)) return;
       await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { status: 'available', amount });
+      await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'rejectWalletEntry', driverId, bookingId, amount, ts: Date.now() });
       loadWallets();
+      showToast('Wallet entry rejected','warning');
     };
 
     // Pending Withdrawals Approve/Reject
     window.approveWithdrawal = async (driverId, bookingId) => {
       if (!confirm(`Approve withdrawal ${bookingId} for driver ${driverId}?`)) return;
       await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'approved' });
+      await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'approveWithdrawal', driverId, bookingId, ts: Date.now() });
       loadWithdrawals();
+      showToast('Withdrawal approved','success');
     };
     window.rejectWithdrawal = async (driverId, bookingId) => {
       if (!confirm(`Reject withdrawal ${bookingId} for driver ${driverId}?`)) return;
       await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'rejected' });
+      await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'rejectWithdrawal', driverId, bookingId, ts: Date.now() });
       loadWithdrawals();
+      showToast('Withdrawal rejected','warning');
     };
 
-    // --- Load functions for other tabs (kept as before) ---
+    // DataTable loaders
     async function loadUsers(){
       $('#users-table').hide(); $('#users-loading').show();
       initTable('users-table',[7]);
@@ -352,7 +405,7 @@
       $('#bookings-loading').hide(); $('#bookings-table').show();
     }
 
-    // ------------------ Driver Wallets (unchanged) ------------------
+    // ------------------ Driver Wallets ------------------
     async function loadWallets(){
       $('#driver-wallets-container').hide(); $('#wallets-loading').show();
       const container = document.getElementById('driver-wallets-container');
@@ -393,17 +446,36 @@
         for(const [bookingId, entry] of Object.entries(entries)){
           const card = document.createElement('div');
           card.className = 'wallet-card';
+
           const amount = entry.amount !== undefined ? Number(entry.amount) : NaN;
           const fare = (entry.fare ?? (entry.booking?.fare)) ?? 'N/A';
           const status = entry.status ?? (entry.paidout ? 'paid' : 'unpaid') ?? 'unpaid';
+
           const bookingData = entry.booking || entry.bookingdata || {};
           const pickup = bookingData.pickup || entry.pickup || 'N/A';
           const dropoff = bookingData.dropoff || entry.dropoff || 'N/A';
 
-          const qrDisabled = !upi;
-          const btnShow = `<button class="btn btn-sm btn-info" onclick="showBookingModal('${driverId}','${bookingId}')">Show</button>`;
-          const btnQr = `<button class="btn btn-sm btn-primary ${qrDisabled ? 'disabled' : ''}" ${qrDisabled ? 'title="UPI missing"' : `onclick="showQrModal('${driverId}', ${isNaN(amount) ? 0 : amount}, '${bookingId}')"`}>Show QR</button>`;
-          const btnPaid = `<button class="btn btn-sm btn-success" onclick="markPaidEntry('${driverId}','${bookingId}')">Mark Paid</button>`;
+          const btnShow = document.createElement('button');
+          btnShow.className = 'btn btn-sm btn-info';
+          btnShow.textContent = 'Show';
+          btnShow.onclick = () => showBookingModal(driverId, bookingId);
+
+          const btnQr = document.createElement('button');
+          btnQr.className = 'btn btn-sm btn-primary';
+          btnQr.textContent = 'Show QR';
+          if(!upi){ btnQr.disabled = true; btnQr.title = 'UPI missing'; }
+          else btnQr.onclick = () => showQrModal(driverId, isNaN(amount) ? 0 : amount, bookingId);
+
+          const btnPaid = document.createElement('button');
+          btnPaid.className = 'btn btn-sm btn-success';
+          btnPaid.textContent = 'Mark Paid';
+          btnPaid.onclick = () => markPaidEntry(driverId, bookingId);
+
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'wallet-actions';
+          actionsDiv.appendChild(btnShow);
+          actionsDiv.appendChild(btnQr);
+          actionsDiv.appendChild(btnPaid);
 
           card.innerHTML = `
             <h3>SL #${sl} — ₹${isNaN(amount) ? '0.00' : amount.toFixed(2)}</h3>
@@ -412,12 +484,8 @@
             <p><strong>Status:</strong> ${status}</p>
             <p><strong>Pickup:</strong> ${pickup}</p>
             <p><strong>Dropoff:</strong> ${dropoff}</p>
-            <div class="wallet-actions">
-              ${btnShow}
-              ${btnQr}
-              ${btnPaid}
-            </div>
           `;
+          card.appendChild(actionsDiv);
           container.appendChild(card);
           sl++;
         }
@@ -473,7 +541,7 @@
       try {
         const dSnap = await get(ref(db, `driverdetails/${driverId}`));
         if(!dSnap.exists()){
-          alert('Driver details not found for ' + driverId);
+          showToast('Driver details not found','danger');
           return;
         }
         const d = dSnap.val();
@@ -481,7 +549,7 @@
         const driverName = d.name || '';
 
         if(!upiId){
-          alert('UPI ID not set for this driver.');
+          showToast('UPI ID not set for this driver.','warning');
           return;
         }
 
@@ -502,7 +570,7 @@
         document.getElementById('qrInfo').innerHTML = `<small style="color:#fff">UPI: ${upiId} — ${driverName ? driverName + ' — ' : ''}Amount: ₹${amountStr}</small>`;
         new bootstrap.Modal(document.getElementById('qrModal')).show();
       } catch (err) {
-        alert('Failed to generate QR: ' + (err.message || err));
+        showToast('Failed to generate QR: ' + (err.message || err),'danger');
       }
     }
 
@@ -511,13 +579,15 @@
       if(!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid? This will set paidout=true.`)) return;
       try {
         await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { paidout:true, status: 'paid' });
+        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markPaidEntry', driverId, bookingId, ts: Date.now() });
         loadWallets();
+        showToast('Marked paid','success');
       } catch (err) {
-        alert('Failed to mark paid: ' + (err.message || err));
+        showToast('Failed to mark paid: ' + (err.message || err),'danger');
       }
     }
 
-    // ------------------ Withdrawals (GROUPED PER DRIVER) ------------------
+    // ------------------ Withdrawals (GROUPED PER DRIVER) with Mark All Paid & Export ------------------
     async function loadWithdrawals(){
       $('#withdrawals-container').hide(); $('#withdrawals-loading').show();
       const container = document.getElementById('withdrawals-container');
@@ -530,8 +600,10 @@
         return;
       }
 
-      // snap.val() structure: { driverId: { bookingId: {amount, fare, status, booking: {...}} } }
       const byDriver = snap.val();
+
+      // For export building
+      const exportRows = [];
 
       // Iterate each driver and create a single card for them
       for(const [driverId, bookingsObj] of Object.entries(byDriver)){
@@ -554,17 +626,17 @@
 
         const driverCard = document.createElement('div');
         driverCard.className = 'withdrawal-driver-card';
-        // header with total and UPI
         driverCard.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
             <div>
               <h4 style="margin:0;color:#ffd700">Driver: ${driverId}${driverName ? ` — ${driverName}` : ''}</h4>
-              <small style="color:#cbd5e1">UPI: ${upi ? upi : '—'}</small>
+              <small style="color:#cbd5e1">UPI: <span id="upi-${driverId}">${upi ? upi : '—'}</span> ${!upi ? '<span class="badge-missing-upi">UPI missing</span>' : `<button id="copyUpi-${driverId}" class="btn btn-sm btn-outline-light ms-2">Copy UPI</button>`}</small>
             </div>
             <div style="text-align:right;">
               <h4 style="margin:0">Total: ₹${total.toFixed(2)}</h4>
-              <div style="margin-top:6px;">
-                <button class="btn btn-sm btn-primary" ${upi ? '' : 'disabled title="UPI missing"'} onclick='showQrModal("${driverId}", ${total.toFixed(2)}, "")'>Show QR (Total)</button>
+              <div style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn btn-sm btn-primary" ${upi ? '' : 'disabled title="UPI missing"'} id="qrTotal-${driverId}">Show QR (Total)</button>
+                <button class="btn btn-sm btn-success" id="markAllPaid-${driverId}">Mark All Paid</button>
               </div>
             </div>
           </div>
@@ -573,9 +645,26 @@
         `;
         container.appendChild(driverCard);
 
+        // add event listeners for header buttons
+        if(upi){
+          document.getElementById(`qrTotal-${driverId}`).addEventListener('click', () => showQrModal(driverId, total, ''));
+          document.getElementById(`copyUpi-${driverId}`).addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(upi);
+              showToast('UPI copied to clipboard','success');
+            } catch (e) {
+              showToast('Failed to copy UPI: ' + (e.message||e),'danger');
+            }
+          });
+        } else {
+          // disable markAllPaid if no upi? Not necessary — keep available but show confirm
+          document.getElementById(`markAllPaid-${driverId}`).addEventListener('click', () => markAllPaidForDriver(driverId));
+        }
+        // markAllPaid listener
+        document.getElementById(`markAllPaid-${driverId}`).addEventListener('click', () => markAllPaidForDriver(driverId));
+
         // create list/table for bookings inside this card
         const listEl = driverCard.querySelector(`#withdrawals-list-${driverId}`);
-        // table
         const tbl = document.createElement('table');
         tbl.className = 'table table-sm table-striped';
         tbl.innerHTML = `<thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`;
@@ -584,6 +673,11 @@
 
         let i=1;
         for(const [bookingId, data] of Object.entries(bookingsObj)){
+          // push to export rows
+          exportRows.push({
+            driverId, driverName: driverName || '', upi: upi || '', bookingId, amount: (Number(data.amount)||0).toFixed(2), fare: data.fare || '', status: data.status || ''
+          });
+
           const tr = document.createElement('tr');
           const pickup = (data.booking && data.booking.pickup) ? data.booking.pickup : (data.pickup || 'N/A');
           const dropoff = (data.booking && data.booking.dropoff) ? data.booking.dropoff : (data.dropoff || 'N/A');
@@ -591,26 +685,126 @@
           const fare = data.fare ?? 'N/A';
           const status = data.status ?? 'pending';
 
-          // actions: approve/reject, show qr for booking
-          const btnApprove = `<button class="btn btn-sm btn-success" onclick="approveWithdrawal('${driverId}','${bookingId}')">Approve</button>`;
-          const btnReject = `<button class="btn btn-sm btn-danger" onclick="rejectWithdrawal('${driverId}','${bookingId}')">Reject</button>`;
-          const btnQr = `<button class="btn btn-sm btn-primary" ${upi ? '' : 'disabled title="UPI missing"'} onclick='showQrModal("${driverId}", ${amount}, "${bookingId}")'>Show QR</button>`;
-          const btnShowBooking = `<button class="btn btn-sm btn-info" onclick="showBookingModal('${driverId}','${bookingId}')">Show</button>`;
+          const btnApprove = document.createElement('button');
+          btnApprove.className = 'btn btn-sm btn-success';
+          btnApprove.textContent = 'Approve';
+          btnApprove.onclick = () => approveWithdrawal(driverId, bookingId);
+
+          const btnReject = document.createElement('button');
+          btnReject.className = 'btn btn-sm btn-danger';
+          btnReject.textContent = 'Reject';
+          btnReject.onclick = () => rejectWithdrawal(driverId, bookingId);
+
+          const btnQrSingle = document.createElement('button');
+          btnQrSingle.className = 'btn btn-sm btn-primary';
+          btnQrSingle.textContent = 'Show QR';
+          if(!upi){ btnQrSingle.disabled = true; btnQrSingle.title = 'UPI missing'; }
+          else btnQrSingle.onclick = () => showQrModal(driverId, Number(amount)||0, bookingId);
+
+          const btnShowBooking = document.createElement('button');
+          btnShowBooking.className = 'btn btn-sm btn-info';
+          btnShowBooking.textContent = 'Show';
+          btnShowBooking.onclick = () => showBookingModal(driverId, bookingId);
+
+          const actionsWrapper = document.createElement('div');
+          actionsWrapper.style.display = 'flex';
+          actionsWrapper.style.gap = '6px';
+          actionsWrapper.appendChild(btnShowBooking);
+          actionsWrapper.appendChild(btnQrSingle);
+          actionsWrapper.appendChild(btnApprove);
+          actionsWrapper.appendChild(btnReject);
 
           tr.innerHTML = `<td>${i++}</td>
                           <td style="min-width:180px"><div><strong>${bookingId}</strong></div><small>${pickup} → ${dropoff}</small></td>
                           <td>₹${amount}</td>
                           <td>₹${fare}</td>
                           <td>${status}</td>
-                          <td style="white-space:nowrap">${btnShowBooking} ${btnQr} ${btnApprove} ${btnReject}</td>`;
+                          <td></td>`;
+          tr.querySelector('td:last-child').appendChild(actionsWrapper);
           tbody.appendChild(tr);
         }
+
+        // attach exportRows to the driver card element for later export by per-driver if needed
+        driverCard._exportRows = exportRows.filter(r => r.driverId === driverId);
       }
+
+      // Attach the global export CSV button
+      const exportBtn = document.getElementById('exportWithdrawalsBtn');
+      exportBtn.onclick = () => exportWithdrawalsGrouped(byDriver);
 
       $('#withdrawals-loading').hide(); $('#withdrawals-container').show();
     }
 
-    // PROFILE loader (keeps same)
+    // Mark all pending withdrawals for a driver as approved + mark driverWallet entries as paid
+    async function markAllPaidForDriver(driverId){
+      if(!confirm(`Mark ALL pending withdrawals for driver ${driverId} as approved and mark their driverWallet entries as paid?`)) return;
+      try {
+        const snap = await get(ref(db, `pendingWithdrawals/${driverId}`));
+        if(!snap.exists()){
+          showToast('No pending withdrawals for this driver','warning');
+          return;
+        }
+        const bookingsObj = snap.val();
+        const updates = {};
+        const bookingIds = [];
+
+        // For each booking: set pendingWithdrawals/{driverId}/{bookingId}/status = 'approved'
+        // And set driverWallet/{driverId}/{bookingId}/paidout = true, status = 'paid'
+        for(const [bookingId, data] of Object.entries(bookingsObj)){
+          updates[`pendingWithdrawals/${driverId}/${bookingId}/status`] = 'approved';
+          updates[`driverWallet/${driverId}/${bookingId}/paidout`] = true;
+          updates[`driverWallet/${driverId}/${bookingId}/status`] = 'paid';
+          bookingIds.push(bookingId);
+        }
+
+        await update(ref(db), updates);
+
+        // Log admin action
+        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markAllPaidForDriver', driverId, bookingIds, ts: Date.now() });
+
+        showToast(`Marked ${bookingIds.length} booking(s) as paid for ${driverId}`,'success');
+        loadWithdrawals(); // refresh grouped withdrawals
+        loadWallets(); // refresh wallet tab
+      } catch (err) {
+        showToast('Failed to mark all paid: ' + (err.message || err),'danger');
+      }
+    }
+
+    // Export CSV grouped by driver
+    function exportWithdrawalsGrouped(dataByDriver){
+      try {
+        // Build CSV header rows: driver grouping with booking rows below
+        let rows = [['Driver ID','Driver Name','UPI','Booking ID','Amount','Fare','Status']];
+        for(const [driverId, bookingsObj] of Object.entries(dataByDriver)){
+          // fetch driver details sync isn't possible here; use what's in bookingsObj entries
+          for(const [bookingId, data] of Object.entries(bookingsObj)){
+            const driverName = (data.driverName || '');
+            const upi = (data.upi || '');
+            rows.push([driverId, driverName, upi, bookingId, (Number(data.amount)||0).toFixed(2), (data.fare||''), (data.status||'')]);
+          }
+        }
+        // create CSV text
+        const csv = rows.map(r => r.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pending_withdrawals_grouped_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
+        // Log export action
+        set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'exportWithdrawalsGrouped', ts: Date.now() });
+
+        showToast('CSV exported','success');
+      } catch (err) {
+        showToast('Export failed: ' + (err.message || err),'danger');
+      }
+    }
+
+    // PROFILE loader
     async function loadProfile(){
       $('#profile-table').hide(); $('#profile-loading').show();
       initTable('profile-table');
