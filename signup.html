@@ -119,10 +119,11 @@
         const uid = userCredential.user.uid;
 
         // Save user details in Realtime Database under /users/{uid}
+        // Prefix the phone number with +91 before saving (keeps other fields the same)
         await db.ref('users/' + uid).set({
           name:  name,
           email: email,
-          phone: phone,
+          phone: '+91' + phone,
           role:  'customer'
         });
 
