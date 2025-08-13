@@ -63,6 +63,13 @@
       border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       font-weight: 600;
     }
+    .fallback-msg {
+      background: #fff;
+      padding: 0.85rem 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      font-weight: 600;
+    }
     .navbar {
       position: fixed; bottom: 0; left: 0; width: 100%;
       background: #fff; border-top: 1px solid #ddd;
@@ -212,24 +219,41 @@
           });
         });
 
+        // Exact matches first
         let matched = all.filter(s =>
           s.pickup === pu && s.dropoff === dof && s.date === dt
         );
+
+        // If no exact matches, fallback to alternatives (same date, same dropoff index)
+        let fallbackUsed = false;
         if (!matched.length) {
-          matched = all.filter(s =>
+          const alternatives = all.filter(s =>
             s.date === dt && locationIndexMap[s.dropoff] === doIdx
           );
+          if (alternatives.length) {
+            matched = alternatives;
+            fallbackUsed = true;
+          }
         }
+
         if (!matched.length) {
           slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
         } else {
-          renderSlots(matched, req);
+          // Pass fallback info into renderSlots so the message is preserved
+          renderSlots(matched, req, { used: fallbackUsed, pickup: pu, dropoff: dof, date: dt });
         }
       });
     }
 
-    function renderSlots(slots, reqSeats) {
-      slotsDiv.innerHTML = '';
+    function renderSlots(slots, reqSeats, fallbackInfo = { used: false }) {
+      // If fallback was used, show the requested message above the list
+      if (fallbackInfo.used) {
+        const friendlyDate = formatDateISOtoDMY(fallbackInfo.date);
+        slotsDiv.innerHTML = `<div class="fallback-msg">No Car is Available From <strong>${escapeHtml(fallbackInfo.pickup)}</strong> but here are some alternatives to <strong>${escapeHtml(fallbackInfo.dropoff)}</strong> on <strong>${friendlyDate}</strong></div>`;
+      } else {
+        slotsDiv.innerHTML = '';
+      }
+
       auth.onAuthStateChanged(user => {
         if (!user) {
           alert('Please login first');
@@ -249,9 +273,9 @@
           card.className = 'slot-card';
           card.innerHTML = `
             <div class="slot-card-header">Sl. No. ${idx + 1}</div>
-            <div><strong>Pickup:</strong> ${slot.pickup}</div>
-            <div><strong>Dropoff:</strong> ${slot.dropoff}</div>
-            <div><strong>Car:</strong> ${slot.carBrand || 'N/A'}</div>
+            <div><strong>Pickup:</strong> ${escapeHtml(slot.pickup)}</div>
+            <div><strong>Dropoff:</strong> ${escapeHtml(slot.dropoff)}</div>
+            <div><strong>Car:</strong> ${escapeHtml(slot.carBrand || 'N/A')}</div>
             <div><strong>Date:</strong> ${displayDate}</div>
             <div><strong>Time:</strong> ${displayTime}</div>
             <div><strong>Seats:</strong> ${avail}</div>
@@ -286,6 +310,17 @@
           });
         });
       });
+    }
+
+    // Basic HTML-escape to avoid accidental markup in location names
+    function escapeHtml(str) {
+      if (!str && str !== 0) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
   </script>
 </body>
