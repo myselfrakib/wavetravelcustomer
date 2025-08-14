@@ -65,6 +65,11 @@
       .driver-totals { width:100%; text-align:left; }
       .driver-actions { width:100%; justify-content:flex-start; }
     }
+
+    /* filter controls */
+    .wallets-filter-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+    .wallets-filter-row select { padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:#071124; color:#fff; font-weight:600; }
+    .wallets-filter-row label { color:#fff; font-weight:700; margin-right:6px; }
   </style>
 </head>
 <body>
@@ -161,6 +166,19 @@
   <!-- DRIVER WALLETS -->
   <div id="driver-wallets-tab" class="tab-pane">
     <h2>Driver Wallets</h2>
+
+    <!-- STATUS FILTER -->
+    <div class="wallets-filter-row">
+      <label for="walletStatusFilter">Filter by status</label>
+      <select id="walletStatusFilter" aria-label="Filter wallet entries by status">
+        <option value="processing" selected>Processing (ideal)</option>
+        <option value="unpaid">Unpaid</option>
+        <option value="paid">Paid</option>
+      </select>
+      <button id="walletFilterApplyBtn" class="btn btn-sm btn-light">Apply</button>
+      <small style="margin-left:12px;color:#cbd5e1">Showing entries that match the selected status (evaluated from driverWallet entries only).</small>
+    </div>
+
     <div id="wallets-loading" class="loading">Loading wallets…</div>
     <div id="driver-wallets-container" style="display:none;"></div>
   </div>
@@ -307,6 +325,7 @@
       showToast('Wallet entry rejected','warning');
     };
 
+    // If you still use pendingWithdrawals elsewhere keep these functions (they operate on pendingWithdrawals)
     window.approveWithdrawal = async (driverId, bookingId) => {
       if (!confirm(`Approve withdrawal ${bookingId} for driver ${driverId}?`)) return;
       await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'approved' });
@@ -335,22 +354,61 @@
       return String(id).replace(/[^a-z0-9\-_]/gi, '-');
     }
 
-    // ------------------ Driver Wallets (GROUPED PER DRIVER) - UPGRADED UI ------------------
+    // Determine effective status from driverWallet entry ONLY
+    function getEffectiveStatusFromWalletEntry(entry){
+      // Priority:
+      // 1) explicit entry.status
+      // 2) paidout true => 'paid'
+      // 3) explicit withdrawal request flags => 'processing'
+      // 4) fallback => 'unpaid'
+      if(!entry) return 'unpaid';
+      if(entry.status) return String(entry.status).toLowerCase();
+      if(entry.paidout === true) return 'paid';
+
+      // Common possible request flags (drivers or backend may use any of these)
+      const flags = ['withdrawalRequested','withdrawal_requested','requested','request','pendingWithdrawal','withdrawRequested','withdraw_requested'];
+      for(const f of flags){
+        if(entry[f] === true) return 'processing';
+      }
+
+      // also treat presence of requestedAt/requestedOn/requestTs as a signal
+      if(entry.requestedAt || entry.requestedOn || entry.requestTimestamp || entry.request_ts) return 'processing';
+
+      return 'unpaid';
+    }
+
+    // ------------------ Driver Wallets (GROUPED PER DRIVER) - uses driverWallet only ------------------
     async function loadWallets(){
       $('#driver-wallets-container').hide(); $('#wallets-loading').show();
       const container = document.getElementById('driver-wallets-container');
       container.innerHTML = '';
 
-      const snap = await get(ref(db,'driverWallet'));
-      if(!snap.exists()){
+      const statusFilter = (document.getElementById('walletStatusFilter')?.value || 'processing').toString().toLowerCase();
+
+      // Read driverWallet once
+      const walletSnap = await get(ref(db,'driverWallet'));
+      if(!walletSnap.exists()){
         container.textContent = 'No wallet entries found.';
         $('#wallets-loading').hide(); $('#driver-wallets-container').show();
         return;
       }
+      const allDrivers = walletSnap.val();
 
-      const allDrivers = snap.val();
+      // iterate drivers and compute filtered entries map
       for(const [driverId, entries] of Object.entries(allDrivers)){
-        // fetch driver details
+        const entriesToShow = {}; // bookingId -> { entry, effective }
+
+        for(const [bookingId, e] of Object.entries(entries)){
+          const effective = getEffectiveStatusFromWalletEntry(e);
+          if(effective === statusFilter){
+            entriesToShow[bookingId] = { entry: e, effective };
+          }
+        }
+
+        // skip drivers with no matched entries
+        if (Object.keys(entriesToShow).length === 0) continue;
+
+        // fetch driver details (UPI/name)
         let upi = null, driverName = null;
         try {
           const dSnap = await get(ref(db, `driverdetails/${driverId}`));
@@ -363,15 +421,11 @@
           upi = null; driverName = null;
         }
 
-        // compute totals
-        let driverTotal = 0;
-        let unpaidTotal = 0;
-        for(const e of Object.values(entries)){
-          const amt = parseFloat(e.amount) || 0;
-          driverTotal += amt;
-          const status = (e.status ?? (e.paidout ? 'paid' : 'unpaid')) || 'unpaid';
-          const paidoutFlag = e.paidout === true;
-          if(!paidoutFlag && String(status).toLowerCase() !== 'paid') unpaidTotal += amt;
+        // compute totals from filtered entries
+        let totalFiltered = 0;
+        for(const [bid, obj] of Object.entries(entriesToShow)){
+          const amt = parseFloat(obj.entry.amount) || 0;
+          totalFiltered += amt;
         }
 
         // build driver card
@@ -392,17 +446,17 @@
 
           <div style="display:flex;align-items:center;gap:12px;">
             <div class="driver-totals">
-              <h4>₹${driverTotal.toFixed(2)}</h4>
-              <div class="small-muted">Total</div>
+              <h4>₹${totalFiltered.toFixed(2)}</h4>
+              <div class="small-muted">Total (${escapeHtml(statusFilter)})</div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;">
               <div>
-                <span class="small-muted">Unpaid</span>
-                <span class="unpaid-badge">₹${unpaidTotal.toFixed(2)}</span>
+                <span class="small-muted">Listed</span>
+                <span class="unpaid-badge">₹${totalFiltered.toFixed(2)}</span>
               </div>
               <div class="driver-actions" style="margin-top:8px;">
                 <button class="btn btn-sm btn-outline-light" id="copy-upi-${sanitized}" ${upi? '': 'disabled'}>Copy UPI</button>
-                <button class="btn btn-sm btn-primary" id="qr-total-${sanitized}" ${(!upi || unpaidTotal <= 0) ? 'disabled' : ''}>Show QR (Unpaid)</button>
+                <button class="btn btn-sm btn-primary" id="qr-total-${sanitized}" ${(!upi || totalFiltered <= 0) ? 'disabled' : ''}>Show QR (Total)</button>
                 <button class="btn btn-sm btn-success" id="mark-all-paid-${sanitized}">Mark All Paid</button>
               </div>
             </div>
@@ -410,7 +464,7 @@
         `;
         card.appendChild(header);
 
-        // body with entries table (collapsed by default style - always visible but compact)
+        // body with entries table (for filtered entries)
         const body = document.createElement('div');
         body.className = 'driver-body';
         const tbl = document.createElement('table');
@@ -419,12 +473,13 @@
         const tbody = tbl.querySelector('tbody');
 
         let i = 1;
-        for(const [bookingId, entry] of Object.entries(entries)){
+        for(const [bookingId, obj] of Object.entries(entriesToShow)){
+          const entry = obj.entry;
+          const effective = obj.effective;
           const amount = entry.amount !== undefined ? Number(entry.amount) : NaN;
           const fare = (entry.fare ?? (entry.booking?.fare)) ?? 'N/A';
-          const status = (entry.status ?? (entry.paidout ? 'paid' : 'unpaid') ?? 'unpaid');
           const paidoutFlag = entry.paidout === true;
-          const isPaid = paidoutFlag || (String(status).toLowerCase() === 'paid');
+          const isPaid = paidoutFlag || (String(effective).toLowerCase() === 'paid');
 
           const bookingData = entry.booking || entry.bookingdata || {};
           const pickup = bookingData.pickup || entry.pickup || 'N/A';
@@ -435,23 +490,25 @@
           // actions cell
           const actionsCell = document.createElement('td');
           actionsCell.style.whiteSpace = 'nowrap';
-          // Show
+
+          // Show button
           const btnShow = document.createElement('button');
           btnShow.className = 'btn btn-sm btn-info me-1';
           btnShow.textContent = 'Show';
           btnShow.onclick = () => showBookingModal(driverId, bookingId);
           actionsCell.appendChild(btnShow);
 
-          // QR
+          // QR button: enabled only if entry effective status equals filter, not paid, amount>0 and upi exists
           const btnQr = document.createElement('button');
           btnQr.className = 'btn btn-sm btn-primary me-1';
           btnQr.textContent = 'QR';
+          const allowQr = (effective === statusFilter) && !isPaid && (Number(amount) > 0) && !!upi;
           if(!upi){ btnQr.disabled = true; btnQr.title = 'UPI missing'; }
-          else if(isPaid){ btnQr.disabled = true; btnQr.title = 'Already paid'; }
+          else if(!allowQr){ btnQr.disabled = true; btnQr.title = 'Entry not in selected status or already paid'; }
           else btnQr.onclick = () => showQrModal(driverId, isNaN(amount) ? 0 : amount, bookingId);
           actionsCell.appendChild(btnQr);
 
-          // Mark Paid
+          // Mark Paid: allowed to mark; advisable to use 'processing' filter to limit actions
           const btnPaid = document.createElement('button');
           btnPaid.className = 'btn btn-sm btn-success';
           btnPaid.textContent = 'Mark Paid';
@@ -462,7 +519,7 @@
                           <td style="min-width:200px"><div><strong>${bookingId}</strong></div><small class="small-muted">${pickup} → ${dropoff}</small></td>
                           <td>₹${isNaN(amount) ? '0.00' : amount.toFixed(2)}</td>
                           <td>₹${fare}</td>
-                          <td>${isPaid ? '<span class="badge-paid">Paid</span>' : '<span class="badge-unpaid">Unpaid</span>'}</td>`;
+                          <td>${isPaid ? '<span class="badge-paid">Paid</span>' : `<span class="badge-unpaid">${escapeHtml(effective)}</span>`}</td>`;
           tr.appendChild(actionsCell);
           tbody.appendChild(tr);
         }
@@ -471,7 +528,7 @@
         card.appendChild(body);
         container.appendChild(card);
 
-        // wire up the header buttons
+        // wire up header buttons
         const copyBtn = document.getElementById(`copy-upi-${sanitized}`);
         if(copyBtn && upi){
           copyBtn.addEventListener('click', async () => {
@@ -479,8 +536,8 @@
           });
         }
         const qrTotalBtn = document.getElementById(`qr-total-${sanitized}`);
-        if(qrTotalBtn && upi && unpaidTotal > 0){
-          qrTotalBtn.addEventListener('click', () => showQrModal(driverId, unpaidTotal, '')); // bookingId empty => total QR
+        if(qrTotalBtn && upi && totalFiltered > 0){
+          qrTotalBtn.addEventListener('click', () => showQrModal(driverId, totalFiltered, '')); // bookingId empty => total QR for filtered entries
         }
         const markAllBtn = document.getElementById(`mark-all-paid-${sanitized}`);
         if(markAllBtn) markAllBtn.addEventListener('click', () => markAllPaidForDriver(driverId));
@@ -489,7 +546,7 @@
       $('#wallets-loading').hide(); $('#driver-wallets-container').show();
     }
 
-    // Booking modal builder
+    // Booking modal builder (unchanged)
     async function showBookingModal(driverId, bookingId){
       try {
         const snap = await get(ref(db, `driverWallet/${driverId}/${bookingId}`));
@@ -515,7 +572,7 @@
           ['Fare', b.fare || entry.fare || 'N/A'],
           ['Amount', entry.amount || 'N/A'],
           ['PaymentId', b.paymentId || entry.paymentId || 'N/A'],
-          ['Status', entry.status || b.status || (entry.paidout ? 'paid' : 'unpaid') || 'N/A']
+          ['Status', entry.status || (entry.paidout ? 'paid' : ( entry.withdrawalRequested ? 'processing' : 'unpaid')) || 'N/A']
         ];
 
         let html = `<table class="table table-sm table-bordered">`;
@@ -531,7 +588,7 @@
       }
     }
 
-    // Robust QR generation (unchanged logic)
+    // QR generation (unchanged): uses provided amount and bookingId (if bookingId supplied it will block if already paid)
     async function showQrModal(driverId, amount, bookingId){
       try {
         const dSnap = await get(ref(db, `driverdetails/${driverId}`));
@@ -607,30 +664,38 @@
       }
     }
 
-    // Mark all pending withdrawals / wallet entries as paid for driver
+    // Mark all entries for driver that are 'processing' or flagged as withdrawalRequested in driverWallet
     async function markAllPaidForDriver(driverId){
-      if(!confirm(`Mark ALL pending withdrawals for driver ${driverId} as approved and mark their driverWallet entries as paid?`)) return;
+      if(!confirm(`Mark ALL 'processing' wallet entries for driver ${driverId} as paid?`)) return;
       try {
-        const snap = await get(ref(db, `pendingWithdrawals/${driverId}`));
-        if(!snap.exists()){ showToast('No pending withdrawals for this driver','warning'); return; }
-        const bookingsObj = snap.val();
+        const snap = await get(ref(db, `driverWallet/${driverId}`));
+        if(!snap.exists()){ showToast('No wallet entries for this driver','warning'); return; }
+        const entriesObj = snap.val();
         const updates = {};
         const bookingIds = [];
-        for(const [bookingId, data] of Object.entries(bookingsObj)){
-          const st = (data.status || '').toString().toLowerCase();
-          const paidoutFlag = data.paidout === true;
-          if(paidoutFlag || st === 'paid' || st === 'approved') continue;
-          updates[`pendingWithdrawals/${driverId}/${bookingId}/status`] = 'approved';
-          updates[`driverWallet/${driverId}/${bookingId}/paidout`] = true;
-          updates[`driverWallet/${driverId}/${bookingId}/status`] = 'paid';
-          bookingIds.push(bookingId);
+
+        for(const [bookingId, entry] of Object.entries(entriesObj)){
+          const effective = getEffectiveStatusFromWalletEntry(entry);
+          // Only mark those that are processing (i.e., driver requested withdrawal)
+          if(effective === 'processing'){
+            updates[`driverWallet/${driverId}/${bookingId}/paidout`] = true;
+            updates[`driverWallet/${driverId}/${bookingId}/status`] = 'paid';
+            bookingIds.push(bookingId);
+          }
         }
-        if(Object.keys(updates).length === 0){ showToast('No unpaid withdrawals to mark','info'); return; }
+
+        if(Object.keys(updates).length === 0){
+          showToast('No processing entries to mark paid','info');
+          return;
+        }
+
         await update(ref(db), updates);
         await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markAllPaidForDriver', driverId, bookingIds, ts: Date.now() });
         showToast(`Marked ${bookingIds.length} booking(s) as paid for ${driverId}`,'success');
-        loadWithdrawals(); loadWallets();
-      } catch (err) { showToast('Failed to mark all paid: ' + (err.message || err),'danger'); }
+        loadWallets();
+      } catch (err) {
+        showToast('Failed to mark all paid: ' + (err.message || err),'danger');
+      }
     }
 
     // ------------------ Withdrawals (GROUPED PER DRIVER) ------------------
@@ -791,7 +856,6 @@
       } catch (err) { showToast('Export failed: ' + (err.message || err),'danger'); }
     }
 
-    // PROFILE loader
     async function loadProfile(){
       $('#profile-table').hide(); $('#profile-loading').show();
       initTable('profile-table');
@@ -803,14 +867,10 @@
 
     // Defensive openTab + ensure DOM ready when opening default tab
     window.openTab = function(tab){
-      // remove active class from all panes
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-
       const id = `${tab}-tab`;
       const el = document.getElementById(id);
-
       if (!el) {
-        console.warn(`Tab element not found: ${id}`);
         const first = document.querySelector('.tab-pane');
         if (first) {
           first.classList.add('active');
@@ -818,9 +878,7 @@
         }
         return;
       }
-
       el.classList.add('active');
-
       switch(tab){
         case 'users': if (typeof loadUsers === 'function') loadUsers(); break;
         case 'drivers': if (typeof loadDrivers === 'function') loadDrivers(); break;
@@ -831,26 +889,32 @@
         case 'driver-wallets': if (typeof loadWallets === 'function') loadWallets(); break;
         case 'pending-withdrawals': if (typeof loadWithdrawals === 'function') loadWithdrawals(); break;
         case 'profile': if (typeof loadProfile === 'function') loadProfile(); break;
-        default:
-          console.warn('Unknown tab:', tab);
-          break;
+        default: console.warn('Unknown tab:', tab); break;
       }
     };
 
-    // Ensure openTab runs after DOM is ready when auth state is available
+    // Basic HTML-escape
+    function escapeHtml(str) {
+      if (!str && str !== 0) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Ensure openTab runs after auth state ready
     onAuthStateChanged(auth, user => {
-      if (!user) {
-        location.href = 'adminlogin.html';
-        return;
+      if (!user) { location.href = 'adminlogin.html'; return; }
+      const filterEl = document.getElementById('walletStatusFilter');
+      if(filterEl){
+        document.getElementById('walletFilterApplyBtn').addEventListener('click', () => loadWallets());
+        filterEl.addEventListener('change', () => loadWallets());
       }
-
       const showDefault = () => openTab('users');
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', showDefault, { once: true });
-      } else {
-        showDefault();
-      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showDefault, { once: true });
+      else showDefault();
     });
   </script>
 </body>
