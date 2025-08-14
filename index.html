@@ -69,39 +69,47 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* Toast styles */
+    /* Centered Toast styles */
     .toast-container {
       position: fixed;
-      right: 20px;
-      bottom: 24px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
       display: flex;
       flex-direction: column;
       gap: 10px;
       z-index: 99999;
       pointer-events: none;
+      align-items: center;
+      width: auto;
+      max-width: 90%;
+      padding: 0 12px;
+      box-sizing: border-box;
     }
     .toast {
-      min-width: 220px;
-      max-width: 360px;
+      min-width: 260px;
+      max-width: 520px;
       padding: 12px 14px;
       border-radius: 10px;
       color: #fff;
       font-weight: 600;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
-      transform: translateY(10px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+      transform: translateY(8px) scale(0.98);
       opacity: 0;
-      transition: transform .28s cubic-bezier(.2,.9,.2,1), opacity .28s;
+      transition: transform .28s cubic-bezier(.2,.9,.2,1), opacity .28s, filter .28s;
       pointer-events: auto;
       display: flex;
       align-items: center;
       gap: 10px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
-    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.show { transform: translateY(0) scale(1); opacity: 1; }
     .toast.info { background: linear-gradient(90deg,#3b82f6,#2563eb); }
     .toast.success { background: linear-gradient(90deg,#10b981,#059669); }
     .toast.error { background: linear-gradient(90deg,#ef4444,#dc2626); }
     .toast .close-toast {
-      margin-left: auto;
+      margin-left: 12px;
       background: rgba(255,255,255,0.12);
       border: none;
       color: #fff;
@@ -113,6 +121,14 @@
     .toast .icon {
       width: 20px; height: 20px; flex: 0 0 20px; display:inline-block;
       opacity: 0.95;
+      text-align:center;
+      line-height:20px;
+      font-weight:800;
+    }
+
+    /* Slight responsiveness to avoid covering too much on small screens */
+    @media (max-width:420px) {
+      .toast { min-width: 220px; padding: 10px; font-size: 14px; }
     }
   </style>
 </head>
@@ -145,7 +161,7 @@
     </div>
   </div>
 
-  <!-- Toast container -->
+  <!-- Centered Toast container -->
   <div id="toastRoot" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <!-- Firebase SDKs -->
@@ -154,7 +170,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
   <script>
-    // ----- Toast helper (replaces alert/popups) -----
+    // ----- Toast helper (centered) -----
     function showToast(message, type = 'info', timeout = 3000) {
       const root = document.getElementById('toastRoot');
       if (!root) return console.warn('Toast root missing');
@@ -163,7 +179,6 @@
       toast.className = `toast ${type}`;
       toast.setAttribute('role', 'status');
 
-      // optional icon
       const icon = document.createElement('span');
       icon.className = 'icon';
       if (type === 'success') icon.textContent = '✓';
@@ -188,10 +203,8 @@
 
       root.appendChild(toast);
 
-      // show animation
-      requestAnimationFrame(() => {
-        toast.classList.add('show');
-      });
+      // show animation on next frame
+      requestAnimationFrame(() => toast.classList.add('show'));
 
       // auto dismiss
       if (timeout > 0) {
