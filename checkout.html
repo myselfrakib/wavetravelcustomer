@@ -62,7 +62,7 @@
     .navbar a { color:var(--primary); text-decoration:none; font-size:0.75rem; text-align:center; }
     .navbar a i { font-size:1.25rem; display:block; margin-bottom:4px; }
 
-    /* Centered toast */
+    /* Centered toast — DOUBLED SIZE */
     #center-toast {
       position: fixed;
       left: 50%;
@@ -70,20 +70,21 @@
       transform: translate(-50%, -50%) scale(0.95);
       background: rgba(11,18,32,0.94);
       color: #fff;
-      padding: 14px 18px;
-      border-radius: 10px;
-      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      padding: 28px 36px;              /* doubled from ~14px 18px */
+      border-radius: 14px;            /* slightly larger */
+      box-shadow: 0 12px 36px rgba(2,6,23,0.6); /* stronger shadow */
       opacity: 0;
       pointer-events: none;
       transition: opacity .22s ease, transform .22s ease;
       z-index: 9999;
-      font-weight: 600;
-      min-width: 220px;
+      font-weight: 700;
+      min-width: 440px;               /* doubled from 220px */
       text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 16px;                      /* larger gap */
+      font-size: 1.25rem;             /* larger text (approx doubled visual) */
     }
     #center-toast.show {
       opacity: 1;
@@ -91,9 +92,26 @@
       pointer-events: auto;
     }
     #center-toast .icon {
-      width:20px; height:20px; display:inline-block; border-radius:50%;
-      background: #28a745; display:flex; align-items:center; justify-content:center;
-      color: #fff; font-size:12px;
+      width:40px; height:40px;        /* doubled from 20px */
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:50%;
+      background: #28a745;
+      color: #fff;
+      font-size:18px;                 /* larger icon text */
+      flex: 0 0 40px;
+    }
+
+    /* Make toast responsive on small screens — scale down if viewport narrow */
+    @media (max-width:520px) {
+      #center-toast {
+        min-width: calc(100% - 40px);
+        padding: 18px 20px;
+        gap: 10px;
+        font-size: 1rem;
+      }
+      #center-toast .icon { width:32px; height:32px; font-size:14px; }
     }
   </style>
 </head>
