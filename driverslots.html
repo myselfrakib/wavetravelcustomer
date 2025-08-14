@@ -193,7 +193,9 @@
       return `${hh.toString().padStart(2, '0')}:${m}`;
     }
     function fmt12(t) {
+      if (!t) return '-';
       let [hh, mm] = t.split(":").map(Number);
+      if (isNaN(hh) || isNaN(mm)) return t;
       const ap = hh >= 12 ? "PM" : "AM";
       hh = hh % 12 || 12;
       return `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')} ${ap}`;
@@ -201,12 +203,65 @@
 
     let driverId = "";
 
+    // small helper to escape text inserted into HTML attributes
+    function escapeHtml(s) {
+      if (s === undefined || s === null) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    /**
+     * Load locations and set default pickup to:
+     * "Berhampore Mohona Bus Stand" if present anywhere under /locations (array or object).
+     */
     function loadLocations() {
       onValue(ref(db, "locations"), snap => {
-        const locs = snap.val() || [];
+        const val = snap.val();
         let opts = "";
-        locs.forEach(l => opts += `<option>${l.name}</option>`);
-        pickup.innerHTML = dropoff.innerHTML = opts;
+        let defaultFound = false;
+        // If nothing, clear selects
+        if (!val) {
+          pickup.innerHTML = `<option disabled>No locations</option>`;
+          dropoff.innerHTML = `<option disabled>No locations</option>`;
+          return;
+        }
+
+        // If array-like
+        if (Array.isArray(val)) {
+          for (const l of val) {
+            if (!l) continue;
+            const name = l.name || String(l);
+            opts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+            if (name === "Berhampore Mohona Bus Stand") defaultFound = true;
+          }
+        } else {
+          // object: iterate keys so structure like /locations/8 works
+          for (const k of Object.keys(val)) {
+            const l = val[k];
+            if (!l) continue;
+            const name = (typeof l === 'object' && l.name) ? l.name : String(l);
+            opts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+            if (name === "Berhampore Mohona Bus Stand") defaultFound = true;
+          }
+        }
+
+        // assign built options to both pickup and dropoff
+        pickup.innerHTML = opts;
+        dropoff.innerHTML = opts;
+
+        // If default exists, set pickup to that value
+        if (defaultFound) {
+          try { pickup.value = "Berhampore Mohona Bus Stand"; }
+          catch (e) { /* silently ignore */ }
+        }
+      }, err => {
+        console.error("Failed to read locations:", err);
+        pickup.innerHTML = `<option disabled>Error loading locations</option>`;
+        dropoff.innerHTML = `<option disabled>Error loading locations</option>`;
       });
     }
 
@@ -218,11 +273,11 @@
           html += `
             <div class="slot-card">
               <p><strong>Sl No. ${cnt++}</strong></p>
-              <p><strong>${s.pickup}</strong> ➝ <strong>${s.dropoff}</strong></p>
-              <p>Date: ${s.date}, Time: ${fmt12(s.time)}</p>
-              <p>Seats: ${s.seats}</p>
-              <p>Car: ${s.carBrand} (${s.carReg})</p>
-              <p>Driver: ${s.driverName}</p>
+              <p><strong>${escapeHtml(s.pickup)}</strong> ➝ <strong>${escapeHtml(s.dropoff)}</strong></p>
+              <p>Date: ${escapeHtml(s.date)}, Time: ${escapeHtml(fmt12(s.time))}</p>
+              <p>Seats: ${escapeHtml(s.seats)}</p>
+              <p>Car: ${escapeHtml(s.carBrand)} (${escapeHtml(s.carReg)})</p>
+              <p>Driver: ${escapeHtml(s.driverName)}</p>
               <button onclick="deleteSlot('${ch.key}')">Delete</button>
             </div>`;
         });
@@ -230,6 +285,7 @@
       });
     }
 
+    // expose deleteSlot globally for inline onclick
     window.deleteSlot = function(key) {
       if (!driverId) return;
       if (confirm("Are you sure to delete this slot?")) {
@@ -253,7 +309,7 @@
         snap.forEach(ch => {
           const d = ch.val();
           const seatText = d.seats ? `${d.seats} seats` : "Unknown seats";
-          opts += `<option value="${ch.key}">${d.carBrand} (${seatText})</option>`;
+          opts += `<option value="${escapeHtml(ch.key)}">${escapeHtml(d.carBrand)} (${escapeHtml(seatText)})</option>`;
         });
         car.innerHTML = opts || `<option disabled>No approved cars</option>`;
       });
