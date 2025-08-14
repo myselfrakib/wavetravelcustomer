@@ -68,11 +68,57 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    /* Toast styles */
+    .toast-container {
+      position: fixed;
+      right: 20px;
+      bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 99999;
+      pointer-events: none;
+    }
+    .toast {
+      min-width: 220px;
+      max-width: 360px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+      transform: translateY(10px);
+      opacity: 0;
+      transition: transform .28s cubic-bezier(.2,.9,.2,1), opacity .28s;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.info { background: linear-gradient(90deg,#3b82f6,#2563eb); }
+    .toast.success { background: linear-gradient(90deg,#10b981,#059669); }
+    .toast.error { background: linear-gradient(90deg,#ef4444,#dc2626); }
+    .toast .close-toast {
+      margin-left: auto;
+      background: rgba(255,255,255,0.12);
+      border: none;
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .toast .icon {
+      width: 20px; height: 20px; flex: 0 0 20px; display:inline-block;
+      opacity: 0.95;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>WAVETRAVEL: One‑Way Cabfare<br>Login via OTP</h2>
+    <h2>WAVETRAVEL: One-Way Cabfare<br>Login via OTP</h2>
     <select id="countryCode">
       <option value="+91" selected>🇮🇳 +91</option>
       <option value="+1">🇺🇸 +1</option>
@@ -99,13 +145,64 @@
     </div>
   </div>
 
+  <!-- Toast container -->
+  <div id="toastRoot" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
   <script>
-    // Firebase config
+    // ----- Toast helper (replaces alert/popups) -----
+    function showToast(message, type = 'info', timeout = 3000) {
+      const root = document.getElementById('toastRoot');
+      if (!root) return console.warn('Toast root missing');
+
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.setAttribute('role', 'status');
+
+      // optional icon
+      const icon = document.createElement('span');
+      icon.className = 'icon';
+      if (type === 'success') icon.textContent = '✓';
+      else if (type === 'error') icon.textContent = '!';
+      else icon.textContent = 'i';
+      toast.appendChild(icon);
+
+      const text = document.createElement('div');
+      text.style.flex = '1';
+      text.textContent = message;
+      toast.appendChild(text);
+
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'close-toast';
+      closeBtn.setAttribute('aria-label', 'Dismiss');
+      closeBtn.textContent = '✕';
+      closeBtn.onclick = () => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 280);
+      };
+      toast.appendChild(closeBtn);
+
+      root.appendChild(toast);
+
+      // show animation
+      requestAnimationFrame(() => {
+        toast.classList.add('show');
+      });
+
+      // auto dismiss
+      if (timeout > 0) {
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 280);
+        }, timeout);
+      }
+    }
+
+    // ----- Firebase config and app init -----
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -130,10 +227,14 @@
 
     // Initialize reCAPTCHA
     function initRecaptcha() {
-      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
-        'recaptcha-container', { size: 'invisible' }
-      );
-      window.recaptchaVerifier.render();
+      try {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+          'recaptcha-container', { size: 'invisible' }
+        );
+        window.recaptchaVerifier.render();
+      } catch (err) {
+        console.warn('Recaptcha init error', err);
+      }
     }
 
     window.onload = () => {
@@ -156,6 +257,9 @@
                   location.href = 'booking.html';
                 }
               }
+            })
+            .catch(err => {
+              console.error('User lookup failed', err);
             });
         }
       });
@@ -179,17 +283,27 @@
     }
 
     async function checkUserExists(fullPhone) {
-      const snap = await db
-        .ref('users')
-        .orderByChild('phone')
-        .equalTo(fullPhone)
-        .once('value');
-      return snap.exists();
+      try {
+        const snap = await db
+          .ref('users')
+          .orderByChild('phone')
+          .equalTo(fullPhone)
+          .once('value');
+        return snap.exists();
+      } catch (err) {
+        console.error('DB lookup error', err);
+        throw err;
+      }
     }
 
+    // Event: Send OTP
     sendBtn.addEventListener('click', async () => {
       const phone = phoneInput.value.trim();
-      if (!/^\d{10}$/.test(phone)) return alert('Enter a valid 10‑digit phone number.');
+      if (!/^\d{10}$/.test(phone)) {
+        showToast('Enter a valid 10-digit phone number.', 'error');
+        phoneInput.focus();
+        return;
+      }
       const fullPhone = codeSelect.value + phone;
 
       sendBtn.innerHTML = 'Checking... <div class="spinner"></div>';
@@ -198,7 +312,7 @@
       try {
         const userExists = await checkUserExists(fullPhone);
         if (!userExists) {
-          alert('No user found. Please sign up first.');
+          showToast('No user found. Please sign up first.', 'error');
           sendBtn.textContent = 'Send OTP';
           sendBtn.disabled = false;
           return;
@@ -206,8 +320,12 @@
 
         // Send OTP
         sendBtn.innerHTML = 'Sending... <div class="spinner"></div>';
+        // ensure recaptcha exists
+        if (!window.recaptchaVerifier) initRecaptcha();
+
         confirmationResult = await auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier);
-        alert('OTP sent!');
+        showToast('OTP sent!', 'success');
+
         otpInput.style.display = 'block';
         verifyBtn.style.display = 'block';
         sendBtn.style.display = 'none';
@@ -215,13 +333,15 @@
         startResendCountdown();
       } catch (err) {
         console.error('OTP send failed:', err);
-        alert('Failed to send OTP: ' + err.message);
+        const msg = err && err.message ? err.message : 'Failed to send OTP';
+        showToast('Failed to send OTP: ' + msg, 'error', 5000);
         sendBtn.textContent = 'Send OTP';
         sendBtn.disabled = false;
         initRecaptcha();
       }
     });
 
+    // Resend flow: reveal send controls again so user can trigger a fresh send
     resendBtn.addEventListener('click', () => {
       sendBtn.style.display = 'block';
       otpInput.style.display = 'none';
@@ -232,9 +352,14 @@
       phoneInput.focus();
     });
 
+    // Event: Verify OTP
     verifyBtn.addEventListener('click', async () => {
       const otp = otpInput.value.trim();
-      if (!/^\d{6}$/.test(otp)) return alert('Enter the 6‑digit OTP.');
+      if (!/^\d{6}$/.test(otp)) {
+        showToast('Enter the 6-digit OTP.', 'error');
+        otpInput.focus();
+        return;
+      }
 
       verifyBtn.disabled = true;
       try {
@@ -243,18 +368,23 @@
         localStorage.setItem('userPhone', userPhone);
 
         const snap = await db.ref('users').orderByChild('phone').equalTo(userPhone).once('value');
+        if (!snap.exists()) {
+          showToast('User record not found after verification.', 'error');
+          verifyBtn.disabled = false;
+          return;
+        }
         const userData = Object.values(snap.val())[0];
 
         if (userData.role === 'admin') {
-          alert('Admin login successful!');
-          location.href = 'admindashboard.html';
+          showToast('Admin login successful!', 'success');
+          setTimeout(() => { location.href = 'admindashboard.html'; }, 700);
         } else {
-          alert('Login successful!');
-          location.href = 'booking.html';
+          showToast('Login successful!', 'success');
+          setTimeout(() => { location.href = 'booking.html'; }, 700);
         }
       } catch (err) {
         console.error('OTP verification failed:', err);
-        alert('Incorrect or expired OTP.');
+        showToast('Incorrect or expired OTP.', 'error', 4500);
         verifyBtn.disabled = false;
       }
     });
