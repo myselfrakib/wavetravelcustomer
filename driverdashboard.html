@@ -180,48 +180,104 @@
       return undefined;
     }
 
-    // SINGLE showBookingDetails function — no duplicates
+    // Robust booking lookup and display:
+    // 1) bookings/{driverId}/{bookingId}
+    // 2) bookings/{bookingId}  (if stored at root)
+    // 3) driverWallet/{driverId}/{bookingId}.booking (if embedded object)
+    // 4) driverWallet entry's booking if it is a bookingId -> search bookings/*/{thatId}
+    // 5) global search: bookings/*/{bookingId}
     async function showBookingDetails(bookingId) {
-      if (!bookingId || !driverId) {
-        bookingContent.textContent = "No booking id or user; please log in and try again.";
-        bookingModal.style.display = "flex";
-        return;
-      }
-
       bookingContent.textContent = "Loading booking...";
       bookingModal.style.display = "flex";
 
-      const triedPaths = [
-        `${BOOKING_PATH_BASE}/${driverId}/${bookingId}`, // your reported layout
-        `${BOOKING_PATH_BASE}/${bookingId}`,             // fallback
-        `driverBookings/${driverId}/${bookingId}`,
-        `bookingsByDriver/${driverId}/${bookingId}`
-      ];
+      if (!bookingId) {
+        bookingContent.textContent = "No booking id provided.";
+        return;
+      }
 
       let booking = null;
       let foundPath = null;
 
       try {
-        for (const p of triedPaths) {
-          console.log("Trying booking path:", p);
-          const snap = await get(child(ref(db), p));
-          if (snap && snap.exists()) {
-            booking = snap.val();
-            foundPath = p;
-            console.log("Found booking at:", p, booking);
-            break;
+        // 1) Try bookings/{driverId}/{bookingId}
+        if (driverId) {
+          const p1 = `${BOOKING_PATH_BASE}/${driverId}/${bookingId}`;
+          const snap1 = await get(child(ref(db), p1));
+          if (snap1 && snap1.exists()) {
+            booking = snap1.val();
+            foundPath = p1;
+          }
+        }
+
+        // 2) Try bookings/{bookingId}
+        if (!booking) {
+          const p2 = `${BOOKING_PATH_BASE}/${bookingId}`;
+          const snap2 = await get(child(ref(db), p2));
+          if (snap2 && snap2.exists()) {
+            booking = snap2.val();
+            foundPath = p2;
+          }
+        }
+
+        // 3) Check driverWallet entry for an embedded booking object or booking id
+        if (!booking && driverId) {
+          const wPath = `driverWallet/${driverId}/${bookingId}`;
+          const wSnap = await get(child(ref(db), wPath));
+          if (wSnap && wSnap.exists()) {
+            const w = wSnap.val();
+            // embedded booking object
+            if (w.booking && typeof w.booking === 'object') {
+              booking = w.booking;
+              foundPath = `${wPath}/booking (embedded)`;
+            } else if (w.booking && typeof w.booking === 'string') {
+              // booking contains another bookingId — try to locate it under bookings/*
+              const candidateId = w.booking;
+              const globalSnap = await get(ref(db, BOOKING_PATH_BASE));
+              if (globalSnap && globalSnap.exists()) {
+                const global = globalSnap.val();
+                outer:
+                for (const [dId, bookingsObj] of Object.entries(global)) {
+                  if (bookingsObj && bookingsObj[candidateId]) {
+                    booking = bookingsObj[candidateId];
+                    foundPath = `${BOOKING_PATH_BASE}/${dId}/${candidateId}`;
+                    break outer;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // 4) Global search: bookings/*/{bookingId}
+        if (!booking) {
+          const globalSnap = await get(ref(db, BOOKING_PATH_BASE));
+          if (globalSnap && globalSnap.exists()) {
+            const global = globalSnap.val();
+            outer2:
+            for (const [dId, bookingsObj] of Object.entries(global)) {
+              if (bookingsObj && bookingsObj[bookingId]) {
+                booking = bookingsObj[bookingId];
+                foundPath = `${BOOKING_PATH_BASE}/${dId}/${bookingId}`;
+                break outer2;
+              }
+            }
           }
         }
 
         if (!booking) {
-          bookingContent.innerHTML = `<div style="padding:12px;">No booking found. Tried paths:<br><pre>${triedPaths.join("\n")}</pre></div>`;
+          bookingContent.innerHTML = `<div style="padding:12px;">No booking found for <strong>${bookingId}</strong>.<br>Tried paths:<br><pre>
+${BOOKING_PATH_BASE}/${driverId}/${bookingId}
+${BOOKING_PATH_BASE}/${bookingId}
+driverWallet/${driverId}/${bookingId} (embedded booking)
+global search under ${BOOKING_PATH_BASE}/*
+</pre></div>`;
           return;
         }
 
-        // Clear and show values (keys taken from sample you provided)
+        // Render booking details (intelligently picking available keys)
         bookingContent.innerHTML = '';
         bookingContent.appendChild(createDetailRow('Booking ID', bookingId));
-        bookingContent.appendChild(createDetailRow('Customer Name', safeGet(booking, 'userName', 'userName', 'customerName', 'userName', 'userName') || safeGet(booking, 'userName')));
+        bookingContent.appendChild(createDetailRow('Customer Name', safeGet(booking, 'userName', 'customerName', 'userName', 'userName') || safeGet(booking, 'userName') || safeGet(booking, 'customerName')));
         bookingContent.appendChild(createDetailRow('Pickup Location', safeGet(booking, 'pickup', 'pickupLocation')));
         bookingContent.appendChild(createDetailRow('Dropoff Location', safeGet(booking, 'dropoff', 'dropoffLocation')));
         const rawTime = safeGet(booking, 'time', 'pickupTime');
@@ -231,13 +287,14 @@
         bookingContent.appendChild(createDetailRow('Fare', fareVal !== undefined && fareVal !== null ? `₹${Number(fareVal).toFixed(2)}` : '-'));
         const status = booking.status || (booking.paidout ? (booking.paidout === true || booking.paidout === "true" ? "Paid" : String(booking.paidout)) : "Unpaid");
         bookingContent.appendChild(createDetailRow('Status', status));
-        bookingContent.appendChild(createDetailRow('Booked At', safeGet(booking, 'bookedAt', 'createdAt') ? formatDateValue(safeGet(booking, 'bookedAt', 'createdAt')) : '-'));
+        const bookedAtVal = safeGet(booking, 'bookedAt', 'createdAt') ? formatDateValue(safeGet(booking, 'bookedAt', 'createdAt')) : '-';
+        bookingContent.appendChild(createDetailRow('Booked At', bookedAtVal));
         if (booking.driverName || booking.driverId || booking.driverNumber) {
           bookingContent.appendChild(createDetailRow('Driver', booking.driverName ? `${booking.driverName} ${booking.driverNumber ? `(${booking.driverNumber})` : ''}` : booking.driverId));
         }
         if (booking.notes || booking.note) bookingContent.appendChild(createDetailRow('Notes', booking.notes || booking.note));
 
-        // Show any extra keys
+        // show additional keys that were not displayed
         const shown = new Set(['userName','customerName','pickup','pickupLocation','dropoff','dropoffLocation','time','pickupTime','fare','amount','price','paymentAmount','status','paidout','bookedAt','createdAt','driverName','driverId','driverNumber','notes','note']);
         const extra = {};
         for (const k in booking) if (!shown.has(k)) extra[k] = booking[k];
@@ -300,9 +357,46 @@
 
       // attach handlers to call the single showBookingDetails
       document.querySelectorAll(".showBookingBtn").forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
           const bookingId = btn.dataset.booking;
-          showBookingDetails(bookingId);
+          // If wallet entry contains an embedded booking object or bookingId, prefer that first (helps when wallet key != bookings key)
+          try {
+            // attempt to read the wallet entry to check if it embeds booking
+            if (driverId && bookingId) {
+              const wSnap = await get(child(ref(db), `driverWallet/${driverId}/${bookingId}`));
+              if (wSnap && wSnap.exists()) {
+                const w = wSnap.val();
+                if (w.booking && typeof w.booking === 'object') {
+                  // show embedded booking directly without additional fetch
+                  bookingContent.innerHTML = '';
+                  bookingModal.style.display = "flex";
+                  const embedded = w.booking;
+                  // tiny helper to render embedded booking quickly
+                  bookingContent.appendChild(createDetailRow('Booking (embedded)', bookingId));
+                  bookingContent.appendChild(createDetailRow('Customer Name', safeGet(embedded, 'userName', 'customerName') || embedded.userName || embedded.customerName || '-'));
+                  bookingContent.appendChild(createDetailRow('Pickup', safeGet(embedded, 'pickup') || '-'));
+                  bookingContent.appendChild(createDetailRow('Dropoff', safeGet(embedded, 'dropoff') || '-'));
+                  bookingContent.appendChild(createDetailRow('Pickup Time', safeGet(embedded, 'time') || '-'));
+                  bookingContent.appendChild(createDetailRow('Fare', embedded.fare ? `₹${Number(embedded.fare).toFixed(2)}` : '-'));
+                  bookingContent.appendChild(createDetailRow('Status', embedded.status || (embedded.paidout ? 'Paid' : 'Unpaid')));
+                  bookingContent.appendChild(document.createElement('hr'));
+                  bookingContent.appendChild(document.createTextNode('Data loaded from: driverWallet/' + driverId + '/' + bookingId + '/booking (embedded)'));
+                  return;
+                }
+                // if wallet entry's booking is a bookingId string, prefer that id
+                if (w.booking && typeof w.booking === 'string') {
+                  await showBookingDetails(w.booking);
+                  return;
+                }
+              }
+            }
+          } catch (e) {
+            // ignore and fallback to generic showBookingDetails flow
+            console.warn('Error checking embedded booking in wallet entry', e);
+          }
+
+          // fallback to generic lookup
+          await showBookingDetails(bookingId);
         };
       });
     }
