@@ -196,7 +196,6 @@
       }
 
       let booking = null;
-      let foundPath = null;
 
       try {
         // 1) Try bookings/{driverId}/{bookingId}
@@ -205,7 +204,6 @@
           const snap1 = await get(child(ref(db), p1));
           if (snap1 && snap1.exists()) {
             booking = snap1.val();
-            foundPath = p1;
           }
         }
 
@@ -215,7 +213,6 @@
           const snap2 = await get(child(ref(db), p2));
           if (snap2 && snap2.exists()) {
             booking = snap2.val();
-            foundPath = p2;
           }
         }
 
@@ -228,7 +225,6 @@
             // embedded booking object
             if (w.booking && typeof w.booking === 'object') {
               booking = w.booking;
-              foundPath = `${wPath}/booking (embedded)`;
             } else if (w.booking && typeof w.booking === 'string') {
               // booking contains another bookingId — try to locate it under bookings/*
               const candidateId = w.booking;
@@ -239,7 +235,6 @@
                 for (const [dId, bookingsObj] of Object.entries(global)) {
                   if (bookingsObj && bookingsObj[candidateId]) {
                     booking = bookingsObj[candidateId];
-                    foundPath = `${BOOKING_PATH_BASE}/${dId}/${candidateId}`;
                     break outer;
                   }
                 }
@@ -257,7 +252,6 @@
             for (const [dId, bookingsObj] of Object.entries(global)) {
               if (bookingsObj && bookingsObj[bookingId]) {
                 booking = bookingsObj[bookingId];
-                foundPath = `${BOOKING_PATH_BASE}/${dId}/${bookingId}`;
                 break outer2;
               }
             }
@@ -310,13 +304,6 @@ global search under ${BOOKING_PATH_BASE}/*
           pre.style.borderRadius = '6px';
           bookingContent.appendChild(pre);
         }
-
-        const footer = document.createElement('div');
-        footer.className = 'muted';
-        footer.style.marginTop = '12px';
-        footer.style.fontSize = '0.85rem';
-        footer.textContent = foundPath ? `Data loaded from: ${foundPath}` : '';
-        bookingContent.appendChild(footer);
 
       } catch (err) {
         console.error("Error fetching booking:", err);
@@ -371,7 +358,6 @@ global search under ${BOOKING_PATH_BASE}/*
                   bookingContent.innerHTML = '';
                   bookingModal.style.display = "flex";
                   const embedded = w.booking;
-                  // tiny helper to render embedded booking quickly
                   bookingContent.appendChild(createDetailRow('Booking (embedded)', bookingId));
                   bookingContent.appendChild(createDetailRow('Customer Name', safeGet(embedded, 'userName', 'customerName') || embedded.userName || embedded.customerName || '-'));
                   bookingContent.appendChild(createDetailRow('Pickup', safeGet(embedded, 'pickup') || '-'));
@@ -379,8 +365,6 @@ global search under ${BOOKING_PATH_BASE}/*
                   bookingContent.appendChild(createDetailRow('Pickup Time', safeGet(embedded, 'time') || '-'));
                   bookingContent.appendChild(createDetailRow('Fare', embedded.fare ? `₹${Number(embedded.fare).toFixed(2)}` : '-'));
                   bookingContent.appendChild(createDetailRow('Status', embedded.status || (embedded.paidout ? 'Paid' : 'Unpaid')));
-                  bookingContent.appendChild(document.createElement('hr'));
-                  bookingContent.appendChild(document.createTextNode('Data loaded from: driverWallet/' + driverId + '/' + bookingId + '/booking (embedded)'));
                   return;
                 }
                 // if wallet entry's booking is a bookingId string, prefer that id
