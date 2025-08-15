@@ -44,6 +44,7 @@
       transition: background 0.2s;
     }
     button:hover { background: #005dc1; }
+
     .slots {
       margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;
     }
@@ -53,11 +54,27 @@
     }
     .slot-card-header { font-weight: bold; margin-bottom: 0.5rem; }
     .slot-card strong { display: inline-block; width: 4.5rem; }
-    .slot-card button {
-      width: auto; margin-top: 0.75rem; background: var(--success);
-      padding: 0.5rem 1rem; border: none; border-radius: 0.5rem;
-      color: #fff; cursor: pointer;
+
+    /* Larger, consistent action buttons */
+    .slot-card .actions {
+      margin-top: 0.75rem;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
     }
+    .slot-card .actions button {
+      width: auto;
+      padding: 0.9rem 1.25rem;
+      font-size: 1.03rem;
+      border-radius: 0.6rem;
+      border: none;
+      cursor: pointer;
+      font-weight:700;
+    }
+    .slot-card .actions .single-btn { background: var(--success); color:#fff; }
+    .slot-card .actions .full-btn { background: #ff6c00; color:#fff; }
+
     .no-slots {
       text-align: center; padding: 1rem; background: #fff;
       border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -184,7 +201,7 @@
     }
 
     function formatTime24to12(time24) {
-      const [hourStr, minute] = time24.split(':');
+      const [hourStr, minute] = (time24||'00:00').split(':');
       let hour = parseInt(hourStr, 10);
       const period = hour >= 12 ? 'PM' : 'AM';
       hour = hour % 12 === 0 ? 12 : hour % 12;
@@ -254,61 +271,153 @@
         slotsDiv.innerHTML = '';
       }
 
-      auth.onAuthStateChanged(user => {
-        if (!user) {
-          alert('Please login first');
-          return;
-        }
-        slots.forEach((slot, idx) => {
-          const avail = parseInt(slot.seats, 10);
-          if (avail < reqSeats) return;
-          const puIdx = locationIndexMap[slot.pickup] || 0;
-          const doIdx = locationIndexMap[slot.dropoff] || 0;
-          const fare  = Math.abs(puIdx - doIdx) * reqSeats * 120;
+      // Use current user directly instead of creating many auth listeners
+      const user = auth.currentUser;
+      if (!user) {
+        alert('Please login first');
+        return;
+      }
 
-          const displayTime = formatTime24to12(slot.time);
-          const displayDate = formatDateISOtoDMY(slot.date);
+      // We'll cache approvedcars per driver to avoid multiple DB reads
+      const driverCarCache = {};
 
-          const card = document.createElement('div');
-          card.className = 'slot-card';
-          card.innerHTML = `
-            <div class="slot-card-header">Sl. No. ${idx + 1}</div>
-            <div><strong>Pickup:</strong> ${escapeHtml(slot.pickup)}</div>
-            <div><strong>Dropoff:</strong> ${escapeHtml(slot.dropoff)}</div>
-            <div><strong>Car:</strong> ${escapeHtml(slot.carBrand || 'N/A')}</div>
-            <div><strong>Date:</strong> ${displayDate}</div>
-            <div><strong>Time:</strong> ${displayTime}</div>
-            <div><strong>Available-Seats:</strong> ${avail}</div>
-            <button id="bookBtn${idx}">
-              Book ${reqSeats} for ₹${fare}
-            </button>
-          `;
-          slotsDiv.appendChild(card);
+      slots.forEach((slot, idx) => {
+        const avail = parseInt(slot.seats, 10);
+        if (avail < reqSeats) return;
 
-          document.getElementById(`bookBtn${idx}`).addEventListener('click', async () => {
-            const profileSnap = await db.ref(`users/${user.uid}`).once('value');
-            const profile     = profileSnap.val() || {};
+        const puIdx = locationIndexMap[slot.pickup] || 0;
+        const doIdx = locationIndexMap[slot.dropoff] || 0;
+        const perSeatFare = Math.abs(puIdx - doIdx) * 120;
+        const fare  = perSeatFare * reqSeats;
 
-            const bookingData = {
-              driverId:       slot.driverId,
-              slotKey:        slot.slotKey,
-              pickup:         slot.pickup,
-              dropoff:        slot.dropoff,
-              date:           slot.date,
-              time:           slot.time,
-              seatsRequested: reqSeats,
-              seatsAvailable: avail,
-              fare:           fare,
-              customerId:     user.uid,
-              carBrand:       slot.carBrand     || '',
-              carReg:         slot.carReg       || '',
-              driverName:     slot.driverName   || '',
-              driverNumber:   slot.driverNumber || ''
-            };
-            localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
-            window.location.href = 'checkout.html';
-          });
+        const displayTime = formatTime24to12(slot.time);
+        const displayDate = formatDateISOtoDMY(slot.date);
+
+        const card = document.createElement('div');
+        card.className = 'slot-card';
+        // include both buttons; we'll hide/show the "full" button later if needed
+        card.innerHTML = `
+          <div class="slot-card-header">Sl. No. ${idx + 1}</div>
+          <div><strong>Pickup:</strong> ${escapeHtml(slot.pickup)}</div>
+          <div><strong>Dropoff:</strong> ${escapeHtml(slot.dropoff)}</div>
+          <div><strong>Car:</strong> ${escapeHtml(slot.carBrand || 'N/A')} ${slot.carReg ? '('+escapeHtml(slot.carReg)+')' : ''}</div>
+          <div><strong>Date:</strong> ${displayDate}</div>
+          <div><strong>Time:</strong> ${displayTime}</div>
+          <div><strong>Available-Seats:</strong> ${avail}</div>
+          <div class="actions">
+            <button id="bookBtn${idx}" class="single-btn">Book ${reqSeats} for ₹${fare}</button>
+            <button id="bookFullBtn${idx}" class="full-btn" style="display:none">Book entire car for ₹<span id="fullFare${idx}"></span> (20% off)</button>
+          </div>
+        `;
+        slotsDiv.appendChild(card);
+
+        // Regular booking listener (same as before)
+        document.getElementById(`bookBtn${idx}`).addEventListener('click', async () => {
+          const profileSnap = await db.ref(`users/${user.uid}`).once('value');
+          const profile     = profileSnap.val() || {};
+
+          const bookingData = {
+            driverId:       slot.driverId,
+            slotKey:        slot.slotKey,
+            pickup:         slot.pickup,
+            dropoff:        slot.dropoff,
+            date:           slot.date,
+            time:           slot.time,
+            seatsRequested: reqSeats,
+            seatsAvailable: avail,
+            fare:           fare,
+            customerId:     user.uid,
+            carBrand:       slot.carBrand     || '',
+            carReg:         slot.carReg       || '',
+            driverName:     slot.driverName   || '',
+            driverNumber:   slot.driverNumber || ''
+          };
+          localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
+          window.location.href = 'checkout.html';
         });
+
+        // Now decide whether to show the "Book entire car" button:
+        (async function decideFullBooking(slot, idx, availSeats, perSeatFare){
+          // 1) check explicit fields on slot
+          const maybeTotal = slot.maxSeats || slot.totalSeats || slot.carSeats || slot.seatCapacity;
+          let carTotalSeats = (maybeTotal !== undefined && maybeTotal !== null) ? Number(maybeTotal) : NaN;
+
+          // 2) if not present, fetch approvedcars for the driver and try to match
+          try {
+            if (!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) {
+              const driverId = slot.driverId;
+              if (driverCarCache[driverId]) {
+                const map = driverCarCache[driverId];
+                if (slot.carReg && map.byReg && map.byReg[slot.carReg]) carTotalSeats = Number(map.byReg[slot.carReg].seats || map.byReg[slot.carReg].seat || NaN);
+                if ((!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) && slot.carBrand && map.byBrand && map.byBrand[slot.carBrand]) carTotalSeats = Number(map.byBrand[slot.carBrand].seats || map.byBrand[slot.carBrand].seat || NaN);
+              } else {
+                // fetch once and cache
+                const snap = await db.ref(`approvedcars/${slot.driverId}`).once('value');
+                const map = { byReg: {}, byBrand: {} };
+                if (snap.exists()) {
+                  snap.forEach(ch => {
+                    const c = ch.val();
+                    const reg = c.carReg || '';
+                    const brand = c.carBrand || '';
+                    map.byReg[reg] = c;
+                    map.byBrand[brand] = c;
+                  });
+                }
+                driverCarCache[slot.driverId] = map;
+                if (slot.carReg && map.byReg && map.byReg[slot.carReg]) carTotalSeats = Number(map.byReg[slot.carReg].seats || map.byReg[slot.carReg].seat || NaN);
+                if ((!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) && slot.carBrand && map.byBrand && map.byBrand[slot.carBrand]) carTotalSeats = Number(map.byBrand[slot.carBrand].seats || map.byBrand[slot.carBrand].seat || NaN);
+              }
+            }
+          } catch (err) {
+            console.warn('Failed to fetch approvedcars for full-book decision', err);
+          }
+
+          // If we have a valid carTotalSeats and it's equal to current available seats, show full-book button
+          if (Number.isFinite(carTotalSeats) && carTotalSeats > 0 && Number(availSeats) === Number(carTotalSeats)) {
+            // compute full fare: per-seat fare * carTotalSeats
+            const fullFare = (Number(perSeatFare) || 0) * carTotalSeats;
+            const discountedFullFare = Math.round(fullFare * 0.8); // 20% discount and rounded to nearest rupee
+            const fullFareEl = document.getElementById(`fullFare${idx}`);
+            if (fullFareEl) fullFareEl.textContent = discountedFullFare;
+
+            const fullBtn = document.getElementById(`bookFullBtn${idx}`);
+            if (fullBtn) {
+              fullBtn.style.display = 'inline-block';
+              // Remove previous listener if any (defensive)
+              const newBtn = fullBtn.cloneNode(true);
+              fullBtn.parentNode.replaceChild(newBtn, fullBtn);
+              newBtn.addEventListener('click', async () => {
+                const profileSnap = await db.ref(`users/${user.uid}`).once('value');
+                const profile     = profileSnap.val() || {};
+
+                const bookingData = {
+                  driverId:       slot.driverId,
+                  slotKey:        slot.slotKey,
+                  pickup:         slot.pickup,
+                  dropoff:        slot.dropoff,
+                  date:           slot.date,
+                  time:           slot.time,
+                  seatsRequested: carTotalSeats,
+                  seatsAvailable: availSeats,
+                  fare:           discountedFullFare,
+                  customerId:     user.uid,
+                  carBrand:       slot.carBrand     || '',
+                  carReg:         slot.carReg       || '',
+                  driverName:     slot.driverName   || '',
+                  driverNumber:   slot.driverNumber || '',
+                  // flag so downstream knows this was an "entire car" booking
+                  bookEntireCar:  true
+                };
+                localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
+                window.location.href = 'checkout.html';
+              });
+            }
+          } else {
+            // hide full button if present
+            const fullBtn = document.getElementById(`bookFullBtn${idx}`);
+            if (fullBtn) fullBtn.style.display = 'none';
+          }
+        })(slot, idx, avail, perSeatFare);
       });
     }
 
@@ -325,5 +434,4 @@
   </script>
 </body>
 </html>
-
 
