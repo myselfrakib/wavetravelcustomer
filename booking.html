@@ -13,9 +13,7 @@
       --dark: #333;
       --success: #28a745;
       --accent: #ff6c00;
-      --muted: #6b7280;
-      --card-radius: 14px;
-      --card-padding: 14px;
+      --btn-radius: 0.6rem;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -23,146 +21,131 @@
       background: linear-gradient(to right, #74ebd5, #ACB6E5);
       display: flex; flex-direction: column; min-height: 100vh;
       color: var(--dark);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
     }
     .container {
-      flex: 1; max-width: 720px; width: 100%;
-      margin: 0 auto; padding: 18px; padding-bottom: 120px;
+      flex: 1; max-width: 600px; width: 100%;
+      margin: 0 auto; padding: 16px; padding-bottom: 100px;
     }
     h1 {
-      font-size: 1.5rem; text-align: center; margin-bottom: 14px;
+      font-size: 1.5rem; text-align: center; margin-bottom: 1rem;
       color: #fff;
     }
-    .form-group { margin-bottom: 12px; }
+    .form-group { margin-bottom: 1rem; }
     label {
-      display: block; margin-bottom: 8px; font-weight: 600; color: #fff;
+      display: block; margin-bottom: 0.5rem; font-weight: 600;
     }
     select, input {
-      width: 100%; padding: 0.75rem; border: 1px solid rgba(0,0,0,0.06);
-      border-radius: 10px; background: #fff; font-size: 1rem;
-      box-shadow: 0 1px 2px rgba(16,24,40,0.03);
+      width: 100%; padding: 0.75rem; border: 1px solid #ccc;
+      border-radius: 0.5rem; background: #fff; font-size: 1rem;
     }
-    .search-btn {
-      display: block; width: 100%; padding: 12px;
-      margin-top: 12px; background: var(--primary);
-      color: #fff; font-size: 1.02rem; font-weight: 700;
-      border: none; border-radius: 10px; cursor: pointer;
-      transition: transform .08s ease, box-shadow .12s ease;
-      box-shadow: 0 8px 18px rgba(15,23,42,0.12);
+    button {
+      display: block; width: 100%; padding: 0.75rem;
+      margin-top: 0.75rem; background: var(--primary);
+      color: #fff; font-size: 1rem; font-weight: 600;
+      border: none; border-radius: 0.5rem; cursor: pointer;
+      transition: background 0.2s;
     }
-    .search-btn:active { transform: translateY(1px); }
+    button:hover { background: #005dc1; }
 
-    .slots { margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
-
-    /* Improved slot card UI */
+    .slots {
+      margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;
+    }
     .slot-card {
-      display: grid;
-      grid-template-columns: 8px 1fr auto;
-      gap: 12px;
-      align-items: start;
-      background: linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
-      border-radius: var(--card-radius);
-      padding: var(--card-padding);
-      box-shadow: 0 12px 30px rgba(2,6,23,0.08);
-      border: 1px solid rgba(2,6,23,0.04);
-      overflow: hidden;
-      transition: transform .12s ease, box-shadow .12s ease;
+      background: #fff; padding: 1rem; border-radius: 0.75rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .slot-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(2,6,23,0.10); }
+    .slot-card-header { font-weight: bold; margin-bottom: 0.5rem; }
+    .slot-card strong { display: inline-block; width: 4.5rem; }
 
-    /* colored accent stripe */
-    .slot-accent { width: 8px; height: 100%; background: linear-gradient(180deg,var(--primary),var(--accent)); border-radius: 6px; }
-
-    .slot-main {
-      display:flex; flex-direction:column; gap:10px;
-      min-width:0;
-    }
-
-    .slot-top {
-      display:flex; gap:12px; align-items:center;
-    }
-    .avatar {
-      width:56px; height:56px; border-radius:12px;
-      display:flex; align-items:center; justify-content:center;
-      font-weight:700; color:#fff; background:linear-gradient(135deg,#7f56d9,#5a2fc6);
-      flex-shrink:0; box-shadow: 0 6px 18px rgba(15,23,42,0.08);
-      font-size:1.05rem;
-    }
-    .meta {
-      min-width:0;
-      display:flex; flex-direction:column; gap:2px;
-    }
-    .driver-name { font-weight:800; font-size:1rem; color:#0f1724; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; }
-    .driver-sub { font-size:0.85rem; color:var(--muted); }
-
-    .car-info { font-size:0.92rem; color:#0b1220; font-weight:700; margin-top:4px; }
-
-    .slot-right {
-      display:flex; flex-direction:column; align-items:flex-end; gap:8px; margin-left:8px;
-      justify-self:end;
-    }
-    .fare-large { font-weight:900; font-size:1.18rem; color:#061838; background:linear-gradient(90deg,rgba(0,0,0,0.02),transparent); padding:6px 10px; border-radius:10px; }
-    .fare-small { font-size:12px; color:var(--muted); }
-
-    .slot-body {
-      display:flex; flex-direction:row; gap:12px; align-items:center; flex-wrap:wrap;
-    }
-    .route {
-      display:flex; align-items:center; gap:8px; color:var(--muted); font-weight:600;
-      min-width:0; flex:1;
-    }
-    .route .places { display:flex; gap:6px; flex-direction:column; min-width:0; }
-    .route .from, .route .to { font-weight:700; color:#071124; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .route .arrow { color:var(--primary); font-size:0.95rem; }
-
-    .badges { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .pill {
-      background: rgba(6,24,56,0.04);
-      border-radius:999px; padding:6px 8px; font-weight:700; font-size:0.85rem; color:#091028;
-      display:inline-flex; gap:8px; align-items:center;
-    }
-    .seat-pill { background: linear-gradient(90deg,#fbe8a6,#ffd98a); color:#3b2e00; }
-    .date-pill { background: linear-gradient(90deg,#dbeafe,#bfdbfe); color:#0b3b6b; }
-    .time-pill { background: linear-gradient(90deg,#e6fffa,#ccfbf1); color:#034d40; }
-
-    .slot-actions {
-      display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;
+    /* NEW button styles: larger, matching, responsive */
+    .slot-card .actions {
+      margin-top: 0.75rem;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
       align-items:center;
     }
-    .action-wrap { flex: 1 1 48%; min-width:140px; display:flex; }
+
+    /* container that ensures buttons are equal height & size */
+    .action-wrap {
+      flex: 1 1 48%;
+      min-width: 160px;
+      display: flex;
+    }
+
     .btn-action {
-      display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;
-      padding: 12px 14px; border-radius: 10px; border: none; cursor: pointer; font-weight:800;
-      font-size:1rem; box-shadow: 0 8px 20px rgba(2,6,23,0.06);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      width:100%;
+      padding: 14px 14px;
+      border-radius: var(--btn-radius);
+      border: none;
+      cursor: pointer;
+      font-weight:700;
+      font-size: 1.02rem;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+      transition: transform .07s ease, box-shadow .12s ease, opacity .12s ease;
     }
-    .btn-single { background: linear-gradient(90deg,var(--success), #1fa64b); color:#fff; }
-    .btn-full { background: linear-gradient(90deg,var(--accent), #ff5a00); color:#fff; }
+    .btn-action:active { transform: translateY(1px); }
+    .btn-action:disabled { opacity: .6; cursor:not-allowed; box-shadow:none; transform:none; }
 
-    .btn-left { display:flex; align-items:center; gap:10px; min-width:0; flex:1; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; }
-    .btn-left i { width:26px; font-size:1.05rem; text-align:center; }
-    .btn-right { display:flex; align-items:center; gap:8px; min-width:fit-content; }
+    .btn-single {
+      background: linear-gradient(90deg, var(--success), #1fa64b);
+      color: #fff;
+    }
+    .btn-full {
+      background: linear-gradient(90deg, var(--accent), #ff5a00);
+      color: #fff;
+    }
 
-    .price-pill { background: rgba(0,0,0,0.06); padding:6px 8px; border-radius:8px; font-weight:900; color:#fff; }
+    .btn-left {
+      display:flex; align-items:center; gap:10px; min-width:0; flex:1;
+      text-overflow:ellipsis; overflow:hidden; white-space:nowrap;
+    }
+    .btn-left i { font-size:1.15rem; width:22px; text-align:center; }
 
-    @media (max-width:520px) {
-      .slot-card { grid-template-columns: 6px 1fr; grid-template-rows: auto auto; }
-      .slot-right { justify-self:start; flex-direction:row; gap:12px; }
-      .fare-large { font-size:1.02rem; }
+    .btn-right {
+      display:flex; align-items:center; gap:8px; justify-content:flex-end;
+      min-width:95px; flex-shrink:0;
+    }
+    .price-pill {
+      background: rgba(255,255,255,0.12); padding:6px 8px; border-radius:8px; font-weight:800;
+    }
+    .discount-badge { font-size:12px; background:rgba(0,0,0,0.08); padding:6px 8px; border-radius:8px; color:#fff; }
+
+    /* small screens: stack buttons */
+    @media (max-width:420px) {
       .action-wrap { flex-basis:100%; }
+      .btn-right { min-width:0; }
     }
 
-    .no-slots { text-align: center; padding: 1rem; background: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(2,6,23,0.06); font-weight:700; }
-    .fallback-msg { background: #fff; padding: 12px; border-radius: 10px; box-shadow: 0 4px 12px rgba(2,6,23,0.06); font-weight:700; }
-
+    .no-slots {
+      text-align: center; padding: 1rem; background: #fff;
+      border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-weight: 600;
+    }
+    .fallback-msg {
+      background: #fff;
+      padding: 0.85rem 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      font-weight: 600;
+    }
     .navbar {
       position: fixed; bottom: 0; left: 0; width: 100%;
       background: #fff; border-top: 1px solid #ddd;
-      display: flex; justify-content: space-around; padding: 0.6rem 0;
-      box-shadow: 0 -6px 18px rgba(2,6,23,0.06);
+      display: flex; justify-content: space-around; padding: 0.5rem 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
     }
-    .navbar a { color: var(--primary); text-decoration: none; font-size: 0.78rem; text-align:center; }
-    .navbar a i { font-size:1.3rem; display:block; margin-bottom:4px; }
+    .navbar a {
+      color: var(--primary); text-decoration: none;
+      font-size: 0.75rem; text-align: center;
+    }
+    .navbar a i {
+      font-size: 1.25rem; display: block; margin-bottom: 0.25rem;
+    }
   </style>
 </head>
 <body>
@@ -190,7 +173,7 @@
       <input type="number" id="seats" min="1" placeholder="Enter seats"/>
     </div>
 
-    <button class="search-btn" onclick="searchSlots()">Search Available Slots</button>
+    <button onclick="searchSlots()">Search Available Slots</button>
 
     <div class="slots" id="slots"></div>
   </div>
@@ -325,13 +308,8 @@
       });
     }
 
-    function initialsFromName(name) {
-      if (!name) return 'DR';
-      const parts = name.trim().split(/\s+/).slice(0,2);
-      return parts.map(p => p[0]?.toUpperCase() ?? '').join('');
-    }
-
     function renderSlots(slots, reqSeats, fallbackInfo = { used: false }) {
+      // If fallback was used, show the requested message above the list
       if (fallbackInfo.used) {
         const friendlyDate = formatDateISOtoDMY(fallbackInfo.date);
         slotsDiv.innerHTML = `<div class="fallback-msg">No Car is Available From <strong>${escapeHtml(fallbackInfo.pickup)}</strong> but here are some alternatives to <strong>${escapeHtml(fallbackInfo.dropoff)}</strong> on <strong>${friendlyDate}</strong></div>`;
@@ -339,12 +317,14 @@
         slotsDiv.innerHTML = '';
       }
 
+      // Use current user directly instead of creating many auth listeners
       const user = auth.currentUser;
       if (!user) {
         alert('Please login first');
         return;
       }
 
+      // We'll cache approvedcars per driver to avoid multiple DB reads
       const driverCarCache = {};
 
       slots.forEach((slot, idx) => {
@@ -359,67 +339,35 @@
         const displayTime = formatTime24to12(slot.time);
         const displayDate = formatDateISOtoDMY(slot.date);
 
-        // Compose the improved card
         const card = document.createElement('div');
         card.className = 'slot-card';
-
+        // create actions with new button markup
         card.innerHTML = `
-          <div class="slot-accent" aria-hidden="true"></div>
-
-          <div class="slot-main">
-            <div class="slot-top">
-              <div class="avatar" title="${escapeHtml(slot.driverName || '')}">${escapeHtml(initialsFromName(slot.driverName || slot.carBrand || 'DR'))}</div>
-
-              <div class="meta">
-                <div class="driver-name">${escapeHtml(slot.driverName || (slot.carBrand || 'Driver'))}</div>
-                <div class="driver-sub">${escapeHtml(slot.driverNumber || (slot.carReg || ''))}</div>
-                <div class="car-info">${escapeHtml(slot.carBrand || '')} ${slot.carReg ? '('+escapeHtml(slot.carReg)+')' : ''}</div>
-              </div>
-
-              <div class="slot-right" aria-hidden="true">
-                <div class="fare-large">₹${fare}</div>
-                <div class="fare-small">₹${perSeatFare}/seat</div>
-              </div>
+          <div class="slot-card-header">Sl. No. ${idx + 1}</div>
+          <div><strong>Pickup:</strong> ${escapeHtml(slot.pickup)}</div>
+          <div><strong>Dropoff:</strong> ${escapeHtml(slot.dropoff)}</div>
+          <div><strong>Car:</strong> ${escapeHtml(slot.carBrand || 'N/A')} ${slot.carReg ? '('+escapeHtml(slot.carReg)+')' : ''}</div>
+          <div><strong>Date:</strong> ${displayDate}</div>
+          <div><strong>Time:</strong> ${displayTime}</div>
+          <div><strong>Available-Seats:</strong> ${avail}</div>
+          <div class="actions">
+            <div class="action-wrap">
+              <button id="bookBtn${idx}" class="btn-action btn-single" aria-label="Book ${reqSeats} seats for ₹${fare}">
+                <div class="btn-left"><i class="fa fa-user-plus" aria-hidden="true"></i><span>Book ${reqSeats}</span></div>
+                <div class="btn-right"><span class="price-pill">₹${fare}</span></div>
+              </button>
             </div>
-
-            <div class="slot-body">
-              <div class="route" title="${escapeHtml(slot.pickup + ' → ' + slot.dropoff)}">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <i class="fas fa-map-marker-alt" style="color:var(--primary)"></i>
-                </div>
-                <div class="places">
-                  <div class="from">${escapeHtml(slot.pickup)}</div>
-                  <div class="to" style="color:var(--muted)">${escapeHtml(slot.dropoff)}</div>
-                </div>
-              </div>
-
-              <div class="badges" aria-hidden="true">
-                <div class="pill date-pill">${escapeHtml(displayDate)}</div>
-                <div class="pill time-pill">${escapeHtml(displayTime)}</div>
-                <div class="pill seat-pill">${avail} seats</div>
-              </div>
-            </div>
-
-            <div class="slot-actions" role="group" aria-label="Booking actions">
-              <div class="action-wrap">
-                <button id="bookBtn${idx}" class="btn-action btn-single" aria-label="Book ${reqSeats} seats for ₹${fare}">
-                  <div class="btn-left"><i class="fa fa-user-plus"></i><span>Book ${reqSeats}</span></div>
-                  <div class="btn-right"><span class="price-pill">₹${fare}</span></div>
-                </button>
-              </div>
-              <div class="action-wrap">
-                <button id="bookFullBtn${idx}" class="btn-action btn-full" style="display:none" aria-label="Book entire car for discounted price">
-                  <div class="btn-left"><i class="fa fa-car"></i><span>Book entire car</span></div>
-                  <div class="btn-right"><span class="price-pill">₹<span id="fullFare${idx}"></span></span></div>
-                </button>
-              </div>
+            <div class="action-wrap">
+              <button id="bookFullBtn${idx}" class="btn-action btn-full" style="display:none" aria-label="Book entire car for discounted price">
+                <div class="btn-left"><i class="fa fa-car" aria-hidden="true"></i><span>Book entire car</span></div>
+                <div class="btn-right"><span class="price-pill">₹<span id="fullFare${idx}"></span></span></div>
+              </button>
             </div>
           </div>
         `;
-
         slotsDiv.appendChild(card);
 
-        // Single booking listener (unchanged)
+        // Regular booking listener (same as before)
         document.getElementById(`bookBtn${idx}`).addEventListener('click', async () => {
           const profileSnap = await db.ref(`users/${user.uid}`).once('value');
           const profile     = profileSnap.val() || {};
@@ -444,11 +392,13 @@
           window.location.href = 'checkout.html';
         });
 
-        // decide full booking
+        // Now decide whether to show the "Book entire car" button:
         (async function decideFullBooking(slot, idx, availSeats, perSeatFare){
+          // 1) check explicit fields on slot
           const maybeTotal = slot.maxSeats || slot.totalSeats || slot.carSeats || slot.seatCapacity;
           let carTotalSeats = (maybeTotal !== undefined && maybeTotal !== null) ? Number(maybeTotal) : NaN;
 
+          // 2) if not present, fetch approvedcars for the driver and try to match
           try {
             if (!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) {
               const driverId = slot.driverId;
@@ -457,6 +407,7 @@
                 if (slot.carReg && map.byReg && map.byReg[slot.carReg]) carTotalSeats = Number(map.byReg[slot.carReg].seats || map.byReg[slot.carReg].seat || NaN);
                 if ((!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) && slot.carBrand && map.byBrand && map.byBrand[slot.carBrand]) carTotalSeats = Number(map.byBrand[slot.carBrand].seats || map.byBrand[slot.carBrand].seat || NaN);
               } else {
+                // fetch once and cache
                 const snap = await db.ref(`approvedcars/${slot.driverId}`).once('value');
                 const map = { byReg: {}, byBrand: {} };
                 if (snap.exists()) {
@@ -477,15 +428,18 @@
             console.warn('Failed to fetch approvedcars for full-book decision', err);
           }
 
+          // If we have a valid carTotalSeats and it's equal to current available seats, show full-book button
           if (Number.isFinite(carTotalSeats) && carTotalSeats > 0 && Number(availSeats) === Number(carTotalSeats)) {
+            // compute full fare: per-seat fare * carTotalSeats
             const fullFare = (Number(perSeatFare) || 0) * carTotalSeats;
-            const discountedFullFare = Math.round(fullFare * 0.8); // 20% discount (unchanged)
+            const discountedFullFare = Math.round(fullFare * 0.8); // 20% discount and rounded to nearest rupee
             const fullFareEl = document.getElementById(`fullFare${idx}`);
             if (fullFareEl) fullFareEl.textContent = discountedFullFare;
 
             const fullBtn = document.getElementById(`bookFullBtn${idx}`);
             if (fullBtn) {
               fullBtn.style.display = 'inline-flex';
+              // Remove previous listener if any (defensive)
               const newBtn = fullBtn.cloneNode(true);
               fullBtn.parentNode.replaceChild(newBtn, fullBtn);
               newBtn.addEventListener('click', async () => {
@@ -507,6 +461,7 @@
                   carReg:         slot.carReg       || '',
                   driverName:     slot.driverName   || '',
                   driverNumber:   slot.driverNumber || '',
+                  // flag so downstream knows this was an "entire car" booking
                   bookEntireCar:  true
                 };
                 localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
@@ -514,6 +469,7 @@
               });
             }
           } else {
+            // hide full button if present
             const fullBtn = document.getElementById(`bookFullBtn${idx}`);
             if (fullBtn) fullBtn.style.display = 'none';
           }
@@ -521,6 +477,7 @@
       });
     }
 
+    // Basic HTML-escape to avoid accidental markup in location names
     function escapeHtml(str) {
       if (!str && str !== 0) return '';
       return String(str)
@@ -533,4 +490,3 @@
   </script>
 </body>
 </html>
-
