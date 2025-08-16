@@ -76,12 +76,54 @@
       width: 20px;
       text-align: center;
     }
-    .fare {
-      font-weight: bold;
-      color: #28a745;
-      margin-top: 8px;
-      font-size: 1rem;
+
+    /* Fare + call button styling */
+    .fare-row {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:10px;
+      justify-content:flex-start;
+      flex-wrap:wrap;
     }
+    .fare-text {
+      font-weight:700;
+      color:#28a745;
+      font-size:1rem;
+      background: rgba(40,167,69,0.06);
+      padding: 8px 12px;
+      border-radius: 8px;
+      min-width: 110px;
+      text-align:left;
+      box-shadow: 0 6px 14px rgba(40,167,69,0.04);
+    }
+    .call-btn {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:#0077ff;
+      color:#fff;
+      padding:8px 10px;
+      border-radius:8px;
+      text-decoration:none;
+      font-weight:700;
+      font-size:0.9rem;
+      border: none;
+      box-shadow: 0 6px 14px rgba(0,119,255,0.08);
+    }
+    .call-btn i { font-size: 0.95rem; }
+
+    .call-btn[aria-disabled="true"], .call-btn.disabled {
+      background:#e6eefc;
+      color:#7b8aa9;
+      box-shadow:none;
+      cursor:not-allowed;
+      pointer-events:none;
+      opacity:0.95;
+    }
+
+    .fare-note { color:#6b7280; font-size:0.85rem; margin-left:6px; }
+
     .navbar {
       position: fixed;
       bottom: 0;
@@ -105,6 +147,14 @@
       font-size: 20px;
       margin-bottom: 4px;
     }
+
+    /* responsive tweaks */
+    @media (max-width:480px){
+      .fare-text { min-width:100px; font-size:0.95rem; padding:8px 10px; }
+      .call-btn { padding:8px 10px; font-size:0.9rem;}
+      .info { font-size:0.88rem; }
+    }
+
   </style>
 </head>
 <body>
@@ -145,16 +195,23 @@
     const bookingsEl = document.getElementById('bookings');
 
     function to12Hour(time) {
-      let [h, m] = time.split(':').map(Number);
+      if (!time || typeof time !== 'string') return time || '—';
+      let parts = time.split(':');
+      if (parts.length < 2) return time;
+      let [h, m] = parts.map(Number);
       const suffix = h >= 12 ? 'PM' : 'AM';
       h = h % 12 || 12;
-      return `${h}:${String(m).padStart(2, '0')} ${suffix}`;
+      return `${h}:${String(m).padStart(2,'0')} ${suffix}`;
     }
     function formatDate(d) {
+      if (!d) return '—';
       const dt = new Date(d);
-      return dt.toLocaleDateString(undefined, {
-        year: 'numeric', month: 'short', day: 'numeric'
-      });
+      if (!isNaN(dt)) {
+        return dt.toLocaleDateString(undefined, {
+          year: 'numeric', month: 'short', day: 'numeric'
+        });
+      }
+      return d;
     }
 
     auth.onAuthStateChanged(user => {
@@ -183,7 +240,18 @@
                 No bookings found.
               </p>`;
           } else {
-            bookingsEl.innerHTML = myBookings.map((b, i) => `
+            bookingsEl.innerHTML = myBookings.map((b, i) => {
+              const seats = b.seatsRequested || b.seatsBooked || b.seats || '—';
+              const carText = (b.carBrand ? b.carBrand : '—') + (b.carReg ? ` (${b.carReg})` : '');
+              const fareText = (b.fare !== undefined && b.fare !== null) ? `₹${b.fare}` : 'N/A';
+              const driverNumber = (b.driverNumber || b.driver_phone || b.driverPhone || b.driverContact || '').toString().trim();
+              const hasPhone = driverNumber.length > 0;
+
+              const callBtn = hasPhone
+                ? `<a class="call-btn" href="tel:${encodeURIComponent(driverNumber)}" aria-label="Call driver ${driverNumber}"><i class="fas fa-phone"></i> Call Driver</a>`
+                : `<button class="call-btn disabled" aria-disabled="true" title="Driver number not available"><i class="fas fa-phone"></i> Call Driver</button>`;
+
+              return `
               <div class="booking-card">
                 <div class="card-number">${i + 1}</div>
                 <h3>Booking #${i + 1}</h3>
@@ -191,10 +259,15 @@
                 <div class="info"><i class="fas fa-clock"></i> <span>${to12Hour(b.time)}</span></div>
                 <div class="info"><i class="fas fa-map-marker-alt"></i> <span>Pickup: ${b.pickup}</span></div>
                 <div class="info"><i class="fas fa-flag-checkered"></i> <span>Dropoff: ${b.dropoff}</span></div>
-                <div class="info"><i class="fas fa-users"></i> <span>Seats: ${b.seatsRequested || b.seatsBooked || b.seats}</span></div>
-                <div class="info"><i class="fas fa-car"></i> <span>${b.carBrand} (${b.carReg})</span></div>
-                <p class="fare">Fare: ₹${b.fare || 'N/A'}</p>
-              </div>`).join('');
+                <div class="info"><i class="fas fa-users"></i> <span>Seats: ${seats}</span></div>
+                <div class="info"><i class="fas fa-car"></i> <span>${carText}</span></div>
+
+                <div class="fare-row">
+                  <div class="fare-text">Fare: ${fareText}</div>
+                  ${callBtn}
+                </div>
+              </div>`;
+            }).join('');
           }
         })
         .catch(err => {
