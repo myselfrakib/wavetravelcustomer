@@ -3,367 +3,366 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Link Phone to Driver Account — WaveTravel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <title>Driver Login — WaveTravel</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg: linear-gradient(135deg,#0b6efd,#00c3b8);
-      --card:#fff;
+      --bg1:#06a3d6;
+      --bg2:#00c2a8;
+      --card:#ffffff;
       --accent:#0b6efd;
-      --radius:12px;
       --muted:#6b7280;
+      --radius:12px;
     }
-    html,body{height:100%;margin:0;font-family:'Poppins',sans-serif;background:var(--bg);-webkit-font-smoothing:antialiased}
-    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-    .card{width:100%;max-width:460px;background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:0 12px 28px rgba(2,6,23,0.18)}
-    .brand{display:flex;gap:12px;align-items:center;margin-bottom:6px}
-    .logo{width:46px;height:46px;border-radius:10px;background:linear-gradient(90deg,#0b6efd,#6c63ff);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
-    h1{margin:0;font-size:18px;color:#071124}
-    p.lead{margin:6px 0 14px;color:var(--muted);font-size:13px}
-
-    label.small{font-size:12px;color:var(--muted);margin-top:8px;display:block}
-
-    .field{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:#f6f8ff;border:1px solid rgba(2,6,23,0.03)}
-    .icon{width:30px;text-align:center;color:var(--accent);font-size:14px}
-    input[type="email"],input[type="password"],input[type="text"]{border:0;background:transparent;outline:none;font-size:15px;color:#071124;width:100%}
-    .actions{display:flex;gap:10px;margin-top:12px;flex-direction:column}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:12px;border-radius:10px;border:0;cursor:pointer;font-weight:700;font-size:15px;color:#fff;background:linear-gradient(90deg,#0b6efd,#6c63ff)}
-    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,108,255,0.12)}
-    .small{font-size:13px;color:var(--muted);margin-top:8px;text-align:center}
-    .otp-area{margin-top:12px;display:none;gap:8px;flex-direction:column}
-    .resend{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
-    .resend button{background:transparent;border:0;color:var(--accent);font-weight:700;cursor:pointer;padding:6px;border-radius:8px}
-    .resend .disabled{opacity:.5;pointer-events:none}
-
-    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;background:rgba(11,18,36,0.96);color:#fff;padding:10px 14px;border-radius:999px;font-weight:700;opacity:0;transition:opacity .18s,transform .18s;z-index:9999}
-    .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
-
-    @media(max-width:460px){.card{padding:14px;border-radius:10px} h1{font-size:16px}}
+    html,body{height:100%;margin:0;font-family:'Poppins',sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));-webkit-font-smoothing:antialiased}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
+    .card{width:100%;max-width:420px;background:var(--card);border-radius:16px;padding:20px;box-shadow:0 10px 28px rgba(2,6,23,0.2)}
+    h1{margin:0 0 6px;font-size:20px;color:#071124;text-align:center}
+    p.lead{margin:0 0 14px;text-align:center;color:var(--muted);font-size:13px}
+    .field{background:#f6f8ff;border-radius:10px;padding:10px;border:1px solid rgba(2,6,23,0.03);display:flex;align-items:center;gap:10px}
+    input[type="tel"]{border:0;background:transparent;outline:none;font-size:16px;flex:1}
+    .btn{width:100%;padding:12px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),#6c63ff);color:#fff;font-weight:700;font-size:15px;margin-top:12px}
+    .btn.ghost{background:transparent;border:1px solid rgba(2,6,23,0.06);color:var(--accent)}
+    .small{font-size:13px;color:var(--muted);text-align:center;margin-top:10px}
+    .otp-area{margin-top:12px;display:none}
+    .otp-row{display:flex;gap:8px}
+    .otp-row input{flex:1;padding:12px;border-radius:10px;border:1px solid #e6e9f2;text-align:center;font-size:18px}
+    .link-box{margin-top:12px;text-align:center}
+    a.simple{color:var(--accent);text-decoration:none;font-weight:600}
+    .tiny{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
+    .hidden{display:none}
+    .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(11,18,36,0.95);color:#fff;padding:10px 14px;border-radius:999px;font-weight:600;opacity:0;transition:opacity .18s}
+    .toast.show{opacity:1}
+    /* small screens tweak */
+    @media(max-width:420px){ .card{padding:16px;border-radius:12px} input[type="tel"]{font-size:15px} .btn{padding:10px;font-size:14px} }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card" role="main" aria-labelledby="title">
-      <div class="brand">
-        <div class="logo">WT</div>
-        <div>
-          <h1 id="title">Link Phone to Driver Account</h1>
-          <p class="lead">Sign in with your driver email/password, then we'll send an OTP to the phone stored in your driver profile and link it to your account.</p>
+      <h1 id="title">Driver Login</h1>
+      <p class="lead">Enter mobile number</p>
+
+      <!-- STEP 1: PHONE ENTRY -->
+      <div id="stepPhoneEntry">
+        <div class="field" style="margin-bottom:10px">
+          <span style="color:var(--accent);font-weight:700">+91</span>
+          <input id="phoneInput" type="tel" inputmode="numeric" placeholder="Enter 10-digit mobile" maxlength="10" />
+        </div>
+        <button id="checkBtn" class="btn">Send OTP</button>
+        <div class="tiny" id="phoneNote">We'll only send OTP to the number registered with us.</div>
+      </div>
+
+      <!-- STEP 2: OTP -->
+      <div id="stepOtp" class="otp-area">
+        <div style="font-size:14px;text-align:center;margin-bottom:8px">OTP sent to <span id="phoneMask" style="font-weight:700"></span></div>
+        <div class="otp-row">
+          <input id="otpInput" inputmode="numeric" maxlength="6" placeholder="Enter OTP">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="verifyBtn" class="btn" style="flex:1;background:linear-gradient(90deg,#16a34a,#10b981)">Verify & Login</button>
+          <button id="cancelOtpBtn" class="btn ghost" style="flex:1">Cancel</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <div class="tiny" id="resendText">Didn't get OTP?</div>
+          <button id="resendBtn" class="btn ghost" style="padding:8px 12px" disabled>Resend</button>
         </div>
       </div>
 
-      <!-- SIGN IN -->
-      <div id="signInArea">
-        <label class="small">Email</label>
-        <div class="field"><div class="icon"><i class="fas fa-envelope"></i></div><input id="email" type="email" placeholder="your@domain.com" autocomplete="username"></div>
-
-        <label class="small">Password</label>
-        <div class="field"><div class="icon"><i class="fas fa-lock"></i></div><input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
-
-        <div class="actions">
-          <button id="signInBtn" class="btn"><span id="signInLabel">Sign in</span></button>
+      <!-- LINK FLOW: appear only if signed-in uid differs from driverdetails key -->
+      <div id="linkBox" class="hidden" style="margin-top:12px">
+        <div style="font-size:14px;color:#b33;margin-bottom:8px;text-align:center">
+          This phone belongs to an existing driver account. To link phone with that account, sign in below.
         </div>
-
-        <div class="small">After sign in we'll read your <code>driverdetails/{uid}</code> phone and send an OTP to that number only.</div>
-      </div>
-
-      <!-- AFTER SIGN-IN: show phone & OTP area -->
-      <div id="afterSignIn" style="display:none;margin-top:12px">
-        <div class="small">Phone on record</div>
-        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-          <div class="field" style="flex:1">
-            <div class="icon"><i class="fas fa-phone"></i></div>
-            <input id="phoneMasked" readonly type="text">
-          </div>
-          <button id="sendOtpBtn" class="btn" style="min-width:120px">Send OTP</button>
+        <div style="display:flex;gap:8px">
+          <input id="linkEmail" type="email" placeholder="Email" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e6e9f2">
         </div>
-
-        <div id="otpArea" class="otp-area">
-          <label class="small">Enter OTP</label>
-          <div class="field"><div class="icon"><i class="fas fa-key"></i></div><input id="otpInput" type="text" inputmode="numeric" placeholder="123456"></div>
-
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <button id="linkBtn" class="btn" style="flex:1;background:linear-gradient(90deg,#16a34a,#10b981)">Link Phone</button>
-            <button id="cancelLink" class="btn ghost" style="flex:1">Cancel</button>
-          </div>
-
-          <div class="resend" style="margin-top:8px">
-            <div id="resendInfo">Didn't get it?</div>
-            <div>
-              <button id="resendBtn" class="disabled">Resend</button>
-            </div>
-          </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="linkPassword" type="password" placeholder="Password" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e6e9f2">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="doLinkBtn" class="btn" style="flex:1;background:linear-gradient(90deg,#ff9800,#ff6b00)">Link Account</button>
+          <button id="skipLinkBtn" class="btn ghost" style="flex:1">Skip</button>
         </div>
       </div>
 
+      <!-- Signup link shown when phone not found -->
+      <div class="link-box" style="margin-top:14px">
+        <div id="noAccountBox" class="hidden">
+          <div class="tiny">No account found with this number.</div>
+          <a href="driversignup.html" class="simple">Sign up</a>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div id="recaptcha-container" style="display:none;"></div>
+  <div id="recaptcha-container" class="hidden"></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script type="module">
-    // Firebase modular imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import {
       getAuth,
-      signInWithEmailAndPassword,
       RecaptchaVerifier,
       signInWithPhoneNumber,
       PhoneAuthProvider,
+      signInWithCredential,
       linkWithCredential,
+      signInWithEmailAndPassword,
       onAuthStateChanged,
       signOut
     } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-    // Replace with your firebase config if different
+    // Firebase config — keep your config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
       databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
       projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
 
     // DOM
-    const emailEl = document.getElementById('email');
-    const pwEl = document.getElementById('password');
-    const signInBtn = document.getElementById('signInBtn');
-    const signInLabel = document.getElementById('signInLabel');
-    const signInArea = document.getElementById('signInArea');
-    const afterSignIn = document.getElementById('afterSignIn');
-    const phoneMasked = document.getElementById('phoneMasked');
-    const sendOtpBtn = document.getElementById('sendOtpBtn');
-    const otpArea = document.getElementById('otpArea');
+    const phoneInput = document.getElementById('phoneInput');
+    const checkBtn = document.getElementById('checkBtn');
+    const stepOtp = document.getElementById('stepOtp');
     const otpInput = document.getElementById('otpInput');
-    const linkBtn = document.getElementById('linkBtn');
-    const cancelLink = document.getElementById('cancelLink');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const cancelOtpBtn = document.getElementById('cancelOtpBtn');
     const resendBtn = document.getElementById('resendBtn');
-    const resendInfo = document.getElementById('resendInfo');
+    const resendText = document.getElementById('resendText');
+    const phoneMask = document.getElementById('phoneMask');
+    const noAccountBox = document.getElementById('noAccountBox');
+    const linkBox = document.getElementById('linkBox');
+    const linkEmail = document.getElementById('linkEmail');
+    const linkPassword = document.getElementById('linkPassword');
+    const doLinkBtn = document.getElementById('doLinkBtn');
+    const skipLinkBtn = document.getElementById('skipLinkBtn');
     const toast = document.getElementById('toast');
+    const stepPhoneEntry = document.getElementById('stepPhoneEntry');
 
-    let verificationId = null;
     let recaptchaVerifier = null;
-    let resendTimer = null;
-    let currentUid = null;
-    let driverPhoneNormalized = null;
+    let confirmationResult = null;
+    let expectedDriverId = null;
+    let phoneForOtp = null;
+    let verificationIdSaved = null;
+    let lastCode = null;
 
-    function showToast(msg, ms = 3200) {
+    function showToast(msg, ms = 3000){
       toast.textContent = msg;
       toast.classList.add('show');
       clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => toast.classList.remove('show'), ms);
+      showToast._t = setTimeout(()=> toast.classList.remove('show'), ms);
     }
 
-    // initialize invisible reCAPTCHA
-    function initRecaptcha() {
-      try { recaptchaVerifier?.clear?.() } catch (e){}
-      recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', { size: 'invisible' }, auth);
-      recaptchaVerifier.render().catch(()=>{/* ignore */});
+    function normalizeDigits(s=''){ return String(s).replace(/\D/g,''); }
+    function lastN(s, n){ const d = normalizeDigits(s); return d.length>=n ? d.slice(-n) : d; }
+
+    // Init invisible reCAPTCHA
+    function initRecaptcha(){
+      try{ recaptchaVerifier?.clear(); } catch(e){}
+      recaptchaVerifier = new RecaptchaVerifier('recaptcha-container',{size:'invisible'}, auth);
+      // render once
+      recaptchaVerifier.render().catch(()=>{});
     }
     initRecaptcha();
 
-    // Sign in with email/password (existing account)
-    signInBtn.addEventListener('click', async () => {
-      const email = (emailEl.value || '').trim();
-      const pw = (pwEl.value || '').trim();
-      if (!email || !pw) return showToast('Enter email and password');
-      signInBtn.disabled = true; signInLabel.textContent = 'Signing in…';
+    // Check button: find driverdetails by phone
+    checkBtn.addEventListener('click', async ()=>{
+      const raw = normalizeDigits(phoneInput.value||'');
+      if(raw.length !== 10){ showToast('Enter 10 digit mobile'); return; }
+      const full = '+91' + raw;
+      phoneForOtp = full;
+      // reset UI
+      stepOtp.style.display = 'none';
+      noAccountBox.classList.add('hidden');
+      linkBox.classList.add('hidden');
+
+      checkBtn.disabled = true; checkBtn.textContent = 'Checking…';
       try {
-        const cred = await signInWithEmailAndPassword(auth, email, pw);
-        const user = cred.user;
-        currentUid = user.uid;
-        showToast('Signed in');
-        await fetchDriverPhoneAndShow(user.uid);
+        // fetch driverdetails and search last-10 match
+        const snap = await get(ref(db, 'driverdetails'));
+        let foundId = null;
+        if(snap.exists()){
+          const data = snap.val();
+          for(const [k,v] of Object.entries(data)){
+            const p = v.phone || v.phoneNumber || v.phone_no || '';
+            if(lastN(p,10) === raw){ foundId = k; break; }
+          }
+        }
+        if(!foundId){
+          // not found -> show signup link
+          noAccountBox.classList.remove('hidden');
+          showToast('Number not registered — sign up');
+        } else {
+          expectedDriverId = foundId;
+          phoneMask.textContent = `${full}`;
+          // send OTP
+          await sendOtp(full);
+        }
       } catch (err) {
         console.error(err);
-        showToast('Sign-in failed: ' + (err.message || err.code));
+        showToast('Failed to check number');
       } finally {
-        signInBtn.disabled = false; signInLabel.textContent = 'Sign in';
+        checkBtn.disabled = false; checkBtn.textContent = 'Send OTP';
       }
     });
 
-    // fetch driver phone from driverdetails/{uid}
-    async function fetchDriverPhoneAndShow(uid) {
-      try {
-        const snap = await get(ref(db, `driverdetails/${uid}`));
-        if (!snap.exists()) {
-          showToast('No driverdetails found for your account');
-          return;
-        }
-        const rec = snap.val();
-        // prefer fields like phone, phoneNumber
-        const rawPhone = rec.phone || rec.phoneNumber || rec.contact || '';
-        if (!rawPhone) {
-          showToast('No phone number saved in driver profile.');
-          return;
-        }
-        // normalize (digits only) and store normalized last 10
-        const digits = String(rawPhone).replace(/\D/g,'');
-        const last10 = digits.slice(-10);
-        driverPhoneNormalized = last10;
-        phoneMasked.value = `+91 ${last10.slice(0,5)} ${last10.slice(5)}`;
-        // show UI
-        signInArea.style.display = 'none';
-        afterSignIn.style.display = 'block';
-        otpArea.style.display = 'none';
-        startSignedInState();
-      } catch (err) {
-        console.error('fetch driver phone error', err);
-        showToast('Failed to read driver profile');
-      }
-    }
-
-    // when user is already logged in externally, prefill
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          currentUid = user.uid;
-          // if signed-in user already has driverdetails, prefill phone and show step
-          const snap = await get(ref(db, `driverdetails/${user.uid}`));
-          if (snap.exists()) {
-            const rec = snap.val();
-            const rawPhone = rec.phone || rec.phoneNumber || rec.contact || '';
-            if (rawPhone) {
-              const digits = String(rawPhone).replace(/\D/g,'');
-              driverPhoneNormalized = digits.slice(-10);
-              phoneMasked.value = `+91 ${driverPhoneNormalized.slice(0,5)} ${driverPhoneNormalized.slice(5)}`;
-              signInArea.style.display = 'none';
-              afterSignIn.style.display = 'block';
-            }
-          }
-        } catch(e){}
-      }
-    });
-
-    function startSignedInState(){
-      // ensure recaptcha is fresh
-      initRecaptcha();
-      resendBtn.classList.add('disabled');
-      resendBtn.disabled = true;
-    }
-
-    // send OTP to the stored driver phone
-    sendOtpBtn.addEventListener('click', async () => {
-      if (!driverPhoneNormalized) return showToast('No phone to send OTP to');
-      sendOtpBtn.disabled = true; sendOtpBtn.textContent = 'Sending…';
-
-      // build full phone with +91 (if your numbers are non-IN, adjust)
-      const phoneToSend = '+91' + driverPhoneNormalized;
-
+    async function sendOtp(phone){
       try {
         initRecaptcha();
-        const confirmation = await signInWithPhoneNumber(auth, phoneToSend, recaptchaVerifier);
-        // confirmation.verificationId is accessible
-        verificationId = confirmation.verificationId;
-        showToast('OTP sent to ' + phoneToSend);
-        otpArea.style.display = 'flex';
-        startResendCountdown(30);
+        const confirmation = await signInWithPhoneNumber(auth, phone, recaptchaVerifier);
+        confirmationResult = confirmation;
+        verificationIdSaved = confirmation.verificationId || confirmation._verificationId || null;
+        stepOtp.style.display = 'block';
+        otpInput.value = '';
+        startResend(30);
+        showToast('OTP sent');
       } catch (err) {
-        console.error('sendOtp error', err);
-        showToast('Failed sending OTP: ' + (err.message || err.code));
-      } finally {
-        sendOtpBtn.disabled = false; sendOtpBtn.textContent = 'Send OTP';
+        console.error('sendOtp err', err);
+        showToast('Failed to send OTP');
       }
-    });
-
-    function startResendCountdown(seconds = 30) {
-      resendBtn.classList.add('disabled'); resendBtn.disabled = true;
-      let t = seconds;
-      resendInfo.textContent = `You can resend in ${t}s`;
-      resendTimer = setInterval(() => {
-        t--;
-        if (t <= 0) {
-          clearInterval(resendTimer);
-          resendInfo.textContent = `Didn't receive?`;
-          resendBtn.classList.remove('disabled'); resendBtn.disabled = false;
-        } else {
-          resendInfo.textContent = `You can resend in ${t}s`;
-        }
-      }, 1000);
     }
 
-    // Resend OTP (send again to same phone)
-    resendBtn.addEventListener('click', async () => {
-      if (!driverPhoneNormalized) return;
-      if (resendBtn.classList.contains('disabled')) return;
-      resendBtn.disabled = true;
-      resendBtn.textContent = 'Resending…';
+    // verify code -> sign in with phone
+    verifyBtn.addEventListener('click', async ()=>{
+      const code = (otpInput.value||'').trim();
+      if(!/^\d{4,6}$/.test(code)){ showToast('Enter valid OTP'); return; }
+      verifyBtn.disabled = true; verifyBtn.textContent = 'Verifying…';
+      lastCode = code;
       try {
-        initRecaptcha();
-        const phoneToSend = '+91' + driverPhoneNormalized;
-        const confirmation = await signInWithPhoneNumber(auth, phoneToSend, recaptchaVerifier);
-        verificationId = confirmation.verificationId;
-        showToast('OTP resent');
-        startResendCountdown(30);
-      } catch (err) {
-        console.error('resend error', err);
-        showToast('Resend failed: ' + (err.message || err.code));
-      } finally {
-        resendBtn.disabled = false; resendBtn.textContent = 'Resend';
-      }
-    });
-
-    // Link phone credential with currently signed-in email user
-    linkBtn.addEventListener('click', async () => {
-      const code = (otpInput.value || '').trim();
-      if (!verificationId) return showToast('Request an OTP first');
-      if (!/^\d{4,6}$/.test(code)) return showToast('Enter the OTP');
-
-      linkBtn.disabled = true; linkBtn.textContent = 'Linking…';
-      try {
-        // create phone credential and link
-        const credential = PhoneAuthProvider.credential(verificationId, code);
-
-        // linkWithCredential expects the current user to be the email-signed-in user
-        const user = auth.currentUser;
-        if (!user) {
-          showToast('Not signed in - please sign in with email again');
-          linkBtn.disabled = false; linkBtn.textContent = 'Link Phone';
-          return;
-        }
-
-        await linkWithCredential(user, credential);
-        showToast('Phone linked successfully!');
-        // a short delay then redirect to driver dashboard
-        setTimeout(()=>{ window.location.href = 'driverdashboard.html'; }, 900);
-      } catch (err) {
-        console.error('link error', err);
-        // handle common errors
-        if (err.code === 'auth/credential-already-in-use' || err.code === 'auth/provider-already-linked') {
-          showToast('This phone is already linked to another account.');
-        } else if (err.code === 'auth/invalid-verification-code') {
-          showToast('Invalid verification code.');
+        if(!confirmationResult){
+          // fallback: if verificationIdSaved available, try credential approach
+          if(!verificationIdSaved){ showToast('No verification data'); return; }
+          const cred = PhoneAuthProvider.credential(verificationIdSaved, code);
+          const userCred = await signInWithCredential(auth, cred);
+          handlePostSignIn(userCred.user);
         } else {
-          showToast('Link failed: ' + (err.message || err.code));
+          const userCred = await confirmationResult.confirm(code);
+          // store verificationId for possible linking
+          verificationIdSaved = verificationIdSaved || (confirmationResult.verificationId || confirmationResult._verificationId);
+          handlePostSignIn(userCred.user);
         }
+      } catch (err) {
+        console.error('OTP verify err', err);
+        showToast('Invalid OTP');
       } finally {
-        linkBtn.disabled = false; linkBtn.textContent = 'Link Phone';
+        verifyBtn.disabled = false; verifyBtn.textContent = 'Verify & Login';
       }
     });
 
-    // Cancel linking: sign out and show sign-in area again (so driver can try again)
-    cancelLink.addEventListener('click', async () => {
+    // After sign-in with phone: check uid vs expectedDriverId
+    async function handlePostSignIn(signedUser){
+      if(!signedUser){
+        showToast('Sign-in failed');
+        return;
+      }
+      // If no expectedDriverId (rare), just sign in and go to dashboard
+      if(!expectedDriverId){
+        showToast('Logged in');
+        setTimeout(()=> location.href = 'driverdashboard.html', 700);
+        return;
+      }
+
+      if(signedUser.uid === expectedDriverId){
+        showToast('Welcome back');
+        setTimeout(()=> location.href = 'driverdashboard.html', 700);
+        return;
+      } else {
+        // UID mismatch: show link box so user can sign in with existing credentials and link phone
+        showToast('Phone verified — needs linking');
+        linkBox.classList.remove('hidden');
+        // prefill and focus email
+        linkEmail.value = '';
+        linkPassword.value = '';
+        // do not auto-redirect — wait for link flow
+      }
+    }
+
+    // Link flow: user signs in with their existing account (email/password) then we link the phone credential
+    doLinkBtn.addEventListener('click', async ()=>{
+      const mail = (linkEmail.value||'').trim();
+      const pw = (linkPassword.value||'').trim();
+      if(!mail || !pw) return showToast('Email & password required');
+      doLinkBtn.disabled = true; doLinkBtn.textContent = 'Linking…';
+      try {
+        // sign in as the existing account
+        const existingCred = await signInWithEmailAndPassword(auth, mail, pw);
+        // build phone credential from saved verification data
+        if(!verificationIdSaved || !lastCode){ showToast('No phone verification to link'); return; }
+        const phoneCredential = PhoneAuthProvider.credential(verificationIdSaved, lastCode);
+        await linkWithCredential(existingCred.user, phoneCredential);
+        showToast('Phone linked');
+        setTimeout(()=> location.href = 'driverdashboard.html', 700);
+      } catch (err) {
+        console.error('link err', err);
+        showToast('Link failed: check credentials');
+      } finally {
+        doLinkBtn.disabled = false; doLinkBtn.textContent = 'Link Account';
+      }
+    });
+
+    // skip link -> just sign out (since we may be signed in with phone)
+    skipLinkBtn.addEventListener('click', async ()=>{
       try { await signOut(auth); } catch(e){}
-      // reset UI
-      otpArea.style.display = 'none';
-      afterSignIn.style.display = 'none';
-      signInArea.style.display = 'block';
-      emailEl.value = ''; pwEl.value = '';
-      showToast('Cancelled. Signed out.');
+      // return to phone entry
+      stepOtp.style.display = 'none';
+      linkBox.classList.add('hidden');
+      expectedDriverId = null;
+      showToast('Cancelled');
     });
 
-    // keyboard shortcuts
-    otpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); linkBtn.click(); }});
-    pwEl.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') { e.preventDefault(); signInBtn.click(); }});
+    // cancel OTP
+    cancelOtpBtn.addEventListener('click', async ()=>{
+      try { await signOut(auth); } catch(e){}
+      stepOtp.style.display = 'none';
+      expectedDriverId = null;
+      showToast('Cancelled');
+    });
+
+    // resend
+    function startResend(sec=30){
+      resendBtn.disabled = true;
+      let t = sec;
+      resendText.textContent = `Resend in ${t}s`;
+      clearInterval(startResend._iv);
+      startResend._iv = setInterval(()=>{
+        t--;
+        if(t<=0){ clearInterval(startResend._iv); resendText.textContent = `Didn't get OTP?`; resendBtn.disabled = false; }
+        else resendText.textContent = `Resend in ${t}s`;
+      },1000);
+    }
+    resendBtn.addEventListener('click', async ()=>{
+      if(!phoneForOtp) return;
+      resendBtn.disabled = true; resendBtn.textContent = 'Resending…';
+      try { await sendOtp(phoneForOtp); showToast('OTP resent'); }
+      catch(err){ console.error(err); showToast('Resend failed'); }
+      finally { resendBtn.disabled = false; resendBtn.textContent = 'Resend'; }
+    });
+
+    // small helper: pressing Enter in phoneInput triggers check
+    phoneInput.addEventListener('keydown', e => { if(e.key==='Enter') checkBtn.click(); });
+    otpInput.addEventListener('keydown', e => { if(e.key==='Enter') verifyBtn.click(); });
+
+    // attempt auto-redirect if already signed-in and driverdetails maps to this uid
+    onAuthStateChanged(auth, async user => {
+      if(!user) return;
+      try {
+        const snap = await get(ref(db, `driverdetails/${user.uid}`));
+        if(snap.exists()){
+          // user already signed in and has driverdetails -> go dashboard
+          setTimeout(()=> location.href = 'driverdashboard.html', 200);
+        } else {
+          // user signed in but no driverdetails -> sign out to keep flow clean
+          try { await signOut(auth); } catch(e){}
+        }
+      } catch(e){}
+    });
 
   </script>
 </body>
