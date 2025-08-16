@@ -99,8 +99,8 @@
     .car-row {
       display:flex; gap:8px; align-items:center; margin-top:4px;
     }
-    .car-name { font-weight:700; color:#0b3b6b; font-size:0.95rem; }
-    .car-reg { display:none; } /* removed per request (only show car brand) */
+    .car-name { font-weight:700; color:#0b3b6b; font-size:0.95rem; display:flex; gap:8px; align-items:center; }
+    .car-name i { color:#0b3b6b; font-size:1.05rem; background: rgba(11,59,107,0.06); padding:6px; border-radius:8px; }
 
     .slot-mid {
       display:flex; gap:12px; align-items:center; flex-wrap:wrap;
@@ -388,9 +388,9 @@
                   </div>
                 </div>
 
-                <!-- Car Brand -->
+                <!-- Car Brand with icon -->
                 <div class="car-row">
-                  <div class="car-name">car${escapeHtml(carBrand)}</div>
+                  <div class="car-name"><i class="fas fa-car" aria-hidden="true"></i><span>${escapeHtml(carBrand)}</span></div>
                 </div>
               </div>
             </div>
@@ -415,7 +415,7 @@
               </div>
               <div class="action-wrap">
                 <button id="bookFullBtn${idx}" class="btn-action btn-full" style="display:none" aria-label="Book entire car for discounted price">
-                  <div class="btn-left"><i class="fa fa-car"></i><span>Book car(Oneway)</span></div>
+                  <div class="btn-left"><i class="fa fa-car"></i><span>Book entire car</span></div>
                   <div class="btn-right"><span class="price-pill">₹<span id="fullFare${idx}"></span></span></div>
                 </button>
               </div>
@@ -544,5 +544,3 @@
   </script>
 </body>
 </html>
-
-
