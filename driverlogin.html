@@ -2,69 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Driver Login</title>
+  <title>Driver Login - WaveTravel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       margin: 0;
       font-family: 'Poppins', sans-serif;
-      background: #f5f5f5;
+      background: #f4f7fb;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
+
     .container {
+      background: #fff;
       width: 92%;
       max-width: 400px;
-      background: #fff;
-      padding: 24px;
-      border-radius: 14px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      padding: 28px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
     }
+
     h2 {
       text-align: center;
       margin-bottom: 20px;
       color: #222;
+      font-size: 24px;
     }
-    input {
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    input[type="tel"],
+    input[type="text"] {
       width: 100%;
-      padding: 12px;
-      margin: 10px 0;
+      padding: 14px;
       border: 1px solid #ddd;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 15px;
+      background: #f2f2f2;
     }
+
     button {
       width: 100%;
-      padding: 12px;
-      background: #007bff;
-      color: white;
+      padding: 14px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
+      background: #007bff;
+      color: #fff;
       font-size: 16px;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: background 0.3s ease;
     }
+
     button:disabled {
-      background: #aaa;
+      background: #a0c6ff;
       cursor: not-allowed;
     }
+
     button:hover:enabled {
       background: #0056b3;
     }
+
     .link {
+      margin-top: 18px;
       text-align: center;
-      margin-top: 16px;
       font-size: 14px;
     }
+
     .link a {
       color: #007bff;
       text-decoration: none;
     }
-    #recaptcha-container {
-      margin-top: 10px;
-    }
+
     .toast {
       position: fixed;
       bottom: 20px;
@@ -73,12 +86,13 @@
       background: #333;
       color: #fff;
       padding: 12px 24px;
-      border-radius: 20px;
+      border-radius: 25px;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.4s ease;
       font-size: 14px;
     }
+
     .toast.show {
       opacity: 1;
       pointer-events: auto;
@@ -90,26 +104,28 @@
 <div class="container">
   <h2>Driver Login</h2>
 
-  <input type="tel" id="phoneNumber" placeholder="Enter Mobile Number">
-  <div id="recaptcha-container"></div>
-  <button id="sendOtpBtn">Send OTP</button>
+  <div id="stepPhone" class="form-group">
+    <input type="tel" id="phone" placeholder="Enter Mobile Number" required>
+    <button id="sendOtpBtn">Send OTP</button>
+  </div>
 
-  <input type="text" id="otp" placeholder="Enter OTP" style="display:none;">
-  <button id="verifyOtpBtn" style="display:none;">Verify OTP</button>
-  <button id="resendOtpBtn" style="display:none;" disabled>Resend OTP (30s)</button>
+  <div id="stepOtp" class="form-group" style="display:none;">
+    <input type="text" id="otp" placeholder="Enter OTP" required>
+    <button id="verifyOtpBtn">Verify OTP</button>
+    <button id="resendOtpBtn" disabled>Resend OTP</button>
+  </div>
 
   <div class="link">
-    New driver? <a href="driversignup.html">Signup with us</a>
+    New driver? <a href="driversignup.html">Signup here</a>
   </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
-<!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
   import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+  import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -122,114 +138,105 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
   const db = getDatabase(app);
+  const auth = getAuth(app);
 
-  const phoneInput = document.getElementById("phoneNumber");
   const sendOtpBtn = document.getElementById("sendOtpBtn");
-  const otpInput = document.getElementById("otp");
   const verifyOtpBtn = document.getElementById("verifyOtpBtn");
   const resendOtpBtn = document.getElementById("resendOtpBtn");
+  const phoneInput = document.getElementById("phone");
+  const otpInput = document.getElementById("otp");
+  const stepPhone = document.getElementById("stepPhone");
+  const stepOtp = document.getElementById("stepOtp");
   const toast = document.getElementById("toast");
 
   let confirmationResultGlobal = null;
-  let resendTimer;
+  let driverIdFound = null;
 
-  // Recaptcha
-  const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+  window.recaptchaVerifier = new RecaptchaVerifier(auth, "sendOtpBtn", {
+    size: "invisible"
+  });
 
-  // Show Toast
-  function showToast(msg) {
-    toast.textContent = msg;
-    toast.className = "toast show";
-    setTimeout(() => toast.className = "toast", 3000);
-  }
+  sendOtpBtn.addEventListener("click", async () => {
+    const phone = "+91" + phoneInput.value.trim();
 
-  // Start cooldown
-  function startCooldown() {
-    let seconds = 30;
+    try {
+      // check if driver exists with this phone
+      const snapshot = await get(child(ref(db), "driverdetails"));
+      let driverFound = false;
+
+      snapshot.forEach(childSnap => {
+        if (childSnap.val().phone === phone) {
+          driverIdFound = childSnap.key; // save driverId
+          driverFound = true;
+        }
+      });
+
+      if (!driverFound) {
+        showToast("Phone not registered. Please sign up.");
+        return;
+      }
+
+      const appVerifier = window.recaptchaVerifier;
+      const confirmationResult = await signInWithPhoneNumber(auth, phone, appVerifier);
+      confirmationResultGlobal = confirmationResult;
+
+      stepPhone.style.display = "none";
+      stepOtp.style.display = "block";
+      startResendCooldown();
+      showToast("OTP sent successfully");
+
+    } catch (error) {
+      console.error(error);
+      showToast("Error: " + error.message);
+    }
+  });
+
+  verifyOtpBtn.addEventListener("click", async () => {
+    const otp = otpInput.value.trim();
+    if (!confirmationResultGlobal) return;
+
+    try {
+      await confirmationResultGlobal.confirm(otp);
+      // Instead of Firebase UID, use driverIdFound
+      localStorage.setItem("driverId", driverIdFound);
+      showToast("Login successful!");
+      setTimeout(() => {
+        window.location.href = "driverdashboard.html";
+      }, 1500);
+    } catch (error) {
+      console.error(error);
+      showToast("Invalid OTP");
+    }
+  });
+
+  function startResendCooldown() {
+    let countdown = 30;
     resendOtpBtn.disabled = true;
-    resendOtpBtn.textContent = `Resend OTP (${seconds}s)`;
-    resendOtpBtn.style.display = "block";
+    resendOtpBtn.textContent = `Resend OTP in ${countdown}s`;
 
-    resendTimer = setInterval(() => {
-      seconds--;
-      if (seconds > 0) {
-        resendOtpBtn.textContent = `Resend OTP (${seconds}s)`;
-      } else {
-        clearInterval(resendTimer);
-        resendOtpBtn.textContent = "Resend OTP";
+    const interval = setInterval(() => {
+      countdown--;
+      resendOtpBtn.textContent = `Resend OTP in ${countdown}s`;
+      if (countdown <= 0) {
+        clearInterval(interval);
         resendOtpBtn.disabled = false;
+        resendOtpBtn.textContent = "Resend OTP";
       }
     }, 1000);
   }
 
-  // Send OTP
-  sendOtpBtn.addEventListener("click", async () => {
-    const phoneNumber = "+91" + phoneInput.value.trim();
-    if (!phoneInput.value.trim()) return showToast("Enter mobile number");
-
-    try {
-      // check if number exists in driverdetails
-      const snapshot = await get(child(ref(db), "driverdetails"));
-      let driverFound = null;
-      snapshot.forEach(childSnap => {
-        if (childSnap.val().phone === phoneNumber) driverFound = childSnap.key;
-      });
-
-      if (!driverFound) {
-        showToast("Number not registered. Please signup.");
-        return;
-      }
-
-      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-      confirmationResultGlobal = confirmationResult;
-
-      otpInput.style.display = "block";
-      verifyOtpBtn.style.display = "block";
-      startCooldown();
-
-      showToast("OTP sent!");
-    } catch (err) {
-      console.error(err);
-      showToast("Error: " + err.message);
-    }
+  resendOtpBtn.addEventListener("click", () => {
+    sendOtpBtn.click(); // just re-trigger send OTP
   });
 
-  // Resend OTP
-  resendOtpBtn.addEventListener("click", async () => {
-    sendOtpBtn.click();
-  });
-
-  // Verify OTP
-  verifyOtpBtn.addEventListener("click", async () => {
-    const otp = otpInput.value.trim();
-    if (!otp) return showToast("Enter OTP");
-
-    try {
-      const result = await confirmationResultGlobal.confirm(otp);
-      const user = result.user;
-
-      // Get driverId from DB
-      const snapshot = await get(child(ref(db), "driverdetails"));
-      let driverId = null;
-      snapshot.forEach(childSnap => {
-        if (childSnap.val().phone === "+91" + phoneInput.value.trim()) driverId = childSnap.key;
-      });
-
-      if (driverId) {
-        showToast("Login successful!");
-        setTimeout(() => {
-          window.location.href = "driverdashboard.html?driverId=" + driverId;
-        }, 1500);
-      } else {
-        showToast("No driver linked to this number.");
-      }
-    } catch (err) {
-      console.error(err);
-      showToast("Invalid OTP");
-    }
-  });
+  function showToast(message) {
+    toast.textContent = message;
+    toast.className = "toast show";
+    setTimeout(() => {
+      toast.className = "toast";
+    }, 3000);
+  }
 </script>
 
 </body>
