@@ -28,6 +28,8 @@
       text-align: center;
       color: #fff;
       margin-bottom: 16px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
     }
     .booking-list {
       display: flex;
@@ -36,11 +38,17 @@
     }
     .booking-card {
       background: #fff;
-      padding: 16px;
+      padding: 14px 14px 16px 14px;
       border-radius: 14px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
       border-left: 6px solid #0077ff;
       position: relative;
+      overflow: hidden;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .booking-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 26px rgba(0,0,0,0.12);
     }
     .card-number {
       position: absolute;
@@ -48,40 +56,92 @@
       left: -12px;
       background: #0077ff;
       color: #fff;
-      font-weight: bold;
+      font-weight: 700;
       font-size: 0.85rem;
       border-radius: 50%;
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
     }
     .booking-card h3 {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       font-size: 1rem;
-      color: #333;
+      color: #222;
     }
+
+    /* Info row grid for small screens: stacked but spaced */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    @media(min-width:560px){
+      .info-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
     .info {
-      display: flex;
-      align-items: center;
-      margin: 6px 0;
-      font-size: 0.9rem;
-      color: #444;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      font-size:0.92rem;
+      color:#444;
     }
     .info i {
-      color: #0077ff;
-      margin-right: 8px;
-      width: 20px;
-      text-align: center;
+      color:#0077ff;
+      min-width:22px;
+      text-align:center;
+      font-size:1rem;
     }
-    .fare {
-      font-weight: bold;
-      color: #28a745;
-      margin-top: 8px;
-      font-size: 1rem;
+
+    .fare-row {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:8px;
     }
+    .fare-text {
+      font-weight:700;
+      color:#28a745;
+      font-size:1.02rem;
+    }
+    .call-btn {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:#0077ff;
+      color:#fff;
+      padding:8px 12px;
+      border-radius:8px;
+      text-decoration:none;
+      font-weight:700;
+      box-shadow: 0 6px 14px rgba(0,119,255,0.12);
+      border: none;
+      cursor: pointer;
+      font-size:0.95rem;
+    }
+    .call-btn i { font-size:1rem; }
+
+    .call-btn[aria-disabled="true"], .call-btn.disabled {
+      background:#cbd5e1;
+      color:#6b7280;
+      box-shadow:none;
+      cursor:not-allowed;
+      pointer-events:none;
+      opacity:0.8;
+    }
+
+    .small-muted {
+      font-size:0.88rem;
+      color:#6b7280;
+    }
+
     .navbar {
       position: fixed;
       bottom: 0;
@@ -105,18 +165,28 @@
       font-size: 20px;
       margin-bottom: 4px;
     }
+
+    /* small helper for "no bookings" text */
+    .empty {
+      color: #fff;
+      text-align:center;
+      padding: 28px 12px;
+      font-weight:600;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
     <h1>My Bookings</h1>
-    <div id="bookings" class="booking-list">
+    <div id="bookings" class="booking-list" aria-live="polite">
       <!-- Populated by JavaScript -->
     </div>
   </div>
 
-  <div class="navbar">
+  <div class="navbar" role="navigation" aria-label="Bottom navigation">
     <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
     <a href="booking.html"><i class="fas fa-car"></i>Book</a>
     <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
@@ -129,6 +199,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
   <script>
+    // 1) Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -140,21 +211,34 @@
     };
     firebase.initializeApp(firebaseConfig);
 
-    const auth = firebase.auth();
-    const db = firebase.database();
+    const auth       = firebase.auth();
+    const db         = firebase.database();
     const bookingsEl = document.getElementById('bookings');
 
+    // Formatting helpers
     function to12Hour(time) {
-      let [h, m] = time.split(':').map(Number);
+      if (!time || typeof time !== 'string') return time || '—';
+      let parts = time.split(':');
+      if (parts.length < 2) return time;
+      let [h, m] = parts.map(Number);
       const suffix = h >= 12 ? 'PM' : 'AM';
       h = h % 12 || 12;
       return `${h}:${String(m).padStart(2, '0')} ${suffix}`;
     }
     function formatDate(d) {
+      // Accept ISO date (YYYY-MM-DD) or a full datetime; try to produce a friendly date
+      if (!d) return '—';
+      // If it's ISO date like YYYY-MM-DD, show DD MMM YYYY
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+        const [y,m,day] = d.split('-');
+        const date = new Date(`${d}T00:00:00`);
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      }
       const dt = new Date(d);
-      return dt.toLocaleDateString(undefined, {
-        year: 'numeric', month: 'short', day: 'numeric'
-      });
+      if (!isNaN(dt)) {
+        return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+      return d;
     }
 
     auth.onAuthStateChanged(user => {
@@ -171,6 +255,7 @@
           Object.entries(allDrivers).forEach(([driverId, bookings]) => {
             if (!bookings) return;
             Object.entries(bookings).forEach(([bookingId, b]) => {
+              // check both userId and customerId variants (keeps compatibility)
               if (b.userId === user.uid || b.customerId === user.uid) {
                 myBookings.push({ id: bookingId, ...b });
               }
@@ -178,34 +263,68 @@
           });
 
           if (myBookings.length === 0) {
-            bookingsEl.innerHTML = `
-              <p style="color:#fff; text-align:center;">
-                No bookings found.
-              </p>`;
-          } else {
-            bookingsEl.innerHTML = myBookings.map((b, i) => `
-              <div class="booking-card">
-                <div class="card-number">${i + 1}</div>
-                <h3>Booking #${i + 1}</h3>
-                <div class="info"><i class="fas fa-calendar"></i> <span>${formatDate(b.date)}</span></div>
-                <div class="info"><i class="fas fa-clock"></i> <span>${to12Hour(b.time)}</span></div>
-                <div class="info"><i class="fas fa-map-marker-alt"></i> <span>Pickup: ${b.pickup}</span></div>
-                <div class="info"><i class="fas fa-flag-checkered"></i> <span>Dropoff: ${b.dropoff}</span></div>
-                <div class="info"><i class="fas fa-users"></i> <span>Seats: ${b.seatsRequested || b.seatsBooked || b.seats}</span></div>
-                <div class="info"><i class="fas fa-car"></i> <span>${b.carBrand} (${b.carReg})</span></div>
-                <p class="fare">Fare: ₹${b.fare || 'N/A'}</p>
-              </div>`).join('');
+            bookingsEl.innerHTML = `<div class="empty">No bookings found.</div>`;
+            return;
           }
+
+          // Build cards with numbering and call button beside fare
+          bookingsEl.innerHTML = myBookings.map((b, i) => {
+            const seats = b.seatsRequested || b.seatsBooked || b.seats || '—';
+            const carText = (b.carBrand ? `${escapeHtml(b.carBrand)}` : '—') + (b.carReg ? ` (${escapeHtml(b.carReg)})` : '');
+            const fareText = (b.fare !== undefined && b.fare !== null) ? `₹${b.fare}` : 'N/A';
+            const driverNumber = b.driverNumber || b.driver_phone || b.driverPhone || b.driverContact || '';
+            const hasPhone = !!String(driverNumber).trim();
+
+            // call button (enabled when phone exists)
+            const callBtnHtml = hasPhone
+              ? `<a class="call-btn" href="tel:${encodeURIComponent(driverNumber.trim())}" aria-label="Call driver ${escapeHtml(driverNumber)}"><i class="fas fa-phone"></i> Call Driver</a>`
+              : `<button class="call-btn disabled" aria-disabled="true" title="Driver number not available"><i class="fas fa-phone"></i> Call Driver</button>`;
+
+            return `
+              <div class="booking-card" role="article" aria-labelledby="bk-${i+1}-title">
+                <div class="card-number">${i + 1}</div>
+                <h3 id="bk-${i+1}-title">Booking #${i + 1} — ${escapeHtml(b.id || '')}</h3>
+
+                <div class="info-grid">
+                  <div class="info"><i class="fas fa-calendar"></i> <div><div class="small-muted">Date</div><div>${formatDate(b.date)}</div></div></div>
+                  <div class="info"><i class="fas fa-clock"></i> <div><div class="small-muted">Time</div><div>${to12Hour(b.time)}</div></div></div>
+
+                  <div class="info"><i class="fas fa-map-marker-alt"></i> <div><div class="small-muted">Pickup</div><div>${escapeHtml(b.pickup)}</div></div></div>
+                  <div class="info"><i class="fas fa-flag-checkered"></i> <div><div class="small-muted">Dropoff</div><div>${escapeHtml(b.dropoff)}</div></div></div>
+
+                  <div class="info"><i class="fas fa-users"></i> <div><div class="small-muted">Seats</div><div>${escapeHtml(seats)}</div></div></div>
+                  <div class="info"><i class="fas fa-car"></i> <div><div class="small-muted">Car</div><div>${carText}</div></div></div>
+                </div>
+
+                <div class="fare-row" aria-hidden="false">
+                  <div>
+                    <div class="small-muted">Fare</div>
+                    <div class="fare-text">${fareText}</div>
+                  </div>
+                  <div>${callBtnHtml}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
         })
         .catch(err => {
           console.error('Error fetching bookings:', err);
-          bookingsEl.innerHTML = `
-            <p style="color:#fff; text-align:center;">
-              Unable to load bookings.
-            </p>`;
+          bookingsEl.innerHTML = `<div class="empty">Unable to load bookings.</div>`;
         });
     });
+
+    // small HTML escape helper used when injecting values into template
+    function escapeHtml (str) {
+      if (str === undefined || str === null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
   </script>
 
 </body>
 </html>
+
