@@ -18,7 +18,6 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      /* ensure body has bottom padding so content isn't hidden */
       padding-bottom: 80px;
     }
     .container {
@@ -33,38 +32,55 @@
     .booking-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
     }
     .booking-card {
       background: #fff;
       padding: 16px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-left: 6px solid #0077ff;
+      position: relative;
+    }
+    .card-number {
+      position: absolute;
+      top: -12px;
+      left: -12px;
+      background: #0077ff;
+      color: #fff;
+      font-weight: bold;
+      font-size: 0.85rem;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
     .booking-card h3 {
-      margin-bottom: 8px;
+      margin-bottom: 12px;
       font-size: 1rem;
       color: #333;
     }
-    .booking-card p {
-      font-size: 0.9rem;
-      margin: 4px 0;
-      color: #555;
-    }
-    .booking-card button {
-      margin-top: 8px;
-      padding: 8px 12px;
-      background: #28a745;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      display: inline-flex;
+    .info {
+      display: flex;
       align-items: center;
+      margin: 6px 0;
+      font-size: 0.9rem;
+      color: #444;
     }
-    .booking-card button i {
-      margin-right: 6px;
+    .info i {
+      color: #0077ff;
+      margin-right: 8px;
+      width: 20px;
+      text-align: center;
+    }
+    .fare {
+      font-weight: bold;
+      color: #28a745;
+      margin-top: 8px;
+      font-size: 1rem;
     }
     .navbar {
       position: fixed;
@@ -76,7 +92,7 @@
       justify-content: space-around;
       padding: 8px 0;
       box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-      z-index: 1000; /* keep it above other content */
+      z-index: 1000;
     }
     .navbar a {
       text-decoration: none;
@@ -113,7 +129,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
   <script>
-    // 1) Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -125,11 +140,10 @@
     };
     firebase.initializeApp(firebaseConfig);
 
-    const auth       = firebase.auth();
-    const db         = firebase.database();
+    const auth = firebase.auth();
+    const db = firebase.database();
     const bookingsEl = document.getElementById('bookings');
 
-    // Formatting helpers
     function to12Hour(time) {
       let [h, m] = time.split(':').map(Number);
       const suffix = h >= 12 ? 'PM' : 'AM';
@@ -143,20 +157,17 @@
       });
     }
 
-    // 2) Auth & Fetch
     auth.onAuthStateChanged(user => {
       if (!user) {
         alert('Please log in first.');
         return window.location = 'index.html';
       }
 
-      // 3) Fetch entire /bookings tree once
       db.ref('bookings').once('value')
         .then(snapshot => {
           const allDrivers = snapshot.val() || {};
           const myBookings = [];
 
-          // 4) Traverse driverId → bookingId → bookingData
           Object.entries(allDrivers).forEach(([driverId, bookings]) => {
             if (!bookings) return;
             Object.entries(bookings).forEach(([bookingId, b]) => {
@@ -166,27 +177,23 @@
             });
           });
 
-          // 5) Render booking cards
           if (myBookings.length === 0) {
             bookingsEl.innerHTML = `
               <p style="color:#fff; text-align:center;">
                 No bookings found.
               </p>`;
           } else {
-            bookingsEl.innerHTML = myBookings.map(b => `
+            bookingsEl.innerHTML = myBookings.map((b, i) => `
               <div class="booking-card">
-                <h3>Booking ID: ${b.id}</h3>
-                <p><strong>Date:</strong> ${formatDate(b.date)}</p>
-                <p><strong>Time:</strong> ${to12Hour(b.time)}</p>
-                <p><strong>Pickup:</strong> ${b.pickup}</p>
-                <p><strong>Dropoff:</strong> ${b.dropoff}</p>
-                <p><strong>Seats:</strong> ${b.seatsRequested || b.seatsBooked || b.seats}</p>
-                <p><strong>Fare:</strong> ₹${b.fare || 'N/A'}</p>
-                <p><strong>Car:</strong> ${b.carBrand} (${b.carReg})</p>
-                <p><strong>Driver:</strong> ${b.driverName}</p>
-                <button onclick="location.href='tel:${b.driverNumber}'">
-                  <i class="fas fa-phone"></i> Call Driver
-                </button>
+                <div class="card-number">${i + 1}</div>
+                <h3>Booking #${i + 1}</h3>
+                <div class="info"><i class="fas fa-calendar"></i> <span>${formatDate(b.date)}</span></div>
+                <div class="info"><i class="fas fa-clock"></i> <span>${to12Hour(b.time)}</span></div>
+                <div class="info"><i class="fas fa-map-marker-alt"></i> <span>Pickup: ${b.pickup}</span></div>
+                <div class="info"><i class="fas fa-flag-checkered"></i> <span>Dropoff: ${b.dropoff}</span></div>
+                <div class="info"><i class="fas fa-users"></i> <span>Seats: ${b.seatsRequested || b.seatsBooked || b.seats}</span></div>
+                <div class="info"><i class="fas fa-car"></i> <span>${b.carBrand} (${b.carReg})</span></div>
+                <p class="fare">Fare: ₹${b.fare || 'N/A'}</p>
               </div>`).join('');
           }
         })
@@ -202,4 +209,3 @@
 
 </body>
 </html>
-
