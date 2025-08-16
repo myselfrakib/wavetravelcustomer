@@ -7,48 +7,30 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Poppins', sans-serif;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
     body {
       background: linear-gradient(to right, #74ebd5, #ACB6E5);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding-bottom: 80px;
+      padding-bottom: 88px; /* room for bottom nav */
     }
-    .container {
-      flex: 1;
-      padding: 16px;
-    }
+    .container { flex: 1; padding: 16px; max-width: 720px; margin: 0 auto; }
     h1 {
-      text-align: center;
-      color: #fff;
-      margin-bottom: 16px;
-      font-weight: 600;
+      text-align: center; color: #fff; margin-bottom: 16px; font-weight: 600;
       letter-spacing: 0.2px;
     }
-    .booking-list {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
+
+    .booking-list { display: flex; flex-direction: column; gap: 16px; }
+
     .booking-card {
       background: #fff;
-      padding: 14px 14px 16px 14px;
+      padding: 16px;
       border-radius: 14px;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       border-left: 6px solid #0077ff;
       position: relative;
-      overflow: hidden;
-      transition: transform .12s ease, box-shadow .12s ease;
-    }
-    .booking-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 26px rgba(0,0,0,0.12);
+      overflow: visible;
     }
     .card-number {
       position: absolute;
@@ -59,131 +41,101 @@
       font-weight: 700;
       font-size: 0.85rem;
       border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+      width: 28px;
+      height: 28px;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
     .booking-card h3 {
-      margin-bottom: 10px;
-      font-size: 1rem;
-      color: #222;
+      margin-bottom: 12px;
+      font-size: 1rem; color: #222;
     }
 
-    /* Info row grid for small screens: stacked but spaced */
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    @media(min-width:560px){
-      .info-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
+    .info { display:flex; align-items:center; gap:10px; margin:6px 0; color:#444; font-size:0.95rem; }
+    .info i { color:#0077ff; min-width:22px; text-align:center; font-size:1rem; }
 
-    .info {
+    /* Fare + Call row */
+    .fare-call-row {
       display:flex;
-      gap:10px;
-      align-items:center;
-      font-size:0.92rem;
-      color:#444;
-    }
-    .info i {
-      color:#0077ff;
-      min-width:22px;
-      text-align:center;
-      font-size:1rem;
-    }
-
-    .fare-row {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
       gap:12px;
-      margin-top:8px;
+      align-items:center;
+      margin-top:12px;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .fare-block {
+      display:flex;
+      align-items:center;
+      gap:12px;
     }
     .fare-text {
       font-weight:700;
       color:#28a745;
-      font-size:1.02rem;
+      font-size:1.08rem;
+      background: rgba(40,167,69,0.06);
+      padding: 10px 14px;
+      border-radius: 10px;
+      min-width: 110px;
+      text-align:center;
+      box-shadow: 0 6px 14px rgba(40,167,69,0.06);
     }
+
     .call-btn {
       display:inline-flex;
       align-items:center;
-      gap:8px;
+      gap:10px;
       background:#0077ff;
       color:#fff;
-      padding:8px 12px;
-      border-radius:8px;
+      padding:10px 14px;
+      border-radius:10px;
       text-decoration:none;
       font-weight:700;
-      box-shadow: 0 6px 14px rgba(0,119,255,0.12);
-      border: none;
-      cursor: pointer;
       font-size:0.95rem;
+      border: none;
+      box-shadow: 0 8px 18px rgba(0,119,255,0.12);
     }
-    .call-btn i { font-size:1rem; }
+    .call-btn i { font-size: 1.05rem; }
 
     .call-btn[aria-disabled="true"], .call-btn.disabled {
-      background:#cbd5e1;
-      color:#6b7280;
+      background:#e6eefc;
+      color:#7b8aa9;
       box-shadow:none;
       cursor:not-allowed;
       pointer-events:none;
-      opacity:0.8;
+      opacity:0.95;
     }
 
-    .small-muted {
-      font-size:0.88rem;
-      color:#6b7280;
+    .small-muted { color:#6b7280; font-size:0.88rem; }
+
+    /* mobile-friendly spacing */
+    @media (max-width:480px) {
+      .fare-text, .call-btn { flex: 1 1 48%; min-width: 140px; }
+      .fare-call-row { gap:10px; }
+      .info { font-size:0.92rem; gap:8px; }
     }
 
     .navbar {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
+      bottom: 0; left: 0; width: 100%;
       background: #fff;
-      display: flex;
-      justify-content: space-around;
-      padding: 8px 0;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
+      display:flex; justify-content:space-around;
+      padding: 10px 8px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+      z-index: 999;
     }
-    .navbar a {
-      text-decoration: none;
-      color: #0077ff;
-      font-size: 12px;
-      text-align: center;
-    }
-    .navbar a i {
-      display: block;
-      font-size: 20px;
-      margin-bottom: 4px;
-    }
+    .navbar a { text-decoration:none; color:#0077ff; font-size:12px; text-align:center; }
+    .navbar a i { display:block; font-size:20px; margin-bottom:6px; }
 
-    /* small helper for "no bookings" text */
     .empty {
-      color: #fff;
-      text-align:center;
-      padding: 28px 12px;
-      font-weight:600;
-      background: rgba(255,255,255,0.06);
-      border-radius: 10px;
+      color: #fff; text-align:center; padding: 28px 12px; font-weight:600;
+      background: rgba(255,255,255,0.06); border-radius:10px;
     }
   </style>
 </head>
 <body>
-
   <div class="container">
     <h1>My Bookings</h1>
-    <div id="bookings" class="booking-list" aria-live="polite">
-      <!-- Populated by JavaScript -->
-    </div>
+    <div id="bookings" class="booking-list" aria-live="polite"></div>
   </div>
 
   <div class="navbar" role="navigation" aria-label="Bottom navigation">
@@ -199,7 +151,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
   <script>
-    // 1) Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -211,33 +162,28 @@
     };
     firebase.initializeApp(firebaseConfig);
 
-    const auth       = firebase.auth();
-    const db         = firebase.database();
+    const auth = firebase.auth();
+    const db = firebase.database();
     const bookingsEl = document.getElementById('bookings');
 
-    // Formatting helpers
     function to12Hour(time) {
       if (!time || typeof time !== 'string') return time || '—';
-      let parts = time.split(':');
+      const parts = time.split(':');
       if (parts.length < 2) return time;
       let [h, m] = parts.map(Number);
       const suffix = h >= 12 ? 'PM' : 'AM';
       h = h % 12 || 12;
-      return `${h}:${String(m).padStart(2, '0')} ${suffix}`;
+      return `${h}:${String(m).padStart(2,'0')} ${suffix}`;
     }
     function formatDate(d) {
-      // Accept ISO date (YYYY-MM-DD) or a full datetime; try to produce a friendly date
       if (!d) return '—';
-      // If it's ISO date like YYYY-MM-DD, show DD MMM YYYY
+      // ISO date (YYYY-MM-DD) friendly display
       if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-        const [y,m,day] = d.split('-');
-        const date = new Date(`${d}T00:00:00`);
-        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        const date = new Date(d + 'T00:00:00');
+        return date.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
       }
       const dt = new Date(d);
-      if (!isNaN(dt)) {
-        return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-      }
+      if (!isNaN(dt)) return dt.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
       return d;
     }
 
@@ -255,7 +201,6 @@
           Object.entries(allDrivers).forEach(([driverId, bookings]) => {
             if (!bookings) return;
             Object.entries(bookings).forEach(([bookingId, b]) => {
-              // check both userId and customerId variants (keeps compatibility)
               if (b.userId === user.uid || b.customerId === user.uid) {
                 myBookings.push({ id: bookingId, ...b });
               }
@@ -267,41 +212,35 @@
             return;
           }
 
-          // Build cards with numbering and call button beside fare
           bookingsEl.innerHTML = myBookings.map((b, i) => {
             const seats = b.seatsRequested || b.seatsBooked || b.seats || '—';
-            const carText = (b.carBrand ? `${escapeHtml(b.carBrand)}` : '—') + (b.carReg ? ` (${escapeHtml(b.carReg)})` : '');
-            const fareText = (b.fare !== undefined && b.fare !== null) ? `₹${b.fare}` : 'N/A';
-            const driverNumber = b.driverNumber || b.driver_phone || b.driverPhone || b.driverContact || '';
-            const hasPhone = !!String(driverNumber).trim();
+            const carText = (b.carBrand ? escapeHtml(b.carBrand) : '—') + (b.carReg ? ` (${escapeHtml(b.carReg)})` : '');
+            const fareText = (b.fare !== undefined && b.fare !== null) ? `₹${escapeHtml(String(b.fare))}` : 'N/A';
+            const driverNumber = (b.driverNumber || b.driver_phone || b.driverPhone || b.driverContact || '').toString().trim();
+            const hasPhone = driverNumber.length > 0;
 
-            // call button (enabled when phone exists)
-            const callBtnHtml = hasPhone
-              ? `<a class="call-btn" href="tel:${encodeURIComponent(driverNumber.trim())}" aria-label="Call driver ${escapeHtml(driverNumber)}"><i class="fas fa-phone"></i> Call Driver</a>`
+            const callBtn = hasPhone
+              ? `<a class="call-btn" href="tel:${encodeURIComponent(driverNumber)}" aria-label="Call driver ${escapeHtml(driverNumber)}"><i class="fas fa-phone"></i> Call Driver</a>`
               : `<button class="call-btn disabled" aria-disabled="true" title="Driver number not available"><i class="fas fa-phone"></i> Call Driver</button>`;
 
             return `
               <div class="booking-card" role="article" aria-labelledby="bk-${i+1}-title">
                 <div class="card-number">${i + 1}</div>
-                <h3 id="bk-${i+1}-title">Booking #${i + 1} — ${escapeHtml(b.id || '')}</h3>
+                <h3 id="bk-${i+1}-title">Booking #${i + 1}</h3>
 
-                <div class="info-grid">
-                  <div class="info"><i class="fas fa-calendar"></i> <div><div class="small-muted">Date</div><div>${formatDate(b.date)}</div></div></div>
-                  <div class="info"><i class="fas fa-clock"></i> <div><div class="small-muted">Time</div><div>${to12Hour(b.time)}</div></div></div>
+                <div class="info"><i class="fas fa-calendar"></i> <div><span class="small-muted">Date</span><div>${formatDate(b.date)}</div></div></div>
+                <div class="info"><i class="fas fa-clock"></i> <div><span class="small-muted">Time</span><div>${to12Hour(b.time)}</div></div></div>
+                <div class="info"><i class="fas fa-map-marker-alt"></i> <div><span class="small-muted">Pickup</span><div>${escapeHtml(b.pickup)}</div></div></div>
+                <div class="info"><i class="fas fa-flag-checkered"></i> <div><span class="small-muted">Dropoff</span><div>${escapeHtml(b.dropoff)}</div></div></div>
+                <div class="info"><i class="fas fa-users"></i> <div><span class="small-muted">Seats</span><div>${escapeHtml(String(seats))}</div></div></div>
+                <div class="info"><i class="fas fa-car"></i> <div><span class="small-muted">Car</span><div>${carText}</div></div></div>
 
-                  <div class="info"><i class="fas fa-map-marker-alt"></i> <div><div class="small-muted">Pickup</div><div>${escapeHtml(b.pickup)}</div></div></div>
-                  <div class="info"><i class="fas fa-flag-checkered"></i> <div><div class="small-muted">Dropoff</div><div>${escapeHtml(b.dropoff)}</div></div></div>
-
-                  <div class="info"><i class="fas fa-users"></i> <div><div class="small-muted">Seats</div><div>${escapeHtml(seats)}</div></div></div>
-                  <div class="info"><i class="fas fa-car"></i> <div><div class="small-muted">Car</div><div>${carText}</div></div></div>
-                </div>
-
-                <div class="fare-row" aria-hidden="false">
-                  <div>
-                    <div class="small-muted">Fare</div>
+                <div class="fare-call-row">
+                  <div class="fare-block">
                     <div class="fare-text">${fareText}</div>
+                    <div class="small-muted" style="align-self:center;">&nbsp;</div>
                   </div>
-                  <div>${callBtnHtml}</div>
+                  <div>${callBtn}</div>
                 </div>
               </div>
             `;
@@ -313,7 +252,6 @@
         });
     });
 
-    // small HTML escape helper used when injecting values into template
     function escapeHtml (str) {
       if (str === undefined || str === null) return '';
       return String(str)
@@ -324,7 +262,5 @@
         .replace(/'/g, '&#39;');
     }
   </script>
-
 </body>
 </html>
-
