@@ -1,176 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Driver Login</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Link Phone to Driver Account — WaveTravel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    :root {
-      --primary: #007cf0;
-      --accent: #00dfd8;
-      --bg-light: #f5f8ff;
-      --text-dark: #333;
-      --radius: 0.75rem;
-      --transition: 0.3s;
+    :root{
+      --bg: linear-gradient(135deg,#0b6efd,#00c3b8);
+      --card:#fff;
+      --accent:#0b6efd;
+      --radius:12px;
+      --muted:#6b7280;
     }
-    *, *::before, *::after { box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    .login-container {
-      background: var(--bg-light);
-      padding: 2.5rem 2rem;
-      border-radius: var(--radius);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-      width: 100%;
-      max-width: 380px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .login-container::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -50%;
-      width: 200px;
-      height: 200px;
-      background: var(--primary);
-      border-radius: 50%;
-      opacity: 0.1;
-      transform: rotate(45deg);
-    }
-    h2 {
-      font-size: 1.75rem;
-      margin-bottom: 1.5rem;
-      color: var(--primary);
-      font-weight: 700;
-    }
-    .icon-wrapper {
-      font-size: 3rem;
-      color: var(--accent);
-      margin-bottom: 0.5rem;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    input {
-      width: 100%;
-      padding: 0.85rem 1rem;
-      border: 1px solid #d1d5db;
-      border-radius: var(--radius);
-      font-size: 1rem;
-      color: var(--text-dark);
-      outline: none;
-      transition: border var(--transition);
-    }
-    input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(0, 124, 240, 0.2);
-    }
-    button {
-      position: relative;
-      padding: 0.85rem 1rem;
-      background-color: var(--primary);
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 500;
-      border: none;
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: background-color var(--transition), transform var(--transition);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    button:hover {
-      background-color: #005fa3;
-      transform: translateY(-2px);
-    }
-    .spinner {
-      width: 1rem;
-      height: 1rem;
-      border: 2px solid rgba(255,255,255,0.6);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-right: 0.5rem;
-      display: none;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading .spinner { display: block; }
-    .loading span.label { display: none; }
-    .link {
-      margin-top: 1.25rem;
-      font-size: 0.9rem;
-      color: #555;
-    }
-    .link a {
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 500;
-      transition: color var(--transition);
-    }
-    .link a:hover {
-      color: var(--accent);
-    }
-    .toast {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #323232;
-      color: #fff;
-      padding: 0.75rem 1.5rem;
-      border-radius: var(--radius);
-      opacity: 0;
-      transition: opacity var(--transition);
-      z-index: 999;
-    }
-    .toast.show { opacity: 1; }
+    html,body{height:100%;margin:0;font-family:'Poppins',sans-serif;background:var(--bg);-webkit-font-smoothing:antialiased}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{width:100%;max-width:460px;background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:0 12px 28px rgba(2,6,23,0.18)}
+    .brand{display:flex;gap:12px;align-items:center;margin-bottom:6px}
+    .logo{width:46px;height:46px;border-radius:10px;background:linear-gradient(90deg,#0b6efd,#6c63ff);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+    h1{margin:0;font-size:18px;color:#071124}
+    p.lead{margin:6px 0 14px;color:var(--muted);font-size:13px}
+
+    label.small{font-size:12px;color:var(--muted);margin-top:8px;display:block}
+
+    .field{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:#f6f8ff;border:1px solid rgba(2,6,23,0.03)}
+    .icon{width:30px;text-align:center;color:var(--accent);font-size:14px}
+    input[type="email"],input[type="password"],input[type="text"]{border:0;background:transparent;outline:none;font-size:15px;color:#071124;width:100%}
+    .actions{display:flex;gap:10px;margin-top:12px;flex-direction:column}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:12px;border-radius:10px;border:0;cursor:pointer;font-weight:700;font-size:15px;color:#fff;background:linear-gradient(90deg,#0b6efd,#6c63ff)}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,108,255,0.12)}
+    .small{font-size:13px;color:var(--muted);margin-top:8px;text-align:center}
+    .otp-area{margin-top:12px;display:none;gap:8px;flex-direction:column}
+    .resend{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+    .resend button{background:transparent;border:0;color:var(--accent);font-weight:700;cursor:pointer;padding:6px;border-radius:8px}
+    .resend .disabled{opacity:.5;pointer-events:none}
+
+    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;background:rgba(11,18,36,0.96);color:#fff;padding:10px 14px;border-radius:999px;font-weight:700;opacity:0;transition:opacity .18s,transform .18s;z-index:9999}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+    @media(max-width:460px){.card{padding:14px;border-radius:10px} h1{font-size:16px}}
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <div class="icon-wrapper">🚘</div>
-    <h2>Driver Login</h2>
-    <form id="loginForm">
-      <input type="email" id="email" placeholder="Email Address" required />
-      <input type="password" id="password" placeholder="Password" required />
-      <button type="submit" id="loginBtn">
-        <div class="spinner"></div>
-        <span class="label">Login</span>
-      </button>
-    </form>
-    <div class="link">
-      <p>Don't have an account? <a href="driversignup.html">Sign up</a></p>
+  <div class="wrap">
+    <div class="card" role="main" aria-labelledby="title">
+      <div class="brand">
+        <div class="logo">WT</div>
+        <div>
+          <h1 id="title">Link Phone to Driver Account</h1>
+          <p class="lead">Sign in with your driver email/password, then we'll send an OTP to the phone stored in your driver profile and link it to your account.</p>
+        </div>
+      </div>
+
+      <!-- SIGN IN -->
+      <div id="signInArea">
+        <label class="small">Email</label>
+        <div class="field"><div class="icon"><i class="fas fa-envelope"></i></div><input id="email" type="email" placeholder="your@domain.com" autocomplete="username"></div>
+
+        <label class="small">Password</label>
+        <div class="field"><div class="icon"><i class="fas fa-lock"></i></div><input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+
+        <div class="actions">
+          <button id="signInBtn" class="btn"><span id="signInLabel">Sign in</span></button>
+        </div>
+
+        <div class="small">After sign in we'll read your <code>driverdetails/{uid}</code> phone and send an OTP to that number only.</div>
+      </div>
+
+      <!-- AFTER SIGN-IN: show phone & OTP area -->
+      <div id="afterSignIn" style="display:none;margin-top:12px">
+        <div class="small">Phone on record</div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <div class="field" style="flex:1">
+            <div class="icon"><i class="fas fa-phone"></i></div>
+            <input id="phoneMasked" readonly type="text">
+          </div>
+          <button id="sendOtpBtn" class="btn" style="min-width:120px">Send OTP</button>
+        </div>
+
+        <div id="otpArea" class="otp-area">
+          <label class="small">Enter OTP</label>
+          <div class="field"><div class="icon"><i class="fas fa-key"></i></div><input id="otpInput" type="text" inputmode="numeric" placeholder="123456"></div>
+
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button id="linkBtn" class="btn" style="flex:1;background:linear-gradient(90deg,#16a34a,#10b981)">Link Phone</button>
+            <button id="cancelLink" class="btn ghost" style="flex:1">Cancel</button>
+          </div>
+
+          <div class="resend" style="margin-top:8px">
+            <div id="resendInfo">Didn't get it?</div>
+            <div>
+              <button id="resendBtn" class="disabled">Resend</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <div id="recaptcha-container" style="display:none;"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- Firebase Scripts -->
   <script type="module">
+    // Firebase modular imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import {
       getAuth,
       signInWithEmailAndPassword,
+      RecaptchaVerifier,
+      signInWithPhoneNumber,
+      PhoneAuthProvider,
+      linkWithCredential,
       onAuthStateChanged,
-      setPersistence,
-      browserLocalPersistence
+      signOut
     } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-    import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
+    // Replace with your firebase config if different
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -180,61 +128,243 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
-    const toast = document.getElementById("toast");
-    const loginBtn = document.getElementById("loginBtn");
 
-    // Persist session across restarts/WebView
-    setPersistence(auth, browserLocalPersistence).catch(err =>
-      console.error("Persistence error:", err)
-    );
+    // DOM
+    const emailEl = document.getElementById('email');
+    const pwEl = document.getElementById('password');
+    const signInBtn = document.getElementById('signInBtn');
+    const signInLabel = document.getElementById('signInLabel');
+    const signInArea = document.getElementById('signInArea');
+    const afterSignIn = document.getElementById('afterSignIn');
+    const phoneMasked = document.getElementById('phoneMasked');
+    const sendOtpBtn = document.getElementById('sendOtpBtn');
+    const otpArea = document.getElementById('otpArea');
+    const otpInput = document.getElementById('otpInput');
+    const linkBtn = document.getElementById('linkBtn');
+    const cancelLink = document.getElementById('cancelLink');
+    const resendBtn = document.getElementById('resendBtn');
+    const resendInfo = document.getElementById('resendInfo');
+    const toast = document.getElementById('toast');
 
-    // Auto-redirect if already logged in
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        get(child(ref(db), `driverdetails/${user.uid}`)).then(snapshot => {
-          if (snapshot.exists()) {
-            window.location.href = "driverdashboard.html";
-          }
-        });
-      }
-    });
+    let verificationId = null;
+    let recaptchaVerifier = null;
+    let resendTimer = null;
+    let currentUid = null;
+    let driverPhoneNormalized = null;
 
-    function showToast(message) {
-      toast.textContent = message;
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 3000);
+    function showToast(msg, ms = 3200) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove('show'), ms);
     }
 
-    document.getElementById("loginForm").addEventListener("submit", async e => {
-      e.preventDefault();
+    // initialize invisible reCAPTCHA
+    function initRecaptcha() {
+      try { recaptchaVerifier?.clear?.() } catch (e){}
+      recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', { size: 'invisible' }, auth);
+      recaptchaVerifier.render().catch(()=>{/* ignore */});
+    }
+    initRecaptcha();
 
-      // Show spinner + hide label
-      loginBtn.classList.add("loading");
-
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-
+    // Sign in with email/password (existing account)
+    signInBtn.addEventListener('click', async () => {
+      const email = (emailEl.value || '').trim();
+      const pw = (pwEl.value || '').trim();
+      if (!email || !pw) return showToast('Enter email and password');
+      signInBtn.disabled = true; signInLabel.textContent = 'Signing in…';
       try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const snapshot = await get(child(ref(db), `driverdetails/${user.uid}`));
-
-        if (snapshot.exists()) {
-          showToast("Login successful!");
-          setTimeout(() => window.location.href = "driverdashboard.html", 1000);
-        } else {
-          showToast("No driver details found.");
-        }
-      } catch (error) {
-        showToast("Login failed. " + error.message);
+        const cred = await signInWithEmailAndPassword(auth, email, pw);
+        const user = cred.user;
+        currentUid = user.uid;
+        showToast('Signed in');
+        await fetchDriverPhoneAndShow(user.uid);
+      } catch (err) {
+        console.error(err);
+        showToast('Sign-in failed: ' + (err.message || err.code));
       } finally {
-        // Hide spinner (if not redirected already)
-        loginBtn.classList.remove("loading");
+        signInBtn.disabled = false; signInLabel.textContent = 'Sign in';
       }
     });
+
+    // fetch driver phone from driverdetails/{uid}
+    async function fetchDriverPhoneAndShow(uid) {
+      try {
+        const snap = await get(ref(db, `driverdetails/${uid}`));
+        if (!snap.exists()) {
+          showToast('No driverdetails found for your account');
+          return;
+        }
+        const rec = snap.val();
+        // prefer fields like phone, phoneNumber
+        const rawPhone = rec.phone || rec.phoneNumber || rec.contact || '';
+        if (!rawPhone) {
+          showToast('No phone number saved in driver profile.');
+          return;
+        }
+        // normalize (digits only) and store normalized last 10
+        const digits = String(rawPhone).replace(/\D/g,'');
+        const last10 = digits.slice(-10);
+        driverPhoneNormalized = last10;
+        phoneMasked.value = `+91 ${last10.slice(0,5)} ${last10.slice(5)}`;
+        // show UI
+        signInArea.style.display = 'none';
+        afterSignIn.style.display = 'block';
+        otpArea.style.display = 'none';
+        startSignedInState();
+      } catch (err) {
+        console.error('fetch driver phone error', err);
+        showToast('Failed to read driver profile');
+      }
+    }
+
+    // when user is already logged in externally, prefill
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          currentUid = user.uid;
+          // if signed-in user already has driverdetails, prefill phone and show step
+          const snap = await get(ref(db, `driverdetails/${user.uid}`));
+          if (snap.exists()) {
+            const rec = snap.val();
+            const rawPhone = rec.phone || rec.phoneNumber || rec.contact || '';
+            if (rawPhone) {
+              const digits = String(rawPhone).replace(/\D/g,'');
+              driverPhoneNormalized = digits.slice(-10);
+              phoneMasked.value = `+91 ${driverPhoneNormalized.slice(0,5)} ${driverPhoneNormalized.slice(5)}`;
+              signInArea.style.display = 'none';
+              afterSignIn.style.display = 'block';
+            }
+          }
+        } catch(e){}
+      }
+    });
+
+    function startSignedInState(){
+      // ensure recaptcha is fresh
+      initRecaptcha();
+      resendBtn.classList.add('disabled');
+      resendBtn.disabled = true;
+    }
+
+    // send OTP to the stored driver phone
+    sendOtpBtn.addEventListener('click', async () => {
+      if (!driverPhoneNormalized) return showToast('No phone to send OTP to');
+      sendOtpBtn.disabled = true; sendOtpBtn.textContent = 'Sending…';
+
+      // build full phone with +91 (if your numbers are non-IN, adjust)
+      const phoneToSend = '+91' + driverPhoneNormalized;
+
+      try {
+        initRecaptcha();
+        const confirmation = await signInWithPhoneNumber(auth, phoneToSend, recaptchaVerifier);
+        // confirmation.verificationId is accessible
+        verificationId = confirmation.verificationId;
+        showToast('OTP sent to ' + phoneToSend);
+        otpArea.style.display = 'flex';
+        startResendCountdown(30);
+      } catch (err) {
+        console.error('sendOtp error', err);
+        showToast('Failed sending OTP: ' + (err.message || err.code));
+      } finally {
+        sendOtpBtn.disabled = false; sendOtpBtn.textContent = 'Send OTP';
+      }
+    });
+
+    function startResendCountdown(seconds = 30) {
+      resendBtn.classList.add('disabled'); resendBtn.disabled = true;
+      let t = seconds;
+      resendInfo.textContent = `You can resend in ${t}s`;
+      resendTimer = setInterval(() => {
+        t--;
+        if (t <= 0) {
+          clearInterval(resendTimer);
+          resendInfo.textContent = `Didn't receive?`;
+          resendBtn.classList.remove('disabled'); resendBtn.disabled = false;
+        } else {
+          resendInfo.textContent = `You can resend in ${t}s`;
+        }
+      }, 1000);
+    }
+
+    // Resend OTP (send again to same phone)
+    resendBtn.addEventListener('click', async () => {
+      if (!driverPhoneNormalized) return;
+      if (resendBtn.classList.contains('disabled')) return;
+      resendBtn.disabled = true;
+      resendBtn.textContent = 'Resending…';
+      try {
+        initRecaptcha();
+        const phoneToSend = '+91' + driverPhoneNormalized;
+        const confirmation = await signInWithPhoneNumber(auth, phoneToSend, recaptchaVerifier);
+        verificationId = confirmation.verificationId;
+        showToast('OTP resent');
+        startResendCountdown(30);
+      } catch (err) {
+        console.error('resend error', err);
+        showToast('Resend failed: ' + (err.message || err.code));
+      } finally {
+        resendBtn.disabled = false; resendBtn.textContent = 'Resend';
+      }
+    });
+
+    // Link phone credential with currently signed-in email user
+    linkBtn.addEventListener('click', async () => {
+      const code = (otpInput.value || '').trim();
+      if (!verificationId) return showToast('Request an OTP first');
+      if (!/^\d{4,6}$/.test(code)) return showToast('Enter the OTP');
+
+      linkBtn.disabled = true; linkBtn.textContent = 'Linking…';
+      try {
+        // create phone credential and link
+        const credential = PhoneAuthProvider.credential(verificationId, code);
+
+        // linkWithCredential expects the current user to be the email-signed-in user
+        const user = auth.currentUser;
+        if (!user) {
+          showToast('Not signed in - please sign in with email again');
+          linkBtn.disabled = false; linkBtn.textContent = 'Link Phone';
+          return;
+        }
+
+        await linkWithCredential(user, credential);
+        showToast('Phone linked successfully!');
+        // a short delay then redirect to driver dashboard
+        setTimeout(()=>{ window.location.href = 'driverdashboard.html'; }, 900);
+      } catch (err) {
+        console.error('link error', err);
+        // handle common errors
+        if (err.code === 'auth/credential-already-in-use' || err.code === 'auth/provider-already-linked') {
+          showToast('This phone is already linked to another account.');
+        } else if (err.code === 'auth/invalid-verification-code') {
+          showToast('Invalid verification code.');
+        } else {
+          showToast('Link failed: ' + (err.message || err.code));
+        }
+      } finally {
+        linkBtn.disabled = false; linkBtn.textContent = 'Link Phone';
+      }
+    });
+
+    // Cancel linking: sign out and show sign-in area again (so driver can try again)
+    cancelLink.addEventListener('click', async () => {
+      try { await signOut(auth); } catch(e){}
+      // reset UI
+      otpArea.style.display = 'none';
+      afterSignIn.style.display = 'none';
+      signInArea.style.display = 'block';
+      emailEl.value = ''; pwEl.value = '';
+      showToast('Cancelled. Signed out.');
+    });
+
+    // keyboard shortcuts
+    otpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); linkBtn.click(); }});
+    pwEl.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') { e.preventDefault(); signInBtn.click(); }});
+
   </script>
 </body>
 </html>
