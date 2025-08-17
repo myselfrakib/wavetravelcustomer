@@ -119,6 +119,7 @@
     const db = firebase.database();
 
     let confirmationResult;
+    let formattedPhone = "";
 
     function showToast(msg) {
       const toast = document.getElementById("toast");
@@ -130,25 +131,32 @@
     function sendOTP() {
       let phone = document.getElementById("phone").value.trim();
       if (!phone.startsWith("+91")) {
-        phone = "+91" + phone;
+        formattedPhone = "+91" + phone;
+      } else {
+        formattedPhone = phone;
       }
 
-      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        size: 'invisible'
+      // ✅ Check if phone already exists in driverdetails
+      db.ref("driverdetails").orderByChild("phone").equalTo(formattedPhone).once("value", (snapshot) => {
+        if (snapshot.exists()) {
+          showToast("Phone number already used, please login");
+        } else {
+          // send OTP
+          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+          auth.signInWithPhoneNumber(formattedPhone, window.recaptchaVerifier)
+            .then((result) => {
+              confirmationResult = result;
+              showToast("OTP Sent Successfully!");
+              document.getElementById("otp").style.display = "block";
+              document.getElementById("verifyBtn").style.display = "block";
+              document.getElementById("sendOtpBtn").style.display = "none";
+            })
+            .catch((error) => {
+              console.error(error);
+              showToast(error.message);
+            });
+        }
       });
-
-      auth.signInWithPhoneNumber(phone, window.recaptchaVerifier)
-        .then((result) => {
-          confirmationResult = result;
-          showToast("OTP Sent Successfully!");
-          document.getElementById("otp").style.display = "block";
-          document.getElementById("verifyBtn").style.display = "block";
-          document.getElementById("sendOtpBtn").style.display = "none"; // hide send button
-        })
-        .catch((error) => {
-          console.error(error);
-          showToast(error.message);
-        });
     }
 
     function toggleVerifyBtn() {
@@ -161,21 +169,21 @@
       confirmationResult.confirm(otp)
         .then((result) => {
           const user = result.user;
-          const driverId = user.uid;  // ✅ use Firebase UID as driverId
+          const driverId = user.uid;  // ✅ Firebase UID as driverId
           const name = document.getElementById("name").value;
           const email = document.getElementById("email").value;
-          const phone = document.getElementById("phone").value.replace("+91", "");
 
+          // ✅ Save driver details
           db.ref("driverdetails/" + driverId).set({
             name: name,
             email: email,
-            phone: phone,
+            phone: formattedPhone, // always with +91
             driverId: driverId
           });
 
           showToast("Driver registered successfully!");
           setTimeout(() => {
-            window.location.href = "driverdashboard.html"; // redirect after success
+            window.location.href = "driverdashboard.html"; 
           }, 1500);
         })
         .catch((error) => {
