@@ -82,7 +82,6 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    // ✅ Init
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
@@ -117,16 +116,17 @@
       confirmationResult.confirm(otp)
         .then((result) => {
           const user = result.user;
+          const driverId = user.uid;  // ✅ use Firebase UID as driverId
           const name = document.getElementById("name").value;
           const email = document.getElementById("email").value;
           const phone = document.getElementById("phone").value.replace("+91", "");
 
-          // Save driver details under /driverdetails/{driverId}
-          db.ref("driverdetails/" + phone).set({
+          // Save driver details under /driverdetails/{uid}
+          db.ref("driverdetails/" + driverId).set({
             name: name,
             email: email,
             phone: phone,
-            uid: user.uid
+            driverId: driverId
           });
 
           alert("Driver registered successfully!");
