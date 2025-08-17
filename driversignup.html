@@ -20,6 +20,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       width: 350px;
+      position: relative;
     }
     .signup-container h2 {
       text-align: center;
@@ -51,6 +52,34 @@
     #recaptcha-container {
       margin-top: 15px;
     }
+    /* Toast styles */
+    .toast {
+      visibility: hidden;
+      min-width: 250px;
+      margin-left: -125px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 12px;
+      position: fixed;
+      z-index: 1;
+      left: 50%;
+      bottom: 30px;
+      font-size: 16px;
+    }
+    .toast.show {
+      visibility: visible;
+      animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+    @keyframes fadein {
+      from {bottom: 0; opacity: 0;}
+      to {bottom: 30px; opacity: 1;}
+    }
+    @keyframes fadeout {
+      from {bottom: 30px; opacity: 1;}
+      to {bottom: 0; opacity: 0;}
+    }
   </style>
 </head>
 <body>
@@ -60,10 +89,13 @@
     <input type="email" id="email" placeholder="Email" required />
     <input type="text" id="phone" placeholder="Phone Number" required />
     <div id="recaptcha-container"></div>
-    <button onclick="sendOTP()">Send OTP</button>
-    <input type="text" id="otp" placeholder="Enter OTP" style="display:none;" />
-    <button id="verifyBtn" onclick="verifyOTP()" style="display:none;">Verify OTP</button>
+    <button id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
+    <input type="text" id="otp" placeholder="Enter OTP" style="display:none;" oninput="toggleVerifyBtn()"/>
+    <button id="verifyBtn" onclick="verifyOTP()" style="display:none;" disabled>Verify OTP</button>
   </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
 
   <!-- ✅ Firebase compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -71,7 +103,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <script>
-    // ✅ Your Firebase config
+    // ✅ Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -88,6 +120,13 @@
 
     let confirmationResult;
 
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.className = "toast show";
+      setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+    }
+
     function sendOTP() {
       let phone = document.getElementById("phone").value.trim();
       if (!phone.startsWith("+91")) {
@@ -101,14 +140,20 @@
       auth.signInWithPhoneNumber(phone, window.recaptchaVerifier)
         .then((result) => {
           confirmationResult = result;
-          alert("OTP Sent Successfully!");
+          showToast("OTP Sent Successfully!");
           document.getElementById("otp").style.display = "block";
           document.getElementById("verifyBtn").style.display = "block";
+          document.getElementById("sendOtpBtn").style.display = "none"; // hide send button
         })
         .catch((error) => {
           console.error(error);
-          alert(error.message);
+          showToast(error.message);
         });
+    }
+
+    function toggleVerifyBtn() {
+      const otp = document.getElementById("otp").value;
+      document.getElementById("verifyBtn").disabled = (otp.trim() === "");
     }
 
     function verifyOTP() {
@@ -121,7 +166,6 @@
           const email = document.getElementById("email").value;
           const phone = document.getElementById("phone").value.replace("+91", "");
 
-          // Save driver details under /driverdetails/{uid}
           db.ref("driverdetails/" + driverId).set({
             name: name,
             email: email,
@@ -129,11 +173,14 @@
             driverId: driverId
           });
 
-          alert("Driver registered successfully!");
+          showToast("Driver registered successfully!");
+          setTimeout(() => {
+            window.location.href = "driverdashboard.html"; // redirect after success
+          }, 1500);
         })
         .catch((error) => {
           console.error(error);
-          alert("Invalid OTP. Try again.");
+          showToast("Invalid OTP. Try again.");
         });
     }
   </script>
