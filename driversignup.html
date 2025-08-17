@@ -154,18 +154,30 @@
       setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
     }
 
-    // ✅ Auto prepend +91 to phone
-    document.getElementById("phone").addEventListener("input", function() {
-      let value = this.value.replace(/\D/g, ""); // remove non-digits
-      if (!value.startsWith("91")) {
-        value = "91" + value;
-      }
-      this.value = "+" + value;
-    });
+   let phoneNumber = document.getElementById("phone").value.trim();
 
-    function sendOTP() {
-      let phone = document.getElementById("phone").value.trim();
-      formattedPhone = phone;
+// auto add +91 if not already present
+if (!phoneNumber.startsWith("+91")) {
+  phoneNumber = "+91" + phoneNumber;
+}
+
+// validate 10 digits after +91
+if (!/^\+91\d{10}$/.test(phoneNumber)) {
+  showToast("Invalid phone number. Please enter a 10-digit number.");
+  return;
+}
+
+// then pass it to Firebase
+signInWithPhoneNumber(auth, phoneNumber, appVerifier)
+  .then(confirmationResult => {
+    window.confirmationResult = confirmationResult;
+    showToast("OTP sent!");
+  })
+  .catch(error => {
+    console.error(error);
+    showToast("Error sending OTP: " + error.message);
+  });
+;
 
       // ✅ Check if phone already exists in driverdetails
       db.ref("driverdetails").orderByChild("phone").equalTo(formattedPhone).once("value", (snapshot) => {
