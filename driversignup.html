@@ -6,79 +6,115 @@
   <title>Driver Signup - WaveTravel</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #e6f0ff, #ffffff);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0077cc, #00c6ff);
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
     }
     .signup-container {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      width: 350px;
-      position: relative;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 35px 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      width: 360px;
+      text-align: center;
+      backdrop-filter: blur(12px);
+      animation: fadeIn 0.7s ease;
     }
     .signup-container h2 {
-      text-align: center;
+      font-size: 24px;
       color: #0077cc;
       margin-bottom: 20px;
+      font-weight: bold;
     }
     input {
       width: 100%;
-      padding: 10px;
-      margin: 10px 0;
+      padding: 12px;
+      margin: 12px 0;
       border: 1px solid #ccc;
-      border-radius: 6px;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: 0.3s;
+    }
+    input:focus {
+      border-color: #0077cc;
+      box-shadow: 0 0 6px rgba(0,119,204,0.4);
+      outline: none;
     }
     button {
       width: 100%;
-      padding: 10px;
-      margin-top: 10px;
+      padding: 12px;
+      margin-top: 12px;
       border: none;
-      border-radius: 6px;
-      background: #0077cc;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0077cc, #00c6ff);
       color: white;
       font-size: 16px;
       cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      opacity: 0.95;
     }
     button:disabled {
       background: #aaa;
       cursor: not-allowed;
     }
-    #recaptcha-container {
-      margin-top: 15px;
+    #resendBtn {
+      margin-top: 8px;
+      background: #f0f0f0;
+      color: #333;
+      font-size: 14px;
+      display: none;
     }
-    /* Toast styles */
+    #recaptcha-container {
+      margin-top: 10px;
+    }
+    /* Toast */
     .toast {
       visibility: hidden;
-      min-width: 250px;
-      margin-left: -125px;
+      min-width: 260px;
+      margin-left: -130px;
       background-color: #333;
       color: #fff;
       text-align: center;
       border-radius: 6px;
       padding: 12px;
       position: fixed;
-      z-index: 1;
+      z-index: 999;
       left: 50%;
       bottom: 30px;
-      font-size: 16px;
+      font-size: 15px;
     }
     .toast.show {
       visibility: visible;
       animation: fadein 0.5s, fadeout 0.5s 2.5s;
     }
     @keyframes fadein {
-      from {bottom: 0; opacity: 0;}
+      from {bottom: 10px; opacity: 0;}
       to {bottom: 30px; opacity: 1;}
     }
     @keyframes fadeout {
       from {bottom: 30px; opacity: 1;}
-      to {bottom: 0; opacity: 0;}
+      to {bottom: 10px; opacity: 0;}
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .link {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #0077cc;
+      cursor: pointer;
+      display: inline-block;
+    }
+    .link:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -92,9 +128,10 @@
     <button id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
     <input type="text" id="otp" placeholder="Enter OTP" style="display:none;" oninput="toggleVerifyBtn()"/>
     <button id="verifyBtn" onclick="verifyOTP()" style="display:none;" disabled>Verify OTP</button>
+    <button id="resendBtn" onclick="resendOTP()">Resend OTP</button>
+    <div class="link" onclick="window.location.href='driverlogin.html'">Already have an account? Login</div>
   </div>
 
-  <!-- Toast -->
   <div id="toast"></div>
 
   <!-- ✅ Firebase compat SDKs -->
@@ -103,7 +140,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <script>
-    // ✅ Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -120,6 +156,7 @@
 
     let confirmationResult;
     let formattedPhone = "";
+    let cooldownTimer;
 
     function showToast(msg) {
       const toast = document.getElementById("toast");
@@ -136,20 +173,20 @@
         formattedPhone = phone;
       }
 
-      // ✅ Check if phone already exists in driverdetails
       db.ref("driverdetails").orderByChild("phone").equalTo(formattedPhone).once("value", (snapshot) => {
         if (snapshot.exists()) {
           showToast("Phone number already used, please login");
         } else {
-          // send OTP
           window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
           auth.signInWithPhoneNumber(formattedPhone, window.recaptchaVerifier)
             .then((result) => {
               confirmationResult = result;
-              showToast("OTP Sent Successfully!");
+              showToast("OTP Sent!");
               document.getElementById("otp").style.display = "block";
               document.getElementById("verifyBtn").style.display = "block";
               document.getElementById("sendOtpBtn").style.display = "none";
+              document.getElementById("resendBtn").style.display = "block";
+              startCooldown();
             })
             .catch((error) => {
               console.error(error);
@@ -157,6 +194,29 @@
             });
         }
       });
+    }
+
+    function resendOTP() {
+      if (cooldownTimer) return;
+      sendOTP();
+    }
+
+    function startCooldown() {
+      let resendBtn = document.getElementById("resendBtn");
+      let seconds = 30;
+      resendBtn.disabled = true;
+      resendBtn.innerText = `Resend OTP (30s)`;
+
+      cooldownTimer = setInterval(() => {
+        seconds--;
+        resendBtn.innerText = `Resend OTP (${seconds}s)`;
+        if (seconds <= 0) {
+          clearInterval(cooldownTimer);
+          cooldownTimer = null;
+          resendBtn.disabled = false;
+          resendBtn.innerText = "Resend OTP";
+        }
+      }, 1000);
     }
 
     function toggleVerifyBtn() {
@@ -169,22 +229,19 @@
       confirmationResult.confirm(otp)
         .then((result) => {
           const user = result.user;
-          const driverId = user.uid;  // ✅ Firebase UID as driverId
+          const driverId = user.uid;
           const name = document.getElementById("name").value;
           const email = document.getElementById("email").value;
 
-          // ✅ Save driver details
           db.ref("driverdetails/" + driverId).set({
             name: name,
             email: email,
-            phone: formattedPhone, // always with +91
+            phone: formattedPhone,
             driverId: driverId
           });
 
-          showToast("Driver registered successfully!");
-          setTimeout(() => {
-            window.location.href = "driverdashboard.html"; 
-          }, 1500);
+          showToast("Signup successful!");
+          setTimeout(() => { window.location.href = "driverdashboard.html"; }, 1500);
         })
         .catch((error) => {
           console.error(error);
