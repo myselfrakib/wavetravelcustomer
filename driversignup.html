@@ -39,6 +39,7 @@ button {
   transition: background 0.3s;
 }
 button:hover { background: #1a5ed1; }
+button:disabled { background: #999; cursor: not-allowed; }
 #otp-section { display: none; margin-top: 15px; }
 .otp-inputs { display: flex; justify-content: space-between; }
 .otp-inputs input { width: 45px; padding: 12px; font-size: 18px; text-align: center; }
@@ -55,7 +56,19 @@ button:hover { background: #1a5ed1; }
   font-weight: 500;
 }
 #resendBtn { margin-top: 10px; display: none; }
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 10px;
+}
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -146,24 +159,38 @@ signupForm.addEventListener('submit', function(e){
 
   if (!name || !phone || !email) { showToast('Please fill all fields.'); return; }
 
+  // Add spinner to button
+  signupBtn.disabled = true;
+  signupBtn.innerHTML = 'Sending OTP <span class="spinner"></span>';
+
   database.ref('driverdetails').once('value', snapshot => {
     let exists = false;
     snapshot.forEach(child => {
       const val = child.val();
       if(val.phone === fullPhone || val.email === email) exists = true;
     });
-    if(exists){ showToast('This number or email address is already being used'); return; }
+    if(exists){
+      showToast('This number or email address is already being used');
+      signupBtn.disabled = false;
+      signupBtn.innerText = 'Send OTP';
+      return;
+    }
 
-    signupBtn.style.display = 'none';
     auth.signInWithPhoneNumber(fullPhone, window.reCAPTCHAVerifier)
       .then(res => {
         confirmationResultGlobal = res;
         showToast('OTP sent! Check your phone.');
         otpSection.style.display = 'block';
+        otpInputs.forEach(i=>i.value='');
         otpInputs[0].focus();
+        signupBtn.style.display='none';
         startResendCountdown();
       })
-      .catch(err => { showToast('Error sending OTP: ' + err.message); signupBtn.style.display = 'block'; });
+      .catch(err => {
+        showToast('Error sending OTP: ' + err.message);
+        signupBtn.disabled = false;
+        signupBtn.innerText = 'Send OTP';
+      });
   });
 });
 
@@ -178,9 +205,13 @@ verifyBtn.addEventListener('click', () => {
       const name = document.getElementById('name').value.trim();
       const email = document.getElementById('email').value.trim();
       const phone = '+91' + document.getElementById('phone').value.trim();
+      const createdAt = new Date().toISOString();
 
-      database.ref('driverdetails/' + driverId).set({name, phone, email})
-        .then(()=>{ showToast('Signup successful! Redirecting...'); setTimeout(()=>{ window.location.href='driverdashboard.html'; }, 2000); })
+      database.ref('driverdetails/' + driverId).set({name, phone, email, createdAt})
+        .then(()=>{
+          showToast('Signup successful! Redirecting...');
+          setTimeout(()=>{ window.location.href='driverdashboard.html'; }, 2000);
+        })
         .catch(err=>{ showToast('Error saving data: '+err.message); });
     })
     .catch(err => { showToast('Invalid OTP: '+err.message); });
@@ -189,6 +220,7 @@ verifyBtn.addEventListener('click', () => {
 // Resend OTP with 60-sec countdown
 function startResendCountdown(){
   resendBtn.style.display='block';
+  resendBtn.disabled=true;
   let counter=60;
   resendBtn.innerText = `Resend OTP (${counter})`;
   const interval = setInterval(()=>{
