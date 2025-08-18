@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Driver Signup — WaveTravel</title>
+  <title>Driver Signup — WaveTravel (Diagnostics)</title>
 
-  <!-- Icons -->
+  <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
 
-  <!-- Firebase compat SDKs (keep compat to match your customer signup page) -->
+  <!-- Firebase compat SDKs (only compat; DO NOT mix with modular on same page) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <style>
-    :root{ --brand:#0b67f3; --accent:#15a45a; --muted:#6b7280; --card-radius:14px }
+    :root { --brand:#0b67f3; --accent:#15a45a; --muted:#6b7280; --card-radius:14px; }
     *{box-sizing:border-box;font-family:Inter, "Segoe UI", Roboto, Arial}
     body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#eef6ff,#fff);padding:18px}
-    .card{width:100%;max-width:420px;background:#fff;border-radius:var(--card-radius);padding:18px;box-shadow:0 10px 30px rgba(10,30,80,0.06);position:relative}
+    .card{width:100%;max-width:520px;background:#fff;border-radius:var(--card-radius);padding:18px;box-shadow:0 10px 30px rgba(10,30,80,0.06);position:relative}
     .top-right{position:absolute;right:14px;top:12px}
     .top-right a{color:var(--brand);text-decoration:none;font-weight:600;font-size:13px}
     .brand{display:flex;gap:12px;align-items:center;margin-bottom:10px}
@@ -27,9 +27,9 @@
     .field{display:flex;align-items:center;gap:10px;background:#f6fafc;border-radius:10px;padding:10px;margin-bottom:12px;border:1px solid rgba(11,103,243,0.03)}
     .field i{color:var(--brand);width:22px;text-align:center;font-size:16px}
     .field input{border:0;outline:0;background:transparent;font-size:15px;flex:1;padding:6px 0}
-    .btn{width:100%;padding:12px;border-radius:10px;border:0;color:#fff;font-weight:700;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px}
-    .btn-primary{background:var(--brand)}
-    .btn-ghost{background:transparent;color:var(--brand);border:1px solid rgba(11,103,243,0.08)}
+    .btn{padding:12px;border-radius:10px;border:0;color:#fff;font-weight:700;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px}
+    .btn-primary{background:var(--brand);width:100%}
+    .btn-ghost{background:transparent;color:var(--brand);border:1px solid rgba(11,103,243,0.08);padding:10px}
     .btn-success{background:var(--accent)}
     #otpArea{display:none;margin-top:8px}
     .row{display:flex;gap:8px;align-items:center;margin-top:8px}
@@ -38,6 +38,12 @@
     .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;background:rgba(11,18,32,0.95);color:#fff;padding:10px 14px;border-radius:10px;display:none;font-weight:700;z-index:9999}
     .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.6);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
+    /* diagnostics */
+    .diag {margin-top:14px;padding:12px;border-radius:10px;background:#fff9e6;border:1px solid #f0dca6}
+    .diag h3{margin:0 0 8px 0;font-size:15px}
+    .diag pre{white-space:pre-wrap;background:#fff;border-radius:6px;padding:8px;border:1px solid #eee;overflow:auto}
+    #recaptcha-container{height:0;overflow:hidden}
+    @media(max-width:520px){ .card{padding:14px} }
   </style>
 </head>
 <body>
@@ -53,40 +59,29 @@
       </div>
     </div>
 
-    <div class="field">
-      <i class="fa-solid fa-user"></i>
-      <input id="name" type="text" placeholder="Full name" autocomplete="name" />
-    </div>
+    <div class="field"><i class="fa-solid fa-user"></i><input id="name" type="text" placeholder="Full name" autocomplete="name"/></div>
+    <div class="field"><i class="fa-regular fa-envelope"></i><input id="email" type="email" placeholder="Email (optional)" autocomplete="email"/></div>
+    <div class="field"><i class="fa-solid fa-phone"></i><input id="phone" type="tel" placeholder="Mobile (10 digits)" inputmode="tel" maxlength="12"/></div>
 
-    <div class="field">
-      <i class="fa-regular fa-envelope"></i>
-      <input id="email" type="email" placeholder="Email (optional)" autocomplete="email" />
-    </div>
-
-    <div class="field">
-      <i class="fa-solid fa-phone"></i>
-      <input id="phone" type="tel" placeholder="Mobile (10 digits)" inputmode="tel" maxlength="12" />
-    </div>
-
-    <button id="sendBtn" class="btn btn-primary" aria-live="polite">
-      <i class="fa-regular fa-paper-plane"></i><span>Send OTP</span>
-    </button>
+    <button id="sendBtn" class="btn btn-primary" aria-live="polite"><i class="fa-regular fa-paper-plane"></i><span>Send OTP</span></button>
 
     <section id="otpArea" aria-hidden="true">
-      <div class="field">
-        <i class="fa-solid fa-key"></i>
-        <input id="otp" type="text" placeholder="Enter OTP" inputmode="numeric" maxlength="6"/>
-      </div>
-
+      <div class="field"><i class="fa-solid fa-key"></i><input id="otp" type="text" placeholder="Enter OTP" inputmode="numeric" maxlength="6"/></div>
       <div class="row">
         <button id="verifyBtn" class="btn btn-success grow"><i class="fa-regular fa-circle-check"></i><span>Verify</span></button>
-        <button id="resendBtn" class="btn btn-ghost" style="width:120px" disabled>Resend (30s)</button>
+        <button id="resendBtn" class="btn btn-ghost" style="width:130px" disabled>Resend (30s)</button>
       </div>
     </section>
 
-    <!-- recaptcha container (invisible by default) -->
-    <div id="recaptcha-container" style="height:0;overflow:hidden"></div>
+    <div id="recaptcha-container"></div>
     <p class="tiny">We save phone as +91xxxxxxxxxx</p>
+
+    <div class="diag" id="diag" aria-live="polite" style="display:none">
+      <h3>Diagnostics & Fixes</h3>
+      <div id="diagSummary"></div>
+      <pre id="diagDetail"></pre>
+      <div style="margin-top:8px"><button id="diagClose" class="btn-ghost btn">Close</button></div>
+    </div>
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -102,7 +97,13 @@
     messagingSenderId: "298226098137",
     appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
   };
-  firebase.initializeApp(firebaseConfig);
+
+  // Initialize Firebase (compat)
+  try {
+    firebase.initializeApp(firebaseConfig);
+  } catch(e) {
+    console.error('firebase.initializeApp error', e);
+  }
   const auth = firebase.auth();
   const db = firebase.database();
 
@@ -116,6 +117,10 @@
   const verifyBtn = document.getElementById('verifyBtn');
   const resendBtn = document.getElementById('resendBtn');
   const toast = document.getElementById('toast');
+  const diag = document.getElementById('diag');
+  const diagSummary = document.getElementById('diagSummary');
+  const diagDetail = document.getElementById('diagDetail');
+  const diagClose = document.getElementById('diagClose');
 
   // state
   let confirmationResult = null;
@@ -123,7 +128,7 @@
   let resendTimer = null;
   let countdown = 30;
 
-  // singletons for recaptcha
+  // recaptcha singletons
   window.recaptchaVerifier = null;
   window._recaptchaWidgetId = null;
 
@@ -134,7 +139,15 @@
     toast._t = setTimeout(()=> toast.style.display = 'none', ms);
   }
 
-  // E.164 normalization for India
+  function showDiag(summary, detail) {
+    diagSummary.textContent = summary;
+    diagDetail.textContent = detail;
+    diag.style.display = 'block';
+  }
+
+  diagClose.addEventListener('click', ()=> diag.style.display = 'none');
+
+  // E.164 normalization (India)
   function normalizeToE164(raw){
     if(!raw) return '';
     const cleaned = String(raw).replace(/\D/g,'');
@@ -148,7 +161,6 @@
     return '';
   }
 
-  // only digits in phone input
   phoneEl.addEventListener('input', () => {
     const s = phoneEl.value;
     const digits = s.replace(/\D/g,'').slice(0,12);
@@ -157,53 +169,78 @@
 
   // Create & render recaptcha verifier (invisible). Called only when needed.
   async function ensureRecaptcha() {
-    // if already created, return
     if(window.recaptchaVerifier) return;
-
     try {
-      // create invisible recaptcha verifier and render
       window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
         size: 'invisible',
-        badge: 'bottomright' // optional
+        badge: 'bottomright'
       }, auth);
 
       // render() returns a widget id
       window._recaptchaWidgetId = await window.recaptchaVerifier.render();
-      console.log('reCAPTCHA rendered, widgetId=', window._recaptchaWidgetId);
+      console.log('reCAPTCHA rendered widgetId=', window._recaptchaWidgetId);
     } catch(err) {
-      // log and handle gracefully:
-      // Some environments may produce "Cannot read properties of undefined (reading 'appVerificationDisabledForTesting')"
-      // or enterprise initialization errors — these can still be recovered from by creating a visible widget.
       console.warn('recaptcha render failed (ensureRecaptcha):', err && err.message ? err.message : err);
 
-      // Clear any partial verifier
-      try { if(window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') window.recaptchaVerifier.clear(); } catch(e){}
+      // If invalid-api-key, show diag with exact steps
+      if(err && err.code === 'auth/invalid-api-key') {
+        const detail = [
+          'Firebase returned auth/invalid-api-key while initializing reCAPTCHA.',
+          '',
+          'Quick fixes:',
+          '1) Confirm apiKey in firebaseConfig exactly matches Firebase Console -> Project settings -> Web API Key.',
+          '2) In Google Cloud Console -> APIs & Services -> Credentials, check the API key\'s "Application restrictions".',
+          '   - If restricted to HTTP referrers, add: http://localhost/* and https://yourdomain/* (or remove restriction during testing).',
+          '3) In Firebase Console -> Authentication -> Settings -> Authorized domains, add "localhost" (and your domain).',
+          '4) Serve this page from http://localhost or https (do NOT use file://). Example: python -m http.server 8000',
+          '5) Ensure Phone sign-in is enabled in Firebase Console -> Authentication -> Sign-in method -> Phone.',
+          '6) Optionally add test phone numbers in Firebase Console -> Authentication -> Sign-in method -> Phone -> Phone numbers for testing.',
+          '7) If you use reCAPTCHA Enterprise or custom GCP setup, ensure relevant APIs are enabled (Identity Toolkit, reCAPTCHA Enterprise).',
+          '',
+          'If you want, copy this exact block and paste into Google Cloud Console when editing the key restrictions.'
+        ].join('\\n');
 
+        showDiag('auth/invalid-api-key — diagnosis and exact steps to fix', detail);
+      } else {
+        // fallback: attempt visible recaptcha if invisible failed for environment reasons
+        try {
+          // make container visible to show widget
+          const rcContainer = document.getElementById('recaptcha-container');
+          rcContainer.style.height = '';
+          rcContainer.style.overflow = 'visible';
+
+          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            size: 'normal'
+          }, auth);
+          window._recaptchaWidgetId = await window.recaptchaVerifier.render();
+          console.log('fallback visible reCAPTCHA rendered, widgetId=', window._recaptchaWidgetId);
+        } catch(err2) {
+          console.error('fallback recaptcha render failed:', err2 && err2.message ? err2.message : err2);
+          // Very explicit guidance
+          const detail = [
+            'reCAPTCHA initialization failed in this environment.',
+            'Try these steps:',
+            ' - Serve the page from http://localhost and add "localhost" to Firebase Authorized domains.',
+            ' - Make sure you are not mixing Firebase SDK styles (modular + compat). This page uses compat only.',
+            ' - Check browser console network tab for calls to identitytoolkit.googleapis.com — they should return 200.',
+            ' - If nothing helps, reload the page after performing the above steps.'
+          ].join('\\n');
+          showDiag('reCAPTCHA init failed — fallback also failed', detail);
+          throw new Error('reCAPTCHA init failed. Try reloading the page or test on localhost/https.');
+        }
+      }
+
+      // clear partial verifier to allow retry
+      try { if(window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') window.recaptchaVerifier.clear(); } catch(e){}
       window.recaptchaVerifier = null;
       window._recaptchaWidgetId = null;
 
-      // fallback: create a visible reCAPTCHA (user will see it)
-      try {
-        // make a small visible area so user can complete the captcha
-        const rcContainer = document.getElementById('recaptcha-container');
-        rcContainer.style.height = ''; // allow it to show
-        rcContainer.style.overflow = 'visible';
-
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-          size: 'normal'
-        }, auth);
-
-        window._recaptchaWidgetId = await window.recaptchaVerifier.render();
-        console.log('fallback visible reCAPTCHA rendered, widgetId=', window._recaptchaWidgetId);
-      } catch(err2) {
-        console.error('fallback recaptcha render failed:', err2 && err2.message ? err2.message : err2);
-        // if even fallback fails, provide a clear message to user
-        throw new Error('reCAPTCHA init failed. Try reloading the page or test on localhost/https.');
-      }
+      // rethrow so callers see failure
+      throw err;
     }
   }
 
-  // Check if phone exists in driverdetails (tries +91, digits, last10)
+  // check /driverdetails for phone variants
   async function phoneExistsInDriverDetails(e164){
     try {
       const snapPlus = await db.ref('driverdetails').orderByChild('phone').equalTo(e164).once('value');
@@ -221,7 +258,7 @@
     }
   }
 
-  // Send OTP handler
+  // Send OTP
   sendBtn.addEventListener('click', async () => {
     const name = (nameEl.value||'').trim();
     const phoneRaw = (phoneEl.value||'').trim();
@@ -233,7 +270,6 @@
     console.log('normalized phone ->', e164);
     if(!e164){ showToast('Enter a valid 10-digit mobile'); phoneEl.focus(); return; }
 
-    // UI feedback
     sendBtn.disabled = true;
     sendBtn.innerHTML = '<span class="spinner"></span> Checking…';
 
@@ -251,39 +287,44 @@
       }
 
       sendBtn.innerHTML = '<span class="spinner"></span> Preparing reCAPTCHA…';
-
-      // create/render recaptcha (invisible). This may fall back to visible widget if invisible fails.
       await ensureRecaptcha();
 
-      // DO NOT call recaptchaVerifier.verify() manually. signInWithPhoneNumber will trigger execution.
       sendBtn.innerHTML = '<span class="spinner"></span> Sending…';
-
-      // send OTP
       confirmationResult = await firebase.auth().signInWithPhoneNumber(e164, window.recaptchaVerifier);
       lastE164 = e164;
       showToast('OTP sent');
       otpArea.style.display = 'block';
       otpArea.setAttribute('aria-hidden','false');
       sendBtn.style.display = 'none';
-
-      // start resend countdown
       startResendCooldown();
+
     } catch(err) {
       console.error('sendOtp error', err);
-      // user friendly messages
+      // Friendly messages
       if(err && err.code === 'auth/invalid-phone-number'){
         showToast('Invalid phone format — please enter 10 digits');
       } else if(err && err.code === 'auth/invalid-api-key'){
-        showToast('Invalid API key — check Firebase / Google Cloud settings');
-      } else if(err && err.code === 'auth/argument-error'){
-        showToast('reCAPTCHA not ready — reload page or test on localhost/https');
-      } else if(err && err.code === 'auth/quota-exceeded'){
-        showToast('SMS quota exceeded — try later or use test numbers in Console');
+        showToast('Invalid API key — see Diagnostics (below) for exact steps');
+        // show detailed diag if not already visible
+        if(diag.style.display === 'none'){
+          const detail = [
+            'Error details from console:',
+            (err && err.message) ? err.message : String(err),
+            '',
+            'Follow the checklist shown in the yellow Diagnostics box above this form.',
+            'If you want, take a screenshot of this Diagnostics block and paste it into Google Cloud Console when editing your API key restrictions.'
+          ].join('\\n');
+          showDiag('auth/invalid-api-key — must fix API key / key restrictions', detail);
+        }
+      } else if(err && err.code === 'auth/argument-error') {
+        showToast('reCAPTCHA not ready — ensure page is served over localhost/https and try again');
+      } else if(err && err.code === 'auth/quota-exceeded') {
+        showToast('SMS quota exceeded — use console test numbers or wait');
       } else {
         showToast(err && err.message ? err.message : 'Failed to send OTP');
       }
 
-      // reset UI and reset recaptcha so user can retry
+      // reset UI and recaptcha so user can retry
       sendBtn.disabled = false;
       sendBtn.innerHTML = '<i class="fa-regular fa-paper-plane"></i> Send OTP';
       try { if(window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') window.recaptchaVerifier.clear(); } catch(e){}
@@ -346,7 +387,6 @@
     resendBtn.disabled = true;
     resendBtn.textContent = 'Sending…';
     try {
-      // ensure recaptcha exists (will render if needed)
       await ensureRecaptcha();
       confirmationResult = await firebase.auth().signInWithPhoneNumber(lastE164, window.recaptchaVerifier);
       showToast('OTP resent');
@@ -362,10 +402,13 @@
     }
   });
 
-  // Optional: clean up recaptcha when user navigates away
+  // Clean up recaptcha on unload (best effort)
   window.addEventListener('beforeunload', () => {
     try { if(window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') window.recaptchaVerifier.clear(); } catch(e){}
   });
+
+  // Small helper: show the API key in console for debugging (not in UI)
+  console.info('DEBUG: firebaseConfig.apiKey =', firebaseConfig.apiKey);
 </script>
 </body>
 </html>
