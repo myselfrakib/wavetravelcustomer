@@ -183,7 +183,8 @@ signupForm.addEventListener('submit', function(e){
         otpSection.style.display = 'block';
         otpInputs.forEach(i=>i.value='');
         otpInputs[0].focus();
-        signupBtn.style.display='none';
+        signupBtn.disabled = false;
+        signupBtn.innerText = 'Send OTP';  // Keep button visible
         startResendCountdown();
       })
       .catch(err => {
