@@ -210,7 +210,7 @@ async function resendOTP(){
   }
 }
 
-// Verify OTP with spinner
+// Verify OTP with spinner and auto redirect
 document.getElementById('verifyBtn').addEventListener('click', async ()=>{
   const verifyBtn = document.getElementById('verifyBtn');
   const otp = Array.from(otpInputs).map(i=>i.value).join('');
@@ -227,7 +227,8 @@ document.getElementById('verifyBtn').addEventListener('click', async ()=>{
     if(snapshot.exists()){
       const driverId = Object.keys(snapshot.val())[0];
       showToast('Login successful!');
-      setTimeout(()=>{ window.location.href='driverdashboard.html?driverId='+driverId; }, 1000);
+      // Auto redirect without reload
+      window.location.replace('driverdashboard.html?driverId='+driverId);
     } else showToast('No driver record found. Please sign up.');
   } catch(err){
     showToast('Invalid OTP: '+err.message);
