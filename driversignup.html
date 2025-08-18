@@ -3,54 +3,41 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Driver Signup — WaveTravel</title>
+  <title>Driver Signup — WaveTravel (Fixed)</title>
 
   <!-- Icons -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
 
-  <!-- Firebase compat SDKs -->
+  <!-- Firebase compat SDKs (same as your project) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <style>
-    :root{
-      --brand:#0b67f3;
-      --accent:#15a45a;
-      --muted:#6b7280;
-      --card-radius:14px;
-    }
-    *{box-sizing:border-box;font-family:Inter, "Segoe UI", Roboto, Arial;}
-    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#eef6ff,#fff);padding:18px;}
-
+    :root{ --brand:#0b67f3; --accent:#15a45a; --muted:#6b7280; --card-radius:14px }
+    *{box-sizing:border-box;font-family:Inter, "Segoe UI", Roboto, Arial}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#eef6ff,#fff);padding:18px}
     .card{width:100%;max-width:420px;background:#fff;border-radius:var(--card-radius);padding:18px;box-shadow:0 10px 30px rgba(10,30,80,0.06);position:relative}
     .top-right{position:absolute;right:14px;top:12px}
     .top-right a{color:var(--brand);text-decoration:none;font-weight:600;font-size:13px}
-
     .brand{display:flex;gap:12px;align-items:center;margin-bottom:10px}
     .logo{width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#003db3);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
     h1{margin:0;font-size:18px;color:#0b254a}
     .lead{margin:6px 0 14px;color:var(--muted);font-size:13px}
-
     .field{display:flex;align-items:center;gap:10px;background:#f6fafc;border-radius:10px;padding:10px;margin-bottom:12px;border:1px solid rgba(11,103,243,0.03)}
     .field i{color:var(--brand);width:22px;text-align:center;font-size:16px}
     .field input{border:0;outline:0;background:transparent;font-size:15px;flex:1;padding:6px 0}
-
     .btn{width:100%;padding:12px;border-radius:10px;border:0;color:#fff;font-weight:700;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px}
     .btn-primary{background:var(--brand)}
     .btn-ghost{background:transparent;color:var(--brand);border:1px solid rgba(11,103,243,0.08)}
     .btn-success{background:var(--accent)}
-
     #otpArea{display:none;margin-top:8px}
     .row{display:flex;gap:8px;align-items:center;margin-top:8px}
     .grow{flex:1}
     .tiny{font-size:12px;color:var(--muted);text-align:center;margin-top:12px}
-
     .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;background:rgba(11,18,32,0.95);color:#fff;padding:10px 14px;border-radius:10px;display:none;font-weight:700;z-index:9999}
     .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.6);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}} 
-
-    /* small screens */
+    @keyframes spin{to{transform:rotate(360deg)}}
     @media (max-width:420px){ .logo{width:46px;height:46px} .top-right{right:8px;top:8px} }
   </style>
 </head>
@@ -79,7 +66,7 @@
 
     <div class="field">
       <i class="fa-solid fa-phone"></i>
-      <input id="phone" type="tel" placeholder="Mobile (10 digits)" inputmode="tel" maxlength="14" />
+      <input id="phone" type="tel" placeholder="Mobile (10 digits)" inputmode="tel" maxlength="12" />
     </div>
 
     <button id="sendBtn" class="btn btn-primary" aria-live="polite">
@@ -136,6 +123,10 @@
   let resendTimer = null;
   let countdown = 30;
 
+  // recaptcha helpers (create & render only once)
+  window.recaptchaVerifier = null;
+  window.recaptchaRenderPromise = null;
+
   function showToast(msg, ms=2800){
     toast.textContent = msg;
     toast.style.display = 'block';
@@ -143,50 +134,42 @@
     toast._t = setTimeout(()=> toast.style.display = 'none', ms);
   }
 
-  // Normalize to E.164 for India robustly
   function normalizeToE164(raw){
     if(!raw) return '';
-    // remove spaces, parentheses, dashes, etc.
-    const cleaned = String(raw).replace(/[^\d]/g,'');
-    // If user enters leading +91 or 91 in cleaned, handle:
+    const cleaned = String(raw).replace(/\D/g,'');
     if(cleaned.length === 10) return '+91' + cleaned;
     if(cleaned.length === 11 && cleaned.startsWith('0')) return '+91' + cleaned.slice(1);
     if(cleaned.length === 12 && cleaned.startsWith('91')) return '+' + cleaned;
-    if(cleaned.length > 10){
-      // fallback: use last 10 digits (common when users paste country code or extra)
-      const last10 = cleaned.slice(-10);
-      if(last10.length === 10) return '+91' + last10;
-    }
-    return ''; // invalid
+    if(cleaned.length > 10){ const last10 = cleaned.slice(-10); if(last10.length === 10) return '+91' + last10; }
+    return '';
   }
 
-  // minimal allowlist: only digits typed into the phone box (no plus shown)
+  // keep only digits in phone input
   phoneEl.addEventListener('input', () => {
     const s = phoneEl.value;
-    // keep digits only
-    const digits = s.replace(/\D/g,'').slice(0,12); // allow up to 12 in case of '91...' paste
+    const digits = s.replace(/\D/g,'').slice(0,12);
     phoneEl.value = digits;
   });
 
-  function ensureRecaptcha(){
-    if(window.recaptchaVerifier) return;
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
-    // some environments need render() call
-    try { window.recaptchaVerifier.render(); } catch(e){ /* ignore */ }
+  // ensure recaptcha: render once and swallow "already rendered" errors
+  async function ensureRecaptcha(){
+    if(window.recaptchaVerifier) return window.recaptchaRenderPromise;
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' }, auth);
+    window.recaptchaRenderPromise = window.recaptchaVerifier.render().catch(err => {
+      // ignore duplicate-render errors from some browsers/environments
+      if(err && /already been rendered/i.test(err.message)) return;
+      throw err;
+    });
+    return window.recaptchaRenderPromise;
   }
-  ensureRecaptcha();
 
-  // check existing phone in /driverdetails (tries variants)
   async function phoneExistsInDriverDetails(e164){
     try {
-      // exact +91...
       const snapPlus = await db.ref('driverdetails').orderByChild('phone').equalTo(e164).once('value');
       if(snapPlus.exists()) return true;
-      // digits without plus
       const digits = e164.replace(/\D/g,'');
       const snapDigits = await db.ref('driverdetails').orderByChild('phone').equalTo(digits).once('value');
       if(snapDigits.exists()) return true;
-      // last 10
       const last10 = digits.slice(-10);
       const snapLast = await db.ref('driverdetails').orderByChild('phone').equalTo(last10).once('value');
       if(snapLast.exists()) return true;
@@ -209,8 +192,6 @@
     console.log('normalized phone ->', e164);
     if(!e164){ showToast('Enter a valid 10-digit mobile'); phoneEl.focus(); return; }
 
-    ensureRecaptcha();
-
     // UI feedback
     sendBtn.disabled = true;
     sendBtn.innerHTML = '<span class="spinner"></span> Checking…';
@@ -219,19 +200,21 @@
       const exists = await phoneExistsInDriverDetails(e164);
       if(exists){
         showToast('Number already registered — use Login');
-        // Switch send button to a "Go to Login" link/button
         sendBtn.style.display = 'none';
         const goLogin = document.createElement('button');
         goLogin.className = 'btn btn-ghost';
         goLogin.textContent = 'Go to Login';
         goLogin.addEventListener('click', ()=> location.href = 'driverlogin.html');
-        sendBtn.parentNode.insertBefore(goLogin, otpArea);
+        sendBtn.parentNode.insertBefore(goLogin, sendBtn.nextSibling);
         return;
       }
 
       sendBtn.innerHTML = '<span class="spinner"></span> Sending…';
 
-      // Send OTP using e164
+      // ensure reCAPTCHA rendered once
+      await ensureRecaptcha();
+
+      // Send OTP
       confirmationResult = await auth.signInWithPhoneNumber(e164, window.recaptchaVerifier);
       lastE164 = e164;
       showToast('OTP sent');
@@ -239,15 +222,24 @@
       otpArea.setAttribute('aria-hidden','false');
       sendBtn.style.display = 'none';
 
-      // start cooldown for resend
       startResendCooldown();
     } catch(err){
       console.error('sendOtp error', err);
-      showToast((err && err.message) ? err.message : 'Failed to send OTP');
+      // show user-friendly messages for common errors
+      if(err && err.code === 'auth/invalid-phone-number'){
+        showToast('Invalid phone format — please enter 10 digits');
+      } else if(err && err.code === 'auth/quota-exceeded'){
+        showToast('SMS quota exceeded — try again later');
+      } else {
+        showToast(err && err.message ? err.message : 'Failed to send OTP');
+      }
+
+      // reset UI and recaptcha so user can try again
       sendBtn.disabled = false;
       sendBtn.innerHTML = '<i class="fa-regular fa-paper-plane"></i> Send OTP';
-      // reset recaptcha widget if exists
-      try { if(window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') window.recaptchaVerifier.clear(); window.recaptchaVerifier = undefined; ensureRecaptcha(); } catch(e){}
+      try { if(window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') window.recaptchaVerifier.clear(); } catch(e){}
+      window.recaptchaVerifier = null;
+      window.recaptchaRenderPromise = null;
     }
   });
 
@@ -260,6 +252,7 @@
     verifyBtn.innerHTML = '<span class="spinner"></span> Verifying…';
 
     try {
+      if(!confirmationResult){ throw new Error('No OTP request in progress'); }
       const result = await confirmationResult.confirm(code);
       const user = result.user;
       const uid = user.uid;
@@ -275,13 +268,13 @@
       setTimeout(()=> location.href = 'driverdashboard.html', 900);
     } catch(err){
       console.error('verify error', err);
-      showToast((err && err.message) ? err.message : 'Invalid OTP');
+      showToast(err && err.message ? err.message : 'Invalid OTP');
       verifyBtn.disabled = false;
       verifyBtn.innerHTML = '<i class="fa-regular fa-circle-check"></i> Verify';
     }
   });
 
-  // resend cooldown logic
+  // resend cooldown
   function startResendCooldown(){
     resendBtn.disabled = true;
     countdown = 30;
@@ -289,13 +282,8 @@
     clearInterval(resendTimer);
     resendTimer = setInterval(()=>{
       countdown--;
-      if(countdown <= 0){
-        clearInterval(resendTimer);
-        resendBtn.disabled = false;
-        resendBtn.textContent = 'Resend';
-      } else {
-        resendBtn.textContent = `Resend (${countdown}s)`;
-      }
+      if(countdown <= 0){ clearInterval(resendTimer); resendBtn.disabled = false; resendBtn.textContent = 'Resend'; }
+      else { resendBtn.textContent = `Resend (${countdown}s)`; }
     },1000);
   }
 
@@ -303,21 +291,22 @@
     if(!lastE164) return;
     resendBtn.disabled = true;
     resendBtn.textContent = 'Sending…';
-    ensureRecaptcha();
     try {
+      await ensureRecaptcha();
       confirmationResult = await auth.signInWithPhoneNumber(lastE164, window.recaptchaVerifier);
       showToast('OTP resent');
       startResendCooldown();
     } catch(err){
       console.error('resend error', err);
-      showToast((err && err.message) ? err.message : 'Resend failed');
+      showToast(err && err.message ? err.message : 'Resend failed');
       resendBtn.disabled = false;
       resendBtn.textContent = 'Resend';
+      try { if(window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') window.recaptchaVerifier.clear(); } catch(e){}
+      window.recaptchaVerifier = null; window.recaptchaRenderPromise = null;
     }
   });
 
-  // initialize recaptcha
-  ensureRecaptcha();
+  // Note: do NOT call ensureRecaptcha() automatically on load — render only when about to send OTP
 </script>
 </body>
 </html>
