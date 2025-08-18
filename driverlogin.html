@@ -187,10 +187,14 @@ async function sendOTP(){
   }
 }
 
-// Resend OTP
+// Resend OTP with spinner
 async function resendOTP(){
+  const btn = document.getElementById('resendOtpBtn');
   const phoneInput = document.getElementById('phoneNumber').value;
   const phone = formatPhoneNumber(phoneInput);
+
+  btn.disabled = true;
+  btn.innerHTML = 'Resending <span class="spinner"></span>';
 
   try{
     const confirmationResult = await auth.signInWithPhoneNumber(phone, window.recaptchaVerifier);
@@ -201,19 +205,24 @@ async function resendOTP(){
     startResendCountdown();
   } catch(err){
     showToast(err.message);
+    btn.disabled = false;
+    btn.innerText = 'Resend OTP';
   }
 }
 
-// Verify OTP
+// Verify OTP with spinner
 document.getElementById('verifyBtn').addEventListener('click', async ()=>{
+  const verifyBtn = document.getElementById('verifyBtn');
   const otp = Array.from(otpInputs).map(i=>i.value).join('');
   if(otp.length!==6){ showToast('Enter 6-digit OTP'); return; }
+
+  verifyBtn.disabled = true;
+  verifyBtn.innerHTML = 'Verifying <span class="spinner"></span>';
 
   try{
     const result = await confirmationResultGlobal.confirm(otp);
     const user = result.user;
 
-    // Check driverdetails
     const snapshot = await database.ref('driverdetails').orderByChild('phone').equalTo(user.phoneNumber).once('value');
     if(snapshot.exists()){
       const driverId = Object.keys(snapshot.val())[0];
@@ -222,6 +231,9 @@ document.getElementById('verifyBtn').addEventListener('click', async ()=>{
     } else showToast('No driver record found. Please sign up.');
   } catch(err){
     showToast('Invalid OTP: '+err.message);
+  } finally{
+    verifyBtn.disabled = false;
+    verifyBtn.innerText = 'Verify OTP';
   }
 });
 
@@ -230,11 +242,11 @@ function startResendCountdown(){
   const btn = document.getElementById('resendOtpBtn');
   let time = 60;
   btn.disabled = true;
-  btn.textContent = `Resend OTP (${time}s)`;
+  btn.innerText = `Resend OTP (${time}s)`;
   const interval = setInterval(()=>{
     time--;
-    btn.textContent = `Resend OTP (${time}s)`;
-    if(time<=0){ clearInterval(interval); btn.disabled=false; btn.textContent='Resend OTP'; }
+    btn.innerText = `Resend OTP (${time}s)`;
+    if(time<=0){ clearInterval(interval); btn.disabled=false; btn.innerText='Resend OTP'; }
   },1000);
 }
 </script>
