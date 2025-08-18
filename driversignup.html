@@ -3,11 +3,8 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Driver Signup — WaveTravel (Modular v12)</title>
-
-  <!-- Icons -->
+  <title>Driver Signup — WaveTravel (Invisible reCAPTCHA auto)</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
-
   <style>
     :root{ --brand:#0b67f3; --accent:#15a45a; --muted:#6b7280; --card-radius:14px }
     *{box-sizing:border-box;font-family:Inter, "Segoe UI", Roboto, Arial}
@@ -33,14 +30,12 @@
     .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;background:rgba(11,18,32,0.95);color:#fff;padding:10px 14px;border-radius:10px;display:none;font-weight:700;z-index:9999}
     .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.6);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
-    @media (max-width:420px){ .logo{width:46px;height:46px} .top-right{right:8px;top:8px} }
   </style>
 </head>
 <body>
 
   <main class="card" role="main" aria-labelledby="title">
     <div class="top-right"><a href="driverlogin.html">Login</a></div>
-
     <div class="brand" aria-hidden="true">
       <div class="logo">WT</div>
       <div>
@@ -49,31 +44,14 @@
       </div>
     </div>
 
-    <div class="field">
-      <i class="fa-solid fa-user"></i>
-      <input id="name" type="text" placeholder="Full name" autocomplete="name" />
-    </div>
+    <div class="field"><i class="fa-solid fa-user"></i><input id="name" type="text" placeholder="Full name" autocomplete="name" /></div>
+    <div class="field"><i class="fa-regular fa-envelope"></i><input id="email" type="email" placeholder="Email (optional)" autocomplete="email" /></div>
+    <div class="field"><i class="fa-solid fa-phone"></i><input id="phone" type="tel" placeholder="Mobile (10 digits)" inputmode="tel" maxlength="12" /></div>
 
-    <div class="field">
-      <i class="fa-regular fa-envelope"></i>
-      <input id="email" type="email" placeholder="Email (optional)" autocomplete="email" />
-    </div>
-
-    <div class="field">
-      <i class="fa-solid fa-phone"></i>
-      <input id="phone" type="tel" placeholder="Mobile (10 digits)" inputmode="tel" maxlength="12" />
-    </div>
-
-    <button id="sendBtn" class="btn btn-primary" aria-live="polite">
-      <i class="fa-regular fa-paper-plane"></i><span>Send OTP</span>
-    </button>
+    <button id="sendBtn" class="btn btn-primary"><i class="fa-regular fa-paper-plane"></i><span>Send OTP</span></button>
 
     <section id="otpArea" aria-hidden="true">
-      <div class="field">
-        <i class="fa-solid fa-key"></i>
-        <input id="otp" type="text" placeholder="Enter OTP" inputmode="numeric" maxlength="6"/>
-      </div>
-
+      <div class="field"><i class="fa-solid fa-key"></i><input id="otp" type="text" placeholder="Enter OTP" inputmode="numeric" maxlength="6"/></div>
       <div class="row">
         <button id="verifyBtn" class="btn btn-success grow"><i class="fa-regular fa-circle-check"></i><span>Verify</span></button>
         <button id="resendBtn" class="btn btn-ghost" style="width:120px" disabled>Resend (30s)</button>
@@ -86,26 +64,13 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- Modular Firebase v12 SDKs -->
+  <!-- Modular Firebase v12 -->
   <script type="module">
-    // imports (modular)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-    import {
-      getAuth,
-      RecaptchaVerifier,
-      signInWithPhoneNumber
-    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-    import {
-      getDatabase,
-      ref,
-      query,
-      orderByChild,
-      equalTo,
-      get,
-      set
-    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+    import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import { getDatabase, ref, query, orderByChild, equalTo, get, set } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
-    // ---------- Firebase config (your project) ----------
+    // your firebase config - confirm these match Firebase Console
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -115,13 +80,10 @@
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-
-    // initialize (only once)
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // DOM
     const nameEl = document.getElementById('name');
     const emailEl = document.getElementById('email');
     const phoneEl = document.getElementById('phone');
@@ -132,13 +94,11 @@
     const resendBtn = document.getElementById('resendBtn');
     const toast = document.getElementById('toast');
 
-    // state
     let confirmationResult = null;
     let lastE164 = '';
     let resendTimer = null;
     let countdown = 30;
 
-    // recaptcha singletons
     window.recaptchaVerifier = null;
     window.recaptchaRenderPromise = null;
 
@@ -149,55 +109,60 @@
       toast._t = setTimeout(()=> toast.style.display = 'none', ms);
     }
 
-    // E.164 normalization for India
     function normalizeToE164(raw){
       if(!raw) return '';
       const cleaned = String(raw).replace(/\D/g,'');
       if(cleaned.length === 10) return '+91' + cleaned;
       if(cleaned.length === 11 && cleaned.startsWith('0')) return '+91' + cleaned.slice(1);
       if(cleaned.length === 12 && cleaned.startsWith('91')) return '+' + cleaned;
-      if(cleaned.length > 10){
-        const last10 = cleaned.slice(-10);
-        if(last10.length === 10) return '+91' + last10;
-      }
+      if(cleaned.length > 10){ const last10 = cleaned.slice(-10); if(last10.length === 10) return '+91' + last10; }
       return '';
     }
 
-    // digits only input for phone field
     phoneEl.addEventListener('input', () => {
       const s = phoneEl.value;
       const digits = s.replace(/\D/g,'').slice(0,12);
       phoneEl.value = digits;
     });
 
-    // ensure recaptcha (render only once, ignore duplicate errors)
-    async function ensureRecaptcha(){
-      if(window.recaptchaVerifier) return window.recaptchaRenderPromise;
-      window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', { size: 'invisible' }, auth);
-      // render() returns a promise — swallow duplicate-render style errors
-      window.recaptchaRenderPromise = window.recaptchaVerifier.render().catch(err => {
-        // Some browsers may say it's already rendered; ignore those
-        if(err && /already been rendered/i.test(err.message)) return;
-        // other errors: rethrow
-        throw err;
-      });
-      return window.recaptchaRenderPromise;
+    // Auto-render invisible reCAPTCHA on load (autoreCAPTCHA)
+    // badge: 'bottomright' | 'bottomleft' etc — optional
+    async function autoRenderInvisibleRecaptcha(){
+      if(window.recaptchaVerifier) return;
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
+          size: 'invisible',
+          badge: 'bottomright' // place small badge; optional
+        }, auth);
+
+        // render it now so grecaptcha is loaded and widget created.
+        window.recaptchaRenderPromise = window.recaptchaVerifier.render();
+        await window.recaptchaRenderPromise;
+        console.log('invisible reCAPTCHA rendered automatically');
+      } catch(err){
+        // ignore duplicate-render errors or bubble others
+        console.warn('recaptcha render failed (auto):', err && err.message ? err.message : err);
+        window.recaptchaVerifier = null;
+        window.recaptchaRenderPromise = null;
+      }
     }
 
-    // check /driverdetails for phone variants
+    // run auto-render at startup so the reCAPTCHA is ready instantly
+    document.addEventListener('DOMContentLoaded', ()=> {
+      // start background rendering; if this errors it's not fatal
+      autoRenderInvisibleRecaptcha();
+    });
+
     async function phoneExistsInDriverDetails(e164){
       try {
         const dbRef = ref(db, 'driverdetails');
-        // exact +91... match
         let q = query(dbRef, orderByChild('phone'), equalTo(e164));
         let snap = await get(q);
         if(snap.exists()) return true;
-        // digits without plus
         const digits = e164.replace(/\D/g,'');
         q = query(dbRef, orderByChild('phone'), equalTo(digits));
         snap = await get(q);
         if(snap.exists()) return true;
-        // last 10
         const last10 = digits.slice(-10);
         q = query(dbRef, orderByChild('phone'), equalTo(last10));
         snap = await get(q);
@@ -205,15 +170,14 @@
         return false;
       } catch(e){
         console.error('phoneExists check failed', e);
-        return false; // on error assume not present so the flow continues (you can change)
+        return false;
       }
     }
 
-    // send OTP
-    sendBtn.addEventListener('click', async () => {
+    // Send OTP: AUTO-EXECUTE reCAPTCHA token then signInWithPhoneNumber
+    sendBtn.addEventListener('click', async ()=>{
       const name = (nameEl.value||'').trim();
       const phoneRaw = (phoneEl.value||'').trim();
-
       if(!name){ showToast('Enter name'); nameEl.focus(); return; }
       if(!phoneRaw){ showToast('Enter mobile'); phoneEl.focus(); return; }
 
@@ -221,7 +185,6 @@
       console.log('normalized phone ->', e164);
       if(!e164){ showToast('Enter a valid 10-digit mobile'); phoneEl.focus(); return; }
 
-      // UI feedback
       sendBtn.disabled = true;
       sendBtn.innerHTML = '<span class="spinner"></span> Checking…';
 
@@ -238,34 +201,48 @@
           return;
         }
 
+        sendBtn.innerHTML = '<span class="spinner"></span> Executing reCAPTCHA…';
+
+        // Ensure recaptcha rendered
+        await autoRenderInvisibleRecaptcha();
+
+        // Force execution/verification to get a token — this triggers invisible recaptcha to run automatically
+        // (may show a visible challenge if Google decides it's needed)
+        try {
+          // RecaptchaVerifier has verify() that returns a token — await it
+          if(window.recaptchaVerifier && typeof window.recaptchaVerifier.verify === 'function'){
+            await window.recaptchaVerifier.verify();
+          } else {
+            // fallback: render then try again (rare)
+            await window.recaptchaRenderPromise;
+            if(window.recaptchaVerifier && typeof window.recaptchaVerifier.verify === 'function') await window.recaptchaVerifier.verify();
+          }
+        } catch(vErr){
+          // If verify fails, still attempt signInWithPhoneNumber — Firebase may internally handle the challenge
+          console.warn('reCAPTCHA verify() error (may show challenge):', vErr && vErr.message ? vErr.message : vErr);
+        }
+
         sendBtn.innerHTML = '<span class="spinner"></span> Sending…';
 
-        // ensure reCAPTCHA rendered
-        await ensureRecaptcha();
-
-        // send OTP with modular signInWithPhoneNumber
+        // Now send OTP (recaptcha token is handled by Firebase under the hood)
         confirmationResult = await signInWithPhoneNumber(auth, e164, window.recaptchaVerifier);
         lastE164 = e164;
         showToast('OTP sent');
         otpArea.style.display = 'block';
         otpArea.setAttribute('aria-hidden','false');
         sendBtn.style.display = 'none';
-
         startResendCooldown();
       } catch(err){
         console.error('sendOtp error', err);
-        // helpful user messages for common codes
         if(err && err.code === 'auth/invalid-phone-number'){
           showToast('Invalid phone format — please enter 10 digits');
         } else if(err && err.code === 'auth/invalid-api-key'){
-          showToast('Invalid API key — check your Firebase / Google Cloud API Key settings');
+          showToast('Invalid API key — check Firebase / Google Cloud API Key');
         } else if(err && err.code === 'auth/quota-exceeded'){
-          showToast('SMS quota exceeded — try later / use test numbers in Console');
+          showToast('SMS quota exceeded — try later or use console test numbers');
         } else {
           showToast(err && err.message ? err.message : 'Failed to send OTP');
         }
-
-        // reset UI and recaptcha so user can retry
         sendBtn.disabled = false;
         sendBtn.innerHTML = '<i class="fa-regular fa-paper-plane"></i> Send OTP';
         try { if(window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') window.recaptchaVerifier.clear(); } catch(e){}
@@ -274,14 +251,11 @@
       }
     });
 
-    // verify OTP
     verifyBtn.addEventListener('click', async ()=>{
       const code = (otpInput.value||'').trim();
       if(!/^\d{4,6}$/.test(code)){ showToast('Enter OTP'); otpInput.focus(); return; }
-
       verifyBtn.disabled = true;
       verifyBtn.innerHTML = '<span class="spinner"></span> Verifying…';
-
       try {
         if(!confirmationResult) throw new Error('No OTP request in progress');
         const result = await confirmationResult.confirm(code);
@@ -305,7 +279,6 @@
       }
     });
 
-    // resend cooldown logic
     function startResendCooldown(){
       resendBtn.disabled = true;
       countdown = 30;
@@ -313,23 +286,17 @@
       clearInterval(resendTimer);
       resendTimer = setInterval(()=>{
         countdown--;
-        if(countdown <= 0){
-          clearInterval(resendTimer);
-          resendBtn.disabled = false;
-          resendBtn.textContent = 'Resend';
-        } else {
-          resendBtn.textContent = `Resend (${countdown}s)`;
-        }
+        if(countdown <= 0){ clearInterval(resendTimer); resendBtn.disabled = false; resendBtn.textContent = 'Resend'; }
+        else { resendBtn.textContent = `Resend (${countdown}s)`; }
       },1000);
     }
 
-    // resend OTP
     resendBtn.addEventListener('click', async ()=>{
       if(!lastE164) return;
       resendBtn.disabled = true;
       resendBtn.textContent = 'Sending…';
       try {
-        await ensureRecaptcha();
+        await autoRenderInvisibleRecaptcha();
         confirmationResult = await signInWithPhoneNumber(auth, lastE164, window.recaptchaVerifier);
         showToast('OTP resent');
         startResendCooldown();
@@ -344,7 +311,6 @@
       }
     });
 
-    // NOTE: Don't render reCAPTCHA until user clicks Send OTP (we call ensureRecaptcha just before sending)
   </script>
 </body>
 </html>
