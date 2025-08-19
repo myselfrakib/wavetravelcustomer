@@ -70,7 +70,7 @@
     .navbar a { color:#fff; text-decoration:none; font-size:0.75rem; display:flex; flex-direction:column; align-items:center; }
     .navbar a i { font-size:1.15rem; margin-bottom:4px; }
 
-    /* Centered toast (for UPI messages) */
+    /* Centered toast (for messages) */
     .center-toast {
       position: fixed;
       left: 50%;
@@ -89,6 +89,14 @@
     }
     .center-toast.show { display: block; animation: toastIn 180ms ease; }
     @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -45%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+
+    /* UPI modal small form */
+    .upi-row { display:flex; gap:8px; align-items:center; }
+    .upi-input { flex:1; padding:10px; border-radius:8px; border:none; background: rgba(255,255,255,0.04); color:#fff; }
+    .modal-actions { display:flex; gap:8px; margin-top:12px; }
+    .btn-primary { background: #22c55e; color:#000; padding:10px 12px; border-radius:8px; border:none; font-weight:700; cursor:pointer; }
+    .btn-secondary { background: transparent; color:#fff; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); cursor:pointer; }
+    .btn-disabled { opacity:0.6; pointer-events:none; }
   </style>
 </head>
 <body>
@@ -117,6 +125,30 @@
         <button id="closeModal" class="modal-close-btn" aria-label="Close modal">✕</button>
       </div>
       <div id="bookingContent">Loading…</div>
+    </div>
+  </div>
+
+  <!-- UPI entry modal -->
+  <div class="modal" id="upiModal" role="dialog" aria-modal="true">
+    <div class="card">
+      <div class="modal-header">
+        <strong>Enter / Update UPI</strong>
+        <button id="closeUpiModal" class="modal-close-btn" aria-label="Close modal">✕</button>
+      </div>
+
+      <div>
+        <label style="display:block;margin-bottom:8px;color:#ffd1f4;font-weight:600">UPI (VPA)</label>
+        <div class="upi-row">
+          <input id="upiInput" class="upi-input" type="text" placeholder="example@bank" aria-label="UPI id"/>
+        </div>
+        <div style="margin-top:8px;font-size:13px;color:#e9c7ef">We'll save this UPI to your profile and use it for withdrawals.</div>
+
+        <div class="modal-actions">
+          <button id="saveUpiBtn" class="btn-primary">Save</button>
+          <button id="saveWithdrawBtn" class="btn-primary">Save & Withdraw</button>
+          <button id="cancelUpiBtn" class="btn-secondary">Cancel</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -155,6 +187,14 @@
     const bookingContent = document.getElementById("bookingContent");
     const closeModalBtn = document.getElementById("closeModal");
     const centerToastEl = document.getElementById("centerToast");
+
+    // UPI modal elements
+    const upiModal = document.getElementById("upiModal");
+    const upiInput = document.getElementById("upiInput");
+    const saveUpiBtn = document.getElementById("saveUpiBtn");
+    const saveWithdrawBtn = document.getElementById("saveWithdrawBtn");
+    const cancelUpiBtn = document.getElementById("cancelUpiBtn");
+    const closeUpiModal = document.getElementById("closeUpiModal");
 
     let driverId = null;
     let walletData = {};
@@ -236,18 +276,14 @@
             const snap = await get(child(ref(db), p));
             if (snap && snap.exists()) {
               const val = snap.val();
-              // treat non-empty strings as valid UPI
               if (typeof val === 'string' && val.trim().length > 3) return val.trim();
-              // Also allow nested objects like { id: 'upi@bank' } etc.
               if (typeof val === 'object' && val !== null) {
-                // try to find reasonable string inside object
                 for (const kk of ['upi','vpa','upiId','id','value']) {
                   if (kk in val && typeof val[kk] === 'string' && val[kk].trim().length > 3) return val[kk].trim();
                 }
               }
             }
           } catch(e) {
-            // ignore single-path errors and continue
             console.warn('checkDriverUPI path error', p, e);
           }
         }
@@ -270,25 +306,18 @@
       let booking = null;
 
       try {
-        // 1) Try bookings/{driverId}/{bookingId}
         if (driverId) {
           const p1 = `${BOOKING_PATH_BASE}/${driverId}/${bookingId}`;
           const snap1 = await get(child(ref(db), p1));
-          if (snap1 && snap1.exists()) {
-            booking = snap1.val();
-          }
+          if (snap1 && snap1.exists()) booking = snap1.val();
         }
 
-        // 2) Try bookings/{bookingId}
         if (!booking) {
           const p2 = `${BOOKING_PATH_BASE}/${bookingId}`;
           const snap2 = await get(child(ref(db), p2));
-          if (snap2 && snap2.exists()) {
-            booking = snap2.val();
-          }
+          if (snap2 && snap2.exists()) booking = snap2.val();
         }
 
-        // 3) Check driverWallet entry for an embedded booking object or booking id
         if (!booking && driverId) {
           const wPath = `driverWallet/${driverId}/${bookingId}`;
           const wSnap = await get(child(ref(db), wPath));
@@ -313,7 +342,6 @@
           }
         }
 
-        // 4) Global search: bookings/*/{bookingId}
         if (!booking) {
           const globalSnap = await get(ref(db, BOOKING_PATH_BASE));
           if (globalSnap && globalSnap.exists()) {
@@ -338,7 +366,6 @@ global search under ${BOOKING_PATH_BASE}/*
           return;
         }
 
-        // Render booking details (intelligently picking available keys)
         bookingContent.innerHTML = '';
         bookingContent.appendChild(createDetailRow('Booking ID', bookingId));
         bookingContent.appendChild(createDetailRow('Customer Name', safeGet(booking, 'userName', 'customerName', 'userName') || safeGet(booking, 'userName') || safeGet(booking, 'customerName')));
@@ -358,7 +385,6 @@ global search under ${BOOKING_PATH_BASE}/*
         }
         if (booking.notes || booking.note) bookingContent.appendChild(createDetailRow('Notes', booking.notes || booking.note));
 
-        // show additional keys that were not displayed
         const shown = new Set(['userName','customerName','pickup','pickupLocation','dropoff','dropoffLocation','time','pickupTime','fare','amount','price','paymentAmount','status','paidout','bookedAt','createdAt','driverName','driverId','driverNumber','notes','note']);
         const extra = {};
         for (const k in booking) if (!shown.has(k)) extra[k] = booking[k];
@@ -394,8 +420,9 @@ global search under ${BOOKING_PATH_BASE}/*
       const unpaidEntries = entries.filter(([_, e]) => isUnpaid(e));
       const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
       balanceEl.textContent = `₹${total.toFixed(2)}`;
-      // enable withdraw only if there's unpaid balance AND driver has UPI
-      withdrawBtn.disabled = total <= 0 || !driverHasUpiCache;
+
+      // withdraw enabled if unpaid balance exists (modal will handle UPI)
+      withdrawBtn.disabled = total <= 0;
 
       cardList.innerHTML = "";
       entries.forEach(([id, e]) => {
@@ -449,21 +476,42 @@ global search under ${BOOKING_PATH_BASE}/*
       });
     }
 
-    // Withdraw click handler: only proceeds if UPI exists and unpaid balance exists
-    withdrawBtn.onclick = async () => {
+    // Open UPI modal; prefill if existing
+    async function openUpiModal() {
+      if (!driverId) {
+        showCenterToast("Please log in to update UPI");
+        return;
+      }
+      upiInput.value = '';
+      try {
+        const upiVal = await checkDriverUPI(driverId);
+        if (upiVal) upiInput.value = upiVal;
+      } catch(e) {
+        console.warn('prefill UPI failed', e);
+      }
+      upiModal.style.display = 'flex';
+    }
+
+    // Save UPI to driverdetails and users nodes
+    async function saveUpi(upiVal) {
+      if (!driverId) throw new Error('Not signed in');
+      const cleaned = (upiVal || '').trim();
+      if (!cleaned || cleaned.length < 3) throw new Error('Enter a valid UPI id');
+      const updates = {};
+      updates[`driverdetails/${driverId}/upi`] = cleaned;
+      updates[`users/${driverId}/upi`] = cleaned;
+      // write both paths in a single update
+      await update(ref(db), updates);
+      driverHasUpiCache = true;
+      return cleaned;
+    }
+
+    // Perform withdrawal: mark unpaid entries as processing
+    async function performWithdraw() {
       if (!driverId) {
         showCenterToast("Please log in to request withdrawal");
         return;
       }
-
-      // re-check if UPI exists (fresh check)
-      const upiVal = await checkDriverUPI(driverId);
-      driverHasUpiCache = !!upiVal;
-      if (!driverHasUpiCache) {
-        showCenterToast("Please Update your upi id to make withdrawal");
-        return;
-      }
-
       // compute unpaid entries
       const updates = {};
       for (const [id, entry] of Object.entries(walletData || {})) {
@@ -480,10 +528,54 @@ global search under ${BOOKING_PATH_BASE}/*
         showCenterToast("Failed to send withdraw request: " + (err.message || err));
         console.error("withdraw error", err);
       }
+    }
+
+    // Withdraw click: open modal (so user can enter/update upi), or if UPI present prompt to confirm withdraw via modal
+    withdrawBtn.onclick = async () => {
+      // If there is UPI present, still open modal, prefilled, allowing update and withdraw
+      await openUpiModal();
     };
+
+    // UPI modal event handlers
+    saveUpiBtn.addEventListener('click', async () => {
+      const val = upiInput.value.trim();
+      try {
+        if (!val) { showCenterToast("Enter a valid UPI"); return; }
+        await saveUpi(val);
+        showCenterToast("UPI saved.");
+        upiModal.style.display = 'none';
+        // refresh withdraw button state (wallet render sets it)
+        const unpaidEntries = Object.entries(walletData || {}).filter(([_, e]) => isUnpaid(e));
+        const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
+        withdrawBtn.disabled = total <= 0;
+      } catch (err) {
+        showCenterToast("Failed to save UPI: " + (err.message || err));
+      }
+    });
+
+    saveWithdrawBtn.addEventListener('click', async () => {
+      const val = upiInput.value.trim();
+      try {
+        if (!val) { showCenterToast("Enter a valid UPI"); return; }
+        await saveUpi(val);
+        // close modal
+        upiModal.style.display = 'none';
+        // proceed withdraw
+        await performWithdraw();
+        // refresh withdraw button (renderWallet or onValue will also handle)
+      } catch (err) {
+        showCenterToast("Error: " + (err.message || err));
+      }
+    });
+
+    cancelUpiBtn.addEventListener('click', () => {
+      upiModal.style.display = 'none';
+    });
+    closeUpiModal.addEventListener('click', () => upiModal.style.display = 'none');
 
     closeModalBtn.onclick = () => bookingModal.style.display = "none";
     bookingModal.onclick = (e) => { if (e.target === bookingModal) bookingModal.style.display = "none"; };
+    upiModal.onclick = (e) => { if (e.target === upiModal) upiModal.style.display = "none"; };
 
     // On auth change: load wallet and check for UPI presence
     onAuthStateChanged(auth, async user => {
@@ -511,10 +603,6 @@ global search under ${BOOKING_PATH_BASE}/*
       onValue(walletRef, snap => {
         walletData = snap.val() || {};
         renderWallet();
-        // ensure withdraw button enabled/disabled based on both unpaid balance and UPI presence
-        const unpaidEntries = Object.entries(walletData || {}).filter(([_, e]) => isUnpaid(e));
-        const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
-        withdrawBtn.disabled = total <= 0 || !driverHasUpiCache;
       }, err => {
         console.error("wallet onValue error:", err);
       });
