@@ -2,15 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Driver Signup - WaveTravel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-functions.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js"></script>
-
+  <title>Driver Signup - WaveTravel</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -21,168 +14,146 @@
       height: 100vh;
       margin: 0;
     }
-    .signup-box {
-      background: white;
-      padding: 20px;
+    .container {
+      background: #fff;
+      padding: 25px;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      width: 350px;
-      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
     }
-    input {
-      width: 90%;
-      padding: 10px;
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
       margin: 8px 0;
-      border: 1px solid #ccc;
       border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
     }
     button {
-      width: 95%;
-      padding: 12px;
-      margin: 10px 0;
-      background: #007bff;
+      background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 8px;
       cursor: pointer;
     }
     button:hover {
-      background: #0056b3;
+      background-color: #0056b3;
     }
-    .toast {
-      background: #333;
-      color: #fff;
-      padding: 10px;
-      border-radius: 6px;
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: none;
+    #recaptcha-container {
+      margin: 15px 0;
+      text-align: center;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>Driver Signup</h2>
 
-<div class="signup-box">
-  <h2>Driver Signup</h2>
-  <input type="text" id="name" placeholder="Full Name" required>
-  <input type="text" id="phone" placeholder="Phone (10 digits)" required>
-  <input type="email" id="email" placeholder="Email" required>
-  <button onclick="driverSignup()">Send OTP</button>
+    <input type="text" id="name" placeholder="Full Name" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="text" id="phone" placeholder="Phone Number (10 digits)" required>
 
-  <div id="otpBox" style="display:none;">
+    <div id="recaptcha-container"></div>
+
+    <button id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
     <input type="text" id="otp" placeholder="Enter OTP">
-    <button onclick="verifyOTP()">Verify OTP</button>
+    <button id="verifyOtpBtn" onclick="verifyOTP()">Verify OTP</button>
   </div>
-</div>
 
-<!-- Toast -->
-<div class="toast" id="toast"></div>
+  <!-- ✅ Firebase SDKs (Compat versions for old-style code) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 
-<!-- Recaptcha -->
-<div id="recaptcha-container"></div>
+  <script>
+    // ✅ Your Firebase Config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com"
+    };
 
-<script>
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSy...",
-    authDomain: "wavetravel-3c4c4.firebaseapp.com",
-    databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-    projectId: "wavetravel-3c4c4",
-    storageBucket: "wavetravel-3c4c4.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:xxxxxx"
-  };
+    // ✅ Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
 
-  // Init Firebase
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.database();
-  const functions = firebase.app().functions("us-central1"); // region must match your deploy
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const functions = firebase.functions();
 
-  let signupData = {};
+    let confirmationResult;
 
-  // Toast helper
-  function showToast(msg) {
-    const t = document.getElementById("toast");
-    t.innerText = msg;
-    t.style.display = "block";
-    setTimeout(() => t.style.display = "none", 3000);
-  }
-
-  async function driverSignup() {
-    const name = document.getElementById("name").value.trim();
-    const phone = document.getElementById("phone").value.trim();
-    const email = document.getElementById("email").value.trim();
-
-    if (!name || !phone || !email) {
-      showToast("Fill all fields.");
-      return;
-    }
-    if (phone.length !== 10) {
-      showToast("Enter a valid 10-digit phone.");
-      return;
-    }
-
-    const fullPhone = "+91" + phone;
-
-    try {
-      // ✅ Call Cloud Function
-      const checkPhoneNumber = firebase.functions().httpsCallable("checkPhoneNumber");
-      const result = await checkPhoneNumber({ phoneNumber: fullPhone });
-
-      if (result.data.exists) {
-        showToast("Phone already registered. Please login.");
+    async function sendOTP() {
+      const phone = document.getElementById("phone").value;
+      if (!/^\d{10}$/.test(phone)) {
+        alert("Enter valid 10-digit phone number");
         return;
       }
 
-      // Save temporarily
-      signupData = { name, phone: fullPhone, email };
+      const fullPhone = "+91" + phone;
 
-      // Setup Recaptcha
-      const verifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
-        size: "invisible"
-      });
+      try {
+        // ✅ Call Cloud Function to check phone in Auth
+        const checkPhone = firebase.functions().httpsCallable("checkPhoneNumber");
+        const res = await checkPhone({ phone: fullPhone });
 
-      const confirmation = await auth.signInWithPhoneNumber(fullPhone, verifier);
-      window.confirmationResult = confirmation;
+        if (res.data.exists) {
+          alert("Phone number already registered. Please login.");
+          return;
+        }
 
-      showToast("OTP sent. Check your phone.");
-      document.getElementById("otpBox").style.display = "block";
+        // ✅ Setup reCAPTCHA
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+          size: 'invisible'
+        });
 
-    } catch (err) {
-      console.error("driverSignup error:", err);
-      showToast("Error sending OTP.");
+        confirmationResult = await auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier);
+        alert("OTP sent successfully!");
+        document.getElementById("sendOtpBtn").disabled = true;
+
+      } catch (error) {
+        console.error("sendOTP error:", error);
+        alert("Error sending OTP: " + error.message);
+      }
     }
-  }
 
-  async function verifyOTP() {
-    const otp = document.getElementById("otp").value.trim();
-    if (!otp) {
-      showToast("Enter OTP.");
-      return;
+    async function verifyOTP() {
+      const otp = document.getElementById("otp").value;
+      if (!otp) {
+        alert("Enter OTP");
+        return;
+      }
+
+      try {
+        const result = await confirmationResult.confirm(otp);
+        const user = result.user;
+
+        // ✅ Save driver data in Realtime DB
+        const driverRef = db.ref("driverdetails/" + user.uid);
+        await driverRef.set({
+          name: document.getElementById("name").value,
+          email: document.getElementById("email").value,
+          phone: "+91" + document.getElementById("phone").value,
+          driverid: user.uid
+        });
+
+        alert("Signup successful!");
+        window.location.href = "driverdashboard.html";
+
+      } catch (error) {
+        console.error("verifyOTP error:", error);
+        alert("Error verifying OTP: " + error.message);
+      }
     }
-
-    try {
-      const result = await window.confirmationResult.confirm(otp);
-      const user = result.user;
-
-      await db.ref("driverdetails/" + user.uid).set({
-        name: signupData.name,
-        phone: signupData.phone,
-        email: signupData.email
-      });
-
-      showToast("Signup successful!");
-      window.location.href = "driverdashboard.html";
-
-    } catch (err) {
-      console.error("verifyOTP error:", err);
-      showToast("Invalid OTP. Try again.");
-    }
-  }
-</script>
-
+  </script>
 </body>
 </html>
