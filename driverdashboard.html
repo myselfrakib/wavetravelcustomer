@@ -90,9 +90,23 @@
     .center-toast.show { display: block; animation: toastIn 180ms ease; }
     @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -45%); } to { opacity: 1; transform: translate(-50%, -50%); } }
 
-    /* UPI modal small form */
-    .upi-row { display:flex; gap:8px; align-items:center; }
-    .upi-input { flex:1; padding:10px; border-radius:8px; border:none; background: rgba(255,255,255,0.04); color:#fff; }
+    /* UPI modal small form (improved readability) */
+    .upi-row { display:flex; gap:8px; align-items:center; margin-top:6px; }
+    /* made background less transparent and dark text for readability */
+    .upi-input {
+      flex:1;
+      padding:12px 14px;
+      border-radius:8px;
+      border:1px solid rgba(0,0,0,0.12);
+      background: rgba(255,255,255,0.95);
+      color:#111;
+      font-weight:600;
+      outline: none;
+      box-sizing: border-box;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08) inset;
+    }
+    .upi-input::placeholder { color:#666; font-weight:500; }
+
     .modal-actions { display:flex; gap:8px; margin-top:12px; }
     .btn-primary { background: #22c55e; color:#000; padding:10px 12px; border-radius:8px; border:none; font-weight:700; cursor:pointer; }
     .btn-secondary { background: transparent; color:#fff; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); cursor:pointer; }
@@ -492,15 +506,14 @@ global search under ${BOOKING_PATH_BASE}/*
       upiModal.style.display = 'flex';
     }
 
-    // Save UPI to driverdetails and users nodes
+    // Save UPI to driverdetails only
     async function saveUpi(upiVal) {
       if (!driverId) throw new Error('Not signed in');
       const cleaned = (upiVal || '').trim();
       if (!cleaned || cleaned.length < 3) throw new Error('Enter a valid UPI id');
       const updates = {};
+      // SAVE ONLY to driverdetails/{uid}/upi as requested
       updates[`driverdetails/${driverId}/upi`] = cleaned;
-      updates[`users/${driverId}/upi`] = cleaned;
-      // write both paths in a single update
       await update(ref(db), updates);
       driverHasUpiCache = true;
       return cleaned;
@@ -532,7 +545,6 @@ global search under ${BOOKING_PATH_BASE}/*
 
     // Withdraw click: open modal (so user can enter/update upi), or if UPI present prompt to confirm withdraw via modal
     withdrawBtn.onclick = async () => {
-      // If there is UPI present, still open modal, prefilled, allowing update and withdraw
       await openUpiModal();
     };
 
@@ -562,7 +574,6 @@ global search under ${BOOKING_PATH_BASE}/*
         upiModal.style.display = 'none';
         // proceed withdraw
         await performWithdraw();
-        // refresh withdraw button (renderWallet or onValue will also handle)
       } catch (err) {
         showCenterToast("Error: " + (err.message || err));
       }
