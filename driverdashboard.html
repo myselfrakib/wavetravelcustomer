@@ -513,7 +513,7 @@ global search under ${BOOKING_PATH_BASE}/*
       if (!cleaned || cleaned.length < 3) throw new Error('Enter a valid UPI id');
       const updates = {};
       // SAVE ONLY to driverdetails/{uid}/upi as requested
-      updates[`driverdetails/${driverId}/upi`] = cleaned;
+      updates[`driverdetails/${driverId}/upiId`] = cleaned;
       await update(ref(db), updates);
       driverHasUpiCache = true;
       return cleaned;
