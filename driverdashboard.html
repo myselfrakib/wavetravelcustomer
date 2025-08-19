@@ -69,6 +69,26 @@
     .navbar { position:fixed; bottom:0; width:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(10px); display:flex; justify-content:space-around; align-items:center; padding:12px 0; z-index:999; }
     .navbar a { color:#fff; text-decoration:none; font-size:0.75rem; display:flex; flex-direction:column; align-items:center; }
     .navbar a i { font-size:1.15rem; margin-bottom:4px; }
+
+    /* Centered toast (for UPI messages) */
+    .center-toast {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 14px 18px;
+      border-radius: 10px;
+      z-index: 1200;
+      min-width: 240px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      display: none;
+      font-weight: 600;
+    }
+    .center-toast.show { display: block; animation: toastIn 180ms ease; }
+    @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -45%); } to { opacity: 1; transform: translate(-50%, -50%); } }
   </style>
 </head>
 <body>
@@ -108,6 +128,9 @@
     <a href="driverprofile.html"><i class="fas fa-user"></i><span>Profile</span></a>
   </div>
 
+  <!-- Center toast element -->
+  <div id="centerToast" class="center-toast" role="status" aria-live="polite"></div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import { getDatabase, ref, onValue, update, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
@@ -131,9 +154,11 @@
     const bookingModal = document.getElementById("bookingModal");
     const bookingContent = document.getElementById("bookingContent");
     const closeModalBtn = document.getElementById("closeModal");
+    const centerToastEl = document.getElementById("centerToast");
 
     let driverId = null;
     let walletData = {};
+    let driverHasUpiCache = false;
 
     function isUnpaid(entry) {
       if (!entry) return false;
@@ -180,12 +205,59 @@
       return undefined;
     }
 
+    // Show centered toast
+    function showCenterToast(message, duration = 2800) {
+      centerToastEl.textContent = message;
+      centerToastEl.classList.add('show');
+      clearTimeout(centerToastEl._timeout);
+      centerToastEl._timeout = setTimeout(() => {
+        centerToastEl.classList.remove('show');
+      }, duration);
+    }
+
+    // Check multiple likely DB paths for UPI id presence
+    async function checkDriverUPI(uid) {
+      if (!uid) return false;
+      const candidates = [
+        `driverdetails/${uid}/upi`,
+        `driverdetails/${uid}/upiId`,
+        `driverdetails/${uid}/vpa`,
+        `users/${uid}/upi`,
+        `users/${uid}/upiId`,
+        `users/${uid}/vpa`,
+        `driverProfile/${uid}/upi`,
+        `driverProfile/${uid}/upiId`,
+        `driverWallet/${uid}/upi`,
+        `driverWallet/${uid}/vpa`
+      ];
+      try {
+        for (const p of candidates) {
+          try {
+            const snap = await get(child(ref(db), p));
+            if (snap && snap.exists()) {
+              const val = snap.val();
+              // treat non-empty strings as valid UPI
+              if (typeof val === 'string' && val.trim().length > 3) return val.trim();
+              // Also allow nested objects like { id: 'upi@bank' } etc.
+              if (typeof val === 'object' && val !== null) {
+                // try to find reasonable string inside object
+                for (const kk of ['upi','vpa','upiId','id','value']) {
+                  if (kk in val && typeof val[kk] === 'string' && val[kk].trim().length > 3) return val[kk].trim();
+                }
+              }
+            }
+          } catch(e) {
+            // ignore single-path errors and continue
+            console.warn('checkDriverUPI path error', p, e);
+          }
+        }
+      } catch (err) {
+        console.error('checkDriverUPI error', err);
+      }
+      return false;
+    }
+
     // Robust booking lookup and display:
-    // 1) bookings/{driverId}/{bookingId}
-    // 2) bookings/{bookingId}  (if stored at root)
-    // 3) driverWallet/{driverId}/{bookingId}.booking (if embedded object)
-    // 4) driverWallet entry's booking if it is a bookingId -> search bookings/*/{thatId}
-    // 5) global search: bookings/*/{bookingId}
     async function showBookingDetails(bookingId) {
       bookingContent.textContent = "Loading booking...";
       bookingModal.style.display = "flex";
@@ -222,11 +294,9 @@
           const wSnap = await get(child(ref(db), wPath));
           if (wSnap && wSnap.exists()) {
             const w = wSnap.val();
-            // embedded booking object
             if (w.booking && typeof w.booking === 'object') {
               booking = w.booking;
             } else if (w.booking && typeof w.booking === 'string') {
-              // booking contains another bookingId — try to locate it under bookings/*
               const candidateId = w.booking;
               const globalSnap = await get(ref(db, BOOKING_PATH_BASE));
               if (globalSnap && globalSnap.exists()) {
@@ -271,7 +341,7 @@ global search under ${BOOKING_PATH_BASE}/*
         // Render booking details (intelligently picking available keys)
         bookingContent.innerHTML = '';
         bookingContent.appendChild(createDetailRow('Booking ID', bookingId));
-        bookingContent.appendChild(createDetailRow('Customer Name', safeGet(booking, 'userName', 'customerName', 'userName', 'userName') || safeGet(booking, 'userName') || safeGet(booking, 'customerName')));
+        bookingContent.appendChild(createDetailRow('Customer Name', safeGet(booking, 'userName', 'customerName', 'userName') || safeGet(booking, 'userName') || safeGet(booking, 'customerName')));
         bookingContent.appendChild(createDetailRow('Pickup Location', safeGet(booking, 'pickup', 'pickupLocation')));
         bookingContent.appendChild(createDetailRow('Dropoff Location', safeGet(booking, 'dropoff', 'dropoffLocation')));
         const rawTime = safeGet(booking, 'time', 'pickupTime');
@@ -324,7 +394,8 @@ global search under ${BOOKING_PATH_BASE}/*
       const unpaidEntries = entries.filter(([_, e]) => isUnpaid(e));
       const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
       balanceEl.textContent = `₹${total.toFixed(2)}`;
-      withdrawBtn.disabled = total <= 0;
+      // enable withdraw only if there's unpaid balance AND driver has UPI
+      withdrawBtn.disabled = total <= 0 || !driverHasUpiCache;
 
       cardList.innerHTML = "";
       entries.forEach(([id, e]) => {
@@ -346,15 +417,12 @@ global search under ${BOOKING_PATH_BASE}/*
       document.querySelectorAll(".showBookingBtn").forEach(btn => {
         btn.onclick = async () => {
           const bookingId = btn.dataset.booking;
-          // If wallet entry contains an embedded booking object or bookingId, prefer that first (helps when wallet key != bookings key)
           try {
-            // attempt to read the wallet entry to check if it embeds booking
             if (driverId && bookingId) {
               const wSnap = await get(child(ref(db), `driverWallet/${driverId}/${bookingId}`));
               if (wSnap && wSnap.exists()) {
                 const w = wSnap.val();
                 if (w.booking && typeof w.booking === 'object') {
-                  // show embedded booking directly without additional fetch
                   bookingContent.innerHTML = '';
                   bookingModal.style.display = "flex";
                   const embedded = w.booking;
@@ -367,7 +435,6 @@ global search under ${BOOKING_PATH_BASE}/*
                   bookingContent.appendChild(createDetailRow('Status', embedded.status || (embedded.paidout ? 'Paid' : 'Unpaid')));
                   return;
                 }
-                // if wallet entry's booking is a bookingId string, prefer that id
                 if (w.booking && typeof w.booking === 'string') {
                   await showBookingDetails(w.booking);
                   return;
@@ -375,46 +442,79 @@ global search under ${BOOKING_PATH_BASE}/*
               }
             }
           } catch (e) {
-            // ignore and fallback to generic showBookingDetails flow
             console.warn('Error checking embedded booking in wallet entry', e);
           }
-
-          // fallback to generic lookup
           await showBookingDetails(bookingId);
         };
       });
     }
 
+    // Withdraw click handler: only proceeds if UPI exists and unpaid balance exists
     withdrawBtn.onclick = async () => {
-      if (!driverId) return alert("No driver logged in.");
+      if (!driverId) {
+        showCenterToast("Please log in to request withdrawal");
+        return;
+      }
+
+      // re-check if UPI exists (fresh check)
+      const upiVal = await checkDriverUPI(driverId);
+      driverHasUpiCache = !!upiVal;
+      if (!driverHasUpiCache) {
+        showCenterToast("Please Update your upi id to make withdrawal");
+        return;
+      }
+
+      // compute unpaid entries
       const updates = {};
       for (const [id, entry] of Object.entries(walletData || {})) {
         if (isUnpaid(entry)) updates[`driverWallet/${driverId}/${id}/status`] = "processing";
       }
-      if (!Object.keys(updates).length) return alert("No unpaid balance to withdraw.");
+      if (!Object.keys(updates).length) {
+        showCenterToast("No unpaid balance to withdraw.");
+        return;
+      }
       try {
         await update(ref(db), updates);
-        alert("Withdrawal request sent — entries marked as 'processing'.");
+        showCenterToast("Withdrawal request sent — entries marked as 'processing'.");
       } catch (err) {
-        alert("Failed to send withdraw request: " + (err.message || err));
+        showCenterToast("Failed to send withdraw request: " + (err.message || err));
+        console.error("withdraw error", err);
       }
     };
 
     closeModalBtn.onclick = () => bookingModal.style.display = "none";
     bookingModal.onclick = (e) => { if (e.target === bookingModal) bookingModal.style.display = "none"; };
 
-    onAuthStateChanged(auth, user => {
+    // On auth change: load wallet and check for UPI presence
+    onAuthStateChanged(auth, async user => {
       if (!user) {
         balanceEl.textContent = "Please log in.";
         cardList.innerHTML = `<div class="entry-card muted">Log in to see data</div>`;
         driverId = null;
+        driverHasUpiCache = false;
+        withdrawBtn.disabled = true;
         return;
       }
       driverId = user.uid;
+
+      // check for driver UPI once at sign-in (and set driverHasUpiCache)
+      try {
+        const upiVal = await checkDriverUPI(driverId);
+        driverHasUpiCache = !!upiVal;
+      } catch(e) {
+        console.warn('UPI check failed', e);
+        driverHasUpiCache = false;
+      }
+
+      // subscribe to wallet changes
       const walletRef = ref(db, `driverWallet/${driverId}`);
       onValue(walletRef, snap => {
         walletData = snap.val() || {};
         renderWallet();
+        // ensure withdraw button enabled/disabled based on both unpaid balance and UPI presence
+        const unpaidEntries = Object.entries(walletData || {}).filter(([_, e]) => isUnpaid(e));
+        const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
+        withdrawBtn.disabled = total <= 0 || !driverHasUpiCache;
       }, err => {
         console.error("wallet onValue error:", err);
       });
