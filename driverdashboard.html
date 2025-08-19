@@ -158,13 +158,13 @@
       <div>
         <label style="display:block;margin-bottom:8px;color:#ffd1f4;font-weight:600">UPI (VPA)</label>
         <div class="upi-row">
-          <input id="upiInput" class="upi-input" type="text" placeholder="example@bank" aria-label="UPI id" data-valid="false"/>
+          <input id="upiInput" class="upi-input" type="text" placeholder="example@bank" aria-label="UPI id"/>
         </div>
-        <div id="upiHint" style="margin-top:8px;font-size:13px;color:#e9c7ef">We'll save this UPI to your profile and use it for withdrawals.</div>
+        <div style="margin-top:8px;font-size:13px;color:#e9c7ef">We'll save this UPI to your profile and use it for withdrawals.</div>
 
         <div class="modal-actions">
-          <button id="saveUpiBtn" class="btn-primary btn-disabled" disabled>Save</button>
-          <button id="saveWithdrawBtn" class="btn-primary btn-disabled" disabled>Save & Withdraw</button>
+          <button id="saveUpiBtn" class="btn-primary">Save</button>
+          <button id="saveWithdrawBtn" class="btn-primary">Save & Withdraw</button>
           <button id="cancelUpiBtn" class="btn-secondary">Cancel</button>
         </div>
       </div>
@@ -214,7 +214,6 @@
     const saveWithdrawBtn = document.getElementById("saveWithdrawBtn");
     const cancelUpiBtn = document.getElementById("cancelUpiBtn");
     const closeUpiModal = document.getElementById("closeUpiModal");
-    const upiHint = document.getElementById("upiHint");
 
     let driverId = null;
     let walletData = {};
@@ -275,69 +274,36 @@
       }, duration);
     }
 
-    // Client-side UPI validation: simple rule - must contain '@' and no spaces
-    function validUpi(upi) {
-      if (!upi || typeof upi !== 'string') return false;
-      // basic: one @, no spaces, some chars either side
-      return /^[^\s@]+@[^\s@]+$/.test(upi.trim());
-    }
-
-    // update UI state for upi input (live feedback)
-    function updateUpiValidationUI() {
-      const val = upiInput.value.trim();
-      const ok = validUpi(val);
-      upiInput.setAttribute('data-valid', ok ? 'true' : 'false');
-      if (ok) {
-        saveUpiBtn.classList.remove('btn-disabled');
-        saveUpiBtn.disabled = false;
-        saveWithdrawBtn.classList.remove('btn-disabled');
-        saveWithdrawBtn.disabled = false;
-        upiHint.textContent = "Looks good — ready to save.";
-        upiHint.style.color = "#9ae6b4"; // light green hint
-      } else {
-        saveUpiBtn.classList.add('btn-disabled');
-        saveUpiBtn.disabled = true;
-        saveWithdrawBtn.classList.add('btn-disabled');
-        saveWithdrawBtn.disabled = true;
-        upiHint.textContent = "UPI should contain '@' and no spaces (e.g. example@bank).";
-        upiHint.style.color = "#fda4af"; // light red hint
-      }
-    }
-
-    // Check multiple likely DB paths for UPI id presence
+    // --- NEW: simplified and resilient UPI lookup ---
+    // Only try the canonical path driverdetails/{uid}/upiId and fall back to driverdetails/{uid}/upi.
+    // Permission-denied errors are ignored silently to avoid console spam.
     async function checkDriverUPI(uid) {
       if (!uid) return false;
-      const candidates = [
-        `driverdetails/${uid}/upi`,
+      const paths = [
         `driverdetails/${uid}/upiId`,
-        `driverdetails/${uid}/vpa`,
-        `users/${uid}/upi`,
-        `users/${uid}/upiId`,
-        `users/${uid}/vpa`,
-        `driverProfile/${uid}/upi`,
-        `driverProfile/${uid}/upiId`,
-        `driverWallet/${uid}/upi`,
-        `driverWallet/${uid}/vpa`
+        `driverdetails/${uid}/upi`
       ];
-      try {
-        for (const p of candidates) {
-          try {
-            const snap = await get(child(ref(db), p));
-            if (snap && snap.exists()) {
-              const val = snap.val();
-              if (typeof val === 'string' && val.trim().length > 3) return val.trim();
-              if (typeof val === 'object' && val !== null) {
-                for (const kk of ['upi','vpa','upiId','id','value']) {
-                  if (kk in val && typeof val[kk] === 'string' && val[kk].trim().length > 3) return val[kk].trim();
-                }
+      for (const p of paths) {
+        try {
+          const snap = await get(child(ref(db), p));
+          if (snap && snap.exists()) {
+            const val = snap.val();
+            if (typeof val === 'string' && val.trim().length > 0) return val.trim();
+            if (typeof val === 'object' && val !== null) {
+              // try to extract string values if stored as object
+              for (const kk of ['upi','vpa','upiId','id','value']) {
+                if (kk in val && typeof val[kk] === 'string' && val[kk].trim().length > 0) return val[kk].trim();
               }
             }
-          } catch(e) {
-            console.warn('checkDriverUPI path error', p, e);
           }
+        } catch (err) {
+          // Ignore permission-denied (common when rules restrict read). Log other errors.
+          const msg = String(err && err.message ? err.message : err);
+          if (!/permission denied/i.test(msg)) {
+            console.error('checkDriverUPI unexpected error for path', p, err);
+          }
+          // continue to next path without noisy console warnings
         }
-      } catch (err) {
-        console.error('checkDriverUPI error', err);
       }
       return false;
     }
@@ -355,26 +321,35 @@
       let booking = null;
 
       try {
+        // 1) Try bookings/{driverId}/{bookingId}
         if (driverId) {
           const p1 = `${BOOKING_PATH_BASE}/${driverId}/${bookingId}`;
           const snap1 = await get(child(ref(db), p1));
-          if (snap1 && snap1.exists()) booking = snap1.val();
+          if (snap1 && snap1.exists()) {
+            booking = snap1.val();
+          }
         }
 
+        // 2) Try bookings/{bookingId}
         if (!booking) {
           const p2 = `${BOOKING_PATH_BASE}/${bookingId}`;
           const snap2 = await get(child(ref(db), p2));
-          if (snap2 && snap2.exists()) booking = snap2.val();
+          if (snap2 && snap2.exists()) {
+            booking = snap2.val();
+          }
         }
 
+        // 3) Check driverWallet entry for an embedded booking object or booking id
         if (!booking && driverId) {
           const wPath = `driverWallet/${driverId}/${bookingId}`;
           const wSnap = await get(child(ref(db), wPath));
           if (wSnap && wSnap.exists()) {
             const w = wSnap.val();
+            // embedded booking object
             if (w.booking && typeof w.booking === 'object') {
               booking = w.booking;
             } else if (w.booking && typeof w.booking === 'string') {
+              // booking contains another bookingId — try to locate it under bookings/*
               const candidateId = w.booking;
               const globalSnap = await get(ref(db, BOOKING_PATH_BASE));
               if (globalSnap && globalSnap.exists()) {
@@ -391,6 +366,7 @@
           }
         }
 
+        // 4) Global search: bookings/*/{bookingId}
         if (!booking) {
           const globalSnap = await get(ref(db, BOOKING_PATH_BASE));
           if (globalSnap && globalSnap.exists()) {
@@ -415,6 +391,7 @@ global search under ${BOOKING_PATH_BASE}/*
           return;
         }
 
+        // Render booking details (intelligently picking available keys)
         bookingContent.innerHTML = '';
         bookingContent.appendChild(createDetailRow('Booking ID', bookingId));
         bookingContent.appendChild(createDetailRow('Customer Name', safeGet(booking, 'userName', 'customerName', 'userName') || safeGet(booking, 'userName') || safeGet(booking, 'customerName')));
@@ -434,6 +411,7 @@ global search under ${BOOKING_PATH_BASE}/*
         }
         if (booking.notes || booking.note) bookingContent.appendChild(createDetailRow('Notes', booking.notes || booking.note));
 
+        // show additional keys that were not displayed
         const shown = new Set(['userName','customerName','pickup','pickupLocation','dropoff','dropoffLocation','time','pickupTime','fare','amount','price','paymentAmount','status','paidout','bookedAt','createdAt','driverName','driverId','driverNumber','notes','note']);
         const extra = {};
         for (const k in booking) if (!shown.has(k)) extra[k] = booking[k];
@@ -493,6 +471,7 @@ global search under ${BOOKING_PATH_BASE}/*
       document.querySelectorAll(".showBookingBtn").forEach(btn => {
         btn.onclick = async () => {
           const bookingId = btn.dataset.booking;
+          // If wallet entry contains an embedded booking object or bookingId, prefer that first (helps when wallet key != bookings key)
           try {
             if (driverId && bookingId) {
               const wSnap = await get(child(ref(db), `driverWallet/${driverId}/${bookingId}`));
@@ -511,6 +490,7 @@ global search under ${BOOKING_PATH_BASE}/*
                   bookingContent.appendChild(createDetailRow('Status', embedded.status || (embedded.paidout ? 'Paid' : 'Unpaid')));
                   return;
                 }
+                // if wallet entry's booking is a bookingId string, prefer that id
                 if (w.booking && typeof w.booking === 'string') {
                   await showBookingDetails(w.booking);
                   return;
@@ -518,14 +498,34 @@ global search under ${BOOKING_PATH_BASE}/*
               }
             }
           } catch (e) {
+            // ignore and fallback to generic showBookingDetails flow
             console.warn('Error checking embedded booking in wallet entry', e);
           }
+
+          // fallback to generic lookup
           await showBookingDetails(bookingId);
         };
       });
     }
 
-    // Open UPI modal; prefill if existing
+    withdrawBtn.onclick = async () => {
+      // Open UPI modal to allow entering/updating UPI before withdrawing
+      if (!driverId) {
+        showCenterToast("Please log in to request withdrawal");
+        return;
+      }
+
+      // open UPI modal (it will prefill if upi exists)
+      openUpiModal().catch(err => {
+        console.error('openUpiModal error:', err);
+        showCenterToast("Unable to open UPI modal.");
+      });
+    };
+
+    closeModalBtn.onclick = () => bookingModal.style.display = "none";
+    bookingModal.onclick = (e) => { if (e.target === bookingModal) bookingModal.style.display = "none"; };
+
+    // UPI modal functions (reuse existing logic)
     async function openUpiModal() {
       if (!driverId) {
         showCenterToast("Please log in to update UPI");
@@ -533,13 +533,13 @@ global search under ${BOOKING_PATH_BASE}/*
       }
       upiInput.value = '';
       try {
+        // Only look at canonical path(s) — checkDriverUPI is now safe and minimal
         const upiVal = await checkDriverUPI(driverId);
         if (upiVal) upiInput.value = upiVal;
       } catch(e) {
+        // don't spam console on permission issues — checkDriverUPI handles that
         console.warn('prefill UPI failed', e);
       }
-      // update UI validation state after prefilling
-      updateUpiValidationUI();
       upiModal.style.display = 'flex';
     }
 
@@ -548,9 +548,9 @@ global search under ${BOOKING_PATH_BASE}/*
       if (!driverId) throw new Error('Not signed in');
       const cleaned = (upiVal || '').trim();
       if (!cleaned || cleaned.length < 3) throw new Error('Enter a valid UPI id');
-      if (!validUpi(cleaned)) throw new Error('UPI must contain @ and no spaces');
+      // basic client-side validation: must contain '@' and no spaces
+      if (!/^[^\s@]+@[^\s@]+$/.test(cleaned)) throw new Error('Invalid UPI format');
       const updates = {};
-      // SAVE ONLY to driverdetails/{uid}/upiId as requested
       updates[`driverdetails/${driverId}/upiId`] = cleaned;
       await update(ref(db), updates);
       driverHasUpiCache = true;
@@ -581,16 +581,11 @@ global search under ${BOOKING_PATH_BASE}/*
       }
     }
 
-    // Withdraw click: open modal (so user can enter/update upi), or if UPI present prompt to confirm withdraw via modal
-    withdrawBtn.onclick = async () => {
-      await openUpiModal();
-    };
-
     // UPI modal event handlers
     saveUpiBtn.addEventListener('click', async () => {
       const val = upiInput.value.trim();
       try {
-        if (!validUpi(val)) { showCenterToast("Enter a valid UPI (must contain '@' and no spaces)"); return; }
+        if (!val) { showCenterToast("Enter a valid UPI"); return; }
         await saveUpi(val);
         showCenterToast("UPI saved.");
         upiModal.style.display = 'none';
@@ -606,11 +601,9 @@ global search under ${BOOKING_PATH_BASE}/*
     saveWithdrawBtn.addEventListener('click', async () => {
       const val = upiInput.value.trim();
       try {
-        if (!validUpi(val)) { showCenterToast("Enter a valid UPI (must contain '@' and no spaces)"); return; }
+        if (!val) { showCenterToast("Enter a valid UPI"); return; }
         await saveUpi(val);
-        // close modal
         upiModal.style.display = 'none';
-        // proceed withdraw
         await performWithdraw();
       } catch (err) {
         showCenterToast("Error: " + (err.message || err));
@@ -621,13 +614,19 @@ global search under ${BOOKING_PATH_BASE}/*
       upiModal.style.display = 'none';
     });
     closeUpiModal.addEventListener('click', () => upiModal.style.display = 'none');
-
-    // Live validation as user types
-    upiInput.addEventListener('input', updateUpiValidationUI);
-
-    closeModalBtn.onclick = () => bookingModal.style.display = "none";
-    bookingModal.onclick = (e) => { if (e.target === bookingModal) bookingModal.style.display = "none"; };
     upiModal.onclick = (e) => { if (e.target === upiModal) upiModal.style.display = "none"; };
+
+    // Live validation as user types (optional UX improvement)
+    function validUpi(upi) { return /^[^\s@]+@[^\s@]+$/.test((upi||'').trim()); }
+    function updateUpiValidationUI() {
+      const ok = validUpi(upiInput.value);
+      upiInput.setAttribute('data-valid', ok ? 'true' : 'false');
+      saveUpiBtn.disabled = !ok;
+      saveWithdrawBtn.disabled = !ok;
+      saveUpiBtn.classList.toggle('btn-disabled', !ok);
+      saveWithdrawBtn.classList.toggle('btn-disabled', !ok);
+    }
+    upiInput.addEventListener('input', updateUpiValidationUI);
 
     // On auth change: load wallet and check for UPI presence
     onAuthStateChanged(auth, async user => {
@@ -646,7 +645,7 @@ global search under ${BOOKING_PATH_BASE}/*
         const upiVal = await checkDriverUPI(driverId);
         driverHasUpiCache = !!upiVal;
       } catch(e) {
-        console.warn('UPI check failed', e);
+        // since checkDriverUPI suppresses permission-denied logs, this should be quiet
         driverHasUpiCache = false;
       }
 
