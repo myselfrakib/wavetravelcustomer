@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Driver Signup — WaveTravel</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+/* (same styles as you provided) */
 body {
   font-family: 'Roboto', sans-serif;
   background: linear-gradient(to right, #6a11cb, #2575fc);
@@ -100,12 +101,17 @@ button:disabled { background: #999; cursor: not-allowed; }
 
 <div id="toast"></div>
 
-<!-- Firebase 10 compat SDKs -->
+<!-- Firebase 10 compat SDKs (app, auth, database, functions-compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+<!-- functions-compat to use callable functions via firebase.functions() (compat mode) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
 
 <script>
+/* === Firebase config ===
+   Replace with your values if they differ — these match your project from earlier messages.
+*/
 const firebaseConfig = {
   apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
   authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -119,10 +125,14 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const database = firebase.database();
+const functions = firebase.functions(); // compat callable functions
 let confirmationResultGlobal = null;
 
 window.onload = () => {
+  // reCAPTCHA verifier (invisible)
   window.reCAPTCHAVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
+  // Render explicitly for certain browsers (not necessary with invisible, but safe)
+  window.reCAPTCHAVerifier.render().catch(()=>{/* ignore for invisible */});
 };
 
 function showToast(msg) {
@@ -139,7 +149,7 @@ const verifyBtn = document.getElementById('verifyBtn');
 const resendBtn = document.getElementById('resendBtn');
 const otpInputs = document.querySelectorAll('.otp-box');
 
-// OTP auto-focus
+// OTP input focus behavior (unchanged)
 otpInputs.forEach((input, index) => {
   input.addEventListener('input', () => {
     if (input.value.length === 1 && index < otpInputs.length - 1) otpInputs[index + 1].focus();
@@ -149,8 +159,27 @@ otpInputs.forEach((input, index) => {
   });
 });
 
+/**
+ * Helper: call Cloud Function to check if a phone (E.164) exists in Firebase Auth
+ * Returns boolean
+ */
+async function checkPhoneExistsInAuth(phoneE164) {
+  try {
+    // Ensure functions callable is available
+    const checkPhone = functions.httpsCallable('checkPhoneNumber');
+    const res = await checkPhone({ phone: phoneE164 });
+    return !!(res && res.data && res.data.exists);
+  } catch (err) {
+    // If App Check is enabled and token missing, function will throw failed-precondition
+    console.error("checkPhoneExistsInAuth error:", err);
+    // For UX, show safe message and stop signup
+    showToast('Could not verify phone. Try again later.');
+    throw err;
+  }
+}
+
 // Send OTP
-signupForm.addEventListener('submit', function(e){
+signupForm.addEventListener('submit', async function(e){
   e.preventDefault();
   const name = document.getElementById('name').value.trim();
   const phone = document.getElementById('phone').value.trim();
@@ -159,46 +188,61 @@ signupForm.addEventListener('submit', function(e){
 
   if (!name || !phone || !email) { showToast('Please fill all fields.'); return; }
 
-  // Add spinner to button
   signupBtn.disabled = true;
-  signupBtn.innerHTML = 'Sending OTP <span class="spinner"></span>';
+  signupBtn.innerHTML = 'Checking <span class="spinner"></span>';
 
-  database.ref('driverdetails').once('value', snapshot => {
-    let exists = false;
+  try {
+    // 1) Call Cloud Function to check if an Auth user already exists with this phone
+    const authExists = await checkPhoneExistsInAuth(fullPhone);
+    if (authExists) {
+      showToast('This phone is already registered. Please sign in.');
+      signupBtn.disabled = false;
+      signupBtn.innerText = 'Send OTP';
+      return;
+    }
+
+    // 2) Then check your Realtime DB driverdetails as before (keep the original behavior)
+    const snapshot = await database.ref('driverdetails').once('value');
+    let existsInDB = false;
     snapshot.forEach(child => {
       const val = child.val();
-      if(val.phone === fullPhone || val.email === email) exists = true;
+      if (val.phone === fullPhone || val.email === email) existsInDB = true;
     });
-    if(exists){
+    if (existsInDB) {
       showToast('This number or email address is already being used');
       signupBtn.disabled = false;
       signupBtn.innerText = 'Send OTP';
       return;
     }
 
-    auth.signInWithPhoneNumber(fullPhone, window.reCAPTCHAVerifier)
-      .then(res => {
-        confirmationResultGlobal = res;
-        showToast('OTP sent! Check your phone.');
-        otpSection.style.display = 'block';
-        otpInputs.forEach(i=>i.value='');
-        otpInputs[0].focus();
-        // Remove Send OTP button after OTP is sent
-        signupBtn.style.display = 'none';
-        startResendCountdown();
-      })
-      .catch(err => {
-        showToast('Error sending OTP: ' + err.message);
-        signupBtn.disabled = false;
-        signupBtn.innerText = 'Send OTP';
-      });
-  });
+    // 3) Send OTP as before
+    signupBtn.innerHTML = 'Sending OTP <span class="spinner"></span>';
+    const result = await auth.signInWithPhoneNumber(fullPhone, window.reCAPTCHAVerifier);
+    confirmationResultGlobal = result;
+    showToast('OTP sent! Check your phone.');
+    otpSection.style.display = 'block';
+    otpInputs.forEach(i=>i.value='');
+    otpInputs[0].focus();
+    signupBtn.style.display = 'none';
+    startResendCountdown();
+  } catch (err) {
+    // error already shown in checkPhoneExistsInAuth or here
+    console.error(err);
+    if (!err.message) {
+      showToast('Error: Unable to process request.');
+    } else {
+      // if error from auth/signInWithPhoneNumber show message
+      showToast('Error: ' + err.message);
+    }
+    signupBtn.disabled = false;
+    signupBtn.innerText = 'Send OTP';
+  }
 });
 
-// Verify OTP
+// Verify OTP (unchanged logic except minor adjustments)
 verifyBtn.addEventListener('click', () => {
   const otp = Array.from(otpInputs).map(input => input.value).join('');
-  if(otp.length !== 6){ showToast('Enter complete 6-digit OTP'); return; }
+  if (otp.length !== 6){ showToast('Enter complete 6-digit OTP'); return; }
 
   confirmationResultGlobal.confirm(otp)
     .then(userCredential => {
@@ -218,7 +262,7 @@ verifyBtn.addEventListener('click', () => {
     .catch(err => { showToast('Invalid OTP: '+err.message); });
 });
 
-// Resend OTP with 60-sec countdown
+// Resend OTP with 60-sec countdown (unchanged)
 function startResendCountdown(){
   resendBtn.style.display='block';
   resendBtn.disabled=true;
@@ -249,6 +293,5 @@ resendBtn.addEventListener('click', ()=>{
     .catch(err => { showToast('Error resending OTP: ' + err.message); resendBtn.disabled=false; });
 });
 </script>
-
 </body>
 </html>
