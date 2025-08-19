@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WaveTravel - Sign Up</title>
+  <title>WaveTravel - Sign Up (OTP)</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -21,7 +21,7 @@
       padding: 30px;
       border-radius: 15px;
       width: 90%;
-      max-width: 400px;
+      max-width: 420px;
     }
 
     h2, h3 {
@@ -58,29 +58,48 @@
     .login-link a:hover {
       text-decoration: underline;
     }
+
+    .small {
+      font-size: 13px;
+      color: #e9c7ef;
+    }
+
+    #otpSection { display: none; }
+    #spinner { display: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>WaveTravel</h2>
-    <h3>Create Account</h3>
+    <h3>Create Account (Phone OTP)</h3>
+
     <input type="text" id="name" placeholder="Full Name" />
-    <input type="email" id="email" placeholder="Email Address" />
-    <input type="text" id="phone" placeholder="Phone Number" />
-    <input type="password" id="password" placeholder="Password" />
-    <button id="signupBtn">Sign Up</button>
-    <div class="login-link">
+    <input type="email" id="email" placeholder="Email Address (optional)" />
+    <input type="text" id="phone" placeholder="Phone Number (10 digits)" />
+
+    <div id="sendSection">
+      <button id="sendOtpBtn">Send OTP</button>
+    </div>
+
+    <div id="otpSection">
+      <input type="text" id="otp" placeholder="Enter OTP" />
+      <button id="verifyOtpBtn">Verify & Create Account</button>
+    </div>
+
+    <div id="recaptcha-container"></div>
+
+    <div class="login-link small">
       Already have an account? <a href="index.html">Login here</a>
     </div>
   </div>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
   <script>
-    // Firebase config
+    // ====== CONFIG ======
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -96,44 +115,121 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // Sign-up handler
-    document.getElementById('signupBtn').addEventListener('click', async () => {
-      const name     = document.getElementById('name').value.trim();
-      const email    = document.getElementById('email').value.trim();
-      const phone    = document.getElementById('phone').value.trim();
-      const password = document.getElementById('password').value;
+    // UI elements
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const phoneInput = document.getElementById('phone');
+    const sendOtpBtn = document.getElementById('sendOtpBtn');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const otpSection = document.getElementById('otpSection');
+    const sendSection = document.getElementById('sendSection');
 
-      // Validate inputs
-      if (!name || !email || !phone || !password) {
-        alert('Please fill in all fields.');
-        return;
+    // Make sure reCAPTCHA is rendered (invisible)
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      'size': 'invisible',
+      'callback': (response) => {
+        // reCAPTCHA solved - allow send OTP
+        // (we won't rely solely on this callback because we call signInWithPhoneNumber)
       }
-      if (!/^\d{10}$/.test(phone)) {
-        alert('Enter a valid 10-digit phone number.');
-        return;
-      }
+    });
+
+    // Helper: show toast-like alerts (simple)
+    function toast(msg) {
+      alert(msg);
+    }
+
+    // Validate 10-digit phone
+    function validPhone(phone) {
+      return /^\d{10}$/.test(phone);
+    }
+
+    // Check if phone already exists in /users
+    async function phoneExists(fullPhone) {
+      const snapshot = await db.ref('users').orderByChild('phone').equalTo(fullPhone).once('value');
+      return snapshot.exists();
+    }
+
+    sendOtpBtn.addEventListener('click', async () => {
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const phone = phoneInput.value.trim();
+
+      if (!name) { toast('Please enter your name.'); return; }
+      if (!phone) { toast('Please enter phone number.'); return; }
+      if (!validPhone(phone)) { toast('Enter a valid 10-digit phone number.'); return; }
+
+      const fullPhone = '+91' + phone;
 
       try {
-        // Create user in Firebase Authentication
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const uid = userCredential.user.uid;
+        // Optional: prevent creating duplicate users with same phone
+        if (await phoneExists(fullPhone)) {
+          toast('Phone number already registered. Please login instead.');
+          return;
+        }
 
-        // Save user details in Realtime Database under /users/{uid}
-        // Prefix the phone number with +91 before saving (keeps other fields the same)
-        await db.ref('users/' + uid).set({
-          name:  name,
-          email: email,
-          phone: '+91' + phone,
-          role:  'customer'
-        });
+        // Use the invisible reCAPTCHA verifier
+        const appVerifier = window.recaptchaVerifier;
 
-        alert('Account created successfully!');
-        // Redirect to login page
-        window.location.href = 'index.html';
+        // send OTP
+        const confirmationResult = await auth.signInWithPhoneNumber(fullPhone, appVerifier);
+        // store confirmationResult globally to verify later
+        window.confirmationResult = confirmationResult;
+
+        toast('OTP sent to ' + fullPhone + '.');
+
+        // switch UI to OTP entry
+        sendSection.style.display = 'none';
+        otpSection.style.display = 'block';
 
       } catch (error) {
-        console.error('Signup error:', error);
-        alert('Error: ' + error.message);
+        console.error('Error sending OTP:', error);
+        // If reCAPTCHA expired or failed, reset and inform user
+        try { window.recaptchaVerifier.render().then(widgetId => grecaptcha.reset(widgetId)); } catch(e){}
+        toast('Error sending OTP: ' + (error.message || error));
+      }
+    });
+
+    verifyOtpBtn.addEventListener('click', async () => {
+      const code = document.getElementById('otp').value.trim();
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const phone = phoneInput.value.trim();
+      const fullPhone = '+91' + phone;
+
+      if (!code) { toast('Please enter the OTP.'); return; }
+
+      if (!window.confirmationResult) { toast('No OTP request found. Please request OTP again.'); return; }
+
+      try {
+        // Confirm the OTP (this also signs the user in)
+        const result = await window.confirmationResult.confirm(code);
+        const user = result.user;
+        const uid = user.uid;
+
+        // Save user details in Realtime Database under /users/{uid}
+        await db.ref('users/' + uid).set({
+          name: name,
+          email: email || '',
+          phone: fullPhone,
+          role: 'customer'
+        });
+
+        toast('Account created and signed in successfully!');
+
+        // Redirect to dashboard (change if you want another page)
+        window.location.href = 'dashboard.html';
+
+      } catch (error) {
+        console.error('OTP verify error:', error);
+        toast('OTP verification failed: ' + (error.message || error));
+      }
+    });
+
+    // Optional: handle already-signed-in state
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // user already signed in — you can redirect if desired
+        // window.location.href = 'dashboard.html';
       }
     });
   </script>
