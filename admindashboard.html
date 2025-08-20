@@ -347,11 +347,40 @@
     async function loadPending(){ $('#pending-table').hide(); $('#pending-loading').show(); initTable('pending-table',[10]); const snap = await get(ref(db,'pendingcars')); let i=1; if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){ for(const [cid,c] of Object.entries(cars)){ tables['pending-table'].row.add([ i++,did,cid,c.carBrand||'',c.carReg||'',c.driverName||'',c.driverNumber||'',c.ownerName||'',c.seats||'',c.submittedAt||'', `<button class="btn btn-sm btn-success" onclick="approveCar('${did}','${cid}')">Approve</button> <button class="btn btn-sm btn-danger" onclick="deletePending('${did}','${cid}')">Delete</button>` ]).draw(false); } } $('#pending-loading').hide(); $('#pending-table').show();}
     async function loadApproved(){ $('#approved-table').hide(); $('#approved-loading').show(); initTable('approved-table',[8]); const snap = await get(ref(db,'approvedcars')); let i=1; if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){ for(const [cid,c] of Object.entries(cars)){ tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button class="btn btn-sm btn-danger" onclick="deleteApproved('${did}','${cid}')">Delete</button>`]).draw(false); } } $('#approved-loading').hide(); $('#approved-table').show();}
     async function loadSlots(){ $('#slots-table').hide(); $('#slots-loading').show(); initTable('slots-table',[9]); const snap = await get(ref(db,'availableslots')); let i=1; if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())){ const dSnap = await get(ref(db,`driverdetails/${did}`)); const d = dSnap.exists()?dSnap.val():{}; for(const [sid,s] of Object.entries(slots)){ tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button class="btn btn-sm btn-danger" onclick="deleteSlot('${did}','${sid}')">Delete</button>`]).draw(false); } } $('#slots-loading').hide(); $('#slots-table').show();}
-    async function loadBookings(){ $('#bookings-table').hide(); $('#bookings-loading').show(); initTable('bookings-table',[9]); const snap = await get(ref(db,'bookings')); let i=1; if(snap.exists()) for(const [bid,b] of Object.entries(snap.val())){ tables['bookings-table'].row.add([i++,bid,b.customerName||'',b.vehicle||'',b.pickup||'',b.dropoff||'',b.duration||'',b.fare||'',b.status||'',`<button class="btn btn-sm btn-danger" onclick="deleteBooking('${bid}')">Delete</button>`]).draw(false); } $('#bookings-loading').hide(); $('#bookings-table').show();}
 
-    // helper to make safe DOM id
-    function sanitizeId(id){
-      return String(id).replace(/[^a-z0-9\-_]/gi, '-');
+    // Helper: safe stringify for objects (short)
+    function safeDisplay(val){
+      if(val === null || val === undefined) return '';
+      if(typeof val === 'object'){
+        try {
+          const s = JSON.stringify(val);
+          if(s.length > 120) return s.slice(0,120) + '...';
+          return s;
+        } catch(e){
+          return String(val);
+        }
+      }
+      return String(val);
+    }
+
+    // helper to pick first available field from a list
+    function pickField(obj, candidates){
+      for(const key of candidates){
+        // nested path support like 'booking.user.name'
+        if(key.includes('.')){
+          const parts = key.split('.');
+          let cur = obj;
+          let ok = true;
+          for(const p of parts){
+            if(cur && (p in cur)) cur = cur[p];
+            else { ok = false; break; }
+          }
+          if(ok && cur !== undefined && cur !== null) return cur;
+        } else {
+          if(obj && (key in obj) && obj[key] !== undefined && obj[key] !== null && obj[key] !== '') return obj[key];
+        }
+      }
+      return null;
     }
 
     // Determine effective status from driverWallet entry ONLY
@@ -515,7 +544,7 @@
           actionsCell.appendChild(btnPaid);
 
           tr.innerHTML = `<td>${i++}</td>
-                          <td style="min-width:200px"><div><strong>${bookingId}</strong></div><small class="small-muted">${pickup} → ${dropoff}</small></td>
+                          <td style="min-width:200px"><div><strong>${bookingId}</strong></div><small class="small-muted">${escapeHtml(pickup)} → ${escapeHtml(dropoff)}</small></td>
                           <td>₹${isNaN(amount) ? '0.00' : amount.toFixed(2)}</td>
                           <td>₹${fare}</td>
                           <td>${isPaid ? '<span class="badge-paid">Paid</span>' : `<span class="badge-unpaid">${escapeHtml(effective)}</span>`}</td>`;
@@ -584,7 +613,7 @@
 
         let html = `<table class="table table-sm table-bordered">`;
         for(const [label, val] of rows){
-          html += `<tr><th style="width:30%">${label}</th><td>${(val !== undefined && val !== null) ? val : 'N/A'}</td></tr>`;
+          html += `<tr><th style="width:30%">${label}</th><td>${(val !== undefined && val !== null) ? escapeHtml(safeDisplay(val)) : 'N/A'}</td></tr>`;
         }
         html += `</table>`;
         document.getElementById('bookingDetailsBody').innerHTML = html;
@@ -880,6 +909,106 @@
       } catch (err) { showToast('Export failed: ' + (err.message || err),'danger'); }
     }
 
+    // ---------- FIXED loadBookings() ----------
+    async function loadBookings(){
+      $('#bookings-table').hide(); $('#bookings-loading').show();
+      initTable('bookings-table',[9]);
+
+      try {
+        const snap = await get(ref(db,'bookings'));
+        if(!snap.exists()){
+          $('#bookings-loading').hide();
+          $('#bookings-table').show();
+          return;
+        }
+
+        const data = snap.val();
+
+        // helper to process a single booking record (bid, b)
+        function processBookingRow(bid, b, idx){
+          // Try many common field names to be robust to schema differences
+          const customer = pickField(b, ['customerName','userName','customer','name','user','customer.name','user.name']) || '';
+          // vehicle might be an object or string
+          let vehicle = pickField(b, ['vehicle','car','vehicleInfo','carBrand','vehicle.brand','vehicle.model']) || '';
+          if(typeof vehicle === 'object') {
+            // try to create a compact representation
+            vehicle = (vehicle.brand ? vehicle.brand + (vehicle.reg ? ' ('+vehicle.reg+')' : '') : (vehicle.reg || JSON.stringify(vehicle)));
+          }
+          const pickup = pickField(b, ['pickup','from','start','route.pickup','booking.pickup','pickupLocation']) || '';
+          const dropoff = pickField(b, ['dropoff','to','end','route.dropoff','booking.dropoff','dropoffLocation']) || '';
+          const duration = pickField(b, ['duration','tripDuration','timeTaken']) || '';
+          const fare = pickField(b, ['fare','amount','price','booking.fare']) || '';
+          const status = pickField(b, ['status','paymentStatus','state','bookingStatus']) || '';
+
+          // fallback: if many are empty and b itself contains nested booking object, try deeper
+          if(!customer && b.booking && typeof b.booking === 'object'){
+            const bk = b.booking;
+            const fallbackCustomer = pickField(bk, ['customerName','userName','name']) || '';
+            if(fallbackCustomer) { customer = fallbackCustomer; }
+          }
+
+          // sanitize and display
+          const displayCustomer = escapeHtml(safeDisplay(customer));
+          const displayVehicle = escapeHtml(safeDisplay(vehicle));
+          const displayPickup = escapeHtml(safeDisplay(pickup));
+          const displayDropoff = escapeHtml(safeDisplay(dropoff));
+          const displayDuration = escapeHtml(safeDisplay(duration));
+          const displayFare = escapeHtml(safeDisplay(fare));
+          const displayStatus = escapeHtml(safeDisplay(status));
+
+          const actionHtml = `<button class="btn btn-sm btn-danger" onclick="deleteBooking('${bid}')">Delete</button>`;
+
+          tables['bookings-table'].row.add([ idx, bid, displayCustomer, displayVehicle, displayPickup, displayDropoff, displayDuration, displayFare, displayStatus, actionHtml ]).draw(false);
+        }
+
+        // If top-level children look like booking objects (flat map), detect
+        const values = Object.values(data);
+        const looksFlat = values.some(v => v && (v.pickup || v.fare || v.customerName || v.userName || v.vehicle || v.booking));
+
+        if(looksFlat){
+          let i = 1;
+          for(const [bid, b] of Object.entries(data)){
+            processBookingRow(bid, b, i++);
+          }
+        } else {
+          // Possibly grouped by driverId or some other grouping: iterate two levels deep
+          let i = 1;
+          for(const [groupKey, groupVal] of Object.entries(data)){
+            if(groupVal && typeof groupVal === 'object'){
+              for(const [bid, b] of Object.entries(groupVal)){
+                processBookingRow(bid, b, i++);
+              }
+            } else {
+              // last resort: the child is not object => show as row
+              processBookingRow(groupKey, groupVal, i++);
+            }
+          }
+        }
+      } catch (err) {
+        showToast('Failed to load bookings: ' + (err.message || err),'danger');
+      } finally {
+        $('#bookings-loading').hide();
+        $('#bookings-table').show();
+      }
+    }
+    // ---------- end loadBookings fix ----------
+
+    // helper to make safe DOM id
+    function sanitizeId(id){
+      return String(id).replace(/[^a-z0-9\-_]/gi, '-');
+    }
+
+    // Basic HTML-escape
+    function escapeHtml(str) {
+      if (!str && str !== 0) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     async function loadProfile(){
       $('#profile-table').hide(); $('#profile-loading').show();
       initTable('profile-table');
@@ -916,17 +1045,6 @@
         default: console.warn('Unknown tab:', tab); break;
       }
     };
-
-    // Basic HTML-escape
-    function escapeHtml(str) {
-      if (!str && str !== 0) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
 
     // Ensure openTab runs after auth state ready
     onAuthStateChanged(auth, user => {
