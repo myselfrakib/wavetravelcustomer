@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Checkout – WaveTravel</title>
+
+  <!-- Fonts & icons -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+
   <style>
     :root{
       --primary:#0077ff;
@@ -64,7 +67,6 @@
       align-items:center;
     }
 
-    /* nice info rows */
     .info-row {
       display:flex; gap:12px; align-items:center;
       background: rgba(11,18,32,0.02);
@@ -76,13 +78,11 @@
       color:var(--primary); font-size:1.15rem;
       flex-shrink:0;
     }
-    .info-row .meta {
-      display:flex; flex-direction:column;
-    }
+    .info-row .meta { display:flex; flex-direction:column; }
     .meta .label { font-weight:700; color:#071124; font-size:0.95rem; }
     .meta .val { color:var(--muted); font-size:0.9rem; margin-top:2px; max-width:100%; word-break:break-word; }
 
-    .summary-grid .fare-box {
+    .fare-box {
       background: linear-gradient(180deg,#fdf6e6,#fff6d9);
       border-radius:10px;
       padding:12px 16px;
@@ -94,34 +94,18 @@
     .fare-box .label { color:#8a6b00; font-weight:700; font-size:0.9rem; }
     .fare-box .amt { font-size:1.25rem; font-weight:800; color:#402a00; margin-top:6px; }
 
-    .details {
-      margin-top:12px;
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-    }
-    .detail-pill {
-      background: rgba(11,18,32,0.03);
-      padding:8px; border-radius:10px;
-      display:flex; flex-direction:column;
-    }
+    .details { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .detail-pill { background: rgba(11,18,32,0.03); padding:8px; border-radius:10px; display:flex; flex-direction:column; }
     .detail-pill small { color:var(--muted); font-size:0.82rem; }
     .detail-pill strong { font-size:0.98rem; margin-top:6px; color:#071124; }
 
-    /* terms */
-    .terms {
-      margin-top:14px; display:flex; gap:10px; align-items:center;
-    }
-    .checkbox {
-      width:22px; height:22px; border-radius:6px; border:2px solid rgba(7,17,36,0.08);
-      background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
-    }
+    .terms { margin-top:14px; display:flex; gap:10px; align-items:center; }
+    .checkbox { width:22px; height:22px; border-radius:6px; border:2px solid rgba(7,17,36,0.08); background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
     .checkbox input { display:none; }
     .checkbox.checked { background:var(--primary); border-color:var(--primary); color:#fff; }
 
     .terms-label { font-size:0.95rem; color:#fff; text-shadow: 0 1px 0 rgba(11,18,32,0.12); }
 
-    /* Pay button */
     #payBtn {
       margin-top:16px;
       width:100%;
@@ -134,31 +118,13 @@
     #payBtn:active { transform: translateY(1px) scale(.998); }
     #payBtn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
 
-    /* Centered toast — doubled size */
     #center-toast {
-      position: fixed;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%) scale(0.95);
-      background: rgba(11,18,32,0.94);
-      color: #fff;
-      padding: 28px 36px;
-      border-radius: 14px;
-      box-shadow: 0 12px 36px rgba(2,6,23,0.6);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .22s ease, transform .22s ease;
-      z-index: 9999;
-      font-weight: 700;
-      min-width: 420px;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      font-size: 1.05rem;
+      position: fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(0.95);
+      background: rgba(11,18,32,0.94); color:#fff; padding:28px 36px; border-radius:14px;
+      box-shadow: 0 12px 36px rgba(2,6,23,0.6); opacity:0; pointer-events:none; transition:opacity .22s, transform .22s;
+      z-index:9999; font-weight:700; min-width:420px; text-align:center; display:flex; align-items:center; justify-content:center; gap:16px; font-size:1.05rem;
     }
-    #center-toast.show { opacity:1; transform: translate(-50%,-50%) scale(1); pointer-events:auto; }
+    #center-toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
     #center-toast .icon { width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:var(--success); color:#fff; font-size:18px; flex:0 0 40px; }
 
     @media (max-width:720px){
@@ -170,23 +136,27 @@
 
     .card-heading { font-size:0.95rem; color:#071124; font-weight:800; margin-bottom:6px; }
     .muted { color:var(--muted); font-size:0.9rem; }
+    .muted.small { font-size:0.82rem; color:#9aa0a6; margin-top:6px; }
   </style>
 </head>
 <body>
   <div class="page">
     <div class="wrap">
+
       <header class="app-header">
         <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
         <div class="app-title">Confirm &amp; Pay</div>
       </header>
 
-      <div id="summary" class="summary-card">Loading booking…</div>
+      <div id="summary" class="summary-card" aria-live="polite">
+        Loading booking…
+      </div>
 
       <div style="height:8px;"></div>
 
-      <div class="terms">
-        <label class="checkbox" id="termsBox">
-          <input type="checkbox" id="termsChk"/>
+      <div class="terms" style="align-items:center;">
+        <label class="checkbox" id="termsBox" title="Agree to T&C">
+          <input type="checkbox" id="termsChk" />
           <svg id="termsTick" viewBox="0 0 24 24" width="16" height="16" style="display:none;color:white">
             <path fill="currentColor" d="M9 16.2l-3.5-3.5 1.4-1.4L9 13.4l7.1-7.1 1.4 1.4z"></path>
           </svg>
@@ -195,20 +165,28 @@
       </div>
 
       <button id="payBtn" disabled>Pay &amp; Book</button>
+
     </div>
   </div>
 
-  <div id="center-toast"><span class="icon">✓</span><span id="center-toast-text">Success</span></div>
+  <div id="center-toast" role="status" aria-live="polite">
+    <span class="icon">✓</span>
+    <span id="center-toast-text">Success</span>
+  </div>
 
-  <!-- Firebase & Razorpay -->
+  <div style="height: 80px;"></div>
+
+  <!-- Firebase v8 (matches your project) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+  <!-- Razorpay -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <script>
-    // --- Firebase init ---
-    const firebaseConfig = {
+  /***** CONFIG — keep these values (already from your project) *****/
+  const firebaseConfig = {
     apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
     authDomain: "wavetravel-3c4c4.firebaseapp.com",
     databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
@@ -217,123 +195,347 @@
     messagingSenderId: "298226098137",
     appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
   };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const auth = firebase.auth();
+  // Razorpay publishable key (public). Replace if you want live key.
+  const RAZORPAY_KEY_ID = "rzp_test_NMB6jz5XK0G48R";
 
-    const payBtn = document.getElementById("payBtn");
-    const termsChk = document.getElementById("termsChk");
-    const termsBox = document.getElementById("termsBox");
-    const tickSvg  = document.getElementById("termsTick");
-    const summaryEl= document.getElementById("summary");
-    const booking  = JSON.parse(localStorage.getItem("selectedBooking") || "null");
+  /***** INIT FIREBASE *****/
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const auth = firebase.auth();
 
-    function showCenterToast(msg, dur=2200) {
-      const toast=document.getElementById("center-toast");
-      document.getElementById("center-toast-text").textContent=msg;
-      toast.classList.add("show");
-      setTimeout(()=>toast.classList.remove("show"),dur);
-    }
+  /***** UI refs *****/
+  const summaryEl = document.getElementById('summary');
+  const payBtn    = document.getElementById('payBtn');
+  const termsChk  = document.getElementById('termsChk');
+  const termsBox  = document.getElementById('termsBox');
+  const tickSvg   = document.getElementById('termsTick');
 
-    function setCheckboxChecked(state) {
-      if (state) { termsBox.classList.add("checked"); tickSvg.style.display="inline-block"; }
-      else { termsBox.classList.remove("checked"); tickSvg.style.display="none"; }
-      termsChk.checked = !!state;
-      payBtn.disabled = !state;
-    }
-    termsBox.addEventListener("click",()=>setCheckboxChecked(!termsChk.checked));
+  // booking object stored earlier in localStorage by your flow
+  const booking = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
-    if (!booking) {
-      summaryEl.innerHTML = "<div>Please select a slot first.</div>";
-      payBtn.disabled = true;
+  function showCenterToast(message, duration = 2200) {
+    const toast = document.getElementById('center-toast');
+    const text = document.getElementById('center-toast-text');
+    text.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), duration);
+  }
+
+  function setCheckboxChecked(state) {
+    if (state) {
+      termsBox.classList.add('checked');
+      tickSvg.style.display = 'inline-block';
     } else {
-      auth.onAuthStateChanged(async user => {
-        if (!user) { alert("Please login first"); location="index.html"; return; }
+      termsBox.classList.remove('checked');
+      tickSvg.style.display = 'none';
+    }
+    termsChk.checked = !!state;
+    payBtn.disabled = !termsChk.checked;
+  }
+  termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
+  termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
 
-        // Fetch user profile
-        const userSnap = await db.ref(`users/${user.uid}`).once("value");
-        if (!userSnap.exists()) {
-          summaryEl.innerHTML = "<div>Profile not found.</div>";
-          return;
+  /***** Helper formatters *****/
+  function formatDate(d) {
+    if (!d || typeof d !== 'string') return d || '-';
+    const [y, m, dd] = d.split('-');
+    if (!dd) return d;
+    return `${dd}/${m}/${y}`;
+  }
+  function formatTime(t) {
+    if (!t || typeof t !== 'string') return t || '-';
+    let [h, mm] = t.split(':').map(Number);
+    if (isNaN(h)) return t;
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
+  }
+
+  /***** Main UI & logic *****/
+  if (!booking) {
+    summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Please select a slot first.</div>';
+    payBtn.disabled = true;
+  } else {
+    let bound = false;
+
+    function renderSummary(userName, userPhone) {
+      const pickup = booking.pickup || '—';
+      const dropoff = booking.dropoff || '—';
+      const date = booking.date || '—';
+      const time = booking.time || '—';
+      const seats = booking.seatsRequested || 1;
+      const fare = booking.fare || 0;
+      summaryEl.innerHTML = `
+        <div class="summary-grid" role="region" aria-label="Booking summary">
+          <div>
+            <div class="card-heading">Passenger</div>
+            <div class="info-row" style="margin-bottom:10px">
+              <div class="icon"><i class="fas fa-user"></i></div>
+              <div class="meta">
+                <div class="label">${userName || 'Guest'}</div>
+                <div class="val">${userPhone || 'No phone'}</div>
+              </div>
+            </div>
+
+            <div class="card-heading">Route</div>
+            <div class="info-row">
+              <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
+              <div class="meta">
+                <div class="label">Pickup</div>
+                <div class="val">${pickup}</div>
+              </div>
+            </div>
+            <div style="height:8px"></div>
+            <div class="info-row">
+              <div class="icon" style="background: linear-gradient(180deg,#ffdede,#fff7f7); color:var(--danger)"><i class="fas fa-map-pin"></i></div>
+              <div class="meta">
+                <div class="label">Dropoff</div>
+                <div class="val">${dropoff}</div>
+              </div>
+            </div>
+
+            <div style="height:12px"></div>
+
+            <div class="details" aria-hidden="false">
+              <div class="detail-pill">
+                <small>Date</small>
+                <strong>${formatDate(date)}</strong>
+              </div>
+              <div class="detail-pill">
+                <small>Time</small>
+                <strong>${formatTime(time)}</strong>
+              </div>
+              <div class="detail-pill">
+                <small>Seats</small>
+                <strong>${seats}</strong>
+              </div>
+              <div class="detail-pill">
+                <small>Fare</small>
+                <strong>₹${fare}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="fare-box" aria-hidden="true">
+            <div class="label">Amount to pay</div>
+            <div class="amt">₹${fare}</div>
+            <div class="muted" style="margin-top:6px;font-weight:600">Secure payment</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // auth state
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Please login first.</div>';
+        payBtn.disabled = true;
+        // short delay then redirect (optional)
+        setTimeout(()=> window.location = 'index.html', 900);
+        return;
+      }
+
+      let dbUid = user.uid;
+      let userData = null;
+
+      // first try direct uid
+      try {
+        const snapUid = await db.ref(`users/${dbUid}`).once('value');
+        if (snapUid.exists()) {
+          userData = snapUid.val();
+        } else {
+          // fallback: try lookup by phone or email in users node
+          if (user.phoneNumber) {
+            const phoneSnap = await db.ref("users").orderByChild("phone").equalTo(user.phoneNumber).once("value");
+            if (phoneSnap.exists()) {
+              const rec = phoneSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
+          }
+          if (!userData && user.email) {
+            const emailSnap = await db.ref("users").orderByChild("email").equalTo(user.email).once("value");
+            if (emailSnap.exists()) {
+              const rec = emailSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
+          }
         }
-        const { name, phone, email } = userSnap.val();
-        summaryEl.innerHTML = `<div class="fare-box">Pay ₹${booking.fare}</div>`;
+      } catch (err) {
+        console.error('Profile lookup failed', err);
+      }
 
-        payBtn.addEventListener("click", async () => {
+      if (!userData) {
+        summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Profile not found. Please complete your profile in the app.</div>';
+        payBtn.disabled = true;
+        return;
+      }
+
+      const { name, phone } = userData;
+      renderSummary(name, phone);
+      setCheckboxChecked(false);
+
+      if (!bound) {
+        bound = true;
+
+        termsChk.addEventListener('change', () => { payBtn.disabled = !termsChk.checked; });
+
+        payBtn.addEventListener('click', async () => {
           if (!termsChk.checked) return;
 
+          // Pre-check seats
+          const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+          let cur;
           try {
-            // Step 1: Ask backend to create Razorpay order
-            const orderRes = await fetch("https://asia-south1-wavetravel-3c4c4.cloudfunctions.net/api/createOrder", {
-              method:"POST", headers:{ "Content-Type":"application/json" },
-              body: JSON.stringify({ amount: booking.fare * 100 })
-            });
-            const order = await orderRes.json();
-            if (!order.id) throw new Error("Order creation failed");
+            const snap = await slotRef.once('value');
+            if (!snap.exists()) {
+              alert('Slot no longer exists.');
+              return;
+            }
+            cur = snap.val();
+            const available = parseInt(cur.seats, 10);
+            const requested = parseInt(booking.seatsRequested, 10);
+            if (isNaN(available) || isNaN(requested)) {
+              alert('Seat information invalid. Contact support.');
+              return;
+            }
+            if (available < requested) {
+              alert(`Only ${available} seats left. Please reduce seats or choose another slot.`);
+              return;
+            }
+          } catch (e) {
+            console.error('Pre-check failed:', e);
+            alert('Failed to verify seats. Please try again.');
+            return;
+          }
 
-            // Step 2: Open Razorpay Checkout
-            const rzp = new Razorpay({
-              key: "rzp_live_omDNDSL8gmUBCZ",
-              amount: order.amount,
-              currency: order.currency,
-              name: "WaveTravel",
-              description: "Ride Booking",
-              order_id: order.id,
-              prefill: { name, email, contact: phone },
-              handler: async (res) => {
-                // Step 3: Verify payment with backend
-                const verifyRes = await fetch("https://asia-south1-wavetravel-3c4c4.cloudfunctions.net/api/verifyPayment", {
-                  method:"POST", headers:{ "Content-Type":"application/json" },
+          // 1) create Razorpay order via your functions
+          let order;
+          try {
+            const createResp = await fetch("https://asia-south1-wavetravel-3c4c4.cloudfunctions.net/createOrder", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ amount: booking.fare * 100 }) // pass paise
+            });
+            if (!createResp.ok) {
+              const txt = await createResp.text();
+              throw new Error('Create order failed: ' + txt);
+            }
+            order = await createResp.json();
+            if (!order.id) throw new Error('Order response missing id');
+          } catch (err) {
+            console.error('Order creation error', err);
+            alert('Could not create payment order. Try again later.');
+            return;
+          }
+
+          // 2) open Razorpay with server-generated order_id
+          const rzpOptions = {
+            key: RAZORPAY_KEY_ID,
+            amount: order.amount,
+            currency: order.currency,
+            name: 'WaveTravel',
+            description: 'Ride Booking',
+            order_id: order.id,
+            prefill: { name: name || '', contact: phone || '', email: user.email || '' },
+            handler: async (razResp) => {
+              // razResp: { razorpay_payment_id, razorpay_order_id, razorpay_signature }
+              try {
+                // 3) verify signature server-side
+                const verifyResp = await fetch("https://asia-south1-wavetravel-3c4c4.cloudfunctions.net/verifyPayment", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    orderId: res.razorpay_order_id,
-                    paymentId: res.razorpay_payment_id,
-                    signature: res.razorpay_signature
+                    orderId: razResp.razorpay_order_id,
+                    paymentId: razResp.razorpay_payment_id,
+                    signature: razResp.razorpay_signature
                   })
                 });
-                const verify = await verifyRes.json();
-                if (!verify.success) {
-                  alert("Payment verification failed.");
+                const verifyJson = await verifyResp.json();
+                // Accept either { success: true } or { ok: true } forms
+                const verified = (verifyJson && (verifyJson.success || verifyJson.ok)) || false;
+
+                if (!verified) {
+                  console.error('Verification failed', verifyJson);
+                  alert('Payment verification failed. Contact support.');
                   return;
                 }
 
-                // Step 4: Deduct seat & save booking
-                const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
-                await slotRef.transaction(cur => {
-                  if (!cur) return cur;
-                  const seats = parseInt(cur.seats,10);
-                  if (seats < booking.seatsRequested) return;
-                  return {...cur, seats: String(seats - booking.seatsRequested)};
+                // 4) finalize booking on client (seat deduction + writes)
+                slotRef.transaction(curState => {
+                  if (!curState) return curState;
+                  const currentSeats = parseInt(curState.seats, 10);
+                  const requested = parseInt(booking.seatsRequested, 10);
+                  if (isNaN(currentSeats) || isNaN(requested)) return curState;
+                  if (currentSeats < requested) return; // abort
+                  return { ...curState, seats: String(currentSeats - requested) };
+                }, async (error, committed, snapshot) => {
+                  if (error) {
+                    console.error('Seat deduction failed:', error);
+                    alert('Seat deduction failed. Payment was captured; please contact support for help.');
+                    return;
+                  }
+                  if (!committed) {
+                    alert('Seats just ran out. Payment captured; please contact support for refund/alternate slot.');
+                    return;
+                  }
+
+                  try {
+                    const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+                    const newBookingRef = bookingsRef.push();
+                    const bookingData = {
+                      ...booking,
+                      userId: dbUid,
+                      userName: name,
+                      userPhone: phone,
+                      paymentId: razResp.razorpay_payment_id,
+                      orderId: razResp.razorpay_order_id,
+                      bookedAt: new Date().toISOString(),
+                      status: 'confirmed'
+                    };
+
+                    await newBookingRef.set(bookingData);
+
+                    await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
+                      amount: booking.fare * 0.5,
+                      status: 'unpaid',
+                      booking: bookingData,
+                      date: new Date().toISOString()
+                    });
+
+                    showCenterToast('Payment successful & booking confirmed!', 2000);
+                    setTimeout(() => {
+                      localStorage.removeItem('selectedBooking');
+                      window.location = 'mybookings.html';
+                    }, 2100);
+                  } catch (err) {
+                    console.error('Save booking failed:', err);
+                    alert('Error saving booking. Contact support.');
+                  }
                 });
 
-                const bookingsRef = db.ref(`bookings/${booking.driverId}`).push();
-                await bookingsRef.set({
-                  ...booking,
-                  userId:user.uid,
-                  userName:name,
-                  userPhone:phone,
-                  paymentId: res.razorpay_payment_id,
-                  bookedAt:new Date().toISOString(),
-                  status:"confirmed"
-                });
-
-                await db.ref(`driverWallet/${booking.driverId}/${bookingsRef.key}`).set({
-                  amount: booking.fare * 0.5,
-                  status:"unpaid",
-                  date:new Date().toISOString()
-                });
-
-                showCenterToast("Booking confirmed!",2000);
-                setTimeout(()=>{ localStorage.removeItem("selectedBooking"); location="mybookings.html"; },2100);
+              } catch (err) {
+                console.error('Payment handler error:', err);
+                alert('Payment verification or finalization failed. Contact support.');
               }
-            });
-            rzp.open();
-          } catch(err) {
-            console.error(err);
-            alert("Payment process failed. Try again.");
-          }
+            },
+            modal: { escape: false },
+            theme: { color: '#0077ff' }
+          };
+
+          const rzp = new Razorpay(rzpOptions);
+
+          rzp.on('payment.failed', function (response){
+            console.error('Razorpay payment.failed', response);
+            alert('Payment failed: ' + (response.error && response.error.description ? response.error.description : 'Unknown'));
+          });
+
+          rzp.open();
         });
-      });
-    }
+      } // bound
+    });
+  }
   </script>
 </body>
 </html>
