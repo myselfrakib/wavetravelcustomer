@@ -21,7 +21,12 @@
       border-radius: 15px;
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
       color: white;
-      width: 300px;
+      width: 320px;
+      box-sizing: border-box;
+    }
+    .login-box h2 {
+      margin: 0 0 12px 0;
+      font-weight: 600;
     }
     .login-box input {
       width: 100%;
@@ -41,6 +46,44 @@
       font-weight: bold;
       cursor: pointer;
     }
+
+    /* Add-admin button & panel */
+    .small-btn {
+      margin-top: 10px;
+      background-color: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: white;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+    #addAdminBox {
+      margin-top: 12px;
+      background: rgba(0,0,0,0.15);
+      padding: 12px;
+      border-radius: 10px;
+      display: none;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+    .link-like {
+      background: transparent;
+      border: none;
+      color: #dfe7ff;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0;
+      margin-left: 6px;
+    }
+
+    .note {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -50,13 +93,28 @@
   <input type="email" id="email" placeholder="Email" />
   <input type="password" id="password" placeholder="Password" />
   <button id="loginBtn">Login</button>
+
+  <button id="showAddBtn" class="small-btn">➕ Add New Admin</button>
+
+  <div id="addAdminBox" aria-hidden="true">
+    <h3 style="margin:0 0 8px 0; font-size:16px;">Create admin account</h3>
+    <input type="email" id="newAdminEmail" placeholder="New admin email" />
+    <input type="password" id="newAdminPassword" placeholder="New admin password (min 6 chars)" />
+    <div class="row">
+      <button id="createAdminBtn" style="flex:1">Create Admin</button>
+      <button id="cancelAddBtn" style="flex:1; background:transparent; border:1px solid rgba(255,255,255,0.12);">Cancel</button>
+    </div>
+    <div class="note">This will create a user in Firebase Authentication only. No database changes are made here.</div>
+  </div>
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import {
     getAuth,
-    signInWithEmailAndPassword
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut
   } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
   import {
     getDatabase,
@@ -75,12 +133,33 @@
     appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
   };
 
-  // Initialize Firebase
+  // Initialize Firebase (default app)
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db   = getDatabase(app);
 
-  document.getElementById('loginBtn').addEventListener('click', async () => {
+  // UI elements
+  const loginBtn = document.getElementById('loginBtn');
+  const showAddBtn = document.getElementById('showAddBtn');
+  const addAdminBox = document.getElementById('addAdminBox');
+  const createAdminBtn = document.getElementById('createAdminBtn');
+  const cancelAddBtn = document.getElementById('cancelAddBtn');
+
+  // Toggle add-admin panel
+  showAddBtn.addEventListener('click', () => {
+    const visible = addAdminBox.style.display === 'block';
+    addAdminBox.style.display = visible ? 'none' : 'block';
+    addAdminBox.setAttribute('aria-hidden', visible ? 'true' : 'false');
+  });
+  cancelAddBtn.addEventListener('click', () => {
+    addAdminBox.style.display = 'none';
+    addAdminBox.setAttribute('aria-hidden', 'true');
+    // clear fields
+    document.getElementById('newAdminEmail').value = '';
+    document.getElementById('newAdminPassword').value = '';
+  });
+
+  loginBtn.addEventListener('click', async () => {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
 
@@ -114,6 +193,57 @@
     } catch (err) {
       console.error('Login error', err);
       alert('Login failed: ' + err.message);
+    }
+  });
+
+  // Create admin account (Firebase Auth only) using a secondary app instance.
+  // Using a secondary app prevents changing the signed-in user of the default app.
+  createAdminBtn.addEventListener('click', async () => {
+    const email = document.getElementById('newAdminEmail').value.trim();
+    const password = document.getElementById('newAdminPassword').value;
+
+    if (!email || !password) {
+      alert('Please enter both email and password for the new admin.');
+      return;
+    }
+    if (password.length < 6) {
+      alert('Password should be at least 6 characters.');
+      return;
+    }
+
+    createAdminBtn.disabled = true;
+    createAdminBtn.textContent = 'Creating...';
+
+    try {
+      // create or reuse a secondary app instance stored on window to avoid duplicate initialization errors
+      if (!window.__secondaryFirebaseApp) {
+        // initialize a named secondary app; name must be unique
+        window.__secondaryFirebaseApp = initializeApp(firebaseConfig, 'Secondary');
+      }
+      const secondaryApp = window.__secondaryFirebaseApp;
+      const secondaryAuth = getAuth(secondaryApp);
+
+      // Create user in Firebase Auth (this affects only the secondary app's auth state)
+      const newUserCred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+
+      // Immediately sign out the secondary auth to clear its session
+      await signOut(secondaryAuth);
+
+      // Inform the user (we only create auth user; no DB changes)
+      alert('Admin account created successfully.\nUID: ' + newUserCred.user.uid + '\n(Stored in Firebase Authentication only)');
+
+      // Reset & hide form
+      document.getElementById('newAdminEmail').value = '';
+      document.getElementById('newAdminPassword').value = '';
+      addAdminBox.style.display = 'none';
+      addAdminBox.setAttribute('aria-hidden', 'true');
+    } catch (err) {
+      console.error('Create admin error', err);
+      // Relay Firebase error message to user
+      alert('Failed to create admin: ' + err.message);
+    } finally {
+      createAdminBtn.disabled = false;
+      createAdminBtn.textContent = 'Create Admin';
     }
   });
 </script>
