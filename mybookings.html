@@ -231,6 +231,18 @@
     .btn.secondary { background:#eef2ff; color:#0077ff; }
     .btn.primary { background:#0077ff; color:#fff; }
 
+    /* small spinner */
+    .spinner {
+      border: 3px solid rgba(0,0,0,0.06);
+      border-left-color: rgba(0,0,0,0.18);
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     /* responsive tweaks */
     @media (max-width:480px){
       .fare-text { min-width:100px; font-size:0.95rem; padding:8px 10px; }
@@ -256,7 +268,7 @@
     <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDKs (v8) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -277,7 +289,7 @@
     const db = firebase.database();
     const bookingsEl = document.getElementById('bookings');
 
-    // Helpers from original file (kept intact)
+    // ------------------ helper functions (kept & extended) ------------------
     function to12Hour(time) {
       if (!time || typeof time !== 'string') return time || '—';
       let parts = time.split(':');
@@ -298,65 +310,69 @@
       return d;
     }
 
-    // New helper: derive pickup epoch ms from booking object
+    // derive pickup timestamp (epoch ms) from booking object
     function getPickupTimestamp(b) {
-      // if explicit field exists
+      if (!b) return null;
       if (b.pickupTime) {
         const n = Number(b.pickupTime);
         if (!isNaN(n)) return n;
       }
-      // if booking has epoch stored as number in date (e.g., date: 1690000000000)
       if (b.date && typeof b.date === 'number') return b.date;
-
-      // combine date and time if possible
       if (b.date && b.time) {
-        // try "date time" parse
         const combined = `${b.date} ${b.time}`;
         const parsed = Date.parse(combined);
         if (!isNaN(parsed)) return parsed;
-        // try rearranging dd-mm-yyyy formats (common)
-        // if date contains '-' or '/'
         const d = b.date.trim();
         const t = b.time.trim();
         const parts = d.includes('-') ? d.split('-') : (d.includes('/') ? d.split('/') : null);
         if (parts && parts.length === 3) {
-          // guess: dd-mm-yyyy -> YYYY-MM-DD for reliable parsing
-          const [p1, p2, p3] = parts;
-          // determine which part is year (if any part length == 4)
-          let day = p1, month = p2, year = p3;
-          if (p1.length === 4) { year = p1; month = p2; day = p3; }
-          if (p3.length === 4) { year = p3; day = p1; month = p2; }
+          let day = parts[0], month = parts[1], year = parts[2];
+          if (parts[0].length === 4) { year = parts[0]; month = parts[1]; day = parts[2]; }
+          if (parts[2].length === 4) { year = parts[2]; month = parts[1]; day = parts[0]; }
           const iso = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')} ${t}`;
           const parsed2 = Date.parse(iso);
           if (!isNaN(parsed2)) return parsed2;
         }
       }
-
-      // fallback: if only date present and parseable
       if (b.date) {
         const parsed = Date.parse(b.date);
         if (!isNaN(parsed)) return parsed;
       }
-      // cannot determine
       return null;
     }
 
-    // utility: server time using .info/serverTimeOffset
-    function getServerTimeNow() {
-      return db.ref('.info/serverTimeOffset').once('value')
-        .then(snap => {
-          const offset = snap.val() || 0;
-          return Date.now() + offset;
-        })
-        .catch(() => Date.now());
+    // get server time now using .info/serverTimeOffset
+    async function getServerTimeNow() {
+      try {
+        const snap = await db.ref('.info/serverTimeOffset').once('value');
+        const offset = snap.val() || 0;
+        return Date.now() + offset;
+      } catch (e) {
+        return Date.now();
+      }
     }
 
-    // create modal DOM once
+    // small toast
+    function toast(msg, ms = 2500) {
+      const t = document.createElement('div');
+      t.style.position = 'fixed';
+      t.style.bottom = '90px';
+      t.style.left = '50%';
+      t.style.transform = 'translateX(-50%)';
+      t.style.background = 'rgba(0,0,0,0.8)';
+      t.style.color = '#fff';
+      t.style.padding = '10px 14px';
+      t.style.borderRadius = '8px';
+      t.style.zIndex = 3000;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), ms);
+    }
+
+    // ------------------ modal and star UI ------------------
     let currentBookingForModal = null;
     function createReviewModal() {
-      // avoid duplicate
       if (document.getElementById('review-modal-root')) return;
-
       const root = document.createElement('div');
       root.id = 'review-modal-root';
       root.style.display = 'none';
@@ -383,24 +399,8 @@
         </div>
       `;
 
-      // star selection handlers
       const backdrop = document.getElementById('review-backdrop');
       const stars = root.querySelectorAll('.star');
-      stars.forEach(s => {
-        s.addEventListener('mouseenter', (e) => {
-          const v = Number(s.dataset.value);
-          highlightStars(v);
-        });
-        s.addEventListener('mouseleave', () => {
-          const current = Number(root.dataset.selected || 0);
-          highlightStars(current);
-        });
-        s.addEventListener('click', (e) => {
-          const v = Number(s.dataset.value);
-          root.dataset.selected = v;
-          highlightStars(v);
-        });
-      });
 
       function highlightStars(n) {
         stars.forEach(s => {
@@ -417,232 +417,225 @@
         });
       }
 
-      // cancel & submit
-      root.querySelector('#review-cancel').addEventListener('click', () => closeReviewModal());
-      root.querySelector('#review-backdrop').addEventListener('click', (e) => {
-        if (e.target === backdrop) closeReviewModal();
-      });
-      root.querySelector('#review-submit').addEventListener('click', () => {
-        submitReviewFromModal();
+      stars.forEach(s => {
+        s.addEventListener('mouseenter', () => highlightStars(Number(s.dataset.value)));
+        s.addEventListener('mouseleave', () => {
+          const sel = Number(root.dataset.selected || 0);
+          highlightStars(sel);
+        });
+        s.addEventListener('click', () => {
+          root.dataset.selected = s.dataset.value;
+          highlightStars(Number(s.dataset.value));
+        });
       });
 
-      function closeReviewModal() {
+      root.querySelector('#review-cancel').addEventListener('click', () => {
         backdrop.style.display = 'none';
         root.style.display = 'none';
         root.dataset.selected = 0;
         highlightStars(0);
-        document.getElementById('review-comment').value = '';
-        currentBookingForModal = null;
-      }
-      function openReviewModal(booking, driverId) {
-        currentBookingForModal = { booking, driverId };
-        const info = document.getElementById('review-driver-info');
-        info.textContent = `Booking: ${booking.id} — Driver: ${booking.driverName || booking.driverId || driverId}`;
-        root.style.display = '';
-        backdrop.style.display = 'flex';
-      }
-      // attach to global for callers
-      window.openReviewModal = openReviewModal;
-      window.closeReviewModal = () => {
-        backdrop.style.display = 'none';
-        root.style.display = 'none';
-        root.dataset.selected = 0;
-        highlightStars(0);
-        document.getElementById('review-comment').value = '';
-        currentBookingForModal = null;
-      };
+      });
 
-      // submit handler uses outer-scope function declared later
-      window._getModalSelection = () => {
-        const sel = Number(root.dataset.selected || 0);
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) {
+          backdrop.style.display = 'none';
+          root.style.display = 'none';
+          root.dataset.selected = 0;
+          highlightStars(0);
+        }
+      });
+
+      root.querySelector('#review-submit').addEventListener('click', async () => {
+        const rating = Number(root.dataset.selected || 0);
         const comment = document.getElementById('review-comment').value.trim();
-        return { rating: sel, comment };
-      };
-
-      // exposed submit action that will be implemented below
-      window._modalSubmitAction = null;
-      function submitReviewFromModal() {
-        const { rating, comment } = window._getModalSelection();
         if (!rating || rating < 1 || rating > 5) {
-          alert('Please select a rating (1–5 stars).');
+          alert('Please select rating 1–5.');
           return;
         }
         if (!currentBookingForModal) {
           alert('No booking selected.');
           return;
         }
-        // call external submit logic
-        if (typeof window._modalSubmitAction === 'function') {
-          window._modalSubmitAction(currentBookingForModal.booking, currentBookingForModal.driverId, rating, comment)
-            .then(() => {
-              // close modal on success
-              window.closeReviewModal();
-            })
-            .catch(err => {
-              console.error('Review submit error', err);
-              alert('Failed to submit review. Try again.');
-            });
-        } else {
-          alert('Submit handler not initialized.');
-        }
-      }
-    } // createReviewModal()
+        try {
+          // visual feedback
+          const submitBtn = root.querySelector('#review-submit');
+          const originalText = submitBtn.textContent;
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span class="spinner"></span> Submitting`;
 
-    // main flow
-    auth.onAuthStateChanged(user => {
+          // call main submit function
+          await fullClientReviewFlow(currentBookingForModal.booking, currentBookingForModal.driverId, rating, comment);
+
+          // close modal
+          backdrop.style.display = 'none';
+          root.style.display = 'none';
+          root.dataset.selected = 0;
+          highlightStars(0);
+          document.getElementById('review-comment').value = '';
+        } catch (err) {
+          console.error('Submit review error', err);
+          alert('Failed to submit review: ' + (err && err.message ? err.message : 'unknown'));
+        } finally {
+          const submitBtn = root.querySelector('#review-submit');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'Submit Review';
+        }
+      });
+
+      // expose open function
+      window.openReviewModal = function(booking, driverId) {
+        currentBookingForModal = { booking, driverId };
+        const info = document.getElementById('review-driver-info');
+        info.textContent = `Booking: ${booking.id} — Driver: ${booking.driverName || driverId}`;
+        root.style.display = '';
+        backdrop.style.display = 'flex';
+      };
+    }
+
+    // ------------------ main rendering & logic ------------------
+    auth.onAuthStateChanged(async (user) => {
       if (!user) {
         alert('Please log in first.');
         return window.location = 'index.html';
       }
 
-      // ensure modal created and submit handler bound
       createReviewModal();
-      window._modalSubmitAction = submitReview; // function declared below
 
-      db.ref('bookings').once('value')
-        .then(snapshot => {
-          const allDrivers = snapshot.val() || {};
-          const myBookings = [];
+      try {
+        const snap = await db.ref('bookings').once('value');
+        const allDrivers = snap.val() || {};
+        const myBookings = [];
 
-          Object.entries(allDrivers).forEach(([driverId, bookings]) => {
-            if (!bookings) return;
-            Object.entries(bookings).forEach(([bookingId, b]) => {
-              // support both userId and customerId legacy naming
-              if (b.userId === user.uid || b.customerId === user.uid) {
-                // include driverId so we can reference it later
-                myBookings.push({ id: bookingId, driverId, ...b });
-              }
-            });
+        Object.entries(allDrivers).forEach(([driverId, bookings]) => {
+          if (!bookings) return;
+          Object.entries(bookings).forEach(([bookingId, b]) => {
+            if (b.userId === user.uid || b.customerId === user.uid) {
+              myBookings.push({ id: bookingId, driverId, ...b });
+            }
           });
-
-          if (myBookings.length === 0) {
-            bookingsEl.innerHTML = `
-              <p style="color:#fff; text-align:center;">
-                No bookings found.
-              </p>`;
-            return;
-          }
-
-          // render base cards (without review-action buttons — they'll be injected after server-time check)
-          bookingsEl.innerHTML = myBookings.map((b, i) => {
-            const seats = b.seatsRequested || b.seatsBooked || b.seats || '—';
-            const carText = (b.carBrand ? b.carBrand : '—') + (b.carReg ? ` (${b.carReg})` : '');
-            const fareText = (b.fare !== undefined && b.fare !== null) ? `₹${b.fare}` : 'N/A';
-            const driverNumber = (b.driverNumber || b.driver_phone || b.driverPhone || b.driverContact || '').toString().trim();
-            const hasPhone = driverNumber.length > 0;
-
-            const callBtn = hasPhone
-              ? `<a class="call-btn" href="tel:${encodeURIComponent(driverNumber)}" aria-label="Call driver ${driverNumber}"><i class="fas fa-phone"></i> Call Driver</a>`
-              : `<button class="call-btn disabled" aria-disabled="true" title="Driver number not available"><i class="fas fa-phone"></i> Call Driver</button>`;
-
-            // small placeholder span where review UI will be added later
-            const reviewPlaceholder = `<span class="review-area" data-booking-id="${b.id}" data-driver-id="${b.driverId}"></span>`;
-
-            // optionally show booking.reviewed if already flagged
-            const reviewedHtml = b.reviewed ? `<span class="reviewed-badge">Reviewed</span>` : '';
-
-            return `
-              <div class="booking-card" id="booking-card-${b.id}">
-                <div class="card-number">${i + 1}</div>
-                <h3>Booking #${i + 1}</h3>
-                <div class="info"><i class="fas fa-calendar"></i> <span>${formatDate(b.date)}</span></div>
-                <div class="info"><i class="fas fa-clock"></i> <span>${to12Hour(b.time)}</span></div>
-                <div class="info"><i class="fas fa-map-marker-alt"></i> <span>Pickup: ${b.pickup}</span></div>
-                <div class="info"><i class="fas fa-flag-checkered"></i> <span>Dropoff: ${b.dropoff}</span></div>
-                <div class="info"><i class="fas fa-users"></i> <span>Seats: ${seats}</span></div>
-                <div class="info"><i class="fas fa-car"></i> <span>${carText}</span></div>
-
-                <div class="fare-row">
-                  <div class="fare-text">Fare: ${fareText}</div>
-                  ${callBtn}
-                  ${reviewPlaceholder}
-                  ${reviewedHtml}
-                </div>
-              </div>`;
-          }).join('');
-
-          // now check server time once and process each booking for review eligibility
-          return getServerTimeNow().then(serverNow => {
-            // for each booking, decide whether to show review button
-            myBookings.forEach((b, idx) => {
-              processBookingForReview(b, serverNow, user.uid);
-            });
-          });
-        })
-        .catch(err => {
-          console.error('Error fetching bookings:', err);
-          bookingsEl.innerHTML = `
-            <p style="color:#fff; text-align:center;">
-              Unable to load bookings.
-            </p>`;
         });
+
+        if (myBookings.length === 0) {
+          bookingsEl.innerHTML = `<p style="color:#fff; text-align:center;">No bookings found.</p>`;
+          return;
+        }
+
+        // render cards
+        bookingsEl.innerHTML = myBookings.map((b, i) => {
+          const seats = b.seatsRequested || b.seatsBooked || b.seats || '—';
+          const carText = (b.carBrand ? b.carBrand : '—') + (b.carReg ? ` (${b.carReg})` : '');
+          const fareText = (b.fare !== undefined && b.fare !== null) ? `₹${b.fare}` : 'N/A';
+          const driverNumber = (b.driverNumber || b.driver_phone || b.driverPhone || b.driverContact || '').toString().trim();
+          const hasPhone = driverNumber.length > 0;
+          const callBtn = hasPhone
+            ? `<a class="call-btn" href="tel:${encodeURIComponent(driverNumber)}" aria-label="Call driver ${driverNumber}"><i class="fas fa-phone"></i> Call Driver</a>`
+            : `<button class="call-btn disabled" aria-disabled="true" title="Driver number not available"><i class="fas fa-phone"></i> Call Driver</button>`;
+
+          // placeholder for review UI
+          const reviewPlaceholder = `<span class="review-area" data-booking-id="${b.id}" data-driver-id="${b.driverId}"></span>`;
+          const reviewedHtml = b.reviewed ? `<span class="reviewed-badge">Reviewed</span>` : '';
+
+          return `
+            <div class="booking-card" id="booking-card-${b.id}">
+              <div class="card-number">${i + 1}</div>
+              <h3>Booking #${i + 1}</h3>
+              <div class="info"><i class="fas fa-calendar"></i> <span>${formatDate(b.date)}</span></div>
+              <div class="info"><i class="fas fa-clock"></i> <span>${to12Hour(b.time)}</span></div>
+              <div class="info"><i class="fas fa-map-marker-alt"></i> <span>Pickup: ${b.pickup}</span></div>
+              <div class="info"><i class="fas fa-flag-checkered"></i> <span>Dropoff: ${b.dropoff}</span></div>
+              <div class="info"><i class="fas fa-users"></i> <span>Seats: ${seats}</span></div>
+              <div class="info"><i class="fas fa-car"></i> <span>${carText}</span></div>
+
+              <div class="fare-row">
+                <div class="fare-text">Fare: ${fareText}</div>
+                ${callBtn}
+                ${reviewPlaceholder}
+                ${reviewedHtml}
+              </div>
+            </div>`;
+        }).join('');
+
+        // process eligibility using server time
+        const serverNow = await getServerTimeNow();
+        myBookings.forEach(b => processBookingForReview(b, serverNow, user.uid));
+      } catch (err) {
+        console.error('Error fetching bookings:', err);
+        bookingsEl.innerHTML = `<p style="color:#fff; text-align:center;">Unable to load bookings.</p>`;
+      }
     });
 
-    // Determine if review eligible and insert button
-    function processBookingForReview(b, serverNow, currentUid) {
+    // Decide whether to show Review button, Reviewed badge, or waiting note
+    async function processBookingForReview(b, serverNow, currentUid) {
       const placeholder = document.querySelector(`.review-area[data-booking-id="${b.id}"][data-driver-id="${b.driverId}"]`);
       if (!placeholder) return;
 
-      // already reviewed flag on booking
       if (b.reviewed) {
         placeholder.innerHTML = `<span class="reviewed-badge">Reviewed</span>`;
         return;
       }
 
-      // compute pickup timestamp
       const pickupTs = getPickupTimestamp(b);
       if (!pickupTs) {
-        // cannot determine pickup time; show informative note
         placeholder.innerHTML = `<span class="fare-note">Review available after ride</span>`;
         return;
       }
 
       const tenMin = 10 * 60 * 1000;
       const eligible = serverNow >= (pickupTs + tenMin);
-
       if (!eligible) {
-        // show approximate waiting note
         const minutesLeft = Math.max(0, Math.ceil((pickupTs + tenMin - serverNow) / 60000));
         placeholder.innerHTML = `<span class="fare-note">Review available in ${minutesLeft} min</span>`;
         return;
       }
 
-      // check if review already exists in DB (final check)
-      db.ref(`reviews/${b.driverId}/${b.id}`).once('value')
-        .then(snap => {
-          if (snap.exists()) {
-            placeholder.innerHTML = `<span class="reviewed-badge">Reviewed</span>`;
-            return;
-          }
+      // final check: is review already present in DB?
+      try {
+        const snap = await db.ref(`reviews/${b.driverId}/${b.id}`).once('value');
+        if (snap.exists()) {
+          placeholder.innerHTML = `<span class="reviewed-badge">Reviewed</span>`;
+          return;
+        }
 
-          // Not yet reviewed; show button
-          const btn = document.createElement('button');
-          btn.className = 'review-btn';
-          btn.innerHTML = `<i class="fas fa-star"></i> Review Driver`;
-          btn.setAttribute('data-booking-id', b.id);
-          btn.setAttribute('data-driver-id', b.driverId);
+        const btn = document.createElement('button');
+        btn.className = 'review-btn';
+        btn.innerHTML = `<i class="fas fa-star"></i> Review Driver`;
+        btn.setAttribute('data-booking-id', b.id);
+        btn.setAttribute('data-driver-id', b.driverId);
 
-          btn.addEventListener('click', () => {
-            // open modal with booking info
-            window.openReviewModal({ id: b.id, ...b }, b.driverId);
-          });
-
-          placeholder.innerHTML = '';
-          placeholder.appendChild(btn);
-        })
-        .catch(err => {
-          console.error('Error checking review existence', err);
-          placeholder.innerHTML = `<span class="fare-note">Unable to check review</span>`;
+        btn.addEventListener('click', () => {
+          window.openReviewModal({ id: b.id, ...b }, b.driverId);
         });
+
+        placeholder.innerHTML = '';
+        placeholder.appendChild(btn);
+      } catch (err) {
+        console.error('Error checking review existence', err);
+        placeholder.innerHTML = `<span class="fare-note">Unable to check review</span>`;
+      }
     }
 
-    // actual submit logic that writes to DB
-    async function submitReview(booking, driverId, rating, comment) {
-      // ensure auth
+    // ------------------ full client-only review flow ------------------
+    // Steps (atomic-ish):
+    // 1) create reviews/{driverId}/{bookingId}
+    // 2) create driverStatsUpdates/{driverId}/{bookingId} {userId,rating,createdAt,consumed:false}
+    // 3) transaction on driverStats/{driverId} to increment count & sum and compute average
+    // 4) set driverStatsUpdates/.../consumed = true
+    // 5) set bookings/.../reviewed = true
+
+    async function fullClientReviewFlow(booking, driverId, rating, comment) {
       const user = auth.currentUser;
       if (!user) throw new Error('Not authenticated');
 
-      const reviewPath = `reviews/${driverId}/${booking.id}`;
+      const reviewRef = db.ref(`reviews/${driverId}/${booking.id}`);
+      const updateRef = db.ref(`driverStatsUpdates/${driverId}/${booking.id}`);
+      const statsRef = db.ref(`driverStats/${driverId}`);
+      const bookingReviewedRef = db.ref(`bookings/${driverId}/${booking.id}/reviewed`);
+
+      // 1) ensure no existing review
+      const existing = await reviewRef.once('value');
+      if (existing.exists()) throw new Error('Review already exists for this booking.');
+
+      // 2) write the review
       const reviewObj = {
         userId: user.uid,
         rating: Number(rating),
@@ -650,37 +643,68 @@
         createdAt: firebase.database.ServerValue.TIMESTAMP
       };
 
-      // try to write review (create only). If you have security rules preventing overwrite, this will fail for duplicates.
-      await db.ref(reviewPath).set(reviewObj);
+      await reviewRef.set(reviewObj);
 
-      // Update UI: replace button with Reviewed badge
+      // 3) create the driverStatsUpdates entry (create-only; consumed false)
+      const updateObj = {
+        userId: user.uid,
+        rating: Number(rating),
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        consumed: false
+      };
+
+      await updateRef.set(updateObj);
+
+      // 4) transaction on statsRef
+      // Use transaction to safely increment count & sum and compute average
+      await new Promise((resolve, reject) => {
+        statsRef.transaction(current => {
+          const r = Number(rating);
+          if (current === null) {
+            return { count: 1, sum: r, average: r };
+          } else {
+            const curCount = (typeof current.count === 'number') ? current.count : 0;
+            const curSum = (typeof current.sum === 'number') ? current.sum : 0;
+            const nextCount = curCount + 1;
+            const nextSum = curSum + r;
+            const nextAverage = nextSum / nextCount;
+            return { count: nextCount, sum: nextSum, average: nextAverage };
+          }
+        }, async (error, committed, snapshot) => {
+          if (error) {
+            console.error('Transaction failed:', error);
+            reject(error || new Error('Transaction failed'));
+            return;
+          }
+          if (!committed) {
+            reject(new Error('Transaction not committed'));
+            return;
+          }
+          // transaction succeeded
+          try {
+            // 5) mark update consumed
+            await updateRef.child('consumed').set(true);
+
+            // 6) mark booking reviewed (rules only allow this if review exists and auth.uid matches)
+            await bookingReviewedRef.set(true);
+
+            // done
+            toast('Review submitted — thank you!');
+            resolve();
+          } catch (err2) {
+            console.error('Post-transaction steps failed', err2);
+            // NOTE: we cannot roll back the transaction easily from client, but we report error.
+            reject(err2);
+          }
+        }, /* applyLocally */ false);
+      });
+
+      // update UI: replace button with Reviewed badge
       const placeholder = document.querySelector(`.review-area[data-booking-id="${booking.id}"][data-driver-id="${driverId}"]`);
-      if (placeholder) {
-        placeholder.innerHTML = `<span class="reviewed-badge">Reviewed</span>`;
-      }
-
-      // Optional: show a small confirmation
-      toast('Review submitted — thank you!');
-      return;
+      if (placeholder) placeholder.innerHTML = `<span class="reviewed-badge">Reviewed</span>`;
     }
 
-    // small toast helper
-    function toast(msg, ms = 2500) {
-      const t = document.createElement('div');
-      t.style.position = 'fixed';
-      t.style.bottom = '90px';
-      t.style.left = '50%';
-      t.style.transform = 'translateX(-50%)';
-      t.style.background = 'rgba(0,0,0,0.8)';
-      t.style.color = '#fff';
-      t.style.padding = '10px 14px';
-      t.style.borderRadius = '8px';
-      t.style.zIndex = 3000;
-      t.textContent = msg;
-      document.body.appendChild(t);
-      setTimeout(() => t.remove(), ms);
-    }
-
+    // ------------------ end of script ------------------
   </script>
 
 </body>
