@@ -310,7 +310,7 @@
       return d;
     }
 
-    // derive pickup timestamp (epoch ms) from booking object
+    // derive pickup timestamp (epoch ms) from booking object (best-effort)
     function getPickupTimestamp(b) {
       if (!b) return null;
       if (b.pickupTime) {
@@ -322,8 +322,8 @@
         const combined = `${b.date} ${b.time}`;
         const parsed = Date.parse(combined);
         if (!isNaN(parsed)) return parsed;
-        const d = b.date.trim();
-        const t = b.time.trim();
+        const d = (b.date || '').toString().trim();
+        const t = (b.time || '').toString().trim();
         const parts = d.includes('-') ? d.split('-') : (d.includes('/') ? d.split('/') : null);
         if (parts && parts.length === 3) {
           let day = parts[0], month = parts[1], year = parts[2];
@@ -339,6 +339,28 @@
         if (!isNaN(parsed)) return parsed;
       }
       return null;
+    }
+
+    // ensure bookings/{driverId}/{bookingId}/pickupTime numeric exists (returns numeric TS or null)
+    async function ensurePickupTimeIfMissing(booking) {
+      if (!booking) return null;
+      try {
+        if (booking.pickupTime && !isNaN(Number(booking.pickupTime))) {
+          return Number(booking.pickupTime);
+        }
+        // compute from other fields
+        const ts = getPickupTimestamp(booking);
+        if (!ts) return null;
+        // update booking record (only allowed if you are booking owner / driver according to your rules)
+        const bookingRef = db.ref(`bookings/${booking.driverId}/${booking.id}`);
+        await bookingRef.update({ pickupTime: ts });
+        // reflect local change
+        booking.pickupTime = ts;
+        return ts;
+      } catch (err) {
+        console.warn('Could not ensure pickupTime for booking', booking.id, err);
+        return null;
+      }
     }
 
     // get server time now using .info/serverTimeOffset
@@ -459,7 +481,6 @@
         try {
           // visual feedback
           const submitBtn = root.querySelector('#review-submit');
-          const originalText = submitBtn.textContent;
           submitBtn.disabled = true;
           submitBtn.innerHTML = `<span class="spinner"></span> Submitting`;
 
@@ -506,6 +527,7 @@
         const allDrivers = snap.val() || {};
         const myBookings = [];
 
+        // collect bookings owned by this user
         Object.entries(allDrivers).forEach(([driverId, bookings]) => {
           if (!bookings) return;
           Object.entries(bookings).forEach(([bookingId, b]) => {
@@ -520,7 +542,17 @@
           return;
         }
 
-        // render cards
+        // Ensure pickupTime exists for each booking (client computes and writes if missing).
+        // We do this BEFORE eligibility checks so server rules that require pickupTime succeed.
+        await Promise.all(myBookings.map(async (b) => {
+          try {
+            await ensurePickupTimeIfMissing(b);
+          } catch (e) {
+            console.warn('ensurePickupTimeIfMissing failed for', b.id, e);
+          }
+        }));
+
+        // Now render cards (uses possibly updated pickupTime)
         bookingsEl.innerHTML = myBookings.map((b, i) => {
           const seats = b.seatsRequested || b.seatsBooked || b.seats || '—';
           const carText = (b.carBrand ? b.carBrand : '—') + (b.carReg ? ` (${b.carReg})` : '');
@@ -555,7 +587,7 @@
             </div>`;
         }).join('');
 
-        // process eligibility using server time
+        // Now process eligibility using server time
         const serverNow = await getServerTimeNow();
         myBookings.forEach(b => processBookingForReview(b, serverNow, user.uid));
       } catch (err) {
@@ -569,6 +601,7 @@
       const placeholder = document.querySelector(`.review-area[data-booking-id="${b.id}"][data-driver-id="${b.driverId}"]`);
       if (!placeholder) return;
 
+      // if bookings flag already set client-side
       if (b.reviewed) {
         placeholder.innerHTML = `<span class="reviewed-badge">Reviewed</span>`;
         return;
@@ -615,27 +648,52 @@
     }
 
     // ------------------ full client-only review flow ------------------
-    // Steps (atomic-ish):
-    // 1) create reviews/{driverId}/{bookingId}
-    // 2) create driverStatsUpdates/{driverId}/{bookingId} {userId,rating,createdAt,consumed:false}
-    // 3) transaction on driverStats/{driverId} to increment count & sum and compute average
-    // 4) set driverStatsUpdates/.../consumed = true
-    // 5) set bookings/.../reviewed = true
+    // Steps:
+    // 1) ensure bookings/.../pickupTime exists (server rule needs it)
+    // 2) create reviews/{driverId}/{bookingId}
+    // 3) create driverStatsUpdates/{driverId}/{bookingId} {userId,rating,createdAt,consumed:false}
+    // 4) transaction on driverStats/{driverId} to increment count & sum and compute average AND include fromBookingId/fromRating
+    // 5) set driverStatsUpdates/.../consumed = true
+    // 6) set bookings/.../reviewed = true
 
     async function fullClientReviewFlow(booking, driverId, rating, comment) {
       const user = auth.currentUser;
       if (!user) throw new Error('Not authenticated');
 
+      const bookingRef = db.ref(`bookings/${driverId}/${booking.id}`);
       const reviewRef = db.ref(`reviews/${driverId}/${booking.id}`);
       const updateRef = db.ref(`driverStatsUpdates/${driverId}/${booking.id}`);
       const statsRef = db.ref(`driverStats/${driverId}`);
       const bookingReviewedRef = db.ref(`bookings/${driverId}/${booking.id}/reviewed`);
 
-      // 1) ensure no existing review
+      // 1) ensure pickupTime exists in DB (compute & update if missing)
+      try {
+        const snapBooking = await bookingRef.once('value');
+        const dbBooking = snapBooking.val() || {};
+        if (!dbBooking.pickupTime || isNaN(Number(dbBooking.pickupTime))) {
+          // compute from the booking data we have (prefers server copy if available)
+          const ts = getPickupTimestamp(Object.assign({}, dbBooking, booking));
+          if (!ts) throw new Error('Cannot determine booking pickup time for server-side rule. Contact support.');
+          await bookingRef.update({ pickupTime: ts });
+          // also update local booking object
+          booking.pickupTime = ts;
+        }
+      } catch (err) {
+        throw new Error('Failed to ensure pickupTime: ' + (err && err.message ? err.message : err));
+      }
+
+      // check again server-time eligibility before sending review
+      const serverNow = await getServerTimeNow();
+      const pickupTsFinal = getPickupTimestamp(booking);
+      if (!pickupTsFinal || serverNow < (pickupTsFinal + 10 * 60 * 1000)) {
+        throw new Error('Review not yet allowed by server time. Try again later.');
+      }
+
+      // 2) ensure no existing review
       const existing = await reviewRef.once('value');
       if (existing.exists()) throw new Error('Review already exists for this booking.');
 
-      // 2) write the review
+      // 3) write the review
       const reviewObj = {
         userId: user.uid,
         rating: Number(rating),
@@ -645,7 +703,7 @@
 
       await reviewRef.set(reviewObj);
 
-      // 3) create the driverStatsUpdates entry (create-only; consumed false)
+      // 4) create the driverStatsUpdates entry (create-only; consumed false)
       const updateObj = {
         userId: user.uid,
         rating: Number(rating),
@@ -655,20 +713,19 @@
 
       await updateRef.set(updateObj);
 
-      // 4) transaction on statsRef
-      // Use transaction to safely increment count & sum and compute average
+      // 5) transaction on statsRef - produce object with fromBookingId/fromRating so it satisfies rules
       await new Promise((resolve, reject) => {
         statsRef.transaction(current => {
           const r = Number(rating);
           if (current === null) {
-            return { count: 1, sum: r, average: r };
+            return { count: 1, sum: r, average: r, fromBookingId: booking.id, fromRating: r };
           } else {
             const curCount = (typeof current.count === 'number') ? current.count : 0;
             const curSum = (typeof current.sum === 'number') ? current.sum : 0;
             const nextCount = curCount + 1;
             const nextSum = curSum + r;
             const nextAverage = nextSum / nextCount;
-            return { count: nextCount, sum: nextSum, average: nextAverage };
+            return { count: nextCount, sum: nextSum, average: nextAverage, fromBookingId: booking.id, fromRating: r };
           }
         }, async (error, committed, snapshot) => {
           if (error) {
@@ -682,10 +739,10 @@
           }
           // transaction succeeded
           try {
-            // 5) mark update consumed
+            // 6) mark update consumed
             await updateRef.child('consumed').set(true);
 
-            // 6) mark booking reviewed (rules only allow this if review exists and auth.uid matches)
+            // 7) mark booking reviewed (rules allow this only if review exists and userId matches)
             await bookingReviewedRef.set(true);
 
             // done
@@ -693,7 +750,6 @@
             resolve();
           } catch (err2) {
             console.error('Post-transaction steps failed', err2);
-            // NOTE: we cannot roll back the transaction easily from client, but we report error.
             reject(err2);
           }
         }, /* applyLocally */ false);
