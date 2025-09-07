@@ -12,6 +12,7 @@
       --bg-gradient: linear-gradient(to right, #74ebd5, #ACB6E5);
       --card-bg: #fff;
       --dark-text: #333;
+      --whatsapp-green: #25d366;
     }
     * { box-sizing: border-box; margin:0; padding:0; }
     body {
@@ -39,17 +40,33 @@
     .field { display:flex; justify-content:space-between; margin-bottom:12px; font-size:1rem; }
     .field span:first-child { font-weight:600; }
     .loading { font-style:italic; color:#666; }
-    #logoutBtn {
+    #logoutBtn, #supportBtn {
       display:block;
       margin-top:16px;
       width:100%;
       padding:12px;
-      background:var(--primary);
-      color:#fff;
       border:none;
       border-radius:8px;
       font-weight:600;
       cursor:pointer;
+      text-decoration:none;
+      text-align:center;
+      font-size:1rem;
+    }
+    #logoutBtn {
+      background:var(--primary);
+      color:#fff;
+    }
+    #supportBtn {
+      background:var(--whatsapp-green);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+    #supportBtn:hover {
+      background:#22c55e;
     }
     .navbar {
       position:fixed;
@@ -82,6 +99,10 @@
       <div class="field"><span>Phone:</span><span id="userPhone" class="loading">Loading…</span></div>
       <div class="field"><span>Role:</span><span id="userRole" class="loading">Loading…</span></div>
       <button id="logoutBtn">Logout</button>
+      <a href="https://wa.me/+919907738070?text=Hi%2C%20I%20need%20help%21" id="supportBtn" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+        Contact Support
+      </a>
       <div id="notice" class="notice"></div>
     </div>
   </div>
