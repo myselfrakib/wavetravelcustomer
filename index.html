@@ -42,16 +42,29 @@
     #recaptcha-container {
       margin: 10px 0;
     }
-    .option-links, .admin-login-btn, .driver-login-btn {
+    .option-links, .driver-login-btn {
       margin-top: 15px;
     }
-    .option-links a, .admin-login-btn button, .driver-login-btn button {
+    .option-links a {
       color: #ffd1f4;
       text-decoration: none;
       background: none;
       border: none;
       font-size: 15px;
       cursor: pointer;
+    }
+    .driver-login-btn button {
+      background: white;
+      color: #4a00e0;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .driver-login-btn button:hover {
+      background: #f0f0f0;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     .spinner {
       display: inline-block;
@@ -134,7 +147,7 @@
 </head>
 <body>
   <div class="container">
-    <h2>WAVETRAVEL: One-Way Cabfare<br>Login via OTP</h2>
+    <h2>WAVETRAVEL: One-Way Cab<br>Login via OTP</h2>
     <select id="countryCode">
       <option value="+91" selected>🇮🇳 +91</option>
       <option value="+1">🇺🇸 +1</option>
@@ -152,9 +165,6 @@
     <div class="option-links">
       Don't have an Account?<br>
       <a href="signup.html">SIGN UP</a>
-    </div>
-    <div class="admin-login-btn">
-      <button onclick="location.href='adminlogin.html'">Admin Login</button>
     </div>
     <div class="driver-login-btn">
       <button onclick="location.href='driverlogin.html'">Driver Login</button>
