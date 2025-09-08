@@ -4,68 +4,31 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WaveTravel – OTP Login</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tailwind theme tweak (optional) -->
+  <script>
+    // Add any custom colors if you want to reference by name in Tailwind utilities
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            lapis_lazuli: '#2f6690',
+            cerulean: '#3a7ca5',
+            platinum: '#d9dcd6',
+            indigo_dye: '#16425b',
+            sky_blue: '#81c3d7'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Additional CSS for the spinner & the centered toast visuals (keeps your existing toast styles/animations) -->
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #8e2de2, #4a00e0);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      color: white;
-    }
-    .container {
-      background: rgba(0, 0, 0, 0.4);
-      padding: 30px;
-      border-radius: 15px;
-      width: 90%;
-      max-width: 400px;
-      text-align: center;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    button {
-      background-color: #ff6ec4;
-      color: white;
-      cursor: pointer;
-    }
-    #otp, #verifyBtn, #resendBtn {
-      display: none;
-    }
-    #recaptcha-container {
-      margin: 10px 0;
-    }
-    .option-links, .driver-login-btn {
-      margin-top: 15px;
-    }
-    .option-links a {
-      color: #ffd1f4;
-      text-decoration: none;
-      background: none;
-      border: none;
-      font-size: 15px;
-      cursor: pointer;
-    }
-    .driver-login-btn button {
-      background: white;
-      color: #4a00e0;
-      border: none;
-      font-size: 15px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .driver-login-btn button:hover {
-      background: #f0f0f0;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
+    /* Spinner (keeps visual behavior like before) */
     .spinner {
       display: inline-block;
       width: 18px;
@@ -82,7 +45,7 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* Centered Toast styles */
+    /* Centered Toast styles (copied / adapted from your original CSS to preserve behavior) */
     .toast-container {
       position: fixed;
       left: 50%;
@@ -139,42 +102,74 @@
       font-weight:800;
     }
 
-    /* Slight responsiveness to avoid covering too much on small screens */
-    @media (max-width:420px) {
-      .toast { min-width: 220px; padding: 10px; font-size: 14px; }
-    }
+    /* Ensure the otp/verify/resend start hidden (we also hide via inline style but keep CSS fallback) */
+    #otp, #verifyBtn, #resendBtn { display: none !important; }
   </style>
 </head>
-<body>
-  <div class="container">
-    <h2>WAVETRAVEL: One-Way Cab<br>Login via OTP</h2>
-    <select id="countryCode">
-      <option value="+91" selected>🇮🇳 +91</option>
-      <option value="+1">🇺🇸 +1</option>
-      <option value="+44">🇬🇧 +44</option>
-      <option value="+880">🇧🇩 +880</option>
-    </select>
-    <input type="text" id="phone" placeholder="Enter phone number" maxlength="10" />
-    <div id="recaptcha-container"></div>
-    <button id="sendBtn">Send OTP</button>
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#2f6690] to-[#16425b] text-white">
 
-    <input type="text" id="otp" placeholder="Enter OTP" maxlength="6" />
-    <button id="verifyBtn">Verify OTP</button>
-    <button id="resendBtn">Resend OTP (30s)</button>
+  <div class="w-[90%] max-w-md">
+    <div class="bg-white/5 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-white/5">
+      <h2 class="text-2xl font-bold text-[#d9dcd6] mb-6 leading-snug text-center">
+        WAVETRAVEL: One-Way Cab<br/>Login via OTP
+      </h2>
 
-    <div class="option-links">
-      Don't have an Account?<br>
-      <a href="signup.html">SIGN UP</a>
-    </div>
-    <div class="driver-login-btn">
-      <button onclick="location.href='driverlogin.html'">Driver Login</button>
+      <!-- country select -->
+      <select id="countryCode"
+        class="w-full mb-3 p-3 rounded-lg bg-[#1c3c55] text-[#d9dcd6] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#81c3d7]">
+        <option value="+91" selected>🇮🇳 +91</option>
+        <option value="+1">🇺🇸 +1</option>
+        <option value="+44">🇬🇧 +44</option>
+        <option value="+880">🇧🇩 +880</option>
+      </select>
+
+      <!-- phone input -->
+      <input type="text" id="phone" maxlength="10" placeholder="Enter phone number"
+        class="w-full mb-3 p-3 rounded-lg bg-[#1c3c55] text-white placeholder-[#cfd8dd] focus:outline-none focus:ring-2 focus:ring-[#81c3d7]" />
+
+      <!-- recaptcha -->
+      <div id="recaptcha-container" class="my-2"></div>
+
+      <!-- Send OTP -->
+      <button id="sendBtn"
+        class="w-full py-3 rounded-lg font-semibold bg-gradient-to-r from-[#3a7ca5] to-[#81c3d7] hover:opacity-95 transition">
+        Send OTP
+      </button>
+
+      <!-- OTP and actions (start hidden — logic will reveal them) -->
+      <input type="text" id="otp" maxlength="6" placeholder="Enter OTP"
+        class="mt-4 mb-3 p-3 rounded-lg bg-[#1c3c55] text-white placeholder-[#cfd8dd] focus:outline-none focus:ring-2 focus:ring-[#81c3d7]"
+        style="display:none;" />
+
+      <button id="verifyBtn" style="display:none;"
+        class="w-full py-3 rounded-lg font-semibold bg-[#81c3d7] text-[#16425b] hover:opacity-95 transition">
+        Verify OTP
+      </button>
+
+      <button id="resendBtn" style="display:none;"
+        class="w-full mt-3 py-3 rounded-lg font-semibold bg-[#255172] hover:bg-[#2f6690] transition">
+        Resend OTP (30s)
+      </button>
+
+      <!-- helper links -->
+      <div class="mt-6 text-sm text-[#d9dcd6] text-center">
+        Don't have an Account?<br/>
+        <a href="signup.html" class="font-semibold text-[#81c3d7] hover:underline">SIGN UP</a>
+      </div>
+
+      <div class="mt-4">
+        <button onclick="location.href='driverlogin.html'"
+          class="w-full py-2.5 rounded-lg bg-white text-[#16425b] font-semibold hover:bg-gray-100 shadow">
+          Driver Login
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- Centered Toast container -->
   <div id="toastRoot" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDKs (compat used as in your original) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
