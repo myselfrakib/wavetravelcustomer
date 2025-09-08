@@ -438,12 +438,12 @@
         }
 
         const timestamp = Date.now();
-        const userPath = `cars/${currentUser.uid}/${timestamp}`;
+        const userPath = `drivers/${currentUser.uid}`;
 
         // Upload car images
         const carImageUrls = await uploadMultipleImages(
           carImagesFiles, 
-          `${userPath}/car_images`,
+          `${userPath}/cars/${timestamp}/images`,
           document.getElementById('carImagesProgress')
         );
 
@@ -454,7 +454,7 @@
         
         const licenseUrl = await uploadImage(
           licenseFile, 
-          `${userPath}/license/${Date.now()}_${licenseFile.name}`,
+          `${userPath}/license/${Date.now()}_license.jpg`,
           (progress) => {
             licenseProgressBar.style.width = progress + '%';
           }
