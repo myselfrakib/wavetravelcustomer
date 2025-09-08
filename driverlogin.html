@@ -72,6 +72,9 @@ button:disabled { background: #999; cursor: not-allowed; }
   display: none;
   font-weight: 500;
 }
+.error-toast {
+  background: #dc3545 !important;
+}
 .spinner {
   border: 3px solid #f3f3f3;
   border-top: 3px solid #fff;
@@ -87,6 +90,16 @@ button:disabled { background: #999; cursor: not-allowed; }
 .signup-link { margin-top: 15px; font-size: 14px; }
 .signup-link a { color: #2575fc; text-decoration: none; }
 .signup-link a:hover { text-decoration: underline; }
+.debug-info {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 12px;
+  text-align: left;
+  color: #666;
+}
 </style>
 </head>
 <body>
@@ -111,6 +124,7 @@ button:disabled { background: #999; cursor: not-allowed; }
     </div>
     <button id="verifyBtn">Verify OTP</button>
     <button id="resendOtpBtn" onclick="resendOTP()" disabled>Resend OTP (60s)</button>
+    <div id="debugInfo" class="debug-info" style="display: none;"></div>
   </div>
 
   <div class="signup-link">
@@ -143,11 +157,12 @@ let confirmationResultGlobal = null;
 // Invisible reCAPTCHA
 window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
 
-function showToast(msg){
+function showToast(msg, isError = false){
   const toast = document.getElementById('toast');
   toast.innerText = msg;
+  toast.className = isError ? 'error-toast' : '';
   toast.style.display = 'block';
-  setTimeout(()=>{ toast.style.display='none'; }, 3000);
+  setTimeout(()=>{ toast.style.display='none'; }, 5000);
 }
 
 function formatPhoneNumber(number){
@@ -155,6 +170,12 @@ function formatPhoneNumber(number){
   if(number.startsWith('+91')) return number;
   if(/^\d{10}$/.test(number)) return '+91'+number;
   return number;
+}
+
+function showDebugInfo(info) {
+  const debugDiv = document.getElementById('debugInfo');
+  debugDiv.innerHTML = info;
+  debugDiv.style.display = 'block';
 }
 
 // OTP auto-focus
@@ -170,6 +191,11 @@ async function sendOTP(){
   const phone = formatPhoneNumber(phoneInput);
   const sendBtn = document.getElementById('sendOtpBtn');
 
+  if(!phone || phone.length < 10) {
+    showToast('Please enter a valid phone number', true);
+    return;
+  }
+
   sendBtn.disabled = true;
   sendBtn.innerHTML = 'Sending OTP <span class="spinner"></span>';
 
@@ -181,7 +207,8 @@ async function sendOTP(){
     document.getElementById('otp-section').style.display = 'block';
     startResendCountdown();
   } catch(err){
-    showToast(err.message);
+    console.error('Send OTP Error:', err);
+    showToast('Error sending OTP: ' + err.message, true);
     sendBtn.disabled = false;
     sendBtn.innerText = 'Send OTP';
   }
@@ -204,17 +231,18 @@ async function resendOTP(){
     otpInputs[0].focus();
     startResendCountdown();
   } catch(err){
-    showToast(err.message);
+    console.error('Resend OTP Error:', err);
+    showToast('Error resending OTP: ' + err.message, true);
     btn.disabled = false;
     btn.innerText = 'Resend OTP';
   }
 }
 
-// Verify OTP with spinner and auto redirect
+// Verify OTP with enhanced debugging
 document.getElementById('verifyBtn').addEventListener('click', async ()=>{
   const verifyBtn = document.getElementById('verifyBtn');
   const otp = Array.from(otpInputs).map(i=>i.value).join('');
-  if(otp.length!==6){ showToast('Enter 6-digit OTP'); return; }
+  if(otp.length!==6){ showToast('Enter 6-digit OTP', true); return; }
 
   verifyBtn.disabled = true;
   verifyBtn.innerHTML = 'Verifying <span class="spinner"></span>';
@@ -222,16 +250,56 @@ document.getElementById('verifyBtn').addEventListener('click', async ()=>{
   try{
     const result = await confirmationResultGlobal.confirm(otp);
     const user = result.user;
+    
+    console.log('Firebase Auth User Phone:', user.phoneNumber);
+    showDebugInfo(`Searching for phone: ${user.phoneNumber}<br>User UID: ${user.uid}`);
 
-    const snapshot = await database.ref('driverdetails').orderByChild('phone').equalTo(user.phoneNumber).once('value');
-    if(snapshot.exists()){
-      const driverId = Object.keys(snapshot.val())[0];
-      showToast('Login successful!');
-      // Auto redirect without reload
-      window.location.replace('driverdashboard.html?driverId='+driverId);
-    } else showToast('No driver record found. Please sign up.');
+    // First, let's get all driver data to debug
+    const allDriversSnapshot = await database.ref('driverdetails').once('value');
+    const allDrivers = allDriversSnapshot.val();
+    
+    console.log('All drivers data:', allDrivers);
+    
+    if (allDrivers) {
+      let foundDriver = null;
+      let foundDriverId = null;
+      
+      // Search through all drivers
+      Object.keys(allDrivers).forEach(driverId => {
+        const driver = allDrivers[driverId];
+        console.log(`Checking driver ${driverId}:`, driver.phone, 'vs', user.phoneNumber);
+        
+        if (driver.phone === user.phoneNumber) {
+          foundDriver = driver;
+          foundDriverId = driverId;
+        }
+      });
+      
+      if (foundDriver) {
+        showToast('Login successful!');
+        showDebugInfo(`Found driver: ${foundDriverId}<br>Redirecting...`);
+        setTimeout(() => {
+          window.location.replace('driverdashboard.html?driverId=' + foundDriverId);
+        }, 1000);
+      } else {
+        // Enhanced debugging
+        let debugInfo = `Phone not found. Available phones:<br>`;
+        Object.keys(allDrivers).forEach(id => {
+          debugInfo += `${id}: ${allDrivers[id].phone}<br>`;
+        });
+        debugInfo += `<br>Looking for: ${user.phoneNumber}`;
+        showDebugInfo(debugInfo);
+        showToast('No driver record found. Please check phone number format.', true);
+      }
+    } else {
+      showToast('No driver records found in database.', true);
+      showDebugInfo('Database path /driverdetails is empty');
+    }
+
   } catch(err){
-    showToast('Invalid OTP: '+err.message);
+    console.error('Verify OTP Error:', err);
+    showToast('Invalid OTP: ' + err.message, true);
+    showDebugInfo(`OTP verification failed: ${err.message}`);
   } finally{
     verifyBtn.disabled = false;
     verifyBtn.innerText = 'Verify OTP';
