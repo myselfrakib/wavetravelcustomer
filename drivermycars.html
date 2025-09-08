@@ -42,6 +42,58 @@
       margin-top: 5px;
       font-size: 0.9rem;
     }
+    input[type="file"] {
+      padding: 6px;
+      background: white;
+      color: #333;
+    }
+    .file-upload-container {
+      margin-top: 5px;
+      padding: 10px;
+      border: 2px dashed rgba(255,255,255,0.3);
+      border-radius: 8px;
+      text-align: center;
+      background: rgba(255,255,255,0.05);
+    }
+    .file-upload-container:hover {
+      border-color: rgba(255,255,255,0.5);
+    }
+    .upload-text {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 8px;
+    }
+    .preview-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .preview-image {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    .upload-progress {
+      display: none;
+      margin-top: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 6px;
+      background: #ffd700;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .progress-text {
+      font-size: 0.75rem;
+      text-align: center;
+      margin-top: 5px;
+    }
     button {
       display: block;
       width: 100%;
@@ -54,6 +106,10 @@
       border-radius: 6px;
       font-size: 0.9rem;
       cursor: pointer;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
     }
     .slot-list {
       margin-top: 20px;
@@ -69,6 +125,20 @@
     .slot-card p {
       margin: 4px 0;
       font-size: 0.85rem;
+    }
+    .slot-card .car-images {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+    .slot-card .car-images img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.3);
+      cursor: pointer;
     }
     .slot-card button {
       background: #ff4d4d;
@@ -106,6 +176,32 @@
       font-size: 1rem;
       margin-bottom: 2px;
     }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.9);
+    }
+    .modal-content {
+      display: block;
+      margin: auto;
+      max-width: 90%;
+      max-height: 90%;
+      margin-top: 5%;
+    }
+    .close {
+      position: absolute;
+      top: 15px;
+      right: 35px;
+      color: #f1f1f1;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+    }
     @media (min-width: 768px) {
       .container { padding: 20px; }
       h1 { font-size: 1.7rem; }
@@ -113,6 +209,7 @@
       .slot-card p { font-size: 0.95rem; }
       .navbar a { font-size: 0.8rem; }
       .navbar a i { font-size: 1.3rem; }
+      .preview-image { width: 100px; height: 100px; }
     }
   </style>
 </head>
@@ -126,11 +223,33 @@
       <label for="carReg">Registration Number</label>
       <input type="text" id="carReg" placeholder="e.g., ABC-1234" required />
 
+      <label>Car Images (Multiple)</label>
+      <div class="file-upload-container">
+        <div class="upload-text">Click to upload car images (max 5 images)</div>
+        <input type="file" id="carImages" multiple accept="image/*" />
+        <div class="preview-container" id="carImagesPreview"></div>
+        <div class="upload-progress" id="carImagesProgress">
+          <div class="progress-bar"></div>
+          <div class="progress-text">Uploading images...</div>
+        </div>
+      </div>
+
       <label for="ownerName">Owner Name</label>
       <input type="text" id="ownerName" placeholder="e.g., John Doe" required />
 
       <label for="driverName">Driver Name</label>
       <input type="text" id="driverName" placeholder="e.g., Alex Smith" required />
+
+      <label>Driver's License</label>
+      <div class="file-upload-container">
+        <div class="upload-text">Click to upload driver's license</div>
+        <input type="file" id="driverLicense" accept="image/*" required />
+        <div class="preview-container" id="licensePreview"></div>
+        <div class="upload-progress" id="licenseProgress">
+          <div class="progress-bar"></div>
+          <div class="progress-text">Uploading license...</div>
+        </div>
+      </div>
 
       <label for="driverNumber">Driver Number</label>
       <input type="tel" id="driverNumber" inputmode="numeric" pattern="[0-9]*" placeholder="e.g., 9876543210" required />
@@ -138,11 +257,17 @@
       <label for="seats">Available Seats</label>
       <input type="number" id="seats" min="1" max="6" placeholder="e.g., 4" required />
 
-      <button type="submit">Submit for Approval</button>
+      <button type="submit" id="submitBtn">Submit for Approval</button>
     </form>
 
     <h1>Approved Cars</h1>
     <div class="slot-list" id="approvedCarsList"></div>
+  </div>
+
+  <!-- Image Modal -->
+  <div id="imageModal" class="modal">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="modalImage">
   </div>
 
   <nav class="navbar">
@@ -157,6 +282,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-app.js";
     import { getDatabase, ref, set, get, push } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-auth.js";
+    import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-storage.js";
 
     // Firebase configuration
     const firebaseConfig = {
@@ -173,8 +299,105 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
     const auth = getAuth(app);
+    const storage = getStorage(app);
 
     let currentUser = null;
+
+    // Image preview functionality
+    function setupImagePreview(inputId, previewId) {
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+      
+      input.addEventListener('change', function(e) {
+        preview.innerHTML = '';
+        const files = Array.from(e.target.files);
+        
+        files.forEach((file, index) => {
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const img = document.createElement('img');
+              img.src = e.target.result;
+              img.className = 'preview-image';
+              img.onclick = () => openModal(e.target.result);
+              preview.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      });
+    }
+
+    // Setup image previews
+    setupImagePreview('carImages', 'carImagesPreview');
+    setupImagePreview('driverLicense', 'licensePreview');
+
+    // Modal functionality
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const closeBtn = document.getElementsByClassName('close')[0];
+
+    function openModal(src) {
+      modal.style.display = 'block';
+      modalImg.src = src;
+    }
+
+    closeBtn.onclick = () => modal.style.display = 'none';
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.style.display = 'none';
+    };
+
+    // Upload image to Firebase Storage
+    async function uploadImage(file, path, progressCallback) {
+      const imageRef = storageRef(storage, path);
+      const uploadTask = uploadBytesResumable(imageRef, file);
+      
+      return new Promise((resolve, reject) => {
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            if (progressCallback) progressCallback(progress);
+          },
+          (error) => reject(error),
+          async () => {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve(downloadURL);
+          }
+        );
+      });
+    }
+
+    // Upload multiple images
+    async function uploadMultipleImages(files, basePath, progressElement) {
+      const urls = [];
+      const progressBar = progressElement.querySelector('.progress-bar');
+      const progressText = progressElement.querySelector('.progress-text');
+      
+      progressElement.style.display = 'block';
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileName = `${Date.now()}_${i}_${file.name}`;
+        const path = `${basePath}/${fileName}`;
+        
+        try {
+          progressText.textContent = `Uploading image ${i + 1} of ${files.length}...`;
+          
+          const url = await uploadImage(file, path, (progress) => {
+            const totalProgress = ((i / files.length) * 100) + (progress / files.length);
+            progressBar.style.width = totalProgress + '%';
+          });
+          
+          urls.push(url);
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          throw new Error(`Failed to upload image ${i + 1}: ${error.message}`);
+        }
+      }
+      
+      progressElement.style.display = 'none';
+      return urls;
+    }
 
     // Fetch and watch authentication state
     onAuthStateChanged(auth, user => {
@@ -192,26 +415,83 @@
       event.preventDefault();
       if (!currentUser) return;
 
-      const carData = {
-        carBrand: document.getElementById("carBrand").value.trim(),
-        carReg: document.getElementById("carReg").value.trim(),
-        ownerName: document.getElementById("ownerName").value.trim(),
-        driverName: document.getElementById("driverName").value.trim(),
-        driverNumber: document.getElementById("driverNumber").value.trim(),
-        seats: document.getElementById("seats").value.trim(),
-        driverId: currentUser.uid,  // Correctly fetched from auth state
-        submittedAt: new Date().toISOString()
-      };
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading...';
 
       try {
-        // Save under /pendingcars/{driverId}/{generatedCarId}
+        const carImagesFiles = Array.from(document.getElementById("carImages").files);
+        const licenseFile = document.getElementById("driverLicense").files[0];
+
+        // Validate files
+        if (carImagesFiles.length === 0) {
+          alert("Please upload at least one car image.");
+          return;
+        }
+        if (carImagesFiles.length > 5) {
+          alert("Maximum 5 car images allowed.");
+          return;
+        }
+        if (!licenseFile) {
+          alert("Please upload driver's license.");
+          return;
+        }
+
+        const timestamp = Date.now();
+        const userPath = `cars/${currentUser.uid}/${timestamp}`;
+
+        // Upload car images
+        const carImageUrls = await uploadMultipleImages(
+          carImagesFiles, 
+          `${userPath}/car_images`,
+          document.getElementById('carImagesProgress')
+        );
+
+        // Upload driver's license
+        const licenseProgress = document.getElementById('licenseProgress');
+        licenseProgress.style.display = 'block';
+        const licenseProgressBar = licenseProgress.querySelector('.progress-bar');
+        
+        const licenseUrl = await uploadImage(
+          licenseFile, 
+          `${userPath}/license/${Date.now()}_${licenseFile.name}`,
+          (progress) => {
+            licenseProgressBar.style.width = progress + '%';
+          }
+        );
+        
+        licenseProgress.style.display = 'none';
+
+        // Prepare car data
+        const carData = {
+          carBrand: document.getElementById("carBrand").value.trim(),
+          carReg: document.getElementById("carReg").value.trim(),
+          ownerName: document.getElementById("ownerName").value.trim(),
+          driverName: document.getElementById("driverName").value.trim(),
+          driverNumber: document.getElementById("driverNumber").value.trim(),
+          seats: document.getElementById("seats").value.trim(),
+          driverId: currentUser.uid,
+          submittedAt: new Date().toISOString(),
+          carImages: carImageUrls,
+          driverLicense: licenseUrl
+        };
+
+        // Save to database
         const newCarRef = push(ref(database, `pendingcars/${currentUser.uid}`));
         await set(newCarRef, carData);
-        alert("Car submitted for approval!");
+        
+        alert("Car submitted for approval successfully!");
         event.target.reset();
+        document.getElementById('carImagesPreview').innerHTML = '';
+        document.getElementById('licensePreview').innerHTML = '';
         loadApprovedCars();
+
       } catch (error) {
-        alert("Error: " + error.message);
+        console.error('Submission error:', error);
+        alert("Error submitting car: " + error.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit for Approval';
       }
     });
 
@@ -223,13 +503,33 @@
         list.innerHTML = "";
         let slNo = 1;
 
-        // Iterate over driver IDs
         snap.forEach(driverSnap => {
           if (driverSnap.key === currentUser.uid) {
             driverSnap.forEach(carSnap => {
               const car = carSnap.val();
               const div = document.createElement("div");
               div.className = "slot-card";
+              
+              let carImagesHtml = '';
+              if (car.carImages && car.carImages.length > 0) {
+                carImagesHtml = `
+                  <p><strong>Car Images:</strong></p>
+                  <div class="car-images">
+                    ${car.carImages.map(url => `<img src="${url}" onclick="openModal('${url}')" alt="Car image" />`).join('')}
+                  </div>
+                `;
+              }
+
+              let licenseHtml = '';
+              if (car.driverLicense) {
+                licenseHtml = `
+                  <p><strong>Driver's License:</strong></p>
+                  <div class="car-images">
+                    <img src="${car.driverLicense}" onclick="openModal('${car.driverLicense}')" alt="Driver's License" />
+                  </div>
+                `;
+              }
+              
               div.innerHTML = `
                 <p><strong>Sl No:</strong> ${slNo++}</p>
                 <p><strong>Brand:</strong> ${car.carBrand}</p>
@@ -238,6 +538,8 @@
                 <p><strong>Driver:</strong> ${car.driverName}</p>
                 <p><strong>Contact:</strong> ${car.driverNumber}</p>
                 <p><strong>Seats:</strong> ${car.seats}</p>
+                ${carImagesHtml}
+                ${licenseHtml}
                 <button onclick="removeCar('${driverSnap.key}', '${carSnap.key}')">Remove</button>
               `;
               list.appendChild(div);
@@ -251,15 +553,19 @@
 
     // Remove approved car
     async function removeCar(driverId, carId) {
-      try {
-        await set(ref(database, `approvedcars/${driverId}/${carId}`), null);
-        loadApprovedCars();
-      } catch (err) {
-        console.error("Remove error", err);
+      if (confirm('Are you sure you want to remove this car?')) {
+        try {
+          await set(ref(database, `approvedcars/${driverId}/${carId}`), null);
+          loadApprovedCars();
+        } catch (err) {
+          console.error("Remove error", err);
+        }
       }
     }
 
+    // Make functions globally available
     window.removeCar = removeCar;
+    window.openModal = openModal;
   </script>
 </body>
 </html>
