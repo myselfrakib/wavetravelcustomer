@@ -127,9 +127,6 @@
       <input type="text" id="phone" maxlength="10" placeholder="Enter phone number"
         class="w-full mb-3 p-3 rounded-lg bg-[#1c3c55] text-white placeholder-[#cfd8dd] focus:outline-none focus:ring-2 focus:ring-[#81c3d7]" />
 
-      <!-- recaptcha -->
-      <div id="recaptcha-container" class="my-2"></div>
-
       <!-- Send OTP -->
       <button id="sendBtn"
         class="w-full py-3 rounded-lg font-semibold bg-gradient-to-r from-[#3a7ca5] to-[#81c3d7] hover:opacity-95 transition">
@@ -169,6 +166,9 @@
 
   <!-- Centered Toast container -->
   <div id="toastRoot" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- reCAPTCHA container moved to bottom -->
+  <div id="recaptcha-container" class="fixed bottom-0 left-0"></div>
 
   <!-- Firebase SDKs (compat used as in your original) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
