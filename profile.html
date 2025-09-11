@@ -68,6 +68,32 @@
     #supportBtn:hover {
       background:#22c55e;
     }
+
+    /* NEW: footer links bar placed just above the navbar */
+    .footer-links {
+      position: fixed;
+      left: 0;
+      bottom: 56px; /* sits right above the navbar which is at bottom:0 */
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      gap: 8px;
+      background: rgba(255,255,255,0.98);
+      padding: 8px 12px;
+      border-top: 1px solid #eee;
+      box-shadow: 0 -1px 6px rgba(0,0,0,0.06);
+      z-index: 1000;
+    }
+    .footer-links a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+
     .navbar {
       position:fixed;
       bottom:0;
@@ -105,6 +131,14 @@
       </a>
       <div id="notice" class="notice"></div>
     </div>
+  </div>
+
+  <!-- NEW: links bar just above the navbar -->
+  <div class="footer-links" aria-label="Site links">
+    <a href="term.html">Terms</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="pricing.html">Pricing</a>
+    <a href="refund.html">Refund Policy</a>
   </div>
 
   <div class="navbar">
@@ -203,4 +237,3 @@
   </script>
 </body>
 </html>
-
