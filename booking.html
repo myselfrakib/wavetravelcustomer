@@ -251,8 +251,8 @@
     const slotsDiv  = document.getElementById('slots');
     const locationIndexMap = {};
 
-    // -- New: provided location price map (use these values for fare diff)
-    const locationPriceMap = {
+    // --- New: explicit location fare map from your "Test locations" ---
+    const locationFareMap = {
       "Beldanga": 299,
       "Berhampore Bus Stand": 0,
       "Bethuadahari": 599,
@@ -264,26 +264,7 @@
       "Ranaghat": 899,
       "Rejinagar": 299
     };
-
-    // Helper: get numeric price for a location; fallback to index-based fare if not found
-    function getLocationPrice(locName) {
-      if (!locName) return 0;
-      if (locationPriceMap.hasOwnProperty(locName)) return Number(locationPriceMap[locName]) || 0;
-      // fallback using indices (backwards compatibility): difference * 120
-      const idx = locationIndexMap[locName];
-      if (typeof idx === 'number') return idx * 120;
-      return 0;
-    }
-
-    // Adjust a raw fare to the smallest number >= raw that ends with 99
-    function adjustTo99(rawFare) {
-      rawFare = Number(rawFare) || 0;
-      // If rawFare already ends with 99, return it
-      if (rawFare % 100 === 99) return rawFare;
-      // Compute smallest integer >= rawFare that ends with 99
-      const adjusted = Math.ceil((rawFare - 99) / 100) * 100 + 99;
-      return adjusted;
-    }
+    // ----------------------------------------------------------------
 
     // Debounce helper so date changes don't fire repeat requests rapidly
     function debounce(fn, wait = 350) {
@@ -292,6 +273,37 @@
         clearTimeout(t);
         t = setTimeout(() => fn.apply(this, args), wait);
       };
+    }
+
+    // Helper: per-seat fare using new logic (try locationFareMap, otherwise fallback to old index-based logic)
+    function getPerSeatFare(puName, doName) {
+      const puFare = (puName in locationFareMap) ? Number(locationFareMap[puName]) : null;
+      const doFare = (doName in locationFareMap) ? Number(locationFareMap[doName]) : null;
+      if (Number.isFinite(puFare) && Number.isFinite(doFare)) {
+        return Math.abs(puFare - doFare);
+      }
+      // fallback to index-based logic if either location missing from fare map
+      const puIdx = locationIndexMap[puName] || 0;
+      const doIdx = locationIndexMap[doName] || 0;
+      return Math.abs(puIdx - doIdx) * 120;
+    }
+
+    // Helper: nearest number that ends with 99 (choose the closest among candidates)
+    function nearestEnding99(n) {
+      if (!Number.isFinite(n)) return n;
+      const base = Math.floor(n / 100);
+      const candidates = [
+        (base - 1) * 100 + 99,
+        base * 100 + 99,
+        (base + 1) * 100 + 99
+      ].filter(c => c > 0);
+      let best = candidates[0];
+      let bestDiff = Math.abs(n - best);
+      for (let i = 1; i < candidates.length; i++) {
+        const d = Math.abs(n - candidates[i]);
+        if (d < bestDiff) { best = candidates[i]; bestDiff = d; }
+      }
+      return best;
     }
 
     // We'll use a debounce-wrapped version of searchSlots for the date change
@@ -337,7 +349,9 @@
         });
 
         // If both defaults are set after load, we can auto-search once for the initial date.
+        // (Optional helpful UX — won't run if user changed them)
         if (pickupEl.value && dropoffEl.value && dateEl.value) {
+          // small timeout to let UI settle
           setTimeout(() => searchSlots(), 150);
         }
       });
@@ -346,8 +360,11 @@
     // Bind change/input/blur events so selecting date auto-searches across devices
     dateEl.addEventListener('change', () => debounceSearch());
     dateEl.addEventListener('input', () => debounceSearch());
+    // Many mobile browsers reliably fire blur/focusout when the native picker closes — listen for that too
     dateEl.addEventListener('blur', () => debounceSearch());
     dateEl.addEventListener('focusout', () => debounceSearch());
+    // For mobile native pickers (some browsers), touch/pointer events happen before the value updates.
+    // Use a short delayed call after touchend/pointerup to allow the control to set the value.
     dateEl.addEventListener('touchend', () => { setTimeout(() => debounceSearch(), 500); });
     dateEl.addEventListener('pointerup', () => { setTimeout(() => debounceSearch(), 350); });
 
@@ -379,6 +396,7 @@
       const dt  = dateEl.value;
       const req = parseInt(seatsEl.value, 10) || 1;
       if (!pu || !dof || !dt) {
+        // Quiet early return for auto-searchs; manual button still calls this and will silently return as well
         return;
       }
 
@@ -447,6 +465,7 @@
         }
       }).catch(err => {
         console.warn('Failed to fetch availableslots', err);
+        // update search record to indicate the error (optional)
         if (searchRef) {
           searchRef.update({ fetchError: true }).catch(e => console.warn('Failed to update search error flag', e));
         }
@@ -473,12 +492,9 @@
         const avail = parseInt(slot.seats, 10);
         if (avail < reqSeats) return;
 
-        // NEW FARE LOGIC:
-        const priceA = getLocationPrice(slot.pickup);
-        const priceB = getLocationPrice(slot.dropoff);
-        const perSeatFare = Math.abs(priceA - priceB); // per-seat = difference of location prices
-        const rawFare = perSeatFare * reqSeats;
-        const adjustedFare = adjustTo99(rawFare);
+        // New per-seat fare logic
+        const perSeatFare = getPerSeatFare(slot.pickup, slot.dropoff);
+        const fare  = perSeatFare * reqSeats;
 
         const displayTime = formatTime24to12(slot.time);
         const displayDate = formatDateISOtoDMY(slot.date);
@@ -533,13 +549,13 @@
             <!-- Booking actions -->
             <div class="slot-actions" role="group" aria-label="Booking actions">
               <div class="action-wrap">
-                <button id="bookBtn${idx}" class="btn-action btn-single" aria-label="Book ${reqSeats} seats for ₹${adjustedFare}">
+                <button id="bookBtn${idx}" class="btn-action btn-single" aria-label="Book ${reqSeats} seats for ₹${fare}">
                   <div class="btn-left"><i class="fa fa-user-plus"></i><span>Book ${reqSeats}</span></div>
-                  <div class="btn-right"><span class="price-pill">₹${adjustedFare}</span></div>
+                  <div class="btn-right"><span class="price-pill">₹${fare}</span></div>
                 </button>
               </div>
               <div class="action-wrap">
-                <button id="bookFullBtn${idx}" class="btn-action btn-full" style="display:none" aria-label="Book entire car for full price">
+                <button id="bookFullBtn${idx}" class="btn-action btn-full" style="display:none" aria-label="Book entire car for special price">
                   <div class="btn-left"><i class="fa fa-car"></i><span>Book entire car</span></div>
                   <div class="btn-right"><span class="price-pill">₹<span id="fullFare${idx}"></span></span></div>
                 </button>
@@ -548,7 +564,7 @@
           </div>
 
           <div class="slot-right" aria-hidden="true">
-            <div class="fare-large">₹${adjustedFare}</div>
+            <div class="fare-large">₹${fare}</div>
             <div class="fare-small"></div>
           </div>
         `;
@@ -568,7 +584,7 @@
             time:           slot.time,
             seatsRequested: reqSeats,
             seatsAvailable: avail,
-            fare:           adjustedFare,
+            fare:           fare,
             customerId:     user.uid,
             carBrand:       slot.carBrand     || '',
             carReg:         slot.carReg       || '',
@@ -613,13 +629,9 @@
 
           // Show full-book only when available seats equals car's total seats
           if (Number.isFinite(carTotalSeats) && carTotalSeats > 0 && Number(availSeats) === Number(carTotalSeats)) {
-            // Full fare (no discount) and adjust to 99
-            const priceA = getLocationPrice(slot.pickup);
-            const priceB = getLocationPrice(slot.dropoff);
-            const perSeat = Math.abs(priceA - priceB);
-            const fullRaw = perSeat * carTotalSeats;
-            const adjustedFullFare = adjustTo99(fullRaw);
-
+            // New: no 10% discount. Calculate raw full fare then adjust to nearest ending with 99.
+            const rawFullFare = (Number(perSeatFareLocal) || 0) * carTotalSeats;
+            const adjustedFullFare = nearestEnding99(rawFullFare);
             const fullFareEl = document.getElementById(`fullFare${idx}`);
             if (fullFareEl) fullFareEl.textContent = adjustedFullFare;
 
