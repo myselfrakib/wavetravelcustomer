@@ -52,53 +52,7 @@
       width: 100%; padding: 0.75rem; border: 1px solid rgba(0,0,0,0.06);
       border-radius: 10px; background: #fff; font-size: 1rem;
       box-shadow: 0 1px 2px rgba(16,24,40,0.03);
-      transition: all 0.2s ease;
     }
-    
-    /* Enhanced date input styling */
-    input[type="date"] {
-      position: relative;
-      cursor: pointer;
-      padding: 0.85rem;
-      font-weight: 500;
-      color: var(--dark);
-      border: 2px solid rgba(255,255,255,0.1);
-      background: linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.95) 100%);
-      box-shadow: 0 4px 12px rgba(2,6,23,0.08);
-    }
-    
-    input[type="date"]:focus {
-      outline: none;
-      border-color: var(--sky);
-      box-shadow: 0 0 0 3px rgba(129,195,215,0.2), 0 4px 12px rgba(2,6,23,0.12);
-      transform: translateY(-1px);
-    }
-    
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23#{str-slice(#{var(--primary)}, 2)}" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>') no-repeat center;
-      cursor: pointer;
-      opacity: 0.7;
-      padding: 8px;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-    
-    input[type="date"]::-webkit-calendar-picker-indicator:hover {
-      opacity: 1;
-      background-color: rgba(47,102,144,0.1);
-    }
-
-    /* Date input animation when changed */
-    input[type="date"].date-changed {
-      animation: dateSelected 0.3s ease;
-    }
-    
-    @keyframes dateSelected {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.02); box-shadow: 0 0 0 5px rgba(129,195,215,0.3); }
-      100% { transform: scale(1); }
-    }
-
     .search-btn {
       display: block; width: 100%; padding: 12px;
       margin-top: 12px; /* primary button: Lapis -> Sky gradient */
@@ -107,32 +61,8 @@
       border: none; border-radius: 10px; cursor: pointer;
       transition: transform .08s ease, box-shadow .12s ease;
       box-shadow: 0 8px 18px rgba(2,6,23,0.12);
-      position: relative;
-      overflow: hidden;
     }
-    
     .search-btn:active { transform: translateY(1px); }
-    
-    .search-btn.auto-searching {
-      opacity: 0.8;
-      pointer-events: none;
-    }
-    
-    .search-btn.auto-searching::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      animation: shimmer 1s infinite;
-    }
-    
-    @keyframes shimmer {
-      0% { left: -100%; }
-      100% { left: 100%; }
-    }
 
     .slots { margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -257,32 +187,6 @@
     }
     .navbar a { color: var(--primary); text-decoration: none; font-size: 0.78rem; text-align:center; }
     .navbar a i { font-size:1.3rem; display:block; margin-bottom:4px; }
-
-    /* Loading animation for slots */
-    .slots-loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 2rem;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(2,6,23,0.06);
-    }
-    
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--light);
-      border-top: 3px solid var(--primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-right: 12px;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body>
@@ -317,7 +221,7 @@
 
   <div class="navbar">
     <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
-    <a href="book.html"><i class="fas fa-car"></i>Book</a>
+    <a href="booking.html"><i class="fas fa-car"></i>Book</a>
     <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
     <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
@@ -345,11 +249,7 @@
     const dateEl    = document.getElementById('date');
     const seatsEl   = document.getElementById('seats');
     const slotsDiv  = document.getElementById('slots');
-    const searchBtn = document.querySelector('.search-btn');
     const locationIndexMap = {};
-    
-    let autoSearchTimeout = null;
-    let isInitialLoad = true;
 
     auth.onAuthStateChanged(user => {
       if (!user) {
@@ -384,59 +284,7 @@
         Array.from(dropoffEl.options).forEach(opt => {
           if (opt.text === defaultDropoff) opt.selected = true;
         });
-        
-        // Setup auto-search event listeners after loading
-        setupAutoSearch();
-        isInitialLoad = false;
-        
-        // Automatically search for today's slots
-        searchSlots();
       });
-    }
-
-    function setupAutoSearch() {
-      // Auto-search when date changes
-      dateEl.addEventListener('change', function() {
-        this.classList.add('date-changed');
-        setTimeout(() => this.classList.remove('date-changed'), 300);
-        
-        if (!isInitialLoad) {
-          triggerAutoSearch();
-        }
-      });
-
-      // Auto-search when pickup/dropoff changes
-      pickupEl.addEventListener('change', function() {
-        if (!isInitialLoad && dateEl.value) {
-          triggerAutoSearch();
-        }
-      });
-
-      dropoffEl.addEventListener('change', function() {
-        if (!isInitialLoad && dateEl.value) {
-          triggerAutoSearch();
-        }
-      });
-
-      // Auto-search when seats change
-      seatsEl.addEventListener('input', function() {
-        if (!isInitialLoad && dateEl.value) {
-          clearTimeout(autoSearchTimeout);
-          autoSearchTimeout = setTimeout(() => {
-            triggerAutoSearch();
-          }, 800); // Delay for seat input to allow user to finish typing
-        }
-      });
-    }
-
-    function triggerAutoSearch() {
-      clearTimeout(autoSearchTimeout);
-      autoSearchTimeout = setTimeout(() => {
-        if (dateEl.value && pickupEl.value && dropoffEl.value) {
-          searchBtn.classList.add('auto-searching');
-          searchSlots(true); // Pass true to indicate auto-search
-        }
-      }, 300);
     }
 
     function formatTime24to12(time24) {
@@ -452,30 +300,15 @@
       return `${day}/${month}/${year}`;
     }
 
-    function searchSlots(isAutoSearch = false) {
-      searchBtn.classList.remove('auto-searching');
-      
+    function searchSlots() {
+      slotsDiv.innerHTML = '';
       const pu  = pickupEl.value;
       const dof = dropoffEl.value;
       const dt  = dateEl.value;
       const req = parseInt(seatsEl.value, 10) || 1;
-      
       if (!pu || !dof || !dt) {
-        slotsDiv.innerHTML = '';
-        if (!isAutoSearch) {
-          alert('Please fill all fields');
-        }
-        return;
+        return alert('Please fill all fields');
       }
-      
-      // Show loading animation
-      slotsDiv.innerHTML = `
-        <div class="slots-loading">
-          <div class="loading-spinner"></div>
-          <div style="color: var(--dark); font-weight: 600;">Searching available slots...</div>
-        </div>
-      `;
-      
       const doIdx = locationIndexMap[dof] || 0;
 
       db.ref('availableslots').once('value').then(snap => {
@@ -507,17 +340,11 @@
           }
         }
 
-        // Add a small delay to show the loading animation
-        setTimeout(() => {
-          if (!matched.length) {
-            slotsDiv.innerHTML = `<div class="no-slots">No slots found for ${formatDateISOtoDMY(dt)}.</div>`;
-          } else {
-            renderSlots(matched, req, { used: fallbackUsed, pickup: pu, dropoff: dof, date: dt });
-          }
-        }, isAutoSearch ? 500 : 200);
-      }).catch(error => {
-        console.error('Error searching slots:', error);
-        slotsDiv.innerHTML = `<div class="no-slots">Error loading slots. Please try again.</div>`;
+        if (!matched.length) {
+          slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
+        } else {
+          renderSlots(matched, req, { used: fallbackUsed, pickup: pu, dropoff: dof, date: dt });
+        }
       });
     }
 
@@ -628,4 +455,110 @@
           const bookingData = {
             driverId:       slot.driverId,
             slotKey:        slot.slotKey,
-            pickup:         slot.pickup
+            pickup:         slot.pickup,
+            dropoff:        slot.dropoff,
+            date:           slot.date,
+            time:           slot.time,
+            seatsRequested: reqSeats,
+            seatsAvailable: avail,
+            fare:           fare,
+            customerId:     user.uid,
+            carBrand:       slot.carBrand     || '',
+            carReg:         slot.carReg       || '',
+            driverName:     slot.driverName   || '',
+            driverNumber:   slot.driverNumber || ''
+          };
+          localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
+          window.location.href = 'checkout.html';
+        });
+
+        (async function decideFullBooking(slot, idx, availSeats, perSeatFare){
+          const maybeTotal = slot.maxSeats || slot.totalSeats || slot.carSeats || slot.seatCapacity;
+          let carTotalSeats = (maybeTotal !== undefined && maybeTotal !== null) ? Number(maybeTotal) : NaN;
+
+          try {
+            if (!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) {
+              const driverId = slot.driverId;
+              if (driverCarCache[driverId]) {
+                const map = driverCarCache[driverId];
+                if (slot.carReg && map.byReg && map.byReg[slot.carReg]) carTotalSeats = Number(map.byReg[slot.carReg].seats || map.byReg[slot.carReg].seat || NaN);
+                if ((!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) && slot.carBrand && map.byBrand && map.byBrand[slot.carBrand]) carTotalSeats = Number(map.byBrand[slot.carBrand].seats || map.byBrand[slot.carBrand].seat || NaN);
+              } else {
+                const snap = await db.ref(`approvedcars/${slot.driverId}`).once('value');
+                const map = { byReg: {}, byBrand: {} };
+                if (snap.exists()) {
+                  snap.forEach(ch => {
+                    const c = ch.val();
+                    const reg = c.carReg || '';
+                    const brand = c.carBrand || '';
+                    map.byReg[reg] = c;
+                    map.byBrand[brand] = c;
+                  });
+                }
+                driverCarCache[slot.driverId] = map;
+                if (slot.carReg && map.byReg && map.byReg[slot.carReg]) carTotalSeats = Number(map.byReg[slot.carReg].seats || map.byReg[slot.carReg].seat || NaN);
+                if ((!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) && slot.carBrand && map.byBrand && map.byBrand[slot.carBrand]) carTotalSeats = Number(map.byBrand[slot.carBrand].seats || map.byBrand[slot.carBrand].seat || NaN);
+              }
+            }
+          } catch (err) {
+            console.warn('Failed to fetch approvedcars for full-book decision', err);
+          }
+
+          // Show full-book only when available seats equals car's total seats
+          if (Number.isFinite(carTotalSeats) && carTotalSeats > 0 && Number(availSeats) === Number(carTotalSeats)) {
+            const fullFare = (Number(perSeatFare) || 0) * carTotalSeats;
+            const discountedFullFare = Math.round(fullFare * 0.90); // 10% discount
+            const fullFareEl = document.getElementById(`fullFare${idx}`);
+            if (fullFareEl) fullFareEl.textContent = discountedFullFare;
+
+            const fullBtn = document.getElementById(`bookFullBtn${idx}`);
+            if (fullBtn) {
+              fullBtn.style.display = 'inline-flex';
+              // replace to avoid duplicate listeners
+              const newBtn = fullBtn.cloneNode(true);
+              fullBtn.parentNode.replaceChild(newBtn, fullBtn);
+              newBtn.addEventListener('click', async () => {
+                const profileSnap = await db.ref(`users/${user.uid}`).once('value');
+                const profile     = profileSnap.val() || {};
+
+                const bookingData = {
+                  driverId:       slot.driverId,
+                  slotKey:        slot.slotKey,
+                  pickup:         slot.pickup,
+                  dropoff:        slot.dropoff,
+                  date:           slot.date,
+                  time:           slot.time,
+                  seatsRequested: carTotalSeats,
+                  seatsAvailable: availSeats,
+                  fare:           discountedFullFare,
+                  customerId:     user.uid,
+                  carBrand:       slot.carBrand     || '',
+                  carReg:         slot.carReg       || '',
+                  driverName:     slot.driverName   || '',
+                  driverNumber:   slot.driverNumber || '',
+                  bookEntireCar:  true
+                };
+                localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
+                window.location.href = 'checkout.html';
+              });
+            }
+          } else {
+            const fullBtn = document.getElementById(`bookFullBtn${idx}`);
+            if (fullBtn) fullBtn.style.display = 'none';
+          }
+        })(slot, idx, avail, perSeatFare);
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str && str !== 0) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  </script>
+</body>
+</html>
