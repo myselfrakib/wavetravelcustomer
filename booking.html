@@ -8,19 +8,12 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
     :root {
-      /* Palette provided:
-         Lapis Lazuli:  #2f6690
-         Cerulean:      #3a7ca5
-         Platinum:      #d9dcd6
-         Indigo dye:    #16425b
-         Sky blue:      #81c3d7
-      */
-      --primary: #2f6690;      /* Lapis Lazuli */
-      --accent:  #3a7ca5;      /* Cerulean */
-      --light:   #d9dcd6;      /* Platinum */
-      --dark:    #16425b;      /* Indigo dye */
-      --sky:     #81c3d7;      /* Sky blue */
-      --muted:   #6da5d0;      /* derived — gentle mid tone from palette */
+      --primary: #2f6690;
+      --accent:  #3a7ca5;
+      --light:   #d9dcd6;
+      --dark:    #16425b;
+      --sky:     #81c3d7;
+      --muted:   #6da5d0;
       --card-radius: 14px;
       --card-padding: 14px;
     }
@@ -28,7 +21,6 @@
     html,body { height:100%; }
     body {
       font-family: 'Poppins', sans-serif;
-      /* gradient from Cerulean → Indigo dye */
       background: linear-gradient(to right, var(--accent), var(--dark));
       display: flex; flex-direction: column; min-height: 100vh;
       color: var(--dark);
@@ -40,22 +32,16 @@
       flex: 1; max-width: 720px; width: 100%;
       margin: 0 auto; padding: 18px; padding-bottom: 120px;
     }
-    h1 {
-      font-size: 1.5rem; text-align: center; margin-bottom: 14px;
-      color: var(--light);
-    }
+    h1 { font-size: 1.5rem; text-align: center; margin-bottom: 14px; color: var(--light); }
     .form-group { margin-bottom: 12px; }
-    label {
-      display: block; margin-bottom: 8px; font-weight: 600; color: var(--light);
-    }
+    label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--light); }
     select, input {
       width: 100%; padding: 0.75rem; border: 1px solid rgba(0,0,0,0.06);
       border-radius: 10px; background: #fff; font-size: 1rem;
       box-shadow: 0 1px 2px rgba(16,24,40,0.03);
     }
     .search-btn {
-      display: block; width: 100%; padding: 12px;
-      margin-top: 12px; /* primary button: Lapis -> Sky gradient */
+      display: block; width: 100%; padding: 12px; margin-top: 12px;
       background: linear-gradient(90deg, var(--primary), var(--sky));
       color: #fff; font-size: 1.02rem; font-weight: 700;
       border: none; border-radius: 10px; cursor: pointer;
@@ -63,89 +49,37 @@
       box-shadow: 0 8px 18px rgba(2,6,23,0.12);
     }
     .search-btn:active { transform: translateY(1px); }
-
     .slots { margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
 
-    /* Improved slot card UI */
+    /* slot card styles (unchanged) */
     .slot-card {
-      display: grid;
-      grid-template-columns: 8px 1fr auto;
-      gap: 12px;
-      align-items: start;
-      /* subtle platinum card surface */
+      display: grid; grid-template-columns: 8px 1fr auto; gap: 12px; align-items: start;
       background: linear-gradient(180deg, #ffffff 0%, var(--light) 100%);
-      border-radius: var(--card-radius);
-      padding: var(--card-padding);
-      box-shadow: 0 12px 30px rgba(2,6,23,0.08);
-      border: 1px solid rgba(2,6,23,0.04);
-      overflow: hidden;
-      transition: transform .12s ease, box-shadow .12s ease;
+      border-radius: var(--card-radius); padding: var(--card-padding);
+      box-shadow: 0 12px 30px rgba(2,6,23,0.08); border: 1px solid rgba(2,6,23,0.04);
+      overflow: hidden; transition: transform .12s ease, box-shadow .12s ease;
     }
     .slot-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(2,6,23,0.10); }
-
-    .slot-accent { width: 8px; height: 100%;
-      /* accent gradient Lapis → Cerulean */
-      background: linear-gradient(180deg, var(--primary), var(--accent));
-      border-radius: 6px;
-    }
-
+    .slot-accent { width: 8px; height: 100%; background: linear-gradient(180deg, var(--primary), var(--accent)); border-radius: 6px; }
     .slot-main { display:flex; flex-direction:column; gap:10px; min-width:0; }
-
-    .slot-number {
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:34px;
-      height:34px;
-      border-radius:10px;
-      /* soft sky background for number */
-      background: linear-gradient(90deg, var(--sky), rgba(129,195,215,0.9));
-      color: var(--dark);
-      font-weight:800;
-      font-size:0.95rem;
-      box-shadow: 0 6px 14px rgba(2,6,23,0.06);
-    }
-
+    .slot-number { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; background: linear-gradient(90deg, var(--sky), rgba(129,195,215,0.9)); color: var(--dark); font-weight:800; font-size:0.95rem; box-shadow: 0 6px 14px rgba(2,6,23,0.06); }
     .pickup-drop { display:flex; flex-direction:column; gap:6px; }
     .pd-row { display:flex; gap:8px; align-items:center; }
     .pd-label { font-size:0.78rem; color:rgba(22,66,91,0.75); font-weight:800; text-transform:uppercase; letter-spacing:0.6px; width:74px; flex-shrink:0; }
     .pd-value { font-weight:800; color:var(--dark); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
-    .car-row {
-      display:flex; gap:8px; align-items:center; margin-top:4px;
-    }
+    .car-row { display:flex; gap:8px; align-items:center; margin-top:4px; }
     .car-name { font-weight:700; color:var(--primary); font-size:0.95rem; display:flex; gap:8px; align-items:center; }
-    .car-name i { color:var(--primary); font-size:1.05rem; background: rgba(47,102,144,0.06); padding:6px; border-radius:8px; }
-
-    .slot-mid {
-      display:flex; gap:12px; align-items:center; flex-wrap:wrap;
-      justify-content:space-between;
-    }
+    .slot-mid { display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:space-between; }
     .slot-mid-left { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .pill {
-      border-radius:999px; padding:6px 8px; font-weight:700; font-size:0.85rem; color:var(--dark);
-      display:inline-flex; gap:8px; align-items:center; box-shadow: 0 3px 8px rgba(2,6,23,0.04);
-    }
+    .pill { border-radius:999px; padding:6px 8px; font-weight:700; font-size:0.85rem; color:var(--dark); display:inline-flex; gap:8px; align-items:center; box-shadow: 0 3px 8px rgba(2,6,23,0.04); }
     .seat-pill { background: linear-gradient(90deg,#e6f7fb,#cfeff6); color: var(--dark); }
     .date-pill { background: linear-gradient(90deg,#eaf6ff,#dbeffb); color: var(--primary); }
     .time-pill { background: linear-gradient(90deg,#eefafc,#dff4f8); color:#0b5966; }
     .perseat-pill { background: linear-gradient(90deg,#f7fbff,#e8f2fb); color:var(--primary); font-weight:800; }
-
-    .slot-right {
-      display:flex; flex-direction:column; align-items:flex-end; gap:8px; margin-left:8px;
-      justify-self:end;
-    }
+    .slot-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; margin-left:8px; justify-self:end; }
     .fare-large { font-weight:900; font-size:1.18rem; color:var(--dark); background:linear-gradient(90deg,rgba(0,0,0,0.02),transparent); padding:6px 10px; border-radius:10px; }
     .fare-small { font-size:12px; color:var(--muted); display:none; }
-
-    /* Booking actions: grid for desktop, stacked for mobile */
-    .slot-actions {
-      display:grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap:10px;
-      margin-top:8px;
-      align-items:center;
-    }
+    .slot-actions { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-top:8px; align-items:center; }
     @media (max-width:520px) {
       .slot-card { grid-template-columns: 6px 1fr; grid-template-rows: auto auto auto; }
       .slot-right { justify-self:start; flex-direction:row; gap:8px; }
@@ -153,38 +87,19 @@
       .slot-actions { grid-template-columns: 1fr; }
       .pd-label { width:64px; }
     }
-
     .action-wrap { display:flex; width:100%; }
-    .btn-action {
-      display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;
-      padding: 14px 16px; border-radius: 12px; border: none; cursor: pointer; font-weight:800;
-      font-size:1.02rem; box-shadow: 0 8px 20px rgba(2,6,23,0.06);
-      transition: transform .06s ease, box-shadow .1s ease;
-      color:#fff;
-    }
+    .btn-action { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding: 14px 16px; border-radius: 12px; border: none; cursor: pointer; font-weight:800; font-size:1.02rem; box-shadow: 0 8px 20px rgba(2,6,23,0.06); transition: transform .06s ease, box-shadow .1s ease; color:#fff; }
     .btn-action:active { transform: translateY(1px); }
-
-    /* single-seat button: sky -> cerulean */
     .btn-single { background: linear-gradient(90deg, var(--sky), var(--accent)); color:#fff; }
-    /* full car button: accent -> lapis */
     .btn-full   { background: linear-gradient(90deg, var(--accent), var(--primary)); color:#fff; }
-
     .btn-left { display:flex; align-items:center; gap:12px; min-width:0; overflow:hidden; }
     .btn-left i { width:34px; text-align:center; font-size:1.15rem; }
     .btn-left span { white-space:nowrap; text-overflow:ellipsis; overflow:hidden; display:inline-block; max-width:160px; }
-
     .btn-right { display:flex; align-items:center; gap:8px; min-width:fit-content; }
     .price-pill { background: rgba(255,255,255,0.14); padding:6px 10px; border-radius:10px; font-weight:900; color:#fff; }
-
     .no-slots { text-align: center; padding: 1rem; background: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(2,6,23,0.06); font-weight:700; color:var(--dark); }
     .fallback-msg { background: #fff; padding: 12px; border-radius: 10px; box-shadow: 0 4px 12px rgba(2,6,23,0.06); font-weight:700; color:var(--dark); }
-
-    .navbar {
-      position: fixed; bottom: 0; left: 0; width: 100%;
-      background: #fff; border-top: 1px solid rgba(0,0,0,0.06);
-      display: flex; justify-content: space-around; padding: 0.6rem 0;
-      box-shadow: 0 -6px 18px rgba(2,6,23,0.06);
-    }
+    .navbar { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; border-top: 1px solid rgba(0,0,0,0.06); display: flex; justify-content: space-around; padding: 0.6rem 0; box-shadow: 0 -6px 18px rgba(2,6,23,0.06); }
     .navbar a { color: var(--primary); text-decoration: none; font-size: 0.78rem; text-align:center; }
     .navbar a i { font-size:1.3rem; display:block; margin-bottom:4px; }
   </style>
@@ -249,10 +164,10 @@
     const dateEl    = document.getElementById('date');
     const seatsEl   = document.getElementById('seats');
     const slotsDiv  = document.getElementById('slots');
-    const locationIndexMap = {};
+    const locationIndexMap = {}; // still used only to populate selects
 
-    // --- New: explicit location fare map from your "Test locations" ---
-    const locationFareMap = {
+    // local fallback copy of the test list you provided (used only if DB has no mapping)
+    const localTestFareMap = {
       "Beldanga": 299,
       "Berhampore Bus Stand": 0,
       "Bethuadahari": 599,
@@ -264,9 +179,11 @@
       "Ranaghat": 899,
       "Rejinagar": 299
     };
-    // ----------------------------------------------------------------
 
-    // Debounce helper so date changes don't fire repeat requests rapidly
+    // final map used by fare logic; filled from DB on loadLocations()
+    let locationFareMap = {};
+
+    // Debounce helper
     function debounce(fn, wait = 350) {
       let t;
       return function(...args) {
@@ -275,20 +192,7 @@
       };
     }
 
-    // Helper: per-seat fare using new logic (try locationFareMap, otherwise fallback to old index-based logic)
-    function getPerSeatFare(puName, doName) {
-      const puFare = (puName in locationFareMap) ? Number(locationFareMap[puName]) : null;
-      const doFare = (doName in locationFareMap) ? Number(locationFareMap[doName]) : null;
-      if (Number.isFinite(puFare) && Number.isFinite(doFare)) {
-        return Math.abs(puFare - doFare);
-      }
-      // fallback to index-based logic if either location missing from fare map
-      const puIdx = locationIndexMap[puName] || 0;
-      const doIdx = locationIndexMap[doName] || 0;
-      return Math.abs(puIdx - doIdx) * 120;
-    }
-
-    // Helper: nearest number that ends with 99 (choose the closest among candidates)
+    // nearest ending with 99
     function nearestEnding99(n) {
       if (!Number.isFinite(n)) return n;
       const base = Math.floor(n / 100);
@@ -306,9 +210,26 @@
       return best;
     }
 
-    // We'll use a debounce-wrapped version of searchSlots for the date change
+    // Uses only the fare map (no index fallback). If pickup/dropoff missing in map, returns 0 and warns.
+    function getPerSeatFare(puName, doName) {
+      if (!locationFareMap || typeof locationFareMap !== 'object') {
+        console.warn('locationFareMap not loaded; returning 0 fare');
+        return 0;
+      }
+      const puFareRaw = locationFareMap[puName];
+      const doFareRaw = locationFareMap[doName];
+      const puFare = (puFareRaw === undefined || puFareRaw === null) ? NaN : Number(puFareRaw);
+      const doFare = (doFareRaw === undefined || doFareRaw === null) ? NaN : Number(doFareRaw);
+
+      if (!Number.isFinite(puFare) || !Number.isFinite(doFare)) {
+        console.warn('Missing fare mapping for pickup or dropoff:', puName, doName);
+        return 0;
+      }
+      return Math.abs(puFare - doFare);
+    }
+
+    // Debounced auto-search wrapper
     const debounceSearch = debounce(() => {
-      // Only trigger auto-search if pickup and dropoff are already chosen to avoid alert popups.
       if (pickupEl.value && dropoffEl.value && dateEl.value) {
         searchSlots();
       }
@@ -318,15 +239,22 @@
       if (!user) {
         window.location.href = 'index.html';
       } else {
-        loadLocations();
+        loadLocationsAndFareMap();
       }
     });
 
-    function loadLocations() {
-      db.ref('locations').once('value').then(snap => {
+    // Load locations (for selects) and locationFareMap (from DB) — ensure fare map loaded before first auto-search
+    function loadLocationsAndFareMap() {
+      // try multiple nodes for fare map: prefer '/locationFareMap', then '/testlocations'
+      const p1 = db.ref('locations').once('value');
+      const p2 = db.ref('locationFareMap').once('value');
+      const p3 = db.ref('testlocations').once('value');
+
+      Promise.all([p1, p2, p3]).then(([locSnap, fareSnap, testSnap]) => {
+        // populate selects from locations node
         let puOpts = '<option value="">Select Pickup</option>',
             doOpts = '<option value="">Select Dropoff</option>';
-        snap.forEach(child => {
+        locSnap.forEach(child => {
           const loc = child.val();
           locationIndexMap[loc.name] = loc.index;
           puOpts += `<option value="${loc.name}">${loc.name}</option>`;
@@ -335,46 +263,55 @@
         pickupEl.innerHTML  = puOpts;
         dropoffEl.innerHTML = doOpts;
 
+        // determine fare map
+        if (fareSnap && fareSnap.exists()) {
+          const val = fareSnap.val();
+          // convert string values to numbers
+          Object.keys(val).forEach(k => { val[k] = Number(val[k]); });
+          locationFareMap = val;
+          console.info('Loaded locationFareMap from /locationFareMap');
+        } else if (testSnap && testSnap.exists()) {
+          const val = testSnap.val();
+          Object.keys(val).forEach(k => { val[k] = Number(val[k]); });
+          locationFareMap = val;
+          console.info('Loaded locationFareMap from /testlocations');
+        } else {
+          // final local fallback: your provided test list
+          locationFareMap = Object.assign({}, localTestFareMap);
+          console.warn('No fare map found at /locationFareMap or /testlocations — using localTestFareMap fallback.');
+        }
+
+        // set date & seats defaults
         const today = new Date().toISOString().split('T')[0];
         dateEl.value  = today;
         seatsEl.value = '1';
 
         const defaultPickup  = 'Berhampore Mohona Bus Stand';
         const defaultDropoff = 'Kolkata Airport';
-        Array.from(pickupEl.options).forEach(opt => {
-          if (opt.text === defaultPickup) opt.selected = true;
-        });
-        Array.from(dropoffEl.options).forEach(opt => {
-          if (opt.text === defaultDropoff) opt.selected = true;
-        });
+        Array.from(pickupEl.options).forEach(opt => { if (opt.text === defaultPickup) opt.selected = true; });
+        Array.from(dropoffEl.options).forEach(opt => { if (opt.text === defaultDropoff) opt.selected = true; });
 
-        // If both defaults are set after load, we can auto-search once for the initial date.
-        // (Optional helpful UX — won't run if user changed them)
+        // Auto-search once on load if defaults are set
         if (pickupEl.value && dropoffEl.value && dateEl.value) {
-          // small timeout to let UI settle
           setTimeout(() => searchSlots(), 150);
         }
+      }).catch(err => {
+        console.error('Failed to load locations or fare map:', err);
+        // if error, use local fallback for map and still try to populate selects from whatever we have
+        locationFareMap = Object.assign({}, localTestFareMap);
       });
     }
 
-    // Bind change/input/blur events so selecting date auto-searches across devices
+    // Bind date/pickup/drop handlers for reliable mobile auto-search
     dateEl.addEventListener('change', () => debounceSearch());
     dateEl.addEventListener('input', () => debounceSearch());
-    // Many mobile browsers reliably fire blur/focusout when the native picker closes — listen for that too
     dateEl.addEventListener('blur', () => debounceSearch());
     dateEl.addEventListener('focusout', () => debounceSearch());
-    // For mobile native pickers (some browsers), touch/pointer events happen before the value updates.
-    // Use a short delayed call after touchend/pointerup to allow the control to set the value.
     dateEl.addEventListener('touchend', () => { setTimeout(() => debounceSearch(), 500); });
     dateEl.addEventListener('pointerup', () => { setTimeout(() => debounceSearch(), 350); });
 
-    // Also trigger auto-search when pickup or dropoff changes and date already selected
-    pickupEl.addEventListener('change', () => {
-      if (dateEl.value && dropoffEl.value) debounceSearch();
-    });
-    dropoffEl.addEventListener('change', () => {
-      if (dateEl.value && pickupEl.value) debounceSearch();
-    });
+    pickupEl.addEventListener('change', () => { if (dateEl.value && dropoffEl.value) debounceSearch(); });
+    dropoffEl.addEventListener('change', () => { if (dateEl.value && pickupEl.value) debounceSearch(); });
 
     function formatTime24to12(time24) {
       const [hourStr, minute] = (time24||'00:00').split(':');
@@ -396,11 +333,10 @@
       const dt  = dateEl.value;
       const req = parseInt(seatsEl.value, 10) || 1;
       if (!pu || !dof || !dt) {
-        // Quiet early return for auto-searchs; manual button still calls this and will silently return as well
         return;
       }
 
-      // Save this search to /searches (push a new record) and later update with resultCount/fallbackUsed
+      // Save this search to /searches
       let searchRef = null;
       try {
         const user = auth.currentUser;
@@ -418,8 +354,6 @@
         console.warn('Error creating search record', err);
       }
 
-      const doIdx = locationIndexMap[dof] || 0;
-
       db.ref('availableslots').once('value').then(snap => {
         const all = [];
         snap.forEach(driverSnap => {
@@ -432,24 +366,19 @@
           });
         });
 
-        // Exact matches first
-        let matched = all.filter(s =>
-          s.pickup === pu && s.dropoff === dof && s.date === dt
-        );
+        // exact matches first
+        let matched = all.filter(s => s.pickup === pu && s.dropoff === dof && s.date === dt);
 
-        // If no exact matches, fallback to alternatives (same date, same dropoff index)
         let fallbackUsed = false;
         if (!matched.length) {
-          const alternatives = all.filter(s =>
-            s.date === dt && locationIndexMap[s.dropoff] === doIdx
-          );
+          // fallback to alternatives based on same date + exact dropoff name match (not index)
+          const alternatives = all.filter(s => s.date === dt && s.dropoff === dof);
           if (alternatives.length) {
             matched = alternatives;
             fallbackUsed = true;
           }
         }
 
-        // Update the search record with result metadata if we created it
         try {
           if (searchRef) {
             searchRef.update({ resultCount: matched.length, fallbackUsed: !!fallbackUsed }).catch(err => console.warn('Failed to update search record', err));
@@ -465,10 +394,7 @@
         }
       }).catch(err => {
         console.warn('Failed to fetch availableslots', err);
-        // update search record to indicate the error (optional)
-        if (searchRef) {
-          searchRef.update({ fetchError: true }).catch(e => console.warn('Failed to update search error flag', e));
-        }
+        if (searchRef) searchRef.update({ fetchError: true }).catch(e => console.warn('Failed to update search error flag', e));
       });
     }
 
@@ -481,10 +407,7 @@
       }
 
       const user = auth.currentUser;
-      if (!user) {
-        alert('Please login first');
-        return;
-      }
+      if (!user) { alert('Please login first'); return; }
 
       const driverCarCache = {};
 
@@ -492,7 +415,7 @@
         const avail = parseInt(slot.seats, 10);
         if (avail < reqSeats) return;
 
-        // New per-seat fare logic
+        // per-seat fare: ALWAYS use locationFareMap
         const perSeatFare = getPerSeatFare(slot.pickup, slot.dropoff);
         const fare  = perSeatFare * reqSeats;
 
@@ -502,22 +425,18 @@
         const card = document.createElement('div');
         card.className = 'slot-card';
 
-        // Car brand only
         const carBrand = slot.carBrand || 'Car';
 
-        // Add slot number, position it at top-left of main area
         const slotNumberHtml = `<div style="display:flex;align-items:center;gap:10px;">
                                   <div class="slot-number" aria-hidden="true">${idx + 1}</div>
                                 </div>`;
 
         card.innerHTML = `
           <div class="slot-accent" aria-hidden="true"></div>
-
           <div class="slot-main">
             <div style="display:flex;gap:12px;align-items:center;">
               ${slotNumberHtml}
               <div style="flex:1;min-width:0;">
-                <!-- Pickup / Dropoff first -->
                 <div class="pickup-drop">
                   <div class="pd-row">
                     <div class="pd-label">Pickup</div>
@@ -528,15 +447,11 @@
                     <div class="pd-value">${escapeHtml(slot.dropoff)}</div>
                   </div>
                 </div>
-
-                <!-- Car Brand with icon -->
                 <div class="car-row">
                   <div class="car-name"><i class="fas fa-car" aria-hidden="true"></i><span>${escapeHtml(carBrand)}</span></div>
                 </div>
               </div>
             </div>
-
-            <!-- Date / Time / Seats / Per-seat fare -->
             <div class="slot-mid">
               <div class="slot-mid-left">
                 <div class="pill date-pill">${escapeHtml(displayDate)}</div>
@@ -546,7 +461,6 @@
               </div>
             </div>
 
-            <!-- Booking actions -->
             <div class="slot-actions" role="group" aria-label="Booking actions">
               <div class="action-wrap">
                 <button id="bookBtn${idx}" class="btn-action btn-single" aria-label="Book ${reqSeats} seats for ₹${fare}">
@@ -627,9 +541,8 @@
             console.warn('Failed to fetch approvedcars for full-book decision', err);
           }
 
-          // Show full-book only when available seats equals car's total seats
           if (Number.isFinite(carTotalSeats) && carTotalSeats > 0 && Number(availSeats) === Number(carTotalSeats)) {
-            // New: no 10% discount. Calculate raw full fare then adjust to nearest ending with 99.
+            // NO discount; raw full fare then adjust to nearest number ending with 99
             const rawFullFare = (Number(perSeatFareLocal) || 0) * carTotalSeats;
             const adjustedFullFare = nearestEnding99(rawFullFare);
             const fullFareEl = document.getElementById(`fullFare${idx}`);
@@ -638,7 +551,6 @@
             const fullBtn = document.getElementById(`bookFullBtn${idx}`);
             if (fullBtn) {
               fullBtn.style.display = 'inline-flex';
-              // replace to avoid duplicate listeners
               const newBtn = fullBtn.cloneNode(true);
               fullBtn.parentNode.replaceChild(newBtn, fullBtn);
               newBtn.addEventListener('click', async () => {
