@@ -415,7 +415,7 @@
 
         const puIdx = locationIndexMap[slot.pickup] || 0;
         const doIdx = locationIndexMap[slot.dropoff] || 0;
-        const perSeatFare = Math.abs(puIdx - doIdx) * 120;
+        const perSeatFare = Math.abs(puIdx - doIdx) * 124.875;
         const fare  = perSeatFare * reqSeats;
 
         const displayTime = formatTime24to12(slot.time);
@@ -607,3 +607,4 @@
   </script>
 </body>
 </html>
+
