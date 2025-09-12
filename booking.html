@@ -345,22 +345,8 @@
     }
 
     function setupAutoSearch() {
-      // Enhanced date picker functionality
-      const dateInput = document.getElementById('date');
-      
-      // Force calendar to open on click for better UX
-      dateInput.addEventListener('click', function() {
-        // Modern browsers support showPicker()
-        if (this.showPicker) {
-          this.showPicker();
-        } else {
-          // Fallback for older browsers
-          this.focus();
-        }
-      });
-
       // Auto-search when date changes
-      dateInput.addEventListener('change', function() {
+      dateEl.addEventListener('change', function() {
         if (this.value && pickupEl.value && dropoffEl.value && seatsEl.value) {
           searchSlots();
         }
