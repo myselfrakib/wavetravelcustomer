@@ -13,6 +13,8 @@
       --card-bg: #fff;
       --dark-text: #333;
       --whatsapp-green: #25d366;
+      --danger-red: #dc2626;
+      --danger-red-hover: #b91c1c;
     }
     * { box-sizing: border-box; margin:0; padding:0; }
     body {
@@ -40,7 +42,7 @@
     .field { display:flex; justify-content:space-between; margin-bottom:12px; font-size:1rem; }
     .field span:first-child { font-weight:600; }
     .loading { font-style:italic; color:#666; }
-    #logoutBtn, #supportBtn {
+    #logoutBtn, #supportBtn, #deleteAccountBtn {
       display:block;
       margin-top:16px;
       width:100%;
@@ -67,6 +69,80 @@
     }
     #supportBtn:hover {
       background:#22c55e;
+    }
+    #deleteAccountBtn {
+      background:var(--danger-red);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+    #deleteAccountBtn:hover {
+      background:var(--danger-red-hover);
+    }
+    #deleteAccountBtn:disabled {
+      background:#9ca3af;
+      cursor:not-allowed;
+    }
+
+    /* Confirmation Modal */
+    .modal {
+      display:none;
+      position:fixed;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:rgba(0,0,0,0.5);
+      z-index:2000;
+    }
+    .modal.show {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .modal-content {
+      background:#fff;
+      border-radius:12px;
+      padding:24px;
+      max-width:350px;
+      width:100%;
+      text-align:center;
+    }
+    .modal h3 {
+      color:var(--danger-red);
+      margin-bottom:16px;
+      font-size:1.25rem;
+    }
+    .modal p {
+      margin-bottom:20px;
+      line-height:1.5;
+    }
+    .modal-buttons {
+      display:flex;
+      gap:12px;
+      justify-content:center;
+    }
+    .modal-btn {
+      padding:10px 20px;
+      border:none;
+      border-radius:6px;
+      font-weight:600;
+      cursor:pointer;
+      font-size:0.9rem;
+    }
+    .modal-btn.cancel {
+      background:#e5e7eb;
+      color:var(--dark-text);
+    }
+    .modal-btn.confirm {
+      background:var(--danger-red);
+      color:#fff;
+    }
+    .modal-btn.confirm:hover {
+      background:var(--danger-red-hover);
     }
 
     /* footer links bar placed just above the navbar */
@@ -114,6 +190,7 @@
     }
     .navbar a i { display:block; font-size:1.25rem; margin-bottom:4px; }
     .notice { margin-top:12px; color:red; text-align:center; }
+    .success { margin-top:12px; color:green; text-align:center; }
   </style>
 </head>
 <body>
@@ -129,7 +206,23 @@
         <i class="fab fa-whatsapp"></i>
         Contact Support
       </a>
+      <button id="deleteAccountBtn">
+        <i class="fas fa-trash-alt"></i>
+        Delete Account
+      </button>
       <div id="notice" class="notice"></div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h3><i class="fas fa-exclamation-triangle"></i> Delete Account</h3>
+      <p>Are you sure you want to permanently delete your account? This action cannot be undone and will remove all your data including bookings and profile information.</p>
+      <div class="modal-buttons">
+        <button class="modal-btn cancel" id="cancelDelete">Cancel</button>
+        <button class="modal-btn confirm" id="confirmDelete">Delete Account</button>
+      </div>
     </div>
   </div>
 
@@ -151,8 +244,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref as dbRef, get, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getDatabase, ref as dbRef, get, query, orderByChild, equalTo, remove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -174,12 +267,21 @@
     const roleEl = document.getElementById('userRole');
     const noticeEl = document.getElementById('notice');
     const logoutBtn = document.getElementById('logoutBtn');
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+    const deleteModal = document.getElementById('deleteModal');
+    const cancelDelete = document.getElementById('cancelDelete');
+    const confirmDelete = document.getElementById('confirmDelete');
+
+    let currentUser = null;
+    let userDataKey = null;
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location = "index.html";
         return;
       }
+
+      currentUser = user;
 
       try {
         let userData = null;
@@ -189,13 +291,16 @@
         const uidSnap = await get(dbRef(db, `users/${uid}`));
         if (uidSnap.exists()) {
           userData = uidSnap.val();
+          userDataKey = uid;
         }
 
         // 2. If not found, check by phone
         if (!userData && user.phoneNumber) {
           const phoneSnap = await get(query(dbRef(db, "users"), orderByChild("phone"), equalTo(user.phoneNumber)));
           if (phoneSnap.exists()) {
-            userData = Object.values(phoneSnap.val())[0];
+            const entries = Object.entries(phoneSnap.val());
+            userData = entries[0][1];
+            userDataKey = entries[0][0];
           }
         }
 
@@ -203,7 +308,9 @@
         if (!userData && user.email) {
           const emailSnap = await get(query(dbRef(db, "users"), orderByChild("email"), equalTo(user.email)));
           if (emailSnap.exists()) {
-            userData = Object.values(emailSnap.val())[0];
+            const entries = Object.entries(emailSnap.val());
+            userData = entries[0][1];
+            userDataKey = entries[0][0];
           }
         }
 
@@ -233,6 +340,77 @@
       } catch (err) {
         console.error("Logout error:", err);
         noticeEl.textContent = "Logout failed.";
+      }
+    });
+
+    // Delete Account Modal handlers
+    deleteAccountBtn.addEventListener('click', () => {
+      deleteModal.classList.add('show');
+    });
+
+    cancelDelete.addEventListener('click', () => {
+      deleteModal.classList.remove('show');
+    });
+
+    // Close modal when clicking outside
+    deleteModal.addEventListener('click', (e) => {
+      if (e.target === deleteModal) {
+        deleteModal.classList.remove('show');
+      }
+    });
+
+    confirmDelete.addEventListener('click', async () => {
+      if (!currentUser) return;
+
+      deleteAccountBtn.disabled = true;
+      confirmDelete.disabled = true;
+      noticeEl.textContent = "Deleting account...";
+      noticeEl.className = "notice";
+
+      try {
+        // 1. Delete user data from database if we found it
+        if (userDataKey) {
+          await remove(dbRef(db, `users/${userDataKey}`));
+        }
+
+        // 2. Delete user's bookings (optional - you might want to keep for records)
+        // You can add this if you want to delete user's bookings too:
+        /*
+        const bookingsSnap = await get(query(dbRef(db, "bookings"), orderByChild("userId"), equalTo(currentUser.uid)));
+        if (bookingsSnap.exists()) {
+          const deletePromises = Object.keys(bookingsSnap.val()).map(bookingId => 
+            remove(dbRef(db, `bookings/${bookingId}`))
+          );
+          await Promise.all(deletePromises);
+        }
+        */
+
+        // 3. Delete the Firebase Auth user
+        await deleteUser(currentUser);
+
+        // 4. Clear local storage
+        localStorage.removeItem('userPhone');
+
+        // 5. Show success and redirect
+        noticeEl.textContent = "Account deleted successfully. Redirecting...";
+        noticeEl.className = "success";
+
+        setTimeout(() => {
+          window.location = 'index.html';
+        }, 2000);
+
+      } catch (err) {
+        console.error("Delete account error:", err);
+        deleteAccountBtn.disabled = false;
+        confirmDelete.disabled = false;
+        deleteModal.classList.remove('show');
+        
+        if (err.code === 'auth/requires-recent-login') {
+          noticeEl.textContent = "Please log out and log back in before deleting your account.";
+        } else {
+          noticeEl.textContent = "Failed to delete account. Please try again or contact support.";
+        }
+        noticeEl.className = "notice";
       }
     });
   </script>
