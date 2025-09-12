@@ -503,11 +503,12 @@
               <div class="action-wrap">
                 <button id="bookBtn${idx}" class="btn-action btn-single" aria-label="Book ${reqSeats} seats for ₹${fare}">
                   <div class="btn-left"><i class="fa fa-user-plus"></i><span>Book ${reqSeats} Seats</span></div>
+                  <div class="btn-right"><span class="price-pill">₹${fare}</span></div>
                 </button>
               </div>
               <div class="action-wrap">
-                <button id="bookFullBtn${idx}" class="btn-action btn-full" style="display:none" aria-label="Book entire car for special price">
-                  <div class="btn-left"><i class="fa fa-car"></i><span>Entire Car(Oneway)</span></div>
+                <button id="bookFullBtn${idx}" class="btn-action btn-full" style="display:none" aria-label="Book Entire car for special price">
+                  <div class="btn-left"><i class="fa fa-car"></i><span>Book Entire car</span></div>
                   <div class="btn-right"><span class="price-pill">₹<span id="fullFare${idx}"></span></span></div>
                 </button>
               </div>
@@ -635,4 +636,3 @@
   </script>
 </body>
 </html>
-
