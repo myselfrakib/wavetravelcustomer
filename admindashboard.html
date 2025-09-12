@@ -16,9 +16,9 @@
 
   <style>
     :root{
-      --primary:#16425b;
+      --primary:#3498db;
       --card-bg: rgba(255,255,255,0.06);
-      --muted:#16425b;
+      --muted:#cbd5e1;
     }
     body { font-family:Arial,sans-serif; margin:0; background:linear-gradient(135deg,#0f1724 0%, #0b3b6b 100%); color:#fff; }
     .navbar { display:flex; flex-wrap:wrap; background:#071124; padding:0.75rem; gap:.4rem; position:sticky; top:0; z-index:1000; border-bottom:1px solid rgba(255,255,255,0.03);}
@@ -332,27 +332,86 @@
       toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
     }
 
+    // ---------- New helper: record admin action to /adminactions/{uid}/actions/{ts} ----------
+    async function recordAdminAction(action, details){
+      try {
+        const adminUid = auth.currentUser?.uid || 'unknown';
+        const ts = Date.now();
+        const payload = { action, details: details || null, adminUid, ts };
+        await set(ref(db, `adminactions/${adminUid}/actions/${ts}`), payload);
+      } catch (e) {
+        console.error('recordAdminAction failed', e);
+      }
+    }
+    // -------------------------------------------------------------------------------
+
     // CRUD and action functions
-    window.deleteUser = async uid => { if(!confirm('Delete user?')) return; await remove(ref(db,`users/${uid}`)); loadUsers(); showToast('User deleted','success'); };
-    window.deleteDriver = async did => { if(!confirm('Delete driver?')) return; await remove(ref(db,`driverdetails/${did}`)); loadDrivers(); showToast('Driver deleted','success'); };
-    window.deletePending = async (did,cid) => { if(!confirm('Delete pending car?')) return; await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); showToast('Pending car deleted','success'); };
-    window.deleteApproved = async (did,cid) => { if(!confirm('Delete approved car?')) return; await remove(ref(db,`approvedcars/${did}/${cid}`)); loadApproved(); showToast('Approved car deleted','success'); };
-    window.deleteSlot = async (did,sid) => { if(!confirm('Delete slot?')) return; await remove(ref(db,`availableslots/${did}/${sid}`)); loadSlots(); showToast('Slot deleted','success'); };
-    window.deleteBooking = async bid => { if(!confirm('Delete booking?')) return; await remove(ref(db,`bookings/${bid}`)); loadBookings(); showToast('Booking deleted','success'); };
-    window.approveCar = async (did,cid) => { if(!confirm('Approve car?')) return; const snap = await get(ref(db,`pendingcars/${did}/${cid}`)); const car = snap.val(); if(!car) return; await set(ref(db,`approvedcars/${did}/${cid}`), car); await remove(ref(db,`pendingcars/${did}/${cid}`)); loadPending(); showToast('Car approved','success'); };
+    window.deleteUser = async uid => { 
+      if(!confirm('Delete user?')) return; 
+      await remove(ref(db,`users/${uid}`)); 
+      await recordAdminAction('deleteUser', { uid }); 
+      loadUsers(); 
+      showToast('User deleted','success'); 
+    };
+    window.deleteDriver = async did => { 
+      if(!confirm('Delete driver?')) return; 
+      await remove(ref(db,`driverdetails/${did}`)); 
+      await recordAdminAction('deleteDriver', { driverId: did }); 
+      loadDrivers(); 
+      showToast('Driver deleted','success'); 
+    };
+    window.deletePending = async (did,cid) => { 
+      if(!confirm('Delete pending car?')) return; 
+      await remove(ref(db,`pendingcars/${did}/${cid}`)); 
+      await recordAdminAction('deletePendingCar', { driverId: did, carId: cid }); 
+      loadPending(); 
+      showToast('Pending car deleted','success'); 
+    };
+    window.deleteApproved = async (did,cid) => { 
+      if(!confirm('Delete approved car?')) return; 
+      await remove(ref(db,`approvedcars/${did}/${cid}`)); 
+      await recordAdminAction('deleteApprovedCar', { driverId: did, carId: cid }); 
+      loadApproved(); 
+      showToast('Approved car deleted','success'); 
+    };
+    window.deleteSlot = async (did,sid) => { 
+      if(!confirm('Delete slot?')) return; 
+      await remove(ref(db,`availableslots/${did}/${sid}`)); 
+      await recordAdminAction('deleteSlot', { driverId: did, slotId: sid }); 
+      loadSlots(); 
+      showToast('Slot deleted','success'); 
+    };
+    window.deleteBooking = async bid => { 
+      if(!confirm('Delete booking?')) return; 
+      await remove(ref(db,`bookings/${bid}`)); 
+      await recordAdminAction('deleteBooking', { bookingId: bid }); 
+      loadBookings(); 
+      showToast('Booking deleted','success'); 
+    };
+    window.approveCar = async (did,cid) => { 
+      if(!confirm('Approve car?')) return; 
+      const snap = await get(ref(db,`pendingcars/${did}/${cid}`)); 
+      const car = snap.val(); 
+      if(!car) return; 
+      await set(ref(db,`approvedcars/${did}/${cid}`), car); 
+      await remove(ref(db,`pendingcars/${did}/${cid}`)); 
+      await recordAdminAction('approveCar', { driverId: did, carId: cid, car }); 
+      loadPending(); 
+      showToast('Car approved','success'); 
+    };
 
     // Wallet actions
     window.approveWalletEntry = async (driverId, bookingId) => {
       if (!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid?`)) return;
       await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { paidout: true, status: 'paid' });
-      await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'approveWalletEntry', driverId, bookingId, ts: Date.now() });
+      await recordAdminAction('approveWalletEntry', { driverId, bookingId });
       loadWallets();
       showToast('Marked paid','success');
     };
     window.rejectWalletEntry = async (driverId, bookingId, amount) => {
       if (!confirm(`Reject wallet entry ${bookingId} and reset amount to ${amount}?`)) return;
       await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { status: 'available', amount });
-      await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'rejectWalletEntry', driverId, bookingId, amount, ts: Date.now() });
+      await recordAdminAction('rejectWalletEntry', { driverId, bookingId, amount });
       loadWallets();
       showToast('Wallet entry rejected','warning');
     };
@@ -361,14 +420,14 @@
     window.approveWithdrawal = async (driverId, bookingId) => {
       if (!confirm(`Approve withdrawal ${bookingId} for driver ${driverId}?`)) return;
       await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'approved' });
-      await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'approveWithdrawal', driverId, bookingId, ts: Date.now() });
+      await recordAdminAction('approveWithdrawal', { driverId, bookingId });
       loadWithdrawals();
       showToast('Withdrawal approved','success');
     };
     window.rejectWithdrawal = async (driverId, bookingId) => {
       if (!confirm(`Reject withdrawal ${bookingId} for driver ${driverId}?`)) return;
       await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'rejected' });
-      await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'rejectWithdrawal', driverId, bookingId, ts: Date.now() });
+      await recordAdminAction('rejectWithdrawal', { driverId, bookingId });
       loadWithdrawals();
       showToast('Withdrawal rejected','warning');
     };
@@ -821,7 +880,7 @@
       if(!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid?`)) return;
       try {
         await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { paidout:true, status: 'paid' });
-        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markPaidEntry', driverId, bookingId, ts: Date.now() });
+        await recordAdminAction('markPaidEntry', { driverId, bookingId });
         loadWallets();
         showToast('Marked paid','success');
       } catch (err) {
@@ -854,7 +913,7 @@
         }
 
         await update(ref(db), updates);
-        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markAllPaidForDriver', driverId, bookingIds, ts: Date.now() });
+        await recordAdminAction('markAllPaidForDriver', { driverId, bookingIds });
         showToast(`Marked ${bookingIds.length} booking(s) as paid for ${driverId}`,'success');
         loadWallets();
       } catch (err) {
@@ -998,11 +1057,13 @@
     function exportWithdrawalsGrouped(dataByDriver){
       try {
         let rows = [['Driver ID','Driver Name','UPI','Booking ID','Amount','Fare','Status']];
+        let totalRows = 0;
         for(const [driverId, bookingsObj] of Object.entries(dataByDriver)){
           for(const [bookingId, data] of Object.entries(bookingsObj)){
             const driverName = (data.driverName || '');
             const upi = (data.upi || '');
             rows.push([driverId, driverName, upi, bookingId, (Number(data.amount)||0).toFixed(2), (data.fare||''), (data.status||'')]);
+            totalRows++;
           }
         }
         const csv = rows.map(r => r.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
@@ -1015,7 +1076,7 @@
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'exportWithdrawalsGrouped', ts: Date.now() });
+        recordAdminAction('exportWithdrawalsGrouped', { totalRows });
         showToast('CSV exported','success');
       } catch (err) { showToast('Export failed: ' + (err.message || err),'danger'); }
     }
