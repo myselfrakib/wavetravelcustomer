@@ -252,7 +252,7 @@
     const locationIndexMap = {};
 
     // Debounce helper so date changes don't fire repeat requests rapidly
-    function debounce(fn, wait = 300) {
+    function debounce(fn, wait = 350) {
       let t;
       return function(...args) {
         clearTimeout(t);
@@ -311,11 +311,19 @@
       });
     }
 
-    // Bind change events so selecting date auto-searches (and also auto-search if user changes pickup/dropoff and date is already set)
+    // Bind change/input/blur events so selecting date auto-searches across devices
     dateEl.addEventListener('change', () => debounceSearch());
-    // Also bind input event for mobile date pickers that may not fire 'change' consistently
     dateEl.addEventListener('input', () => debounceSearch());
-    // If the user changes pickup/dropoff after date is selected, auto-search as well
+    // Many mobile browsers reliably fire blur/focusout when the native picker closes — listen for that too
+    dateEl.addEventListener('blur', () => debounceSearch());
+    dateEl.addEventListener('focusout', () => debounceSearch());
+
+    // For mobile native pickers (some browsers), touch/pointer events happen before the value updates.
+    // Use a short delayed call after touchend/pointerup to allow the control to set the value.
+    dateEl.addEventListener('touchend', () => { setTimeout(() => debounceSearch(), 500); });
+    dateEl.addEventListener('pointerup', () => { setTimeout(() => debounceSearch(), 350); });
+
+    // Also trigger auto-search when pickup or dropoff changes and date already selected
     pickupEl.addEventListener('change', () => {
       if (dateEl.value && dropoffEl.value) debounceSearch();
     });
@@ -343,10 +351,7 @@
       const dt  = dateEl.value;
       const req = parseInt(seatsEl.value, 10) || 1;
       if (!pu || !dof || !dt) {
-        // Don't spam alerts when auto-searching; show friendly message only if user pressed Search button manually
-        // Here we do an early return quietly for auto-search; but if search triggered via button and missing fields, alert()
-        // We'll detect manual invocation by checking a special flag (none here), so for simplicity: alert only if invoked by button.
-        // To keep behavior identical to original when user clicks Search, we still leave the existing alert in the button click.
+        // Quiet early return for auto-searchs; manual button still calls this and will silently return as well (keeps behavior from last saved copy)
         return;
       }
       const doIdx = locationIndexMap[dof] || 0;
