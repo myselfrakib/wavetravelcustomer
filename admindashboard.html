@@ -70,6 +70,22 @@
     .wallets-filter-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
     .wallets-filter-row select { padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:#071124; color:#fff; font-weight:600; }
     .wallets-filter-row label { color:#fff; font-weight:700; margin-right:6px; }
+
+    /* thumbnails in pending cars */
+    .thumb-img {
+      width:56px;
+      height:40px;
+      object-fit:cover;
+      border-radius:6px;
+      margin-right:6px;
+      border:1px solid rgba(0,0,0,0.12);
+      cursor:pointer;
+      display:inline-block;
+    }
+    .thumb-container { display:flex; align-items:center; gap:6px; flex-wrap:wrap; max-width:220px; }
+
+    /* small responsive tweak for images column in DataTables */
+    table.dataTable td .thumb-container { background:transparent; }
   </style>
 </head>
 <body>
@@ -115,10 +131,11 @@
   <div id="pending-cars-tab" class="tab-pane">
     <h2>Pending Cars</h2>
     <div id="pending-loading" class="loading">Loading pending cars…</div>
+    <!-- ADDED Images column -->
     <table id="pending-table" class="display responsive nowrap" style="width:100%;display:none">
       <thead><tr>
         <th>SL</th><th>Driver ID</th><th>Car ID</th><th>Brand</th><th>Reg No</th>
-        <th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Submitted At</th><th>Actions</th>
+        <th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Images</th><th>Submitted At</th><th>Actions</th>
       </tr></thead>
       <tbody></tbody>
     </table>
@@ -235,6 +252,21 @@
     </div>
   </div>
 
+  <!-- Image view modal (new for pending-cars images) -->
+  <div class="modal fade" id="imageViewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content" style="background:#071124;color:#fff;">
+        <div class="modal-header">
+          <h5 class="modal-title">Image</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="imageViewModalImg" src="" alt="Image" style="max-width:100%; max-height:70vh; border-radius:6px;"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast container -->
   <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
@@ -344,8 +376,87 @@
     // Data loaders
     async function loadUsers(){ $('#users-table').hide(); $('#users-loading').show(); initTable('users-table',[7]); const snap = await get(ref(db,'users')); let i=1; if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())){ tables['users-table'].row.add([i++,uid,u.name||'',u.email||'',u.phone||'',u.address||'',u.createdOn||'',`<button class="btn btn-sm btn-danger" onclick="deleteUser('${uid}')">Delete</button>`]).draw(false); } $('#users-loading').hide(); $('#users-table').show();}
     async function loadDrivers(){ $('#drivers-table').hide(); $('#drivers-loading').show(); initTable('drivers-table',[5]); const snap = await get(ref(db,'driverdetails')); let i=1; if(snap.exists()) for(const [did,d] of Object.entries(snap.val())){ const vc = d.vehicles?Object.keys(d.vehicles).length:0; tables['drivers-table'].row.add([i++,did,d.name||'',d.phone||'',vc,`<button class="btn btn-sm btn-danger" onclick="deleteDriver('${did}')">Delete</button>`]).draw(false); } $('#drivers-loading').hide(); $('#drivers-table').show();}
-    async function loadPending(){ $('#pending-table').hide(); $('#pending-loading').show(); initTable('pending-table',[10]); const snap = await get(ref(db,'pendingcars')); let i=1; if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){ for(const [cid,c] of Object.entries(cars)){ tables['pending-table'].row.add([ i++,did,cid,c.carBrand||'',c.carReg||'',c.driverName||'',c.driverNumber||'',c.ownerName||'',c.seats||'',c.submittedAt||'', `<button class="btn btn-sm btn-success" onclick="approveCar('${did}','${cid}')">Approve</button> <button class="btn btn-sm btn-danger" onclick="deletePending('${did}','${cid}')">Delete</button>` ]).draw(false); } } $('#pending-loading').hide(); $('#pending-table').show();}
+
+    // ---------- UPDATED loadPending: handles permission errors gracefully and shows images column ----------
+    async function loadPending(){
+      $('#pending-table').hide();
+      $('#pending-loading').show();
+      // Actions column index changed because we added Images column (see table headers)
+      initTable('pending-table',[11]); // Actions column is at index 11 now
+
+      try {
+        const snap = await get(ref(db,'pendingcars'));
+        if(!snap.exists()){
+          $('#pending-loading').hide();
+          $('#pending-table').show();
+          return;
+        }
+
+        let i = 1;
+        const data = snap.val();
+
+        for(const [did,cars] of Object.entries(data)){
+          // if cars is not object, skip
+          if(!cars || typeof cars !== 'object') continue;
+          for(const [cid,c] of Object.entries(cars)){
+            // Build images HTML (handles array or object, falls back to license image)
+            let imagesHtml = '<div class="thumb-container">';
+            try {
+              const imgs = c.carImages;
+              if(imgs && (Array.isArray(imgs) || typeof imgs === 'object')){
+                const values = Array.isArray(imgs) ? imgs : Object.values(imgs);
+                for(const url of values){
+                  if(!url) continue;
+                  const safeUrl = escapeHtml(String(url));
+                  imagesHtml += `<img src="${safeUrl}" data-src="${safeUrl}" class="thumb-img" onclick="showImageModal(this.dataset.src)" alt="car-image">`;
+                }
+              } else if(c.driverLicense){
+                const safeUrl = escapeHtml(String(c.driverLicense));
+                imagesHtml += `<img src="${safeUrl}" data-src="${safeUrl}" class="thumb-img" onclick="showImageModal(this.dataset.src)" alt="license">`;
+              } else {
+                imagesHtml += `<span class="small-muted">No images</span>`;
+              }
+            } catch(e){
+              imagesHtml += `<span class="small-muted">No images</span>`;
+            }
+            imagesHtml += '</div>';
+
+            tables['pending-table'].row.add([
+              i++,
+              did,
+              cid,
+              c.carBrand||'',
+              c.carReg||'',
+              c.driverName||'',
+              c.driverNumber||'',
+              c.ownerName||'',
+              c.seats||'',
+              imagesHtml, // NEW images cell
+              c.submittedAt||'',
+              `<button class="btn btn-sm btn-success" onclick="approveCar('${did}','${cid}')">Approve</button> <button class="btn btn-sm btn-danger" onclick="deletePending('${did}','${cid}')">Delete</button>`
+            ]).draw(false);
+          }
+        }
+      } catch (err) {
+        console.error('loadPending error:', err);
+        // handle permission denied differently for clarity
+        const msg = (err && err.code === 'PERMISSION_DENIED') || (err && /permission/i.test(String(err.message || ''))) ?
+          `Permission denied reading /pendingcars. Ensure your Realtime Database rules allow this admin user read access (or use custom claims). Error: ${escapeHtml(String(err.message || err))}` :
+          `Failed to load pending cars: ${escapeHtml(String(err.message || err))}`;
+
+        // Show message in UI instead of throwing
+        document.getElementById('pending-loading').innerHTML = `<div style="color:#ffb86b;text-align:center;padding:12px">${msg}</div>`;
+        showToast('Failed to load pending cars (see message)','warning');
+        return;
+      } finally {
+        $('#pending-loading').hide();
+        $('#pending-table').show();
+      }
+    }
+    // ---------- end loadPending ----------
+
     async function loadApproved(){ $('#approved-table').hide(); $('#approved-loading').show(); initTable('approved-table',[8]); const snap = await get(ref(db,'approvedcars')); let i=1; if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){ for(const [cid,c] of Object.entries(cars)){ tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button class="btn btn-sm btn-danger" onclick="deleteApproved('${did}','${cid}')">Delete</button>`]).draw(false); } } $('#approved-loading').hide(); $('#approved-table').show();}
+
     async function loadSlots(){ $('#slots-table').hide(); $('#slots-loading').show(); initTable('slots-table',[9]); const snap = await get(ref(db,'availableslots')); let i=1; if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())){ const dSnap = await get(ref(db,`driverdetails/${did}`)); const d = dSnap.exists()?dSnap.val():{}; for(const [sid,s] of Object.entries(slots)){ tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button class="btn btn-sm btn-danger" onclick="deleteSlot('${did}','${sid}')">Delete</button>`]).draw(false); } } $('#slots-loading').hide(); $('#slots-table').show();}
 
     // Helper: safe stringify for objects (short)
@@ -1058,6 +1169,20 @@
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showDefault, { once: true });
       else showDefault();
     });
+
+    // ----------------- helper: show image modal -----------------
+    window.showImageModal = function(src){
+      if(!src) return;
+      const imgEl = document.getElementById('imageViewModalImg');
+      imgEl.src = src;
+      try {
+        new bootstrap.Modal(document.getElementById('imageViewModal')).show();
+      } catch(e){
+        alert('Unable to open image modal: ' + (e.message || e));
+      }
+    };
+    // -----------------------------------------------------------
+
   </script>
 </body>
 </html>
