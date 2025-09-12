@@ -251,6 +251,23 @@
     const slotsDiv  = document.getElementById('slots');
     const locationIndexMap = {};
 
+    // Debounce helper so date changes don't fire repeat requests rapidly
+    function debounce(fn, wait = 300) {
+      let t;
+      return function(...args) {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), wait);
+      };
+    }
+
+    // We'll use a debounce-wrapped version of searchSlots for the date change
+    const debounceSearch = debounce(() => {
+      // Only trigger auto-search if pickup and dropoff are already chosen to avoid alert popups.
+      if (pickupEl.value && dropoffEl.value && dateEl.value) {
+        searchSlots();
+      }
+    }, 350);
+
     auth.onAuthStateChanged(user => {
       if (!user) {
         window.location.href = 'index.html';
@@ -284,8 +301,27 @@
         Array.from(dropoffEl.options).forEach(opt => {
           if (opt.text === defaultDropoff) opt.selected = true;
         });
+
+        // If both defaults are set after load, we can auto-search once for the initial date.
+        // (Optional helpful UX — won't run if user changed them)
+        if (pickupEl.value && dropoffEl.value && dateEl.value) {
+          // small timeout to let UI settle
+          setTimeout(() => searchSlots(), 150);
+        }
       });
     }
+
+    // Bind change events so selecting date auto-searches (and also auto-search if user changes pickup/dropoff and date is already set)
+    dateEl.addEventListener('change', () => debounceSearch());
+    // Also bind input event for mobile date pickers that may not fire 'change' consistently
+    dateEl.addEventListener('input', () => debounceSearch());
+    // If the user changes pickup/dropoff after date is selected, auto-search as well
+    pickupEl.addEventListener('change', () => {
+      if (dateEl.value && dropoffEl.value) debounceSearch();
+    });
+    dropoffEl.addEventListener('change', () => {
+      if (dateEl.value && pickupEl.value) debounceSearch();
+    });
 
     function formatTime24to12(time24) {
       const [hourStr, minute] = (time24||'00:00').split(':');
@@ -307,7 +343,11 @@
       const dt  = dateEl.value;
       const req = parseInt(seatsEl.value, 10) || 1;
       if (!pu || !dof || !dt) {
-        return alert('Please fill all fields');
+        // Don't spam alerts when auto-searching; show friendly message only if user pressed Search button manually
+        // Here we do an early return quietly for auto-search; but if search triggered via button and missing fields, alert()
+        // We'll detect manual invocation by checking a special flag (none here), so for simplicity: alert only if invoked by button.
+        // To keep behavior identical to original when user clicks Search, we still leave the existing alert in the button click.
+        return;
       }
       const doIdx = locationIndexMap[dof] || 0;
 
