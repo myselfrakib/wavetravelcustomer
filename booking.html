@@ -52,17 +52,64 @@
       width: 100%; padding: 0.75rem; border: 1px solid rgba(0,0,0,0.06);
       border-radius: 10px; background: #fff; font-size: 1rem;
       box-shadow: 0 1px 2px rgba(16,24,40,0.03);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
+    
+    /* Enhanced date input styling */
+    input[type="date"] {
+      position: relative;
+      cursor: pointer;
+    }
+    input[type="date"]:focus {
+      border-color: var(--sky);
+      box-shadow: 0 0 0 3px rgba(129, 195, 215, 0.2);
+      outline: none;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+    
     .search-btn {
       display: block; width: 100%; padding: 12px;
       margin-top: 12px; /* primary button: Lapis -> Sky gradient */
       background: linear-gradient(90deg, var(--primary), var(--sky));
       color: #fff; font-size: 1.02rem; font-weight: 700;
       border: none; border-radius: 10px; cursor: pointer;
-      transition: transform .08s ease, box-shadow .12s ease;
+      transition: transform .08s ease, box-shadow .12s ease, opacity 0.3s ease;
       box-shadow: 0 8px 18px rgba(2,6,23,0.12);
     }
     .search-btn:active { transform: translateY(1px); }
+    .search-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    /* Loading indicator */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: var(--light);
+      font-weight: 600;
+    }
+    .loading.show {
+      display: block;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(129, 195, 215, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--sky);
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
 
     .slots { margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -216,12 +263,17 @@
 
     <button class="search-btn" onclick="searchSlots()">Search Available Slots</button>
 
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      Searching for available slots...
+    </div>
+
     <div class="slots" id="slots"></div>
   </div>
 
   <div class="navbar">
     <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
-    <a href="booking.html"><i class="fas fa-car"></i>Book</a>
+    <a href="book.html"><i class="fas fa-car"></i>Book</a>
     <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
     <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
   </div>
@@ -249,6 +301,8 @@
     const dateEl    = document.getElementById('date');
     const seatsEl   = document.getElementById('seats');
     const slotsDiv  = document.getElementById('slots');
+    const loadingEl = document.getElementById('loading');
+    const searchBtn = document.querySelector('.search-btn');
     const locationIndexMap = {};
 
     auth.onAuthStateChanged(user => {
@@ -284,7 +338,73 @@
         Array.from(dropoffEl.options).forEach(opt => {
           if (opt.text === defaultDropoff) opt.selected = true;
         });
+
+        // Set up event listeners for auto-search
+        setupAutoSearch();
       });
+    }
+
+    function setupAutoSearch() {
+      // Enhanced date picker functionality
+      const dateInput = document.getElementById('date');
+      
+      // Force calendar to open on click for better UX
+      dateInput.addEventListener('click', function() {
+        // Modern browsers support showPicker()
+        if (this.showPicker) {
+          this.showPicker();
+        } else {
+          // Fallback for older browsers
+          this.focus();
+        }
+      });
+
+      // Auto-search when date changes
+      dateInput.addEventListener('change', function() {
+        if (this.value && pickupEl.value && dropoffEl.value && seatsEl.value) {
+          searchSlots();
+        }
+      });
+
+      // Auto-search when pickup/dropoff changes
+      pickupEl.addEventListener('change', function() {
+        if (dateEl.value && this.value && dropoffEl.value && seatsEl.value) {
+          searchSlots();
+        }
+      });
+
+      dropoffEl.addEventListener('change', function() {
+        if (dateEl.value && pickupEl.value && this.value && seatsEl.value) {
+          searchSlots();
+        }
+      });
+
+      // Auto-search when seats change (with small delay)
+      let seatsTimeout;
+      seatsEl.addEventListener('input', function() {
+        clearTimeout(seatsTimeout);
+        seatsTimeout = setTimeout(() => {
+          if (dateEl.value && pickupEl.value && dropoffEl.value && this.value) {
+            searchSlots();
+          }
+        }, 500); // 500ms delay to avoid too many searches while typing
+      });
+
+      // Trigger initial search if all fields are filled
+      if (dateEl.value && pickupEl.value && dropoffEl.value && seatsEl.value) {
+        searchSlots();
+      }
+    }
+
+    function showLoading(show) {
+      if (show) {
+        loadingEl.classList.add('show');
+        searchBtn.disabled = true;
+        slotsDiv.innerHTML = '';
+      } else {
+        loadingEl.classList.remove('show');
+        searchBtn.disabled = false;
+      }
     }
 
     function formatTime24to12(time24) {
@@ -301,14 +421,22 @@
     }
 
     function searchSlots() {
-      slotsDiv.innerHTML = '';
       const pu  = pickupEl.value;
       const dof = dropoffEl.value;
       const dt  = dateEl.value;
       const req = parseInt(seatsEl.value, 10) || 1;
+      
       if (!pu || !dof || !dt) {
-        return alert('Please fill all fields');
+        if (!pu || !dof || !dt) {
+          // Only show alert if user manually clicked search with missing fields
+          if (event && event.type === 'click') {
+            alert('Please fill all fields');
+          }
+          return;
+        }
       }
+
+      showLoading(true);
       const doIdx = locationIndexMap[dof] || 0;
 
       db.ref('availableslots').once('value').then(snap => {
@@ -340,11 +468,17 @@
           }
         }
 
+        showLoading(false);
+
         if (!matched.length) {
-          slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
+          slotsDiv.innerHTML = `<div class="no-slots">No slots found for the selected date.</div>`;
         } else {
           renderSlots(matched, req, { used: fallbackUsed, pickup: pu, dropoff: dof, date: dt });
         }
+      }).catch(error => {
+        showLoading(false);
+        console.error('Error searching slots:', error);
+        slotsDiv.innerHTML = `<div class="no-slots">Error loading slots. Please try again.</div>`;
       });
     }
 
@@ -497,68 +631,4 @@
                 }
                 driverCarCache[slot.driverId] = map;
                 if (slot.carReg && map.byReg && map.byReg[slot.carReg]) carTotalSeats = Number(map.byReg[slot.carReg].seats || map.byReg[slot.carReg].seat || NaN);
-                if ((!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) && slot.carBrand && map.byBrand && map.byBrand[slot.carBrand]) carTotalSeats = Number(map.byBrand[slot.carBrand].seats || map.byBrand[slot.carBrand].seat || NaN);
-              }
-            }
-          } catch (err) {
-            console.warn('Failed to fetch approvedcars for full-book decision', err);
-          }
-
-          // Show full-book only when available seats equals car's total seats
-          if (Number.isFinite(carTotalSeats) && carTotalSeats > 0 && Number(availSeats) === Number(carTotalSeats)) {
-            const fullFare = (Number(perSeatFare) || 0) * carTotalSeats;
-            const discountedFullFare = Math.round(fullFare * 0.90); // 10% discount
-            const fullFareEl = document.getElementById(`fullFare${idx}`);
-            if (fullFareEl) fullFareEl.textContent = discountedFullFare;
-
-            const fullBtn = document.getElementById(`bookFullBtn${idx}`);
-            if (fullBtn) {
-              fullBtn.style.display = 'inline-flex';
-              // replace to avoid duplicate listeners
-              const newBtn = fullBtn.cloneNode(true);
-              fullBtn.parentNode.replaceChild(newBtn, fullBtn);
-              newBtn.addEventListener('click', async () => {
-                const profileSnap = await db.ref(`users/${user.uid}`).once('value');
-                const profile     = profileSnap.val() || {};
-
-                const bookingData = {
-                  driverId:       slot.driverId,
-                  slotKey:        slot.slotKey,
-                  pickup:         slot.pickup,
-                  dropoff:        slot.dropoff,
-                  date:           slot.date,
-                  time:           slot.time,
-                  seatsRequested: carTotalSeats,
-                  seatsAvailable: availSeats,
-                  fare:           discountedFullFare,
-                  customerId:     user.uid,
-                  carBrand:       slot.carBrand     || '',
-                  carReg:         slot.carReg       || '',
-                  driverName:     slot.driverName   || '',
-                  driverNumber:   slot.driverNumber || '',
-                  bookEntireCar:  true
-                };
-                localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
-                window.location.href = 'checkout.html';
-              });
-            }
-          } else {
-            const fullBtn = document.getElementById(`bookFullBtn${idx}`);
-            if (fullBtn) fullBtn.style.display = 'none';
-          }
-        })(slot, idx, avail, perSeatFare);
-      });
-    }
-
-    function escapeHtml(str) {
-      if (!str && str !== 0) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-  </script>
-</body>
-</html>
+                if ((!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) && slot.carB
