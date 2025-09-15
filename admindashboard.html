@@ -15,21 +15,12 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <style>
-    :root {
-  --bg-start: #ffffff;   /* change this */
-  --bg-end:   #2d74e0;   /* change this */
-  --primary:  #3498db;
-  --card-bg:  rgba(255,255,255,0.06);
-  --muted:    #cbd5e1;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
-  color: #606f99;
-}
-
+    :root{
+      --primary:#3498db;
+      --card-bg: rgba(255,255,255,0.06);
+      --muted:#cbd5e1;
+    }
+    body { font-family:Arial,sans-serif; margin:0; background:linear-gradient(135deg,#0f1724 0%, #0b3b6b 100%); color:#fff; }
     .navbar { display:flex; flex-wrap:wrap; background:#071124; padding:0.75rem; gap:.4rem; position:sticky; top:0; z-index:1000; border-bottom:1px solid rgba(255,255,255,0.03);}
     .navbar button { flex:1; padding:.5rem .75rem; border:none; border-radius:6px; background:var(--primary); color:#fff; cursor:pointer; font-weight:600; box-shadow:0 2px 6px rgba(0,0,0,0.35); }
     .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px); }
@@ -69,6 +60,12 @@ body {
     .badge-unpaid { background:#ff6b6b; color:#2a0202; font-weight:700; padding:5px 8px; border-radius:10px; }
     .small-muted { color:var(--muted); font-size:0.9rem; }
 
+    /* Image gallery styles */
+    .image-gallery { display: flex; gap: 10px; flex-wrap: wrap; }
+    .image-thumbnail { width: 80px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s; }
+    .image-thumbnail:hover { border-color: #3498db; }
+    .license-thumbnail { width: 100px; height: 70px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid #ffd700; }
+
     @media (max-width:900px){
       .driver-header { flex-direction:column; align-items:flex-start; gap:8px; }
       .driver-totals { width:100%; text-align:left; }
@@ -79,22 +76,6 @@ body {
     .wallets-filter-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
     .wallets-filter-row select { padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:#071124; color:#fff; font-weight:600; }
     .wallets-filter-row label { color:#fff; font-weight:700; margin-right:6px; }
-
-    /* thumbnails in pending cars */
-    .thumb-img {
-      width:56px;
-      height:40px;
-      object-fit:cover;
-      border-radius:6px;
-      margin-right:6px;
-      border:1px solid rgba(0,0,0,0.12);
-      cursor:pointer;
-      display:inline-block;
-    }
-    .thumb-container { display:flex; align-items:center; gap:6px; flex-wrap:wrap; max-width:220px; }
-
-    /* small responsive tweak for images column in DataTables */
-    table.dataTable td .thumb-container { background:transparent; }
   </style>
 </head>
 <body>
@@ -140,11 +121,10 @@ body {
   <div id="pending-cars-tab" class="tab-pane">
     <h2>Pending Cars</h2>
     <div id="pending-loading" class="loading">Loading pending cars…</div>
-    <!-- ADDED Images column -->
     <table id="pending-table" class="display responsive nowrap" style="width:100%;display:none">
       <thead><tr>
         <th>SL</th><th>Driver ID</th><th>Car ID</th><th>Brand</th><th>Reg No</th>
-        <th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Images</th><th>Submitted At</th><th>Actions</th>
+        <th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Images</th><th>License</th><th>Submitted At</th><th>Actions</th>
       </tr></thead>
       <tbody></tbody>
     </table>
@@ -244,6 +224,24 @@ body {
     </div>
   </div>
 
+  <!-- Image viewer modal -->
+  <div class="modal fade" id="imageViewerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="imageViewerTitle">Image Viewer</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center" id="imageViewerBody">
+          <img id="imageViewerImg" src="" alt="Car Image" style="max-width: 100%; height: auto; border-radius: 8px;">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- QR Modal -->
   <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -256,21 +254,6 @@ body {
           <button id="copyUpiUriBtn" class="btn btn-sm btn-outline-light">Copy Minimal UPI URI</button>
           <button id="copyFullUpiUriBtn" class="btn btn-sm btn-outline-light">Copy Full UPI URI</button>
           <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Image view modal (new for pending-cars images) -->
-  <div class="modal fade" id="imageViewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content" style="background:#071124;color:#fff;">
-        <div class="modal-header">
-          <h5 class="modal-title">Image</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body text-center">
-          <img id="imageViewModalImg" src="" alt="Image" style="max-width:100%; max-height:70vh; border-radius:6px;"/>
         </div>
       </div>
     </div>
@@ -341,191 +324,331 @@ body {
       toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
     }
 
-    // ---------- New helper: record admin action to /adminactions/{uid}/actions/{ts} ----------
-    async function recordAdminAction(action, details){
-      try {
-        const adminUid = auth.currentUser?.uid || 'unknown';
-        const ts = Date.now();
-        const payload = { action, details: details || null, adminUid, ts };
-        await set(ref(db, `adminactions/${adminUid}/actions/${ts}`), payload);
-      } catch (e) {
-        console.error('recordAdminAction failed', e);
+    // Function to show image in modal
+    window.showImage = function(imageUrl, title = 'Car Image') {
+      document.getElementById('imageViewerTitle').textContent = title;
+      document.getElementById('imageViewerImg').src = imageUrl;
+      new bootstrap.Modal(document.getElementById('imageViewerModal')).show();
+    };
+
+    // Function to create image gallery HTML
+    function createImageGallery(images, type = 'car') {
+      if (!images || images.length === 0) {
+        return '<span class="text-muted">No images</span>';
       }
+      
+      let html = '<div class="image-gallery">';
+      images.forEach((imageUrl, index) => {
+        const className = type === 'license' ? 'license-thumbnail' : 'image-thumbnail';
+        const title = type === 'license' ? 'Driver License' : `Car Image ${index + 1}`;
+        html += `<img src="${imageUrl}" alt="${title}" class="${className}" onclick="showImage('${imageUrl}', '${title}')" title="${title}">`;
+      });
+      html += '</div>';
+      return html;
     }
-    // -------------------------------------------------------------------------------
 
     // CRUD and action functions
     window.deleteUser = async uid => { 
       if(!confirm('Delete user?')) return; 
-      await remove(ref(db,`users/${uid}`)); 
-      await recordAdminAction('deleteUser', { uid }); 
-      loadUsers(); 
-      showToast('User deleted','success'); 
+      try {
+        await remove(ref(db,`users/${uid}`)); 
+        loadUsers(); 
+        showToast('User deleted','success'); 
+      } catch(e) {
+        showToast('Error deleting user: ' + e.message,'danger');
+      }
     };
+
     window.deleteDriver = async did => { 
       if(!confirm('Delete driver?')) return; 
-      await remove(ref(db,`driverdetails/${did}`)); 
-      await recordAdminAction('deleteDriver', { driverId: did }); 
-      loadDrivers(); 
-      showToast('Driver deleted','success'); 
+      try {
+        await remove(ref(db,`driverdetails/${did}`)); 
+        loadDrivers(); 
+        showToast('Driver deleted','success'); 
+      } catch(e) {
+        showToast('Error deleting driver: ' + e.message,'danger');
+      }
     };
+
     window.deletePending = async (did,cid) => { 
       if(!confirm('Delete pending car?')) return; 
-      await remove(ref(db,`pendingcars/${did}/${cid}`)); 
-      await recordAdminAction('deletePendingCar', { driverId: did, carId: cid }); 
-      loadPending(); 
-      showToast('Pending car deleted','success'); 
+      try {
+        await remove(ref(db,`pendingcars/${did}/${cid}`)); 
+        loadPending(); 
+        showToast('Pending car deleted','success'); 
+      } catch(e) {
+        showToast('Error deleting pending car: ' + e.message,'danger');
+      }
     };
+
     window.deleteApproved = async (did,cid) => { 
       if(!confirm('Delete approved car?')) return; 
-      await remove(ref(db,`approvedcars/${did}/${cid}`)); 
-      await recordAdminAction('deleteApprovedCar', { driverId: did, carId: cid }); 
-      loadApproved(); 
-      showToast('Approved car deleted','success'); 
+      try {
+        await remove(ref(db,`approvedcars/${did}/${cid}`)); 
+        loadApproved(); 
+        showToast('Approved car deleted','success'); 
+      } catch(e) {
+        showToast('Error deleting approved car: ' + e.message,'danger');
+      }
     };
+
     window.deleteSlot = async (did,sid) => { 
       if(!confirm('Delete slot?')) return; 
-      await remove(ref(db,`availableslots/${did}/${sid}`)); 
-      await recordAdminAction('deleteSlot', { driverId: did, slotId: sid }); 
-      loadSlots(); 
-      showToast('Slot deleted','success'); 
+      try {
+        await remove(ref(db,`availableslots/${did}/${sid}`)); 
+        loadSlots(); 
+        showToast('Slot deleted','success'); 
+      } catch(e) {
+        showToast('Error deleting slot: ' + e.message,'danger');
+      }
     };
+
     window.deleteBooking = async bid => { 
       if(!confirm('Delete booking?')) return; 
-      await remove(ref(db,`bookings/${bid}`)); 
-      await recordAdminAction('deleteBooking', { bookingId: bid }); 
-      loadBookings(); 
-      showToast('Booking deleted','success'); 
+      try {
+        await remove(ref(db,`bookings/${bid}`)); 
+        loadBookings(); 
+        showToast('Booking deleted','success'); 
+      } catch(e) {
+        showToast('Error deleting booking: ' + e.message,'danger');
+      }
     };
+
     window.approveCar = async (did,cid) => { 
       if(!confirm('Approve car?')) return; 
-      const snap = await get(ref(db,`pendingcars/${did}/${cid}`)); 
-      const car = snap.val(); 
-      if(!car) return; 
-      await set(ref(db,`approvedcars/${did}/${cid}`), car); 
-      await remove(ref(db,`pendingcars/${did}/${cid}`)); 
-      await recordAdminAction('approveCar', { driverId: did, carId: cid, car }); 
-      loadPending(); 
-      showToast('Car approved','success'); 
+      try {
+        const snap = await get(ref(db,`pendingcars/${did}/${cid}`)); 
+        const car = snap.val(); 
+        if(!car) return; 
+        await set(ref(db,`approvedcars/${did}/${cid}`), car); 
+        await remove(ref(db,`pendingcars/${did}/${cid}`)); 
+        loadPending(); 
+        showToast('Car approved','success'); 
+      } catch(e) {
+        showToast('Error approving car: ' + e.message,'danger');
+      }
     };
 
     // Wallet actions
     window.approveWalletEntry = async (driverId, bookingId) => {
       if (!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid?`)) return;
-      await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { paidout: true, status: 'paid' });
-      await recordAdminAction('approveWalletEntry', { driverId, bookingId });
-      loadWallets();
-      showToast('Marked paid','success');
+      try {
+        await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { paidout: true, status: 'paid' });
+        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'approveWalletEntry', driverId, bookingId, ts: Date.now() });
+        loadWallets();
+        showToast('Marked paid','success');
+      } catch(e) {
+        showToast('Error marking as paid: ' + e.message,'danger');
+      }
     };
+
     window.rejectWalletEntry = async (driverId, bookingId, amount) => {
       if (!confirm(`Reject wallet entry ${bookingId} and reset amount to ${amount}?`)) return;
-      await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { status: 'available', amount });
-      await recordAdminAction('rejectWalletEntry', { driverId, bookingId, amount });
-      loadWallets();
-      showToast('Wallet entry rejected','warning');
+      try {
+        await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { status: 'available', amount });
+        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'rejectWalletEntry', driverId, bookingId, amount, ts: Date.now() });
+        loadWallets();
+        showToast('Wallet entry rejected','warning');
+      } catch(e) {
+        showToast('Error rejecting wallet entry: ' + e.message,'danger');
+      }
     };
 
     // If your flows still include pendingWithdrawals, these helpers remain useful
     window.approveWithdrawal = async (driverId, bookingId) => {
       if (!confirm(`Approve withdrawal ${bookingId} for driver ${driverId}?`)) return;
-      await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'approved' });
-      await recordAdminAction('approveWithdrawal', { driverId, bookingId });
-      loadWithdrawals();
-      showToast('Withdrawal approved','success');
+      try {
+        await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'approved' });
+        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'approveWithdrawal', driverId, bookingId, ts: Date.now() });
+        loadWithdrawals();
+        showToast('Withdrawal approved','success');
+      } catch(e) {
+        showToast('Error approving withdrawal: ' + e.message,'danger');
+      }
     };
+
     window.rejectWithdrawal = async (driverId, bookingId) => {
       if (!confirm(`Reject withdrawal ${bookingId} for driver ${driverId}?`)) return;
-      await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'rejected' });
-      await recordAdminAction('rejectWithdrawal', { driverId, bookingId });
-      loadWithdrawals();
-      showToast('Withdrawal rejected','warning');
+      try {
+        await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'rejected' });
+        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'rejectWithdrawal', driverId, bookingId, ts: Date.now() });
+        loadWithdrawals();
+        showToast('Withdrawal rejected','warning');
+      } catch(e) {
+        showToast('Error rejecting withdrawal: ' + e.message,'danger');
+      }
     };
 
     // Data loaders
-    async function loadUsers(){ $('#users-table').hide(); $('#users-loading').show(); initTable('users-table',[7]); const snap = await get(ref(db,'users')); let i=1; if(snap.exists()) for(const [uid,u] of Object.entries(snap.val())){ tables['users-table'].row.add([i++,uid,u.name||'',u.email||'',u.phone||'',u.address||'',u.createdOn||'',`<button class="btn btn-sm btn-danger" onclick="deleteUser('${uid}')">Delete</button>`]).draw(false); } $('#users-loading').hide(); $('#users-table').show();}
-    async function loadDrivers(){ $('#drivers-table').hide(); $('#drivers-loading').show(); initTable('drivers-table',[5]); const snap = await get(ref(db,'driverdetails')); let i=1; if(snap.exists()) for(const [did,d] of Object.entries(snap.val())){ const vc = d.vehicles?Object.keys(d.vehicles).length:0; tables['drivers-table'].row.add([i++,did,d.name||'',d.phone||'',vc,`<button class="btn btn-sm btn-danger" onclick="deleteDriver('${did}')">Delete</button>`]).draw(false); } $('#drivers-loading').hide(); $('#drivers-table').show();}
-
-    // ---------- UPDATED loadPending: handles permission errors gracefully and shows images column ----------
-    async function loadPending(){
-      $('#pending-table').hide();
-      $('#pending-loading').show();
-      // Actions column index changed because we added Images column (see table headers)
-      initTable('pending-table',[11]); // Actions column is at index 11 now
-
+    async function loadUsers(){ 
+      $('#users-table').hide(); 
+      $('#users-loading').show(); 
+      initTable('users-table',[7]); 
       try {
-        const snap = await get(ref(db,'pendingcars'));
-        if(!snap.exists()){
-          $('#pending-loading').hide();
-          $('#pending-table').show();
-          return;
-        }
-
-        let i = 1;
-        const data = snap.val();
-
-        for(const [did,cars] of Object.entries(data)){
-          // if cars is not object, skip
-          if(!cars || typeof cars !== 'object') continue;
-          for(const [cid,c] of Object.entries(cars)){
-            // Build images HTML (handles array or object, falls back to license image)
-            let imagesHtml = '<div class="thumb-container">';
-            try {
-              const imgs = c.carImages;
-              if(imgs && (Array.isArray(imgs) || typeof imgs === 'object')){
-                const values = Array.isArray(imgs) ? imgs : Object.values(imgs);
-                for(const url of values){
-                  if(!url) continue;
-                  const safeUrl = escapeHtml(String(url));
-                  imagesHtml += `<img src="${safeUrl}" data-src="${safeUrl}" class="thumb-img" onclick="showImageModal(this.dataset.src)" alt="car-image">`;
-                }
-              } else if(c.driverLicense){
-                const safeUrl = escapeHtml(String(c.driverLicense));
-                imagesHtml += `<img src="${safeUrl}" data-src="${safeUrl}" class="thumb-img" onclick="showImageModal(this.dataset.src)" alt="license">`;
-              } else {
-                imagesHtml += `<span class="small-muted">No images</span>`;
-              }
-            } catch(e){
-              imagesHtml += `<span class="small-muted">No images</span>`;
-            }
-            imagesHtml += '</div>';
-
-            tables['pending-table'].row.add([
+        const snap = await get(ref(db,'users')); 
+        let i=1; 
+        if(snap.exists()) {
+          for(const [uid,u] of Object.entries(snap.val())){ 
+            tables['users-table'].row.add([
               i++,
-              did,
-              cid,
-              c.carBrand||'',
-              c.carReg||'',
-              c.driverName||'',
-              c.driverNumber||'',
-              c.ownerName||'',
-              c.seats||'',
-              imagesHtml, // NEW images cell
-              c.submittedAt||'',
-              `<button class="btn btn-sm btn-success" onclick="approveCar('${did}','${cid}')">Approve</button> <button class="btn btn-sm btn-danger" onclick="deletePending('${did}','${cid}')">Delete</button>`
-            ]).draw(false);
+              uid,
+              u.name||'',
+              u.email||'',
+              u.phone||'',
+              u.address||'',
+              u.createdOn||'',
+              `<button class="btn btn-sm btn-danger" onclick="deleteUser('${uid}')">Delete</button>`
+            ]).draw(false); 
           }
         }
-      } catch (err) {
-        console.error('loadPending error:', err);
-        // handle permission denied differently for clarity
-        const msg = (err && err.code === 'PERMISSION_DENIED') || (err && /permission/i.test(String(err.message || ''))) ?
-          `Permission denied reading /pendingcars. Ensure your Realtime Database rules allow this admin user read access (or use custom claims). Error: ${escapeHtml(String(err.message || err))}` :
-          `Failed to load pending cars: ${escapeHtml(String(err.message || err))}`;
-
-        // Show message in UI instead of throwing
-        document.getElementById('pending-loading').innerHTML = `<div style="color:#ffb86b;text-align:center;padding:12px">${msg}</div>`;
-        showToast('Failed to load pending cars (see message)','warning');
-        return;
+      } catch(e) {
+        showToast('Error loading users: ' + e.message,'danger');
       } finally {
-        $('#pending-loading').hide();
+        $('#users-loading').hide(); 
+        $('#users-table').show();
+      }
+    }
+
+    async function loadDrivers(){ 
+      $('#drivers-table').hide(); 
+      $('#drivers-loading').show(); 
+      initTable('drivers-table',[5]); 
+      try {
+        const snap = await get(ref(db,'driverdetails')); 
+        let i=1; 
+        if(snap.exists()) {
+          for(const [did,d] of Object.entries(snap.val())){ 
+            const vc = d.vehicles?Object.keys(d.vehicles).length:0; 
+            tables['drivers-table'].row.add([
+              i++,
+              did,
+              d.name||'',
+              d.phone||'',
+              vc,
+              `<button class="btn btn-sm btn-danger" onclick="deleteDriver('${did}')">Delete</button>`
+            ]).draw(false); 
+          }
+        }
+      } catch(e) {
+        showToast('Error loading drivers: ' + e.message,'danger');
+      } finally {
+        $('#drivers-loading').hide(); 
+        $('#drivers-table').show();
+      }
+    }
+
+    async function loadPending(){ 
+      $('#pending-table').hide(); 
+      $('#pending-loading').show(); 
+      initTable('pending-table',[9,10,12]); // Updated to include new columns
+      try {
+        const snap = await get(ref(db,'pendingcars')); 
+        let i=1; 
+        if(snap.exists()) {
+          for(const [did,cars] of Object.entries(snap.val())){ 
+            for(const [cid,c] of Object.entries(cars)){ 
+              // Create image gallery HTML
+              const carImages = c.carImages || [];
+              const imageGalleryHtml = createImageGallery(carImages, 'car');
+              
+              // Create license image HTML
+              const licenseHtml = c.driverLicense 
+                ? createImageGallery([c.driverLicense], 'license')
+                : '<span class="text-muted">No license</span>';
+
+              tables['pending-table'].row.add([ 
+                i++,
+                did,
+                cid,
+                c.carBrand||'',
+                c.carReg||'',
+                c.driverName||'',
+                c.driverNumber||'',
+                c.ownerName||'',
+                c.seats||'',
+                imageGalleryHtml,
+                licenseHtml,
+                c.submittedAt||'',
+                `<button class="btn btn-sm btn-success" onclick="approveCar('${did}','${cid}')">Approve</button> <button class="btn btn-sm btn-danger" onclick="deletePending('${did}','${cid}')">Delete</button>` 
+              ]).draw(false); 
+            }
+          }
+        }
+      } catch(e) {
+        showToast('Error loading pending cars: ' + e.message,'danger');
+        console.error('Error loading pending cars:', e);
+      } finally {
+        $('#pending-loading').hide(); 
         $('#pending-table').show();
       }
     }
-    // ---------- end loadPending ----------
 
-    async function loadApproved(){ $('#approved-table').hide(); $('#approved-loading').show(); initTable('approved-table',[8]); const snap = await get(ref(db,'approvedcars')); let i=1; if(snap.exists()) for(const [did,cars] of Object.entries(snap.val())){ for(const [cid,c] of Object.entries(cars)){ tables['approved-table'].row.add([i++,c.driverName||'',c.driverNumber||'',cid,c.carBrand||'',c.carReg||'',c.ownerName||'',c.seats||'',`<button class="btn btn-sm btn-danger" onclick="deleteApproved('${did}','${cid}')">Delete</button>`]).draw(false); } } $('#approved-loading').hide(); $('#approved-table').show();}
+    async function loadApproved(){ 
+      $('#approved-table').hide(); 
+      $('#approved-loading').show(); 
+      initTable('approved-table',[8]); 
+      try {
+        const snap = await get(ref(db,'approvedcars')); 
+        let i=1; 
+        if(snap.exists()) {
+          for(const [did,cars] of Object.entries(snap.val())){ 
+            for(const [cid,c] of Object.entries(cars)){ 
+              tables['approved-table'].row.add([
+                i++,
+                c.driverName||'',
+                c.driverNumber||'',
+                cid,
+                c.carBrand||'',
+                c.carReg||'',
+                c.ownerName||'',
+                c.seats||'',
+                `<button class="btn btn-sm btn-danger" onclick="deleteApproved('${did}','${cid}')">Delete</button>`
+              ]).draw(false); 
+            }
+          }
+        }
+      } catch(e) {
+        showToast('Error loading approved cars: ' + e.message,'danger');
+      } finally {
+        $('#approved-loading').hide(); 
+        $('#approved-table').show();
+      }
+    }
 
-    async function loadSlots(){ $('#slots-table').hide(); $('#slots-loading').show(); initTable('slots-table',[9]); const snap = await get(ref(db,'availableslots')); let i=1; if(snap.exists()) for(const [did,slots] of Object.entries(snap.val())){ const dSnap = await get(ref(db,`driverdetails/${did}`)); const d = dSnap.exists()?dSnap.val():{}; for(const [sid,s] of Object.entries(slots)){ tables['slots-table'].row.add([i++,d.name||'',d.phone||'',sid,s.pickup||'',s.dropoff||'',s.date||'',s.time||'',s.seats||'',`<button class="btn btn-sm btn-danger" onclick="deleteSlot('${did}','${sid}')">Delete</button>`]).draw(false); } } $('#slots-loading').hide(); $('#slots-table').show();}
+    async function loadSlots(){ 
+      $('#slots-table').hide(); 
+      $('#slots-loading').show(); 
+      initTable('slots-table',[9]); 
+      try {
+        const snap = await get(ref(db,'availableslots')); 
+        let i=1; 
+        if(snap.exists()) {
+          for(const [did,slots] of Object.entries(snap.val())){ 
+            const dSnap = await get(ref(db,`driverdetails/${did}`)); 
+            const d = dSnap.exists()?dSnap.val():{}; 
+            for(const [sid,s] of Object.entries(slots)){ 
+              tables['slots-table'].row.add([
+                i++,
+                d.name||'',
+                d.phone||'',
+                sid,
+                s.pickup||'',
+                s.dropoff||'',
+                s.date||'',
+                s.time||'',
+                s.seats||'',
+                `<button class="btn btn-sm btn-danger" onclick="deleteSlot('${did}','${sid}')">Delete</button>`
+              ]).draw(false); 
+            }
+          }
+        }
+      } catch(e) {
+        showToast('Error loading slots: ' + e.message,'danger');
+      } finally {
+        $('#slots-loading').hide(); 
+        $('#slots-table').show();
+      }
+    }
 
     // Helper: safe stringify for objects (short)
     function safeDisplay(val){
@@ -588,177 +711,183 @@ body {
 
       const statusFilter = (document.getElementById('walletStatusFilter')?.value || 'processing').toString().toLowerCase();
 
-      // Read driverWallet once
-      const walletSnap = await get(ref(db,'driverWallet'));
-      if(!walletSnap.exists()){
-        container.textContent = 'No wallet entries found.';
-        $('#wallets-loading').hide(); $('#driver-wallets-container').show();
-        return;
-      }
-      const allDrivers = walletSnap.val();
+      try {
+        // Read driverWallet once
+        const walletSnap = await get(ref(db,'driverWallet'));
+        if(!walletSnap.exists()){
+          container.textContent = 'No wallet entries found.';
+          $('#wallets-loading').hide(); $('#driver-wallets-container').show();
+          return;
+        }
+        const allDrivers = walletSnap.val();
 
-      // iterate drivers and compute filtered entries map
-      for(const [driverId, entries] of Object.entries(allDrivers)){
-        const entriesToShow = {}; // bookingId -> { entry, effective }
+        // iterate drivers and compute filtered entries map
+        for(const [driverId, entries] of Object.entries(allDrivers)){
+          const entriesToShow = {}; // bookingId -> { entry, effective }
 
-        for(const [bookingId, e] of Object.entries(entries)){
-          const effective = getEffectiveStatusFromWalletEntry(e);
-          if(effective === statusFilter){
-            entriesToShow[bookingId] = { entry: e, effective };
+          for(const [bookingId, e] of Object.entries(entries)){
+            const effective = getEffectiveStatusFromWalletEntry(e);
+            if(effective === statusFilter){
+              entriesToShow[bookingId] = { entry: e, effective };
+            }
           }
-        }
 
-        // skip drivers with no matched entries
-        if (Object.keys(entriesToShow).length === 0) continue;
+          // skip drivers with no matched entries
+          if (Object.keys(entriesToShow).length === 0) continue;
 
-        // fetch driver details (UPI/name)
-        let upi = null, driverName = null;
-        try {
-          const dSnap = await get(ref(db, `driverdetails/${driverId}`));
-          if(dSnap.exists()){
-            const d = dSnap.val();
-            upi = (typeof d.upiId === 'string') ? d.upiId.trim() : (d.upiId || null);
-            driverName = d.name || null;
+          // fetch driver details (UPI/name)
+          let upi = null, driverName = null;
+          try {
+            const dSnap = await get(ref(db, `driverdetails/${driverId}`));
+            if(dSnap.exists()){
+              const d = dSnap.val();
+              upi = (typeof d.upiId === 'string') ? d.upiId.trim() : (d.upiId || null);
+              driverName = d.name || null;
+            }
+          } catch (e) {
+            upi = null; driverName = null;
           }
-        } catch (e) {
-          upi = null; driverName = null;
-        }
 
-        // compute totals from filtered entries
-        let totalFiltered = 0;
-        // Also compute totalProcessing (sum only entries that are processing)
-        let totalProcessing = 0;
-        for(const [bid, obj] of Object.entries(entriesToShow)){
-          const amt = parseFloat(obj.entry.amount) || 0;
-          totalFiltered += amt;
-          if(obj.effective === 'processing') totalProcessing += amt;
-        }
-
-        // build driver card
-        const card = document.createElement('div');
-        card.className = 'driver-card';
-
-        const sanitized = sanitizeId(driverId);
-        const header = document.createElement('div');
-        header.className = 'driver-header';
-        header.innerHTML = `
-          <div class="driver-info">
-            <div class="driver-meta">
-              <strong>${driverName ? `${driverName}` : driverId}</strong>
-              <small class="small-muted">${driverId}</small>
-              <small class="small-muted">UPI: <span id="upi-val-${sanitized}">${upi ? upi : '—'}</span></small>
-            </div>
-          </div>
-
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div class="driver-totals">
-              <h4>₹${totalFiltered.toFixed(2)}</h4>
-              <div class="small-muted">Total (${escapeHtml(statusFilter)})</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;">
-              <div>
-                <span class="small-muted">Listed</span>
-                <span class="unpaid-badge">₹${totalFiltered.toFixed(2)}</span>
-              </div>
-              <div class="driver-actions" style="margin-top:8px;">
-                <button class="btn btn-sm btn-outline-light" id="copy-upi-${sanitized}" ${upi? '': 'disabled'}>Copy UPI</button>
-                <!-- Show total QR only when there are processing entries and driver has UPI -->
-                <button class="btn btn-sm btn-primary" id="qr-total-${sanitized}" ${(!upi || totalProcessing <= 0) ? 'disabled' : ''}>Show QR (Processing Total)</button>
-                <button class="btn btn-sm btn-success" id="mark-all-paid-${sanitized}">Mark All Paid</button>
-              </div>
-            </div>
-          </div>
-        `;
-        card.appendChild(header);
-
-        // body with entries table (for filtered entries)
-        const body = document.createElement('div');
-        body.className = 'driver-body';
-        const tbl = document.createElement('table');
-        tbl.className = 'table table-sm entries-table';
-        tbl.innerHTML = `<thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`;
-        const tbody = tbl.querySelector('tbody');
-
-        let i = 1;
-        for(const [bookingId, obj] of Object.entries(entriesToShow)){
-          const entry = obj.entry;
-          const effective = obj.effective;
-          const amount = entry.amount !== undefined ? Number(entry.amount) : NaN;
-          const fare = (entry.fare ?? (entry.booking?.fare)) ?? 'N/A';
-          const paidoutFlag = entry.paidout === true;
-          const isPaid = paidoutFlag || (String(effective).toLowerCase() === 'paid');
-
-          const bookingData = entry.booking || entry.bookingdata || {};
-          const pickup = bookingData.pickup || entry.pickup || 'N/A';
-          const dropoff = bookingData.dropoff || entry.dropoff || 'N/A';
-
-          const tr = document.createElement('tr');
-
-          // actions cell
-          const actionsCell = document.createElement('td');
-          actionsCell.style.whiteSpace = 'nowrap';
-
-          // Show button
-          const btnShow = document.createElement('button');
-          btnShow.className = 'btn btn-sm btn-info me-1';
-          btnShow.textContent = 'Show';
-          btnShow.onclick = () => showBookingModal(driverId, bookingId);
-          actionsCell.appendChild(btnShow);
-
-          // QR button: now enabled ONLY when entry effective status === 'processing' AND not paid AND amount>0 AND upi exists
-          const btnQr = document.createElement('button');
-          btnQr.className = 'btn btn-sm btn-primary me-1';
-          btnQr.textContent = 'QR';
-          const allowQr = (effective === 'processing') && !isPaid && (Number(amount) > 0) && !!upi;
-          if(!upi){ btnQr.disabled = true; btnQr.title = 'UPI missing'; }
-          else if(!allowQr){ btnQr.disabled = true; btnQr.title = 'QR allowed only for processing entries with amount > 0'; }
-          else btnQr.onclick = () => showQrModal(driverId, isNaN(amount) ? 0 : amount, bookingId);
-          actionsCell.appendChild(btnQr);
-
-          // Mark Paid: allowed to mark - still available
-          const btnPaid = document.createElement('button');
-          btnPaid.className = 'btn btn-sm btn-success';
-          btnPaid.textContent = 'Mark Paid';
-          btnPaid.onclick = () => markPaidEntry(driverId, bookingId);
-          actionsCell.appendChild(btnPaid);
-
-          tr.innerHTML = `<td>${i++}</td>
-                          <td style="min-width:200px"><div><strong>${bookingId}</strong></div><small class="small-muted">${escapeHtml(pickup)} → ${escapeHtml(dropoff)}</small></td>
-                          <td>₹${isNaN(amount) ? '0.00' : amount.toFixed(2)}</td>
-                          <td>₹${fare}</td>
-                          <td>${isPaid ? '<span class="badge-paid">Paid</span>' : `<span class="badge-unpaid">${escapeHtml(effective)}</span>`}</td>`;
-          tr.appendChild(actionsCell);
-          tbody.appendChild(tr);
-        }
-
-        body.appendChild(tbl);
-        card.appendChild(body);
-        container.appendChild(card);
-
-        // wire up header buttons
-        const copyBtn = document.getElementById(`copy-upi-${sanitized}`);
-        if(copyBtn && upi){
-          copyBtn.addEventListener('click', async () => {
-            try { await navigator.clipboard.writeText(upi); showToast('UPI copied','success'); } catch (e) { showToast('Copy failed','danger'); }
-          });
-        }
-        const qrTotalBtn = document.getElementById(`qr-total-${sanitized}`);
-        // Only attach total QR listener if there are processing entries (we computed totalProcessing)
-        if(qrTotalBtn && upi && !qrTotalBtn.disabled){
-          // compute processing sum again for safety
-          let processingSum = 0;
+          // compute totals from filtered entries
+          let totalFiltered = 0;
+          // Also compute totalProcessing (sum only entries that are processing)
+          let totalProcessing = 0;
           for(const [bid, obj] of Object.entries(entriesToShow)){
-            if(obj.effective === 'processing') processingSum += Number(obj.entry.amount) || 0;
+            const amt = parseFloat(obj.entry.amount) || 0;
+            totalFiltered += amt;
+            if(obj.effective === 'processing') totalProcessing += amt;
           }
-          if(processingSum > 0){
-            qrTotalBtn.addEventListener('click', () => showQrModal(driverId, processingSum, '')); // bookingId empty => total QR for processing entries
-          }
-        }
-        const markAllBtn = document.getElementById(`mark-all-paid-${sanitized}`);
-        if(markAllBtn) markAllBtn.addEventListener('click', () => markAllPaidForDriver(driverId));
-      }
 
-      $('#wallets-loading').hide(); $('#driver-wallets-container').show();
+          // build driver card
+          const card = document.createElement('div');
+          card.className = 'driver-card';
+
+          const sanitized = sanitizeId(driverId);
+          const header = document.createElement('div');
+          header.className = 'driver-header';
+          header.innerHTML = `
+            <div class="driver-info">
+              <div class="driver-meta">
+                <strong>${driverName ? `${driverName}` : driverId}</strong>
+                <small class="small-muted">${driverId}</small>
+                <small class="small-muted">UPI: <span id="upi-val-${sanitized}">${upi ? upi : '—'}</span></small>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="driver-totals">
+                <h4>₹${totalFiltered.toFixed(2)}</h4>
+                <div class="small-muted">Total (${escapeHtml(statusFilter)})</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;">
+                <div>
+                  <span class="small-muted">Listed</span>
+                  <span class="unpaid-badge">₹${totalFiltered.toFixed(2)}</span>
+                </div>
+                <div class="driver-actions" style="margin-top:8px;">
+                  <button class="btn btn-sm btn-outline-light" id="copy-upi-${sanitized}" ${upi? '': 'disabled'}>Copy UPI</button>
+                  <!-- Show total QR only when there are processing entries and driver has UPI -->
+                  <button class="btn btn-sm btn-primary" id="qr-total-${sanitized}" ${(!upi || totalProcessing <= 0) ? 'disabled' : ''}>Show QR (Processing Total)</button>
+                  <button class="btn btn-sm btn-success" id="mark-all-paid-${sanitized}">Mark All Paid</button>
+                </div>
+              </div>
+            </div>
+          `;
+          card.appendChild(header);
+
+          // body with entries table (for filtered entries)
+          const body = document.createElement('div');
+          body.className = 'driver-body';
+          const tbl = document.createElement('table');
+          tbl.className = 'table table-sm entries-table';
+          tbl.innerHTML = `<thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`;
+          const tbody = tbl.querySelector('tbody');
+
+          let i = 1;
+          for(const [bookingId, obj] of Object.entries(entriesToShow)){
+            const entry = obj.entry;
+            const effective = obj.effective;
+            const amount = entry.amount !== undefined ? Number(entry.amount) : NaN;
+            const fare = (entry.fare ?? (entry.booking?.fare)) ?? 'N/A';
+            const paidoutFlag = entry.paidout === true;
+            const isPaid = paidoutFlag || (String(effective).toLowerCase() === 'paid');
+
+            const bookingData = entry.booking || entry.bookingdata || {};
+            const pickup = bookingData.pickup || entry.pickup || 'N/A';
+            const dropoff = bookingData.dropoff || entry.dropoff || 'N/A';
+
+            const tr = document.createElement('tr');
+
+            // actions cell
+            const actionsCell = document.createElement('td');
+            actionsCell.style.whiteSpace = 'nowrap';
+
+            // Show button
+            const btnShow = document.createElement('button');
+            btnShow.className = 'btn btn-sm btn-info me-1';
+            btnShow.textContent = 'Show';
+            btnShow.onclick = () => showBookingModal(driverId, bookingId);
+            actionsCell.appendChild(btnShow);
+
+            // QR button: now enabled ONLY when entry effective status === 'processing' AND not paid AND amount>0 AND upi exists
+            const btnQr = document.createElement('button');
+            btnQr.className = 'btn btn-sm btn-primary me-1';
+            btnQr.textContent = 'QR';
+            const allowQr = (effective === 'processing') && !isPaid && (Number(amount) > 0) && !!upi;
+            if(!upi){ btnQr.disabled = true; btnQr.title = 'UPI missing'; }
+            else if(!allowQr){ btnQr.disabled = true; btnQr.title = 'QR allowed only for processing entries with amount > 0'; }
+            else btnQr.onclick = () => showQrModal(driverId, isNaN(amount) ? 0 : amount, bookingId);
+            actionsCell.appendChild(btnQr);
+
+            // Mark Paid: allowed to mark - still available
+            const btnPaid = document.createElement('button');
+            btnPaid.className = 'btn btn-sm btn-success';
+            btnPaid.textContent = 'Mark Paid';
+            btnPaid.onclick = () => markPaidEntry(driverId, bookingId);
+            actionsCell.appendChild(btnPaid);
+
+            tr.innerHTML = `<td>${i++}</td>
+                            <td style="min-width:200px"><div><strong>${bookingId}</strong></div><small class="small-muted">${escapeHtml(pickup)} → ${escapeHtml(dropoff)}</small></td>
+                            <td>₹${isNaN(amount) ? '0.00' : amount.toFixed(2)}</td>
+                            <td>₹${fare}</td>
+                            <td>${isPaid ? '<span class="badge-paid">Paid</span>' : `<span class="badge-unpaid">${escapeHtml(effective)}</span>`}</td>`;
+            tr.appendChild(actionsCell);
+            tbody.appendChild(tr);
+          }
+
+          body.appendChild(tbl);
+          card.appendChild(body);
+          container.appendChild(card);
+
+          // wire up header buttons
+          const copyBtn = document.getElementById(`copy-upi-${sanitized}`);
+          if(copyBtn && upi){
+            copyBtn.addEventListener('click', async () => {
+              try { await navigator.clipboard.writeText(upi); showToast('UPI copied','success'); } catch (e) { showToast('Copy failed','danger'); }
+            });
+          }
+          const qrTotalBtn = document.getElementById(`qr-total-${sanitized}`);
+          // Only attach total QR listener if there are processing entries (we computed totalProcessing)
+          if(qrTotalBtn && upi && !qrTotalBtn.disabled){
+            // compute processing sum again for safety
+            let processingSum = 0;
+            for(const [bid, obj] of Object.entries(entriesToShow)){
+              if(obj.effective === 'processing') processingSum += Number(obj.entry.amount) || 0;
+            }
+            if(processingSum > 0){
+              qrTotalBtn.addEventListener('click', () => showQrModal(driverId, processingSum, '')); // bookingId empty => total QR for processing entries
+            }
+          }
+          const markAllBtn = document.getElementById(`mark-all-paid-${sanitized}`);
+          if(markAllBtn) markAllBtn.addEventListener('click', () => markAllPaidForDriver(driverId));
+        }
+      } catch(e) {
+        showToast('Error loading wallets: ' + e.message,'danger');
+        console.error('Error loading wallets:', e);
+      } finally {
+        $('#wallets-loading').hide(); 
+        $('#driver-wallets-container').show();
+      }
     }
 
     // Booking modal builder
@@ -889,7 +1018,7 @@ body {
       if(!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid?`)) return;
       try {
         await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { paidout:true, status: 'paid' });
-        await recordAdminAction('markPaidEntry', { driverId, bookingId });
+        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markPaidEntry', driverId, bookingId, ts: Date.now() });
         loadWallets();
         showToast('Marked paid','success');
       } catch (err) {
@@ -922,7 +1051,7 @@ body {
         }
 
         await update(ref(db), updates);
-        await recordAdminAction('markAllPaidForDriver', { driverId, bookingIds });
+        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markAllPaidForDriver', driverId, bookingIds, ts: Date.now() });
         showToast(`Marked ${bookingIds.length} booking(s) as paid for ${driverId}`,'success');
         loadWallets();
       } catch (err) {
@@ -936,143 +1065,147 @@ body {
       const container = document.getElementById('withdrawals-container');
       container.innerHTML='';
 
-      const snap = await get(ref(db,'pendingWithdrawals'));
-      if(!snap.exists()){
-        container.textContent = 'No pending withdrawals found.';
-        $('#withdrawals-loading').hide(); $('#withdrawals-container').show();
-        return;
-      }
+      try {
+        const snap = await get(ref(db,'pendingWithdrawals'));
+        if(!snap.exists()){
+          container.textContent = 'No pending withdrawals found.';
+          $('#withdrawals-loading').hide(); $('#withdrawals-container').show();
+          return;
+        }
 
-      const byDriver = snap.val();
+        const byDriver = snap.val();
 
-      for(const [driverId, bookingsObj] of Object.entries(byDriver)){
-        let total = 0;
-        for(const b of Object.values(bookingsObj)) total += Number(b.amount) || 0;
+        for(const [driverId, bookingsObj] of Object.entries(byDriver)){
+          let total = 0;
+          for(const b of Object.values(bookingsObj)) total += Number(b.amount) || 0;
 
-        let driverName = null, upi = null;
-        try {
-          const dSnap = await get(ref(db, `driverdetails/${driverId}`));
-          if(dSnap.exists()){
-            const d = dSnap.val();
-            driverName = d.name || null;
-            upi = (typeof d.upiId === 'string') ? d.upiId.trim() : (d.upiId || null);
-          }
-        } catch (e) { driverName = null; upi = null; }
+          let driverName = null, upi = null;
+          try {
+            const dSnap = await get(ref(db, `driverdetails/${driverId}`));
+            if(dSnap.exists()){
+              const d = dSnap.val();
+              driverName = d.name || null;
+              upi = (typeof d.upiId === 'string') ? d.upiId.trim() : (d.upiId || null);
+            }
+          } catch (e) { driverName = null; upi = null; }
 
-        const hasUnpaid = Object.values(bookingsObj).some(b => {
-          const st = (b.status || '').toString().toLowerCase();
-          const paidoutFlag = b.paidout === true;
-          return !paidoutFlag && st !== 'paid' && st !== 'approved';
-        });
+          const hasUnpaid = Object.values(bookingsObj).some(b => {
+            const st = (b.status || '').toString().toLowerCase();
+            const paidoutFlag = b.paidout === true;
+            return !paidoutFlag && st !== 'paid' && st !== 'approved';
+          });
 
-        const driverCard = document.createElement('div');
-        driverCard.className = 'withdrawal-driver-card';
-        driverCard.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div>
-              <h4 style="margin:0;color:#ffd700">Driver: ${driverId}${driverName ? ` — ${driverName}` : ''}</h4>
-              <small style="color:#cbd5e1">UPI: <span id="upi-${driverId}">${upi ? upi : '—'}</span> ${!upi ? '<span class="badge-missing-upi">UPI missing</span>' : `<button id="copyUpi-${driverId}" class="btn btn-sm btn-outline-light ms-2">Copy UPI</button>`}</small>
-            </div>
-            <div style="text-align:right;">
-              <h4 style="margin:0">Total: ₹${total.toFixed(2)}</h4>
-              <div style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end;">
-                <button class="btn btn-sm btn-primary" ${(!upi || !hasUnpaid) ? 'disabled title="No unpaid withdrawals or UPI missing"' : ''} id="qrTotal-${driverId}">Show QR (Total)</button>
-                <button class="btn btn-sm btn-success" id="markAllPaid-${driverId}">Mark All Paid</button>
+          const driverCard = document.createElement('div');
+          driverCard.className = 'withdrawal-driver-card';
+          driverCard.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+              <div>
+                <h4 style="margin:0;color:#ffd700">Driver: ${driverId}${driverName ? ` — ${driverName}` : ''}</h4>
+                <small style="color:#cbd5e1">UPI: <span id="upi-${driverId}">${upi ? upi : '—'}</span> ${!upi ? '<span class="badge-missing-upi">UPI missing</span>' : `<button id="copyUpi-${driverId}" class="btn btn-sm btn-outline-light ms-2">Copy UPI</button>`}</small>
+              </div>
+              <div style="text-align:right;">
+                <h4 style="margin:0">Total: ₹${total.toFixed(2)}</h4>
+                <div style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end;">
+                  <button class="btn btn-sm btn-primary" ${(!upi || !hasUnpaid) ? 'disabled title="No unpaid withdrawals or UPI missing"' : ''} id="qrTotal-${driverId}">Show QR (Total)</button>
+                  <button class="btn btn-sm btn-success" id="markAllPaid-${driverId}">Mark All Paid</button>
+                </div>
               </div>
             </div>
-          </div>
-          <hr style="border-color: rgba(255,255,255,0.06)">
-          <div id="withdrawals-list-${driverId}"></div>
-        `;
-        container.appendChild(driverCard);
+            <hr style="border-color: rgba(255,255,255,0.06)">
+            <div id="withdrawals-list-${driverId}"></div>
+          `;
+          container.appendChild(driverCard);
 
-        if(upi){
-          const copyBtn = document.getElementById(`copyUpi-${driverId}`);
-          if(copyBtn) copyBtn.addEventListener('click', async () => {
-            try { await navigator.clipboard.writeText(upi); showToast('UPI copied','success'); } catch (e) { showToast('Copy failed','danger'); }
-          });
+          if(upi){
+            const copyBtn = document.getElementById(`copyUpi-${driverId}`);
+            if(copyBtn) copyBtn.addEventListener('click', async () => {
+              try { await navigator.clipboard.writeText(upi); showToast('UPI copied','success'); } catch (e) { showToast('Copy failed','danger'); }
+            });
+          }
+          const qrTotalBtn = document.getElementById(`qrTotal-${driverId}`);
+          if(qrTotalBtn && upi && hasUnpaid){
+            qrTotalBtn.addEventListener('click', () => showQrModal(driverId, total, ''));
+          }
+
+          document.getElementById(`markAllPaid-${driverId}`).addEventListener('click', () => markAllPaidForDriver(driverId));
+
+          const listEl = driverCard.querySelector(`#withdrawals-list-${driverId}`);
+          const tbl = document.createElement('table');
+          tbl.className = 'table table-sm table-striped';
+          tbl.innerHTML = `<thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`;
+          listEl.appendChild(tbl);
+          const tbody = tbl.querySelector('tbody');
+
+          let i=1;
+          for(const [bookingId, data] of Object.entries(bookingsObj)){
+            const tr = document.createElement('tr');
+            const pickup = (data.booking && data.booking.pickup) ? data.booking.pickup : (data.pickup || 'N/A');
+            const dropoff = (data.booking && data.booking.dropoff) ? data.booking.dropoff : (data.dropoff || 'N/A');
+            const amount = Number(data.amount) ? Number(data.amount).toFixed(2) : '0.00';
+            const fare = data.fare ?? 'N/A';
+            const status = data.status ?? 'pending';
+            const paidoutFlag = data.paidout === true;
+            const isPaid = paidoutFlag || (String(status).toLowerCase() === 'paid' || String(status).toLowerCase() === 'approved');
+
+            const btnApprove = document.createElement('button');
+            btnApprove.className = 'btn btn-sm btn-success';
+            btnApprove.textContent = 'Approve';
+            btnApprove.onclick = () => approveWithdrawal(driverId, bookingId);
+
+            const btnReject = document.createElement('button');
+            btnReject.className = 'btn btn-sm btn-danger';
+            btnReject.textContent = 'Reject';
+            btnReject.onclick = () => rejectWithdrawal(driverId, bookingId);
+
+            const btnQrSingle = document.createElement('button');
+            btnQrSingle.className = 'btn btn-sm btn-primary';
+            btnQrSingle.textContent = 'Show QR';
+            if(!upi){ btnQrSingle.disabled = true; btnQrSingle.title = 'UPI missing'; }
+            else if(isPaid){ btnQrSingle.disabled = true; btnQrSingle.title = 'Already paid or approved'; }
+            else btnQrSingle.onclick = () => showQrModal(driverId, Number(amount)||0, bookingId);
+
+            const btnShowBooking = document.createElement('button');
+            btnShowBooking.className = 'btn btn-sm btn-info';
+            btnShowBooking.textContent = 'Show';
+            btnShowBooking.onclick = () => showBookingModal(driverId, bookingId);
+
+            const actionsWrapper = document.createElement('div');
+            actionsWrapper.style.display = 'flex';
+            actionsWrapper.style.gap = '6px';
+            actionsWrapper.appendChild(btnShowBooking);
+            actionsWrapper.appendChild(btnQrSingle);
+            actionsWrapper.appendChild(btnApprove);
+            actionsWrapper.appendChild(btnReject);
+
+            tr.innerHTML = `<td>${i++}</td>
+                            <td style="min-width:180px"><div><strong>${bookingId}</strong></div><small>${pickup} → ${dropoff}</small></td>
+                            <td>₹${amount}</td>
+                            <td>₹${fare}</td>
+                            <td>${isPaid ? '<span class="badge-paid">Paid</span>' : '<span class="badge-unpaid">Unpaid</span>'}</td>
+                            <td></td>`;
+            tr.querySelector('td:last-child').appendChild(actionsWrapper);
+            tbody.appendChild(tr);
+          }
         }
-        const qrTotalBtn = document.getElementById(`qrTotal-${driverId}`);
-        if(qrTotalBtn && upi && hasUnpaid){
-          qrTotalBtn.addEventListener('click', () => showQrModal(driverId, total, ''));
-        }
 
-        document.getElementById(`markAllPaid-${driverId}`).addEventListener('click', () => markAllPaidForDriver(driverId));
-
-        const listEl = driverCard.querySelector(`#withdrawals-list-${driverId}`);
-        const tbl = document.createElement('table');
-        tbl.className = 'table table-sm table-striped';
-        tbl.innerHTML = `<thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`;
-        listEl.appendChild(tbl);
-        const tbody = tbl.querySelector('tbody');
-
-        let i=1;
-        for(const [bookingId, data] of Object.entries(bookingsObj)){
-          const tr = document.createElement('tr');
-          const pickup = (data.booking && data.booking.pickup) ? data.booking.pickup : (data.pickup || 'N/A');
-          const dropoff = (data.booking && data.booking.dropoff) ? data.booking.dropoff : (data.dropoff || 'N/A');
-          const amount = Number(data.amount) ? Number(data.amount).toFixed(2) : '0.00';
-          const fare = data.fare ?? 'N/A';
-          const status = data.status ?? 'pending';
-          const paidoutFlag = data.paidout === true;
-          const isPaid = paidoutFlag || (String(status).toLowerCase() === 'paid' || String(status).toLowerCase() === 'approved');
-
-          const btnApprove = document.createElement('button');
-          btnApprove.className = 'btn btn-sm btn-success';
-          btnApprove.textContent = 'Approve';
-          btnApprove.onclick = () => approveWithdrawal(driverId, bookingId);
-
-          const btnReject = document.createElement('button');
-          btnReject.className = 'btn btn-sm btn-danger';
-          btnReject.textContent = 'Reject';
-          btnReject.onclick = () => rejectWithdrawal(driverId, bookingId);
-
-          const btnQrSingle = document.createElement('button');
-          btnQrSingle.className = 'btn btn-sm btn-primary';
-          btnQrSingle.textContent = 'Show QR';
-          if(!upi){ btnQrSingle.disabled = true; btnQrSingle.title = 'UPI missing'; }
-          else if(isPaid){ btnQrSingle.disabled = true; btnQrSingle.title = 'Already paid or approved'; }
-          else btnQrSingle.onclick = () => showQrModal(driverId, Number(amount)||0, bookingId);
-
-          const btnShowBooking = document.createElement('button');
-          btnShowBooking.className = 'btn btn-sm btn-info';
-          btnShowBooking.textContent = 'Show';
-          btnShowBooking.onclick = () => showBookingModal(driverId, bookingId);
-
-          const actionsWrapper = document.createElement('div');
-          actionsWrapper.style.display = 'flex';
-          actionsWrapper.style.gap = '6px';
-          actionsWrapper.appendChild(btnShowBooking);
-          actionsWrapper.appendChild(btnQrSingle);
-          actionsWrapper.appendChild(btnApprove);
-          actionsWrapper.appendChild(btnReject);
-
-          tr.innerHTML = `<td>${i++}</td>
-                          <td style="min-width:180px"><div><strong>${bookingId}</strong></div><small>${pickup} → ${dropoff}</small></td>
-                          <td>₹${amount}</td>
-                          <td>₹${fare}</td>
-                          <td>${isPaid ? '<span class="badge-paid">Paid</span>' : '<span class="badge-unpaid">Unpaid</span>'}</td>
-                          <td></td>`;
-          tr.querySelector('td:last-child').appendChild(actionsWrapper);
-          tbody.appendChild(tr);
-        }
+        document.getElementById('exportWithdrawalsBtn').onclick = () => exportWithdrawalsGrouped(byDriver);
+      } catch(e) {
+        showToast('Error loading withdrawals: ' + e.message,'danger');
+        console.error('Error loading withdrawals:', e);
+      } finally {
+        $('#withdrawals-loading').hide(); 
+        $('#withdrawals-container').show();
       }
-
-      document.getElementById('exportWithdrawalsBtn').onclick = () => exportWithdrawalsGrouped(byDriver);
-
-      $('#withdrawals-loading').hide(); $('#withdrawals-container').show();
     }
 
     function exportWithdrawalsGrouped(dataByDriver){
       try {
         let rows = [['Driver ID','Driver Name','UPI','Booking ID','Amount','Fare','Status']];
-        let totalRows = 0;
         for(const [driverId, bookingsObj] of Object.entries(dataByDriver)){
           for(const [bookingId, data] of Object.entries(bookingsObj)){
             const driverName = (data.driverName || '');
             const upi = (data.upi || '');
             rows.push([driverId, driverName, upi, bookingId, (Number(data.amount)||0).toFixed(2), (data.fare||''), (data.status||'')]);
-            totalRows++;
           }
         }
         const csv = rows.map(r => r.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
@@ -1085,9 +1218,11 @@ body {
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        recordAdminAction('exportWithdrawalsGrouped', { totalRows });
+        set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'exportWithdrawalsGrouped', ts: Date.now() });
         showToast('CSV exported','success');
-      } catch (err) { showToast('Export failed: ' + (err.message || err),'danger'); }
+      } catch (err) { 
+        showToast('Export failed: ' + (err.message || err),'danger'); 
+      }
     }
 
     // ---------- FIXED loadBookings() ----------
@@ -1167,6 +1302,7 @@ body {
         }
       } catch (err) {
         showToast('Failed to load bookings: ' + (err.message || err),'danger');
+        console.error('Error loading bookings:', err);
       } finally {
         $('#bookings-loading').hide();
         $('#bookings-table').show();
@@ -1193,10 +1329,22 @@ body {
     async function loadProfile(){
       $('#profile-table').hide(); $('#profile-loading').show();
       initTable('profile-table');
-      const user = auth.currentUser;
-      const profileData = { Name: user?.displayName || 'Admin', Email: user?.email || '', UID: user?.uid || '' };
-      for(const [k,v] of Object.entries(profileData)) tables['profile-table'].row.add([k,v]).draw(false);
-      $('#profile-loading').hide(); $('#profile-table').show();
+      try {
+        const user = auth.currentUser;
+        const profileData = { 
+          Name: user?.displayName || 'Admin', 
+          Email: user?.email || '', 
+          UID: user?.uid || '' 
+        };
+        for(const [k,v] of Object.entries(profileData)) {
+          tables['profile-table'].row.add([k,v]).draw(false);
+        }
+      } catch(e) {
+        showToast('Error loading profile: ' + e.message,'danger');
+      } finally {
+        $('#profile-loading').hide(); 
+        $('#profile-table').show();
+      }
     }
 
     // Defensive openTab + ensure DOM ready when opening default tab
@@ -1229,30 +1377,25 @@ body {
 
     // Ensure openTab runs after auth state ready
     onAuthStateChanged(auth, user => {
-      if (!user) { location.href = 'adminlogin.html'; return; }
+      if (!user) { 
+        location.href = 'adminlogin.html'; 
+        return; 
+      }
+      
+      // Setup wallet filter controls
       const filterEl = document.getElementById('walletStatusFilter');
       if(filterEl){
         document.getElementById('walletFilterApplyBtn').addEventListener('click', () => loadWallets());
         filterEl.addEventListener('change', () => loadWallets());
       }
+      
       const showDefault = () => openTab('users');
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showDefault, { once: true });
-      else showDefault();
-    });
-
-    // ----------------- helper: show image modal -----------------
-    window.showImageModal = function(src){
-      if(!src) return;
-      const imgEl = document.getElementById('imageViewModalImg');
-      imgEl.src = src;
-      try {
-        new bootstrap.Modal(document.getElementById('imageViewModal')).show();
-      } catch(e){
-        alert('Unable to open image modal: ' + (e.message || e));
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showDefault, { once: true });
+      } else {
+        showDefault();
       }
-    };
-    // -----------------------------------------------------------
-
+    });
   </script>
 </body>
 </html>
