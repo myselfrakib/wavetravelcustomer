@@ -4,88 +4,372 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WaveTravel Login</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
     :root {
       --primary: #0077ff;
-      --bg-gradient: linear-gradient(to right, #74ebd5, #ACB6E5);
-      --card-bg: #fff;
-      --dark-text: #333;
+      --primary-dark: #005bb5;
+      --secondary: #00d4aa;
+      --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --dark-text: #2c3e50;
+      --light-text: #7f8c8d;
+      --error: #e74c3c;
+      --success: #27ae60;
+      --shadow: 0 20px 40px rgba(0,0,0,0.1);
+      --border-radius: 16px;
     }
-    * { box-sizing: border-box; margin:0; padding:0; }
+    
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+    
     body {
       font-family: 'Poppins', sans-serif;
       background: var(--bg-gradient);
       min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
       color: var(--dark-text);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
     }
+    
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="white" opacity="0.1"/><circle cx="80" cy="40" r="1.5" fill="white" opacity="0.1"/><circle cx="40" cy="80" r="1" fill="white" opacity="0.1"/></svg>');
+      animation: float 20s infinite linear;
+      pointer-events: none;
+    }
+    
+    @keyframes float {
+      0% { transform: translateY(100vh) rotate(0deg); }
+      100% { transform: translateY(-100vh) rotate(360deg); }
+    }
+    
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 450px;
+    }
+    
     .card {
       background: var(--card-bg);
-      border-radius: 12px;
-      padding: 32px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--border-radius);
+      padding: 40px;
+      box-shadow: var(--shadow);
       width: 100%;
-      max-width: 400px;
+      position: relative;
+      overflow: hidden;
     }
+    
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+    
+    .logo-section {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    .logo-icon {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      color: white;
+      font-size: 24px;
+      box-shadow: 0 8px 20px rgba(0, 119, 255, 0.3);
+    }
+    
     .card h1 {
       text-align: center;
-      color: var(--primary);
-      margin-bottom: 24px;
-      font-size: 1.75rem;
+      color: var(--dark-text);
+      margin-bottom: 8px;
+      font-size: 1.8rem;
+      font-weight: 700;
     }
+    
+    .subtitle {
+      text-align: center;
+      color: var(--light-text);
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
+    
+    .form-group {
+      position: relative;
+      margin-bottom: 24px;
+    }
+    
+    .form-group i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--light-text);
+      font-size: 16px;
+    }
+    
     .input-field {
       width: 100%;
-      padding: 12px;
-      margin-bottom: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+      padding: 16px 16px 16px 48px;
+      border: 2px solid #e8ecf0;
+      border-radius: 12px;
       font-size: 1rem;
+      font-family: inherit;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.8);
     }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 119, 255, 0.1);
+      background: rgba(255, 255, 255, 1);
+    }
+    
+    .input-field::placeholder {
+      color: var(--light-text);
+    }
+    
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
     .button {
       width: 100%;
-      padding: 14px;
-      background: var(--primary);
-      color: #fff;
+      padding: 16px;
       font-size: 1rem;
       font-weight: 600;
+      font-family: inherit;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
-    .button:hover { background: #005bb5; }
+    
+    .button-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      box-shadow: 0 8px 20px rgba(0, 119, 255, 0.3);
+    }
+    
+    .button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(0, 119, 255, 0.4);
+    }
+    
+    .button-secondary {
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--dark-text);
+      border: 2px solid #e8ecf0;
+    }
+    
+    .button-secondary:hover {
+      background: rgba(255, 255, 255, 1);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .button:active {
+      transform: translateY(0);
+    }
+    
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 24px 0;
+      color: var(--light-text);
+      font-size: 0.85rem;
+    }
+    
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e8ecf0;
+    }
+    
+    .divider span {
+      margin: 0 16px;
+    }
+    
     .links {
-      margin-top: 16px;
       text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #e8ecf0;
     }
+    
+    .links p {
+      color: var(--light-text);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+    
     .links a {
       color: var(--primary);
       text-decoration: none;
-      margin: 0 8px;
-      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.3s ease;
     }
+    
+    .links a:hover {
+      color: var(--primary-dark);
+      text-decoration: underline;
+    }
+    
     .error {
-      color: red;
+      color: var(--error);
       font-size: 0.9rem;
       text-align: center;
-      margin-bottom: 12px;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: rgba(231, 76, 60, 0.1);
+      border: 1px solid rgba(231, 76, 60, 0.2);
+      border-radius: 8px;
+      display: none;
+    }
+    
+    .error.show {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    
+    .loading .button-text {
+      opacity: 0;
+    }
+    
+    .loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 480px) {
+      .card {
+        padding: 32px 24px;
+        margin: 0 16px;
+      }
+      
+      .logo-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+      }
+      
+      .card h1 {
+        font-size: 1.5rem;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <div class="card">
+      <div class="logo-section">
+        <div class="logo-icon">
+          <i class="fas fa-wave-square"></i>
+        </div>
+        <h1>Welcome </h1>
+        <p class="subtitle">Sign in to continue your journey with WaveTravel</p>
+      </div>
+      
+      <div id="errorMsg" class="error"></div>
+      
+      <form id="loginForm">
+        <div class="form-group">
+          <i class="fas fa-envelope"></i>
+          <input type="email" id="email" class="input-field" placeholder="Enter your email" required />
+        </div>
+        
+        <div class="form-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="password" class="input-field" placeholder="Enter your password" required />
+        </div>
+        
+        <div class="button-group">
+          <button type="submit" id="loginBtn" class="button button-primary">
+            <i class="fas fa-sign-in-alt"></i>
+            <span class="button-text">Sign In</span>
+          </button>
+          
+          <div class="divider">
+            <span>or</span>
+          </div>
+          
+          <button type="button" id="driverLoginBtn" class="button button-secondary">
+            <i class="fas fa-steering-wheel"></i>
+            <span class="button-text">Driver Login</span>
+          </button>
+        </div>
+      </form>
 
-  <div class="card">
-    <h1><i class="fas fa-sign-in-alt"></i> Login</h1>
-    <div id="errorMsg" class="error"></div>
-    <input type="email" id="email" class="input-field" placeholder="Email" required />
-    <input type="password" id="password" class="input-field" placeholder="Password" required />
-    <button id="loginBtn" class="button">Log In</button>
-
-    <div class="links">
-      <a href="driver-login.html">Driver Login</a> |
-      <a href="admin-login.html">Admin Login</a>
+      <div class="links">
+        <p>Don't have an account?</p>
+        <a href="signup.html" id="signupLink">
+          <i class="fas fa-user-plus"></i> Create Account
+        </a>
+      </div>
     </div>
   </div>
 
@@ -103,39 +387,136 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    const app  = initializeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    const emailEl    = document.getElementById("email");
-    const passEl     = document.getElementById("password");
-    const loginBtn   = document.getElementById("loginBtn");
+    const emailEl = document.getElementById("email");
+    const passEl = document.getElementById("password");
+    const loginBtn = document.getElementById("loginBtn");
+    const driverLoginBtn = document.getElementById("driverLoginBtn");
     const errorMsgEl = document.getElementById("errorMsg");
+    const loginForm = document.getElementById("loginForm");
 
-    loginBtn.addEventListener("click", async () => {
+    // Show error message with animation
+    function showError(message) {
+      errorMsgEl.textContent = message;
+      errorMsgEl.classList.add("show");
+      setTimeout(() => {
+        errorMsgEl.classList.remove("show");
+      }, 5000);
+    }
+
+    // Hide error message
+    function hideError() {
+      errorMsgEl.classList.remove("show");
+    }
+
+    // Set loading state
+    function setLoading(button, isLoading) {
+      if (isLoading) {
+        button.classList.add("loading");
+        button.disabled = true;
+      } else {
+        button.classList.remove("loading");
+        button.disabled = false;
+      }
+    }
+
+    // Handle form submission
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
       const email = emailEl.value.trim();
-      const pass  = passEl.value;
-      errorMsgEl.textContent = "";
+      const pass = passEl.value;
+      hideError();
 
       if (!email || !pass) {
-        errorMsgEl.textContent = "Please enter email and password.";
+        showError("Please enter both email and password.");
         return;
       }
+
+      if (!isValidEmail(email)) {
+        showError("Please enter a valid email address.");
+        return;
+      }
+
+      setLoading(loginBtn, true);
 
       try {
         await signInWithEmailAndPassword(auth, email, pass);
         // Redirect on success
-        window.location = "booking.html";
+        window.location.href = "booking.html";
       } catch (err) {
         console.error("Login error:", err);
-        errorMsgEl.textContent = err.message;
+        let errorMessage = "Login failed. Please try again.";
+        
+        switch (err.code) {
+          case 'auth/user-not-found':
+            errorMessage = "No account found with this email address.";
+            break;
+          case 'auth/wrong-password':
+            errorMessage = "Incorrect password. Please try again.";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "Please enter a valid email address.";
+            break;
+          case 'auth/user-disabled':
+            errorMessage = "This account has been disabled.";
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = "Too many failed attempts. Please try again later.";
+            break;
+        }
+        
+        showError(errorMessage);
+      } finally {
+        setLoading(loginBtn, false);
       }
     });
+
+    // Handle driver login button
+    driverLoginBtn.addEventListener("click", () => {
+      window.location.href = "driver-login.html";
+    });
+
+    // Email validation
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
 
     // If already logged in, redirect away
     onAuthStateChanged(auth, user => {
       if (user) {
-        window.location = "booking.html";
+        window.location.href = "booking.html";
       }
+    });
+
+    // Add input validation feedback
+    emailEl.addEventListener('blur', () => {
+      if (emailEl.value && !isValidEmail(emailEl.value)) {
+        emailEl.style.borderColor = 'var(--error)';
+      } else {
+        emailEl.style.borderColor = '#e8ecf0';
+      }
+    });
+
+    emailEl.addEventListener('input', () => {
+      if (emailEl.style.borderColor === 'var(--error)') {
+        emailEl.style.borderColor = '#e8ecf0';
+      }
+    });
+
+    // Add some interactive effects
+    document.querySelectorAll('.input-field').forEach(input => {
+      input.addEventListener('focus', function() {
+        this.parentElement.querySelector('i').style.color = 'var(--primary)';
+      });
+      
+      input.addEventListener('blur', function() {
+        if (!this.value) {
+          this.parentElement.querySelector('i').style.color = 'var(--light-text)';
+        }
+      });
     });
   </script>
 </body>
