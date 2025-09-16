@@ -215,14 +215,17 @@
     }
 
     /**
-     * Load locations and set default pickup to:
-     * "Berhampore Mohona Bus Stand" if present anywhere under /locations (array or object).
+     * Load locations and set defaults:
+     * - Pickup default to "Berhampore Mohona Bus Stand" if present.
+     * - Dropoff default to "Kolkata Airport" (case-insensitive) if present.
+     * Works whether /locations is an array or object.
      */
     function loadLocations() {
       onValue(ref(db, "locations"), snap => {
         const val = snap.val();
         let opts = "";
-        let defaultFound = false;
+        let pickupDefaultFound = false;
+        let dropoffDefaultFound = false;
         // If nothing, clear selects
         if (!val) {
           pickup.innerHTML = `<option disabled>No locations</option>`;
@@ -235,8 +238,10 @@
           for (const l of val) {
             if (!l) continue;
             const name = l.name || String(l);
+            const nameLower = String(name).trim().toLowerCase();
             opts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-            if (name === "Berhampore Mohona Bus Stand") defaultFound = true;
+            if (nameLower === "berhampore mohona bus stand") pickupDefaultFound = true;
+            if (nameLower === "kolkata airport") dropoffDefaultFound = true;
           }
         } else {
           // object: iterate keys so structure like /locations/8 works
@@ -244,8 +249,10 @@
             const l = val[k];
             if (!l) continue;
             const name = (typeof l === 'object' && l.name) ? l.name : String(l);
+            const nameLower = String(name).trim().toLowerCase();
             opts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-            if (name === "Berhampore Mohona Bus Stand") defaultFound = true;
+            if (nameLower === "berhampore mohona bus stand") pickupDefaultFound = true;
+            if (nameLower === "kolkata airport") dropoffDefaultFound = true;
           }
         }
 
@@ -253,10 +260,19 @@
         pickup.innerHTML = opts;
         dropoff.innerHTML = opts;
 
-        // If default exists, set pickup to that value
-        if (defaultFound) {
+        // If defaults exist, set them (use try/catch to avoid select value errors)
+        if (pickupDefaultFound) {
           try { pickup.value = "Berhampore Mohona Bus Stand"; }
-          catch (e) { /* silently ignore */ }
+          catch (e) { /* ignore */ }
+        }
+        if (dropoffDefaultFound) {
+          try {
+            // find exact option that matches case-insensitively and set it
+            const optsArr = Array.from(dropoff.options);
+            const match = optsArr.find(o => o.value.trim().toLowerCase() === "kolkata airport");
+            if (match) dropoff.value = match.value;
+            else dropoff.value = "Kolkata Airport";
+          } catch (e) { /* ignore */ }
         }
       }, err => {
         console.error("Failed to read locations:", err);
