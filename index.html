@@ -332,9 +332,47 @@
       to { transform: rotate(360deg); }
     }
 
+    /* Admin button styles */
+    .admin-button {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff6b35, #f7931e);
+      color: white;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .admin-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(255, 107, 53, 0.5);
+    }
+
+    .admin-button:active {
+      transform: translateY(0px);
+      box-shadow: 0 6px 16px rgba(255, 107, 53, 0.6);
+    }
+
     /* Focus states for better accessibility */
     .button:focus-visible {
       outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .admin-button:focus-visible {
+      outline: 2px solid #ff6b35;
       outline-offset: 2px;
     }
 
@@ -349,6 +387,11 @@
         padding-right: max(16px, env(safe-area-inset-right));
         padding-top: max(20px, env(safe-area-inset-top));
         padding-bottom: max(20px, env(safe-area-inset-bottom));
+      }
+
+      .admin-button {
+        bottom: max(24px, env(safe-area-inset-bottom) + 8px);
+        right: max(24px, env(safe-area-inset-right) + 8px);
       }
     }
 
@@ -381,6 +424,14 @@
         padding: 16px 18px;
         min-height: 50px;
         font-size: 15px;
+      }
+
+      .admin-button {
+        width: 50px;
+        height: 50px;
+        font-size: 18px;
+        bottom: 16px;
+        right: 16px;
       }
     }
 
@@ -436,6 +487,11 @@
 
       .links {
         padding-top: 16px;
+      }
+
+      .admin-button {
+        bottom: 16px;
+        right: 16px;
       }
     }
   </style>
@@ -494,6 +550,11 @@
     </div>
   </div>
 
+  <!-- Admin button -->
+  <button id="adminBtn" class="admin-button" aria-label="Admin Dashboard" title="Admin Dashboard">
+    <i class="fas fa-user-shield" aria-hidden="true"></i>
+  </button>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
@@ -515,6 +576,7 @@
     const passEl = document.getElementById("password");
     const loginBtn = document.getElementById("loginBtn");
     const driverLoginBtn = document.getElementById("driverLoginBtn");
+    const adminBtn = document.getElementById("adminBtn");
     const errorMsgEl = document.getElementById("errorMsg");
     const loginForm = document.getElementById("loginForm");
 
@@ -601,6 +663,11 @@
     // Handle driver login button -> redirect to driverlogin.html
     driverLoginBtn.addEventListener("click", () => {
       window.location.href = "driverlogin.html";
+    });
+
+    // Handle admin button -> redirect to admindashboard.html
+    adminBtn.addEventListener("click", () => {
+      window.location.href = "admindashboard.html";
     });
 
     // Email validation
