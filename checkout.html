@@ -460,7 +460,7 @@
 
                     // driver wallet entry unchanged
                     await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
-                      amount: booking.fare * 0.7,
+                      amount: booking.fare * 0.6,
                       status: 'unpaid',
                       booking: bookingData,
                       date: new Date().toISOString()
