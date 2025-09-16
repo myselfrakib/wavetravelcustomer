@@ -236,7 +236,7 @@
     const slotsDiv  = document.getElementById('slots');
     const locationIndexMap = {}; // still used for populating selects
 
-    // locationFareMap will be loaded from /testlocations in your RTDB
+    // locationFareMap will now be loaded from /locations in your RTDB (using the 'fare' field)
     const locationFareMap = {};
 
     // Debounce helper
@@ -266,7 +266,7 @@
       return best;
     }
 
-    // Always use the fare map loaded from /testlocations. If missing, log & return 0.
+    // Always use the fare map loaded from /locations. If missing, log & return 0.
     function getPerSeatFare(puName, doName) {
       if (!(puName in locationFareMap)) console.warn('Missing fare mapping for pickup:', puName);
       if (!(doName in locationFareMap)) console.warn('Missing fare mapping for dropoff:', doName);
@@ -286,54 +286,52 @@
       if (!user) {
         window.location.href = 'index.html';
       } else {
-        loadLocations(); // loads both locations (for selects) and testlocations (fare map)
+        loadLocations(); // loads /locations and builds both select options and fare map
       }
     });
 
     function loadLocations() {
-      // Load available 'locations' for selects first
+      // Load available 'locations' for selects and also build fare map from the same node
       return db.ref('locations').once('value').then(snap => {
         let puOpts = '<option value="">Select Pickup</option>',
             doOpts = '<option value="">Select Dropoff</option>';
         snap.forEach(child => {
           const loc = child.val();
-          locationIndexMap[loc.name] = loc.index;
-          puOpts += `<option value="${loc.name}">${loc.name}</option>`;
-          doOpts += `<option value="${loc.name}">${loc.name}</option>`;
+          // handle cases where loc might be a string or an object
+          const name = (loc && typeof loc === 'object' && loc.name) ? loc.name : child.key;
+          const fare = (loc && typeof loc === 'object' && loc.fare != null) ? Number(loc.fare) : 0;
+          const idx  = (loc && typeof loc === 'object' && loc.index != null) ? loc.index : null;
+
+          if (name) {
+            locationIndexMap[name] = idx;
+            locationFareMap[name] = Number(fare);
+            puOpts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+            doOpts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+          }
         });
         pickupEl.innerHTML  = puOpts;
         dropoffEl.innerHTML = doOpts;
 
-        // Now load /testlocations to populate fare map (always used)
-        return db.ref('testlocations').once('value').then(testSnap => {
-          testSnap.forEach(ch => {
-            // key is location name, value is string like "299" — convert to Number
-            const key = ch.key;
-            const val = ch.val();
-            locationFareMap[key] = Number(val);
-          });
+        // After load, set defaults and initial auto-search if possible
+        const today = new Date().toISOString().split('T')[0];
+        dateEl.value  = today;
+        seatsEl.value = '1';
 
-          // After both loads, set defaults and initial auto-search if possible
-          const today = new Date().toISOString().split('T')[0];
-          dateEl.value  = today;
-          seatsEl.value = '1';
-
-          const defaultPickup  = 'Berhampore Mohona Bus Stand';
-          const defaultDropoff = 'Kolkata Airport';
-          Array.from(pickupEl.options).forEach(opt => {
-            if (opt.text === defaultPickup) opt.selected = true;
-          });
-          Array.from(dropoffEl.options).forEach(opt => {
-            if (opt.text === defaultDropoff) opt.selected = true;
-          });
-
-          // Auto-search once after initial load if defaults are set
-          if (pickupEl.value && dropoffEl.value && dateEl.value) {
-            setTimeout(() => searchSlots(), 150);
-          }
+        const defaultPickup  = 'Berhampore Mohona Bus Stand';
+        const defaultDropoff = 'Kolkata Airport';
+        Array.from(pickupEl.options).forEach(opt => {
+          if (opt.text === defaultPickup) opt.selected = true;
         });
+        Array.from(dropoffEl.options).forEach(opt => {
+          if (opt.text === defaultDropoff) opt.selected = true;
+        });
+
+        // Auto-search once after initial load if defaults are set
+        if (pickupEl.value && dropoffEl.value && dateEl.value) {
+          setTimeout(() => searchSlots(), 150);
+        }
       }).catch(err => {
-        console.error('Failed to load locations or testlocations', err);
+        console.error('Failed to load locations', err);
       });
     }
 
@@ -450,7 +448,7 @@
         const avail = parseInt(slot.seats, 10);
         if (avail < reqSeats) return;
 
-        // Always use testlocations fares
+        // Always use locations fares (loaded into locationFareMap)
         const perSeatFare = getPerSeatFare(slot.pickup, slot.dropoff);
         const fare  = perSeatFare * reqSeats;
 
