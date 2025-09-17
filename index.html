@@ -557,7 +557,13 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      setPersistence,
+      inMemoryPersistence,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -579,6 +585,25 @@
     const adminBtn = document.getElementById("adminBtn");
     const errorMsgEl = document.getElementById("errorMsg");
     const loginForm = document.getElementById("loginForm");
+
+    // Setup: disable persistence (no auto-login across reloads) and
+    // perform a one-time sign out to clear any existing session.
+    (async () => {
+      try {
+        // Use in-memory persistence so auth state is not saved across page reloads.
+        await setPersistence(auth, inMemoryPersistence);
+      } catch (err) {
+        console.warn("Failed to set inMemoryPersistence:", err);
+      }
+
+      try {
+        // One-time cleanup: sign out any previously persisted session.
+        // This guarantees users won't be auto-redirected if they were already signed in.
+        await signOut(auth).catch(() => {});
+      } catch (err) {
+        // ignore signOut errors
+      }
+    })();
 
     // Show error message with animation
     function showError(message) {
@@ -674,13 +699,6 @@
     function isValidEmail(email) {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
-
-    // If already logged in, redirect away
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        window.location.href = "booking.html";
-      }
-    });
 
     // Add input validation feedback
     emailEl.addEventListener('blur', () => {
