@@ -167,7 +167,7 @@ signupForm.addEventListener('submit', function(e){
     let exists = false;
     snapshot.forEach(child => {
       const val = child.val();
-      if(val.phone === fullPhone || val.email === email) exists = true;
+      if(val && (val.phone === fullPhone || val.email === email)) exists = true;
     });
     if(exists){
       showToast('This number or email address is already being used');
@@ -208,7 +208,8 @@ verifyBtn.addEventListener('click', () => {
       const phone = '+91' + document.getElementById('phone').value.trim();
       const createdAt = new Date().toISOString();
 
-      database.ref('driverdetails/' + driverId).set({name, phone, email, createdAt})
+      // Add role: 'driver' along with other details
+      database.ref('driverdetails/' + driverId).set({name, phone, email, createdAt, role: 'driver'})
         .then(()=>{
           showToast('Signup successful! Redirecting...');
           setTimeout(()=>{ window.location.href='driverdashboard.html'; }, 2000);
