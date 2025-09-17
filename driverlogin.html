@@ -6,6 +6,7 @@
 <title>Driver Login — WaveTravel</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* (styles unchanged from your provided file) */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -512,17 +513,28 @@ async function verifyOTP() {
       try {
         if (user && user.uid) {
           sessionStorage.setItem(`lastRoleFor:${user.uid}`, "driver");
+          sessionStorage.setItem(`lastDriverIdFor:${user.uid}`, driverId);
         }
       } catch (e) {
-        console.warn("Failed to set sessionStorage role marker:", e);
+        console.warn("Failed to set sessionStorage role/driverId marker:", e);
       }
       // --- END NEW CODE ---
+
+      // Optional: persist role server-side in users/{uid}/role (uncomment if your rules allow)
+      /*
+      try {
+        await database.ref(`users/${user.uid}/role`).set("driver");
+      } catch (e) {
+        console.warn("Failed to write users/{uid}/role:", e);
+      }
+      */
 
       showToast('Login successful! Redirecting...');
       
       setTimeout(() => {
-        window.location.replace('driverdashboard.html?driverId=' + driverId);
-      }, 1500);
+        // redirect driver to driverslots page with driverId
+        window.location.replace('driverslots.html?driverId=' + encodeURIComponent(driverId));
+      }, 900);
     } else {
       showToast('No driver record found. Please sign up first.', true);
     }
