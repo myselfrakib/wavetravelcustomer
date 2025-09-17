@@ -204,8 +204,56 @@
 
     let currentUid = null;
 
-    logoutBtn.addEventListener('click', () => {
-      signOut(auth).then(() => window.location = 'driverlogin.html');
+    // ---------- helper: clear session/local markers ----------
+    function clearSessionMarkers(uid = null) {
+      try {
+        // Remove known keys for the specific uid (if provided)
+        if (uid) {
+          try { sessionStorage.removeItem(`lastRoleFor:${uid}`); } catch(e) {}
+          try { sessionStorage.removeItem(`lastDriverIdFor:${uid}`); } catch(e) {}
+          try { localStorage.removeItem(`lastRoleFor:${uid}`); } catch(e) {}
+          try { localStorage.removeItem(`lastDriverIdFor:${uid}`); } catch(e) {}
+        }
+
+        // Also remove any leftover keys that match these prefixes (global sweep)
+        const prefixes = ['lastRoleFor:', 'lastDriverIdFor:'];
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+          const key = sessionStorage.key(i);
+          if (!key) continue;
+          for (const p of prefixes) {
+            if (key.startsWith(p)) sessionStorage.removeItem(key);
+          }
+        }
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (!key) continue;
+          for (const p of prefixes) {
+            if (key.startsWith(p)) localStorage.removeItem(key);
+          }
+        }
+
+        // Remove other app-specific keys you might use
+        try { localStorage.removeItem('userPhone'); } catch(e) {}
+        try { sessionStorage.removeItem('cart'); } catch(e) {}
+        try { sessionStorage.removeItem('draftBooking'); } catch(e) {}
+      } catch (e) {
+        console.warn('clearSessionMarkers error', e);
+      }
+    }
+
+    // Logout flow: clear markers then sign out
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        const uid = currentUid || null;
+        clearSessionMarkers(uid);
+        await signOut(auth);
+        // Ensure navigation to login page
+        window.location = 'driverlogin.html';
+      } catch (err) {
+        console.error('Logout failed', err);
+        // still attempt to redirect
+        try { window.location = 'driverlogin.html'; } catch(e) {}
+      }
     });
 
     onAuthStateChanged(auth, user => {
@@ -228,7 +276,6 @@
           nameEl.textContent = d.name || 'N/A';
           emailEl.textContent = d.email || 'N/A';
           phoneEl.textContent = d.phone || 'N/A';
-
           upiIdInput.value = d.upiId || '';
           saveMessage.textContent = '';
         })
