@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Driver Login — WaveTravel</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -20,6 +20,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  touch-action: manipulation;
 }
 
 .container {
@@ -72,6 +73,9 @@ input {
   transition: all 0.2s ease;
   background: #fff;
   color: #374151;
+  touch-action: manipulation;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 input:focus {
@@ -97,6 +101,9 @@ button {
   margin-top: 8px;
   position: relative;
   overflow: hidden;
+  touch-action: manipulation;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button:hover {
@@ -206,6 +213,7 @@ button:disabled {
   color: #64748b;
   padding-top: 20px;
   border-top: 1px solid #f1f5f9;
+  text-align: center;
 }
 
 .signup-link a {
@@ -277,7 +285,8 @@ button:disabled {
   }
   
   input, button {
-    font-size: 16px; /* Prevent zoom on iOS */
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
   }
   
   .otp-input {
@@ -319,6 +328,10 @@ button:disabled {
     </div>
     <div id="recaptcha-container"></div>
     <button id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
+    
+    <div class="signup-link">
+      Don't have an account? <a href="driversignup.html">Sign up here</a>
+    </div>
   </div>
 
   <div id="otp-section">
@@ -333,10 +346,6 @@ button:disabled {
     
     <button id="verifyBtn" onclick="verifyOTP()">Verify OTP</button>
     <button id="resendOtpBtn" class="secondary-btn" onclick="resendOTP()" disabled>Resend OTP (60s)</button>
-  </div>
-
-  <div class="signup-link">
-    Don't have an account? <a href="driversignup.html">Sign up here</a>
   </div>
 </div>
 
@@ -363,8 +372,21 @@ const auth = firebase.auth();
 const database = firebase.database();
 let confirmationResultGlobal = null;
 
-// Invisible reCAPTCHA
-window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
+// Fast invisible reCAPTCHA with preloading
+window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 
+  'size': 'invisible',
+  'callback': function(response) {
+    // reCAPTCHA solved
+  },
+  'expired-callback': function() {
+    // Response expired
+  }
+});
+
+// Preload reCAPTCHA for faster execution
+window.recaptchaVerifier.render().then(function(widgetId) {
+  window.recaptchaWidgetId = widgetId;
+});
 
 function showToast(msg, isError = false) {
   const toast = document.getElementById('toast');
