@@ -275,8 +275,48 @@
     let currentUser = null;
     let userDataKey = null;
 
+    // ---------- helper: clear session/local markers ----------
+    function clearSessionMarkers(uid = null) {
+      try {
+        // Remove known keys for the specific uid (if provided)
+        if (uid) {
+          try { sessionStorage.removeItem(`lastRoleFor:${uid}`); } catch(e) {}
+          try { sessionStorage.removeItem(`lastDriverIdFor:${uid}`); } catch(e) {}
+          try { localStorage.removeItem(`lastRoleFor:${uid}`); } catch(e) {}
+          try { localStorage.removeItem(`lastDriverIdFor:${uid}`); } catch(e) {}
+        }
+
+        // Also remove any leftover keys that match these prefixes (global sweep)
+        const prefixes = ['lastRoleFor:', 'lastDriverIdFor:'];
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+          const key = sessionStorage.key(i);
+          if (!key) continue;
+          for (const p of prefixes) {
+            if (key.startsWith(p)) sessionStorage.removeItem(key);
+          }
+        }
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (!key) continue;
+          for (const p of prefixes) {
+            if (key.startsWith(p)) localStorage.removeItem(key);
+          }
+        }
+
+        // Remove other app-specific keys you might use
+        try { localStorage.removeItem('userPhone'); } catch(e) {}
+        try { sessionStorage.removeItem('cart'); } catch(e) {}
+        try { sessionStorage.removeItem('draftBooking'); } catch(e) {}
+
+      } catch (e) {
+        console.warn('clearSessionMarkers error', e);
+      }
+    }
+
+    // ---------- load profile ----------
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
+        // No user — go to index/login
         window.location = "index.html";
         return;
       }
@@ -332,10 +372,19 @@
       }
     });
 
+    // ---------- Logout: clears session markers and signs out ----------
     logoutBtn.addEventListener('click', async () => {
       try {
+        // If we have a current user, capture uid first
+        const uid = currentUser?.uid || null;
+
+        // Clear client-side session/local markers (ensures autologin won't reuse)
+        clearSessionMarkers(uid);
+
+        // Sign out from Firebase Auth
         await signOut(auth);
-        localStorage.removeItem('userPhone');
+
+        // Redirect to login
         window.location = 'index.html';
       } catch (err) {
         console.error("Logout error:", err);
@@ -343,7 +392,7 @@
       }
     });
 
-    // Delete Account Modal handlers
+    // ---------- Delete Account Modal handlers ----------
     deleteAccountBtn.addEventListener('click', () => {
       deleteModal.classList.add('show');
     });
@@ -359,6 +408,7 @@
       }
     });
 
+    // ---------- Confirm Delete ----------
     confirmDelete.addEventListener('click', async () => {
       if (!currentUser) return;
 
@@ -373,8 +423,7 @@
           await remove(dbRef(db, `users/${userDataKey}`));
         }
 
-        // 2. Delete user's bookings (optional - you might want to keep for records)
-        // You can add this if you want to delete user's bookings too:
+        // 2. Optional: delete user's bookings (uncomment to enable)
         /*
         const bookingsSnap = await get(query(dbRef(db, "bookings"), orderByChild("userId"), equalTo(currentUser.uid)));
         if (bookingsSnap.exists()) {
@@ -385,26 +434,29 @@
         }
         */
 
-        // 3. Delete the Firebase Auth user
+        // 3. Clear session markers BEFORE deleting the auth user (ensures they are removed)
+        clearSessionMarkers(currentUser.uid);
+
+        // 4. Delete the Firebase Auth user (requires recent login)
         await deleteUser(currentUser);
 
-        // 4. Clear local storage
-        localStorage.removeItem('userPhone');
+        // 5. Clear any remaining local keys
+        try { localStorage.removeItem('userPhone'); } catch(e){}
 
-        // 5. Show success and redirect
+        // 6. Show success and redirect
         noticeEl.textContent = "Account deleted successfully. Redirecting...";
         noticeEl.className = "success";
 
         setTimeout(() => {
           window.location = 'index.html';
-        }, 2000);
+        }, 1600);
 
       } catch (err) {
         console.error("Delete account error:", err);
         deleteAccountBtn.disabled = false;
         confirmDelete.disabled = false;
         deleteModal.classList.remove('show');
-        
+
         if (err.code === 'auth/requires-recent-login') {
           noticeEl.textContent = "Please log out and log back in before deleting your account.";
         } else {
