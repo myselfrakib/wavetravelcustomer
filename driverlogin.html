@@ -507,6 +507,17 @@ async function verifyOTP() {
     
     if (snapshot.exists()) {
       const driverId = Object.keys(snapshot.val())[0];
+
+      // --- NEW: set sessionStorage last-role marker for this authenticated UID ---
+      try {
+        if (user && user.uid) {
+          sessionStorage.setItem(`lastRoleFor:${user.uid}`, "driver");
+        }
+      } catch (e) {
+        console.warn("Failed to set sessionStorage role marker:", e);
+      }
+      // --- END NEW CODE ---
+
       showToast('Login successful! Redirecting...');
       
       setTimeout(() => {
