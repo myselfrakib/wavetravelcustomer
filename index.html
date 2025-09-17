@@ -32,7 +32,7 @@
       overflow-x: hidden;
       padding: 0;
       margin: 0;
-      font-size: 16px; /* Prevent zoom on iOS */
+      font-size: 16px;
     }
 
     body::before {
@@ -48,10 +48,7 @@
       z-index: 0;
     }
 
-    @keyframes float {
-      0% { transform: translateY(100vh) rotate(0deg); }
-      100% { transform: translateY(-100vh) rotate(360deg); }
-    }
+    @keyframes float { 0% { transform: translateY(100vh) rotate(0deg); } 100% { transform: translateY(-100vh) rotate(360deg); } }
 
     .container { position: relative; z-index: 1; width: 100%; min-height: 100vh; display: flex; flex-direction: column; justify-content: flex-start; padding: 20px 16px 40px 16px; overflow-y: auto; }
 
@@ -108,7 +105,6 @@
 
     .admin-button { position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#ff6b35,#f7931e); color:white; border:none; font-size:20px; cursor:pointer; box-shadow:0 8px 20px rgba(255,107,53,0.4); display:flex; align-items:center; justify-content:center; z-index:1000; }
 
-    /* responsive styles omitted for brevity (kept from original) */
     @media (max-width: 320px) { .container { padding: 16px 12px 32px 12px; } .card { padding: 24px 18px 32px 18px; margin: 10px auto 0 auto; } }
   </style>
 </head>
@@ -146,7 +142,6 @@
             <span>or</span>
           </div>
 
-          <!-- Driver Login button: fixed and now redirects to driverlogin.html -->
           <button type="button" id="driverLoginBtn" class="button button-secondary" aria-label="Driver login">
             <i class="fas fa-car" aria-hidden="true"></i>
             <span class="button-text">Driver Login</span>
@@ -176,14 +171,17 @@
       setPersistence,
       browserSessionPersistence,
       onAuthStateChanged,
-      // signOut // no signOut on load now
+      signOut
     } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 
     import {
       getDatabase,
       ref as dbRef,
       child,
-      get
+      get,
+      query,
+      orderByChild,
+      equalTo
     } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -209,95 +207,153 @@
     const loginForm = document.getElementById("loginForm");
 
     // ---------- Persistence ----------
-    // Use browserSessionPersistence so auth survives reloads in the same tab/window.
-    // This allows us to rely on sessionStorage's last-role marker to route correctly when the app reopens.
     (async () => {
       try {
+        // keep auth for the same tab/session
         await setPersistence(auth, browserSessionPersistence);
       } catch (err) {
         console.warn("Failed to set browserSessionPersistence:", err);
       }
     })();
 
-    // ---------- Session role helpers ----------
+    // ---------- Session helpers ----------
     function setSessionRole(uid, role) {
-      try {
-        sessionStorage.setItem(`lastRoleFor:${uid}`, role);
-      } catch (e) { /* ignore */ }
+      try { sessionStorage.setItem(`lastRoleFor:${uid}`, role); } catch(e) { /* ignore */ }
     }
     function getSessionRole(uid) {
+      try { return sessionStorage.getItem(`lastRoleFor:${uid}`) || null; } catch(e) { return null; }
+    }
+    function setSessionDriverId(uid, driverId) {
+      try { sessionStorage.setItem(`lastDriverIdFor:${uid}`, driverId); } catch(e) { /* ignore */ }
+    }
+    function getSessionDriverId(uid) {
+      try { return sessionStorage.getItem(`lastDriverIdFor:${uid}`) || null; } catch(e) { return null; }
+    }
+    function clearSessionMarkers(uid) {
       try {
-        return sessionStorage.getItem(`lastRoleFor:${uid}`) || null;
-      } catch (e) { return null; }
+        sessionStorage.removeItem(`lastRoleFor:${uid}`);
+        sessionStorage.removeItem(`lastDriverIdFor:${uid}`);
+      } catch(e) { /* ignore */ }
     }
 
-    // ---------- DB fallback checks ----------
+    // ---------- Database lookups ----------
     async function getUsersRole(uid) {
       try {
         const snap = await get(child(dbRef(db), `users/${uid}/role`));
-        if (snap.exists()) return snap.val(); // "driver" or "customer"
-        return null;
-      } catch (e) {
-        console.warn("getUsersRole err", e);
-        return null;
-      }
+        if (snap.exists()) return snap.val(); // expected "driver" or "customer"
+      } catch (e) { console.warn("getUsersRole err", e); }
+      return null;
     }
 
-    async function isDriverDetailsPresent(uid) {
+    async function getUsersPhone(uid) {
+      try {
+        const snap = await get(child(dbRef(db), `users/${uid}/phone`));
+        if (snap.exists()) return snap.val();
+      } catch (e) { console.warn("getUsersPhone err", e); }
+      return null;
+    }
+
+    // Check if driverdetails has a node keyed by the UID
+    async function findDriverIdByUid(uid) {
       try {
         const snap = await get(child(dbRef(db), `driverdetails/${uid}`));
-        return snap.exists();
-      } catch (e) {
-        console.warn("isDriverDetailsPresent err", e);
-        return false;
-      }
+        if (snap.exists()) return uid; // the key is driverId
+      } catch (e) { console.warn("findDriverIdByUid err", e); }
+      return null;
     }
 
-    // ---------- Decide authoritative role ----------
-    async function determineRole(user) {
+    // Fallback: find driverId by phone stored inside driverdetails entries
+    async function findDriverIdByPhone(phone) {
+      if (!phone) return null;
+      try {
+        const q = query(child(dbRef(db), 'driverdetails'), orderByChild('phone'), equalTo(phone));
+        const snap = await get(q);
+        if (snap.exists()) {
+          const val = snap.val();
+          const keys = Object.keys(val);
+          if (keys.length > 0) return keys[0]; // first matching driverId
+        }
+      } catch (e) { console.warn("findDriverIdByPhone err", e); }
+      return null;
+    }
+
+    // ---------- Determine authoritative role (returns {role, driverId?}) ----------
+    async function determineRoleAndDriverId(user) {
       const uid = user.uid;
 
-      // 1) sessionStorage (highest priority for user-experience)
+      // 1) sessionStorage — highest priority for UX (fast)
       const sRole = getSessionRole(uid);
-      if (sRole) return sRole;
+      const sDriverId = getSessionDriverId(uid);
+      if (sRole === 'driver' && sDriverId) {
+        return { role: 'driver', driverId: sDriverId };
+      }
+      if (sRole === 'customer') {
+        return { role: 'customer' };
+      }
 
       // 2) users/{uid}/role
       const usersRole = await getUsersRole(uid);
-      if (usersRole) return usersRole;
-
-      // 3) driverdetails presence (last resort)
-      const driverPresent = await isDriverDetailsPresent(uid);
-      if (driverPresent) return "driver";
-
-      // default
-      return "customer";
-    }
-
-    // ---------- Route and remember ----------
-    async function routeAfterLogin(user) {
-      const role = await determineRole(user);
-      // remember for future reloads in this tab
-      setSessionRole(user.uid, role);
-
-      if (role === "driver") {
-        // change to your actual driver landing page if different
-        window.location.href = "driverhome.html";
-      } else {
-        window.location.href = "booking.html";
+      if (usersRole === 'driver') {
+        // try to resolve driverId
+        const byUid = await findDriverIdByUid(uid);
+        if (byUid) return { role: 'driver', driverId: byUid };
+        // try by phone if users has phone
+        const phone = await getUsersPhone(uid);
+        const byPhone = await findDriverIdByPhone(phone);
+        if (byPhone) return { role: 'driver', driverId: byPhone };
+        // If role says driver but no driverdetails found, treat as customer fallback (avoid sending to driver UI without ID)
+        return { role: 'customer' };
+      } else if (usersRole === 'customer') {
+        return { role: 'customer' };
       }
+
+      // 3) driverdetails presence keyed by UID (last-resort)
+      const driverIdByUid = await findDriverIdByUid(uid);
+      if (driverIdByUid) {
+        return { role: 'driver', driverId: driverIdByUid };
+      }
+
+      // 4) try to find driver by phone stored in users node (if exists)
+      const phone = await getUsersPhone(uid);
+      const driverByPhone = await findDriverIdByPhone(phone);
+      if (driverByPhone) return { role: 'driver', driverId: driverByPhone };
+
+      // default: customer
+      return { role: 'customer' };
     }
 
-    // ---------- Auth state listener ----------
-    // If the user is already signed in (auth persists in session), this will run on app open.
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return; // not signed in — show login
+    // ---------- Route user after login and remember session markers ----------
+    async function routeAfterLogin(user) {
+      const uid = user.uid;
+      const result = await determineRoleAndDriverId(user);
 
-      // Only auto-route when on login/index page (prevents loops on other pages)
+      if (result.role === 'driver' && result.driverId) {
+        // remember for this tab
+        setSessionRole(uid, 'driver');
+        setSessionDriverId(uid, result.driverId);
+        // redirect to driver slots with driverId
+        window.location.href = `driverslots.html?driverId=${encodeURIComponent(result.driverId)}`;
+        return;
+      }
+
+      // customer case
+      setSessionRole(uid, 'customer');
+      // ensure driverId cleared
+      try { sessionStorage.removeItem(`lastDriverIdFor:${uid}`); } catch(e){}
+
+      // redirect to booking with uid
+      window.location.href = `booking.html?uid=${encodeURIComponent(uid)}`;
+    }
+
+    // ---------- Auth state listener (runs when app opens & auth persisted) ----------
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return; // not signed in - show login screen
+      // Only auto-route when on login page to avoid redirect loops on other pages
       const path = window.location.pathname.split("/").pop().toLowerCase();
       const isLoginPage = ["", "index.html", "login.html"].includes(path);
       if (!isLoginPage) return;
 
-      // Route according to sessionStorage first (fast) then DB fallback
+      // route according to sessionStorage -> DB fallback
       await routeAfterLogin(user);
     });
 
@@ -315,7 +371,7 @@
       else { button.classList.remove("loading"); button.disabled = false; }
     }
 
-    // ---------- Login form submit ----------
+    // ---------- Login form submit (customer login flow) ----------
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -332,17 +388,12 @@
         const result = await signInWithEmailAndPassword(auth, email, pass);
         const user = result.user;
 
-        // THIS PAGE is the **customer** login flow — remember that choice in sessionStorage
+        // THIS page is the **customer** login flow, mark it in sessionStorage
         setSessionRole(user.uid, "customer");
+        // clear any driverId marker for safety
+        try { sessionStorage.removeItem(`lastDriverIdFor:${user.uid}`); } catch(e){}
 
-        // Optionally: write users/{uid}/role = "customer" here if you want persistent DB role.
-        // (Uncomment the next lines if you want to persist the role in DB — ensure security rules allow it.)
-        /*
-        import { set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
-        await set(child(dbRef(db), `users/${user.uid}/role`), "customer");
-        */
-
-        // Route immediately
+        // Immediately route (routeAfterLogin will confirm authoritative role and redirect)
         await routeAfterLogin(user);
       } catch (err) {
         console.error("Login error:", err);
@@ -361,14 +412,33 @@
       }
     });
 
-    // ---------- Driver/login/admin buttons ----------
+    // ---------- Driver login button navigation ----------
     driverLoginBtn.addEventListener("click", () => {
-      // On the driver login page, make sure that after the driver signs in you call:
-      // setSessionRole(driverUid, "driver");
-      // so subsequent reloads in same tab go to driver UI.
+      // driverlogin.html must set sessionStorage lastRoleFor:{uid}="driver" and lastDriverIdFor:{uid}=driverId after successful driver OTP login.
       window.location.href = "driverlogin.html";
     });
+
     adminBtn.addEventListener("click", () => { window.location.href = "admindashboard.html"; });
+
+    // ---------- Logout helper you can call from driverdashboard/booking etc ----------
+    async function logoutAndClear() {
+      try {
+        const user = auth.currentUser;
+        const uid = user?.uid;
+        if (uid) clearSessionMarkers(uid);
+      } catch (e) { /* ignore */ }
+
+      try {
+        await signOut(auth);
+      } catch (err) {
+        console.warn("Sign out error:", err);
+      } finally {
+        // Always navigate to login page
+        window.location.href = "login.html";
+      }
+    }
+    // Example: expose on window so other pages can call it (or import this function where needed)
+    window.logoutAndClear = logoutAndClear;
 
     // ---------- Basic UI helpers ----------
     function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
