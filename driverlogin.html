@@ -309,6 +309,28 @@ button:disabled {
     letter-spacing: 4px;
   }
 }
+
+/* Additional CSS to prevent reCAPTCHA movement on keyboard */
+#recaptcha-container {
+  position: fixed !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+  transform: translateZ(0) !important;
+  -webkit-transform: translateZ(0) !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
+  pointer-events: auto !important;
+}
+
+/* Prevent viewport changes from affecting fixed elements */
+@supports (-webkit-touch-callout: none) {
+  #recaptcha-container {
+    position: fixed !important;
+    bottom: env(safe-area-inset-bottom, 0) !important;
+    right: env(safe-area-inset-right, 0) !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -352,7 +374,7 @@ button:disabled {
 <div id="toast"></div>
 
 <!-- reCAPTCHA container moved to bottom right and fixed -->
-<div id="recaptcha-container" style="position: fixed; bottom: 0; right: 0; z-index: 1000;"></div>
+<div id="recaptcha-container" style="position: fixed; bottom: 0; right: 0; z-index: 1000; transform: translateZ(0); -webkit-transform: translateZ(0);"></div>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
