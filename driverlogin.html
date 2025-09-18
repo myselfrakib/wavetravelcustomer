@@ -6,14 +6,12 @@
 <title>Driver Login — WaveTravel</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --card-max-width: 380px;
-  --card-half: calc(var(--card-max-width) / 2); /* used to position banner beside the card */
-  --recaptcha-banner-width: 220px;
+/* (styles unchanged from your provided file) */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
-
-/* page layout */
-* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -24,11 +22,8 @@ body {
   justify-content: center;
   align-items: center;
   touch-action: manipulation;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* card */
 .container {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -36,10 +31,9 @@ body {
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: var(--card-max-width);
+  max-width: 380px;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  position: relative;
 }
 
 .logo {
@@ -57,8 +51,18 @@ body {
   font-weight: 400;
 }
 
-.form-group { margin-bottom: 20px; text-align: left; }
-label { display: block; color: #374151; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+label {
+  display: block;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
 
 input {
   width: 100%;
@@ -70,11 +74,19 @@ input {
   transition: all 0.2s ease;
   background: #fff;
   color: #374151;
+  touch-action: manipulation;
   -webkit-appearance: none;
   -webkit-tap-highlight-color: transparent;
 }
-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
-input::placeholder { color: #9ca3af; }
+
+input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+input::placeholder {
+  color: #9ca3af;
+}
 
 button {
   width: 100%;
@@ -90,12 +102,26 @@ button {
   margin-top: 8px;
   position: relative;
   overflow: hidden;
+  touch-action: manipulation;
   -webkit-appearance: none;
   -webkit-tap-highlight-color: transparent;
 }
-button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
-button:active { transform: translateY(0); }
-button:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; }
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 
 .secondary-btn {
   background: transparent;
@@ -104,11 +130,27 @@ button:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; }
   font-weight: 500;
   margin-top: 12px;
 }
-.secondary-btn:hover { background: #f8fafc; border-color: #667eea; }
-.secondary-btn:disabled { color: #9ca3af; border-color: #e5e7eb; }
 
-#otp-section { display: none; margin-top: 16px; }
-.otp-input-container { margin: 20px 0; }
+.secondary-btn:hover {
+  background: #f8fafc;
+  border-color: #667eea;
+}
+
+.secondary-btn:disabled {
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  background: transparent;
+}
+
+#otp-section {
+  display: none;
+  margin-top: 16px;
+}
+
+.otp-input-container {
+  margin: 20px 0;
+}
+
 .otp-input {
   width: 100%;
   padding: 16px;
@@ -120,44 +162,13 @@ button:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; }
   background: #f8fafc;
   font-weight: 600;
 }
-.otp-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); background: #fff; }
 
-.signup-link {
-  margin-top: 24px;
-  font-size: 14px;
-  color: #64748b;
-  padding-top: 20px;
-  border-top: 1px solid #f1f5f9;
-  text-align: center;
+.otp-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: #fff;
 }
-.signup-link a { color: #667eea; text-decoration: none; font-weight: 600; }
-.signup-link a:hover { text-decoration: underline; }
 
-.back-btn {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  background: rgba(255,255,255,0.9);
-  border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  color: #667eea;
-  font-size: 18px;
-  font-weight: 600;
-}
-.back-btn:hover { background: #fff; transform: translateY(-1px); }
-
-.step-indicator { display: flex; justify-content: center; margin-bottom: 24px; gap: 8px; }
-.step { width: 8px; height: 8px; border-radius: 50%; background: #e5e7eb; transition: all 0.2s ease; }
-.step.active { background: #667eea; transform: scale(1.2); }
-
-/* toast used by your script */
 #toast {
   position: fixed;
   bottom: 24px;
@@ -170,15 +181,18 @@ button:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; }
   display: none;
   font-weight: 500;
   font-size: 14px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 1003;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
   max-width: calc(100vw - 32px);
   text-align: center;
 }
-.toast-error { background: #dc2626 !important; }
+
+.toast-error {
+  background: #dc2626 !important;
+}
 
 .spinner {
-  border: 2px solid rgba(255,255,255,0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-top: 2px solid #fff;
   border-radius: 50%;
   width: 16px;
@@ -188,84 +202,112 @@ button:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; }
   vertical-align: middle;
   margin-left: 8px;
 }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* --- custom reCAPTCHA banner (positioned outside the centered card) --- */
-#recaptcha-banner {
-  position: fixed;
-  left: calc(50% + var(--card-half) + 12px); /* just outside the card on the right */
-  top: 50%;
-  transform: translateY(-50%);
-  width: var(--recaptcha-banner-width);
-  max-width: 40vw;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(13, 110, 253, 0.95);
-  color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
-  font-size: 13px;
-  z-index: 1005;
-  pointer-events: auto;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* icon area (simulated reCAPTCHA icon) */
-#recaptcha-banner .icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  background: #fff;
+.signup-link {
+  margin-top: 24px;
+  font-size: 14px;
+  color: #64748b;
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
+}
+
+.signup-link a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.signup-link a:hover {
+  text-decoration: underline;
+}
+
+.back-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0b5ed7;
-  font-weight: 700;
-  flex: 0 0 36px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: #667eea;
+  font-size: 18px;
+  font-weight: 600;
 }
 
-/* link inside banner */
-#recaptcha-banner a { color: rgba(255,255,255,0.95); text-decoration: underline; font-weight: 600; }
+.back-btn:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
 
-/* responsive: if screen is narrow, keep banner at bottom-right */
-@media (max-width: 780px) {
-  #recaptcha-banner {
-    left: auto;
-    right: 12px;
-    top: auto;
-    bottom: 12px;
-    transform: none;
-    width: auto;
-    max-width: calc(100% - 24px);
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+  gap: 8px;
+}
+
+.step {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.step.active {
+  background: #667eea;
+  transform: scale(1.2);
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 12px;
+  }
+  
+  .container {
+    padding: 20px;
+    border-radius: 12px;
+  }
+  
+  .logo {
+    font-size: 22px;
+  }
+  
+  input, button {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  .otp-input {
+    letter-spacing: 6px;
+    font-size: 16px;
   }
 }
 
-/* hide the injected Google grecaptcha badge so it doesn't overlap the UI
-   (we still display our visible banner to indicate protection).
-   NOTE: hiding the badge may be against Google's badge display guidance in some cases —
-   keep that in mind if you need to comply strictly. */
-.grecaptcha-badge {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-/* small-screen tweaks */
-@media (max-width: 480px) {
-  body { padding: 12px; }
-  .container { padding: 20px; border-radius: 12px; }
-  .logo { font-size: 22px; }
-  input, button { font-size: 16px; -webkit-text-size-adjust: 100%; }
-  .otp-input { letter-spacing: 6px; font-size: 16px; }
-}
 @media (max-width: 360px) {
-  .container { padding: 16px; }
-  .logo { font-size: 20px; }
-  .otp-input { letter-spacing: 4px; }
+  .container {
+    padding: 16px;
+  }
+  
+  .logo {
+    font-size: 20px;
+  }
+  
+  .otp-input {
+    letter-spacing: 4px;
+  }
 }
 </style>
 </head>
@@ -285,7 +327,6 @@ button:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; }
       <label for="phoneNumber">Mobile Number</label>
       <input type="tel" id="phoneNumber" placeholder="Enter your 10-digit mobile number" />
     </div>
-    <div id="recaptcha-container"></div>
     <button id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
     
     <div class="signup-link">
@@ -310,11 +351,8 @@ button:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; }
 
 <div id="toast"></div>
 
-<!-- visible banner placed outside the card -->
-<div id="recaptcha-banner" role="status" aria-live="polite">
-  <div class="icon">⟳</div>
-  <div class="text">Protected by reCAPTCHA — <a href="https://www.google.com/recaptcha/intro/" target="_blank" rel="noopener">Learn more</a></div>
-</div>
+<!-- reCAPTCHA container moved to bottom right and fixed -->
+<div id="recaptcha-container" style="position: fixed; bottom: 0; right: 0; z-index: 1000;"></div>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -353,7 +391,6 @@ window.recaptchaVerifier.render().then(function(widgetId) {
   window.recaptchaWidgetId = widgetId;
 });
 
-/* Helper UI functions */
 function showToast(msg, isError = false) {
   const toast = document.getElementById('toast');
   toast.innerText = msg;
@@ -381,14 +418,14 @@ function goBack() {
   updateSteps(1);
 }
 
-/* Input formatting */
+// Auto-format OTP input
 document.getElementById('otpInput').addEventListener('input', function(e) {
-  let value = e.target.value.replace(/\D/g, '');
+  let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
   if (value.length > 6) value = value.slice(0, 6);
   e.target.value = value;
 });
 
-/* Send OTP */
+// Send OTP
 async function sendOTP() {
   const phoneInput = document.getElementById('phoneNumber').value;
   
@@ -428,7 +465,7 @@ async function sendOTP() {
   }
 }
 
-/* Resend OTP */
+// Resend OTP
 async function resendOTP() {
   const btn = document.getElementById('resendOtpBtn');
   const phoneInput = document.getElementById('phoneNumber').value;
@@ -452,7 +489,7 @@ async function resendOTP() {
   }
 }
 
-/* Verify OTP */
+// Verify OTP
 async function verifyOTP() {
   const verifyBtn = document.getElementById('verifyBtn');
   const otp = document.getElementById('otpInput').value.trim();
@@ -474,6 +511,7 @@ async function verifyOTP() {
     if (snapshot.exists()) {
       const driverId = Object.keys(snapshot.val())[0];
 
+      // --- NEW: set sessionStorage last-role marker for this authenticated UID ---
       try {
         if (user && user.uid) {
           sessionStorage.setItem(`lastRoleFor:${user.uid}`, "driver");
@@ -482,10 +520,21 @@ async function verifyOTP() {
       } catch (e) {
         console.warn("Failed to set sessionStorage role/driverId marker:", e);
       }
+      // --- END NEW CODE ---
+
+      // Optional: persist role server-side in users/{uid}/role (uncomment if your rules allow)
+      /*
+      try {
+        await database.ref(`users/${user.uid}/role`).set("driver");
+      } catch (e) {
+        console.warn("Failed to write users/{uid}/role:", e);
+      }
+      */
 
       showToast('Login successful! Redirecting...');
       
       setTimeout(() => {
+        // redirect driver to driverslots page with driverId
         window.location.replace('driverslots.html?driverId=' + encodeURIComponent(driverId));
       }, 900);
     } else {
@@ -500,7 +549,7 @@ async function verifyOTP() {
   }
 }
 
-/* Resend OTP countdown */
+// Resend OTP countdown
 function startResendCountdown() {
   const btn = document.getElementById('resendOtpBtn');
   let time = 60;
@@ -524,19 +573,20 @@ function startResendCountdown() {
   }, 1000);
 }
 
-/* Auto-verify when 6 digits are entered */
+// Auto-verify when 6 digits are entered
 document.getElementById('otpInput').addEventListener('input', function() {
   if (this.value.length === 6) {
-    setTimeout(verifyOTP, 500);
+    setTimeout(verifyOTP, 500); // Small delay for better UX
   }
 });
 
-/* Enter key handling */
+// Handle Enter key
 document.getElementById('phoneNumber').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
     sendOTP();
   }
 });
+
 document.getElementById('otpInput').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
     verifyOTP();
