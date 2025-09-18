@@ -217,17 +217,55 @@
       50% { border-color: rgba(96, 165, 250, 0.7); }
       100% { border-color: rgba(59, 130, 246, 0.3); }
     }
+
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(59, 130, 246, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loading-text {
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#3b82f6] via-[#60a5fa] to-[#1e40af] text-white relative overflow-hidden">
   
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Checking login status...</div>
+  </div>
+
   <!-- Background decoration -->
   <div class="absolute inset-0 overflow-hidden">
     <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-[#93c5fd] to-transparent rounded-full opacity-20"></div>
     <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-[#60a5fa] to-transparent rounded-full opacity-20"></div>
   </div>
 
-  <div class="w-[90%] max-w-md relative z-10">
+  <div class="w-[90%] max-w-md relative z-10" id="loginForm">
     <div class="card p-8 rounded-3xl shadow-2xl fade-in-up">
       <h2 class="text-2xl font-bold gradient-text mb-2 leading-snug text-center">
         WAVETRAVEL
@@ -284,7 +322,7 @@
   <div id="toastRoot" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <!-- reCAPTCHA container moved to bottom -->
-  <div id="recaptcha-container" class="fixed bottom-0 left-0"></div>
+  <div id="recaptcha-container" style="position: fixed; bottom: 0; right: 0; z-index: 1000; transform: translateZ(0); -webkit-transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden; pointer-events: auto;"></div>
 
   <!-- Firebase SDKs (compat used as in your original) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -337,6 +375,134 @@
       }
     }
 
+    // ----- Loading overlay helper -----
+    function showLoading(message = 'Loading...') {
+      const overlay = document.getElementById('loadingOverlay');
+      const text = overlay.querySelector('.loading-text');
+      text.textContent = message;
+      overlay.style.display = 'flex';
+    }
+
+    function hideLoading() {
+      const overlay = document.getElementById('loadingOverlay');
+      overlay.style.display = 'none';
+    }
+
+    // ----- Local Storage Helpers -----
+    function getUserSession() {
+      try {
+        const session = localStorage.getItem('userSession');
+        return session ? JSON.parse(session) : null;
+      } catch (e) {
+        console.warn('Failed to parse user session:', e);
+        return null;
+      }
+    }
+
+    function setUserSession(uid, role, phone, additionalData = {}) {
+      try {
+        const sessionData = {
+          uid,
+          role,
+          phone,
+          timestamp: Date.now(),
+          ...additionalData
+        };
+        localStorage.setItem('userSession', JSON.stringify(sessionData));
+        localStorage.setItem('userPhone', phone); // Keep backward compatibility
+      } catch (e) {
+        console.warn('Failed to save user session:', e);
+      }
+    }
+
+    function clearUserSession() {
+      try {
+        localStorage.removeItem('userSession');
+        localStorage.removeItem('userPhone');
+        // Clear any sessionStorage markers
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.startsWith('lastRoleFor:') || key.startsWith('lastDriverIdFor:')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.warn('Failed to clear user session:', e);
+      }
+    }
+
+    // ----- User Role Detection -----
+    async function getUserRole(uid, phone) {
+      try {
+        // First check if it's a regular user/admin
+        const userSnap = await db.ref('users').orderByChild('phone').equalTo(phone).once('value');
+        if (userSnap.exists()) {
+          const userData = Object.values(userSnap.val())[0];
+          return {
+            role: userData.role === 'admin' ? 'admin' : 'customer',
+            data: userData,
+            uid: uid
+          };
+        }
+
+        // Check if it's a driver
+        const driverSnap = await db.ref('driverdetails').orderByChild('phone').equalTo(phone).once('value');
+        if (driverSnap.exists()) {
+          const driverId = Object.keys(driverSnap.val())[0];
+          const driverData = Object.values(driverSnap.val())[0];
+          return {
+            role: 'driver',
+            data: driverData,
+            uid: uid,
+            driverId: driverId
+          };
+        }
+
+        // Check sessionStorage for role markers (fallback)
+        const sessionRole = sessionStorage.getItem(`lastRoleFor:${uid}`);
+        if (sessionRole === 'driver') {
+          const driverId = sessionStorage.getItem(`lastDriverIdFor:${uid}`);
+          return {
+            role: 'driver',
+            uid: uid,
+            driverId: driverId
+          };
+        }
+
+        return null;
+      } catch (err) {
+        console.error('Error detecting user role:', err);
+        return null;
+      }
+    }
+
+    // ----- Auto redirect based on role -----
+    function redirectByRole(roleInfo) {
+      if (!roleInfo) return;
+
+      showLoading('Redirecting...');
+
+      setTimeout(() => {
+        switch (roleInfo.role) {
+          case 'admin':
+            showToast('Welcome back, Admin!', 'success');
+            setTimeout(() => location.href = 'admindashboard.html', 500);
+            break;
+          case 'customer':
+            showToast('Welcome back!', 'success');
+            setTimeout(() => location.href = `booking.html?uid=${encodeURIComponent(roleInfo.uid)}`, 500);
+            break;
+          case 'driver':
+            showToast('Welcome back, Driver!', 'success');
+            const driverParam = roleInfo.driverId ? `?driverId=${encodeURIComponent(roleInfo.driverId)}` : `?uid=${encodeURIComponent(roleInfo.uid)}`;
+            setTimeout(() => location.href = `driverslots.html${driverParam}`, 500);
+            break;
+          default:
+            hideLoading();
+            console.warn('Unknown role:', roleInfo.role);
+        }
+      }, 800);
+    }
+
     // ----- Firebase config and app init -----
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
@@ -371,30 +537,68 @@
       }
     }
 
+    // ----- Main initialization -----
     window.onload = () => {
       initRecaptcha();
-      // Only redirect if there's a Firebase session + localStorage userPhone
-      auth.onAuthStateChanged(user => {
-        const localPhone = localStorage.getItem('userPhone');
-        if (user && localPhone) {
-          // Check role and redirect
-          db.ref('users')
-            .orderByChild('phone')
-            .equalTo(localPhone)
-            .once('value')
-            .then(snap => {
-              if (snap.exists()) {
-                const userData = Object.values(snap.val())[0];
-                if (userData.role === 'admin') {
-                  location.href = 'admindashboard.html';
-                } else {
-                  location.href = 'booking.html';
-                }
+
+      // Check for existing session first
+      const existingSession = getUserSession();
+      if (existingSession && existingSession.phone) {
+        showLoading('Checking previous session...');
+        
+        // Wait a bit for Firebase Auth to initialize
+        setTimeout(async () => {
+          const currentUser = auth.currentUser;
+          if (currentUser && currentUser.phoneNumber === existingSession.phone) {
+            // User is still authenticated with Firebase
+            const roleInfo = await getUserRole(currentUser.uid, existingSession.phone);
+            if (roleInfo) {
+              // Update session with fresh data
+              setUserSession(roleInfo.uid, roleInfo.role, existingSession.phone, {
+                driverId: roleInfo.driverId
+              });
+              redirectByRole(roleInfo);
+              return;
+            }
+          }
+          hideLoading();
+        }, 1000);
+      }
+
+      // Firebase auth state listener
+      auth.onAuthStateChanged(async (user) => {
+        if (user && user.phoneNumber) {
+          showLoading('Authenticating...');
+          
+          try {
+            const roleInfo = await getUserRole(user.uid, user.phoneNumber);
+            if (roleInfo) {
+              // Save session
+              setUserSession(roleInfo.uid, roleInfo.role, user.phoneNumber, {
+                driverId: roleInfo.driverId
+              });
+              
+              // Only redirect if we're not already in the middle of a login process
+              if (!document.getElementById('otp').style.display || document.getElementById('otp').style.display === 'none') {
+                redirectByRole(roleInfo);
+                return;
               }
-            })
-            .catch(err => {
-              console.error('User lookup failed', err);
-            });
+            } else {
+              showToast('Account not found. Please sign up first.', 'error');
+              // Sign out the user since they don't have a valid account
+              await auth.signOut();
+              clearUserSession();
+            }
+          } catch (err) {
+            console.error('Auth state change error:', err);
+            showToast('Authentication error. Please try again.', 'error');
+          }
+          
+          hideLoading();
+        } else if (user === null) {
+          // User is signed out, clear session
+          clearUserSession();
+          hideLoading();
         }
       });
     };
@@ -431,12 +635,13 @@
 
     async function checkUserExists(fullPhone) {
       try {
-        const snap = await db
-          .ref('users')
-          .orderByChild('phone')
-          .equalTo(fullPhone)
-          .once('value');
-        return snap.exists();
+        // Check in users table
+        const userSnap = await db.ref('users').orderByChild('phone').equalTo(fullPhone).once('value');
+        if (userSnap.exists()) return true;
+
+        // Check in driverdetails table
+        const driverSnap = await db.ref('driverdetails').orderByChild('phone').equalTo(fullPhone).once('value');
+        return driverSnap.exists();
       } catch (err) {
         console.error('DB lookup error', err);
         throw err;
@@ -514,30 +719,46 @@
 
       verifyBtn.innerHTML = 'Verifying... <div class="spinner"></div>';
       verifyBtn.disabled = true;
+      
       try {
         const result = await confirmationResult.confirm(otp);
-        const userPhone = result.user.phoneNumber;
-        localStorage.setItem('userPhone', userPhone);
+        const user = result.user;
+        const userPhone = user.phoneNumber;
 
-        const snap = await db.ref('users').orderByChild('phone').equalTo(userPhone).once('value');
-        if (!snap.exists()) {
-          showToast('User record not found after verification.', 'error');
+        showLoading('Verifying account...');
+
+        const roleInfo = await getUserRole(user.uid, userPhone);
+        if (roleInfo) {
+          // Save session
+          setUserSession(roleInfo.uid, roleInfo.role, userPhone, {
+            driverId: roleInfo.driverId
+          });
+
+          // Set sessionStorage markers for drivers
+          if (roleInfo.role === 'driver' && roleInfo.driverId) {
+            try {
+              sessionStorage.setItem(`lastRoleFor:${user.uid}`, "driver");
+              sessionStorage.setItem(`lastDriverIdFor:${user.uid}`, roleInfo.driverId);
+            } catch (e) {
+              console.warn("Failed to set sessionStorage markers:", e);
+            }
+          }
+
+          showToast('Login successful!', 'success');
+          redirectByRole(roleInfo);
+        } else {
+          showToast('Account not found. Please sign up first.', 'error');
+          await auth.signOut();
+          clearUserSession();
+          hideLoading();
           verifyBtn.textContent = 'Verify OTP';
           verifyBtn.disabled = false;
-          return;
-        }
-        const userData = Object.values(snap.val())[0];
-
-        if (userData.role === 'admin') {
-          showToast('Admin login successful!', 'success');
-          setTimeout(() => { location.href = 'admindashboard.html'; }, 700);
-        } else {
-          showToast('Login successful!', 'success');
-          setTimeout(() => { location.href = 'booking.html'; }, 700);
+          otpInput.focus();
         }
       } catch (err) {
         console.error('OTP verification failed:', err);
         showToast('Incorrect or expired OTP.', 'error', 4500);
+        hideLoading();
         verifyBtn.textContent = 'Verify OTP';
         verifyBtn.disabled = false;
         otpInput.focus();
@@ -548,6 +769,40 @@
     phoneInput.addEventListener('input', (e) => {
       e.target.value = e.target.value.replace(/\D/g, '');
     });
+
+    // Handle Enter key for phone input
+    phoneInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendBtn.click();
+      }
+    });
+
+    // Handle Enter key for OTP input
+    otpInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        if (verifyBtn.style.display !== 'none' && !verifyBtn.disabled) {
+          verifyBtn.click();
+        }
+      }
+    });
+
+    // Logout function for testing (can be called from console)
+    window.logout = async () => {
+      try {
+        showLoading('Signing out...');
+        await auth.signOut();
+        clearUserSession();
+        showToast('Signed out successfully', 'success');
+        setTimeout(() => {
+          hideLoading();
+          location.reload();
+        }, 1000);
+      } catch (err) {
+        console.error('Logout error:', err);
+        showToast('Error signing out', 'error');
+        hideLoading();
+      }
+    };
   </script>
 </body>
 </html>
