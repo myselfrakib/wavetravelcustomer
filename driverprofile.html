@@ -132,7 +132,7 @@
   <div class="container">
     <div class="header">
       <h1>Driver Profile</h1>
-      <button class="btn-logout" id="logoutBtn" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+      <!-- Logout button removed from here (moved below) -->
     </div>
     <div class="field">
       <div class="label">Driver ID</div>
@@ -161,6 +161,11 @@
       <input type="text" id="upiIdInput" placeholder="Enter your UPI ID" autocomplete="off" />
       <button id="saveUpiBtn">Save UPI ID</button>
       <div id="saveMessage" class="save-message"></div>
+    </div>
+
+    <!-- Logout button moved below the fields as requested -->
+    <div style="margin-top: 8px;">
+      <button class="btn-logout" id="logoutBtn" title="Logout"><i class="fas fa-sign-out-alt"></i> &nbsp; Logout</button>
     </div>
   </div>
 
