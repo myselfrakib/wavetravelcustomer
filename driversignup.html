@@ -163,19 +163,45 @@ signupForm.addEventListener('submit', function(e){
   signupBtn.disabled = true;
   signupBtn.innerHTML = 'Sending OTP <span class="spinner"></span>';
 
-  database.ref('driverdetails').once('value', snapshot => {
-    let exists = false;
-    snapshot.forEach(child => {
+  // Check both driverdetails and users collections
+  Promise.all([
+    database.ref('driverdetails').once('value'),
+    database.ref('users').once('value')
+  ]).then(([driverSnapshot, userSnapshot]) => {
+    
+    // Check if phone/email already exists in driverdetails
+    let driverExists = false;
+    driverSnapshot.forEach(child => {
       const val = child.val();
-      if(val && (val.phone === fullPhone || val.email === email)) exists = true;
+      if(val && (val.phone === fullPhone || val.email === email)) {
+        driverExists = true;
+      }
     });
-    if(exists){
+    
+    if(driverExists) {
       showToast('This number or email address is already being used');
       signupBtn.disabled = false;
       signupBtn.innerText = 'Send OTP';
       return;
     }
+    
+    // Check if phone number exists in users collection (customers)
+    let customerExists = false;
+    userSnapshot.forEach(child => {
+      const val = child.val();
+      if(val && val.phone === fullPhone) {
+        customerExists = true;
+      }
+    });
+    
+    if(customerExists) {
+      showToast('Number registered as Customer, Please Use Different number!');
+      signupBtn.disabled = false;
+      signupBtn.innerText = 'Send OTP';
+      return;
+    }
 
+    // If no duplicates found, proceed with OTP
     auth.signInWithPhoneNumber(fullPhone, window.reCAPTCHAVerifier)
       .then(res => {
         confirmationResultGlobal = res;
@@ -192,6 +218,11 @@ signupForm.addEventListener('submit', function(e){
         signupBtn.disabled = false;
         signupBtn.innerText = 'Send OTP';
       });
+      
+  }).catch(err => {
+    showToast('Error checking database: ' + err.message);
+    signupBtn.disabled = false;
+    signupBtn.innerText = 'Send OTP';
   });
 });
 
