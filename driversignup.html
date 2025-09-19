@@ -4,98 +4,398 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Driver Signup — WaveTravel</title>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-body {
-  font-family: 'Roboto', sans-serif;
-  background: linear-gradient(to right, #6a11cb, #2575fc);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+* {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
 }
-.signup-card {
-  background: #fff;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 12px 25px rgba(0,0,0,0.2);
-  width: 380px;
-  text-align: center;
-  animation: fadeIn 1s ease;
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow-x: hidden;
 }
-h2 { margin-bottom: 20px; color: #333; }
-input { width: 100%; padding: 12px 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; transition: border-color 0.3s; }
-input:focus { outline: none; border-color: #2575fc; }
-button {
+
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="a" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0.1"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></radialGradient></defs><circle cx="20" cy="20" r="15" fill="url(%23a)"/><circle cx="80" cy="30" r="10" fill="url(%23a)"/><circle cx="30" cy="70" r="12" fill="url(%23a)"/><circle cx="70" cy="80" r="8" fill="url(%23a)"/></svg>');
+  animation: float 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+.signup-container {
   width: 100%;
-  padding: 12px;
-  background: #2575fc;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 18px;
-  cursor: pointer;
-  transition: background 0.3s;
+  max-width: 450px;
+  position: relative;
+  z-index: 1;
 }
-button:hover { background: #1a5ed1; }
-button:disabled { background: #999; cursor: not-allowed; }
-#otp-section { display: none; margin-top: 15px; }
-.otp-inputs { display: flex; justify-content: space-between; }
-.otp-inputs input { width: 45px; padding: 12px; font-size: 18px; text-align: center; }
-#toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: #fff;
-  padding: 12px 25px;
-  border-radius: 5px;
+
+.signup-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 3rem 2.5rem;
+  border-radius: 24px;
+  box-shadow: 
+    0 32px 64px rgba(0, 0, 0, 0.15),
+    0 16px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  text-align: center;
+  animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.signup-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(40px) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+.logo {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 16px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+}
+
+h2 {
+  margin-bottom: 0.5rem;
+  color: #1a1a1a;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.form-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #374151;
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+}
+
+.form-input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 400;
+  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-input::placeholder {
+  color: #9ca3af;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: rgba(255, 255, 255, 0.8);
+  color: #374151;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: white;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#otp-section {
   display: none;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+  animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.otp-label {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #374151;
   font-weight: 500;
 }
-#resendBtn { margin-top: 10px; display: none; }
+
+.otp-inputs {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.otp-box {
+  width: 48px;
+  height: 56px;
+  padding: 0;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.otp-box:focus {
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: scale(1.05);
+}
+
 .spinner {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #fff;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
   border-radius: 50%;
-  width: 18px;
-  height: 18px;
   animation: spin 1s linear infinite;
   display: inline-block;
   vertical-align: middle;
   margin-left: 10px;
 }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  display: none;
+  font-weight: 500;
+  font-size: 0.875rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  max-width: 90vw;
+  text-align: center;
+  animation: toastSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toastSlide {
+  from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+.toast-show {
+  display: block !important;
+}
+
+.success-toast {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+.error-toast {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}
+
+.info-toast {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+}
+
+#recaptcha-container {
+  margin-top: 1rem;
+}
+
+.fade-out {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  body {
+    padding: 1rem;
+  }
+  
+  .signup-card {
+    padding: 2rem 1.5rem;
+    border-radius: 20px;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+  }
+  
+  .otp-inputs {
+    gap: 0.375rem;
+  }
+  
+  .otp-box {
+    width: 42px;
+    height: 50px;
+  }
+}
 </style>
 </head>
 <body>
 
-<div class="signup-card">
-  <h2>Driver Signup</h2>
-  <form id="driverSignupForm">
-    <input type="text" id="name" placeholder="Full Name" required>
-    <input type="text" id="phone" placeholder="Phone Number" required>
-    <input type="email" id="email" placeholder="Email" required>
-    <button type="submit" id="signupBtn">Send OTP</button>
-  </form>
+<div class="signup-container">
+  <div class="signup-card">
+    <div class="logo">W</div>
+    <h2>Join as Driver</h2>
+    <p class="subtitle">Start earning with WaveTravel today</p>
+    
+    <form id="driverSignupForm">
+      <div class="form-group">
+        <label class="form-label" for="name">Full Name</label>
+        <input type="text" id="name" class="form-input" placeholder="Enter your full name" required>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="phone">Phone Number</label>
+        <input type="tel" id="phone" class="form-input" placeholder="Enter 10-digit mobile number" required>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <input type="email" id="email" class="form-input" placeholder="Enter your email" required>
+      </div>
+      
+      <button type="submit" id="signupBtn" class="btn-primary">Send OTP</button>
+    </form>
 
-  <div id="otp-section">
-    <div class="otp-inputs">
-      <input type="text" maxlength="1" class="otp-box">
-      <input type="text" maxlength="1" class="otp-box">
-      <input type="text" maxlength="1" class="otp-box">
-      <input type="text" maxlength="1" class="otp-box">
-      <input type="text" maxlength="1" class="otp-box">
-      <input type="text" maxlength="1" class="otp-box">
+    <div id="otp-section">
+      <div class="otp-label">Enter the 6-digit code sent to your phone</div>
+      <div class="otp-inputs">
+        <input type="text" maxlength="1" class="otp-box">
+        <input type="text" maxlength="1" class="otp-box">
+        <input type="text" maxlength="1" class="otp-box">
+        <input type="text" maxlength="1" class="otp-box">
+        <input type="text" maxlength="1" class="otp-box">
+        <input type="text" maxlength="1" class="otp-box">
+      </div>
+      <button id="verifyBtn" class="btn-primary">Verify & Complete Signup</button>
+      <button id="resendBtn" class="btn-secondary" style="display: none;">Resend OTP (60)</button>
     </div>
-    <button id="verifyBtn">Verify OTP</button>
-    <button id="resendBtn">Resend OTP (60)</button>
-  </div>
 
-  <div id="recaptcha-container"></div>
+    <div id="recaptcha-container"></div>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -125,11 +425,17 @@ window.onload = () => {
   window.reCAPTCHAVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
 };
 
-function showToast(msg) {
+function showToast(msg, type = 'info') {
   const toast = document.getElementById('toast');
-  toast.innerText = msg;
-  toast.style.display = 'block';
-  setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  toast.innerHTML = msg;
+  toast.className = `toast-show ${type}-toast`;
+  
+  setTimeout(() => {
+    toast.classList.remove('toast-show');
+    setTimeout(() => {
+      toast.className = '';
+    }, 400);
+  }, 3500);
 }
 
 const signupForm = document.getElementById('driverSignupForm');
@@ -139,14 +445,48 @@ const verifyBtn = document.getElementById('verifyBtn');
 const resendBtn = document.getElementById('resendBtn');
 const otpInputs = document.querySelectorAll('.otp-box');
 
-// OTP auto-focus
+// Enhanced OTP input handling
 otpInputs.forEach((input, index) => {
-  input.addEventListener('input', () => {
-    if (input.value.length === 1 && index < otpInputs.length - 1) otpInputs[index + 1].focus();
+  input.addEventListener('input', (e) => {
+    const value = e.target.value;
+    if (value.length === 1 && index < otpInputs.length - 1) {
+      otpInputs[index + 1].focus();
+    }
   });
+  
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Backspace' && input.value === '' && index > 0) otpInputs[index - 1].focus();
+    if (e.key === 'Backspace' && input.value === '' && index > 0) {
+      otpInputs[index - 1].focus();
+    }
+    if (e.key === 'ArrowLeft' && index > 0) {
+      otpInputs[index - 1].focus();
+    }
+    if (e.key === 'ArrowRight' && index < otpInputs.length - 1) {
+      otpInputs[index + 1].focus();
+    }
   });
+  
+  input.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text');
+    const digits = paste.replace(/\D/g, '').split('');
+    digits.forEach((digit, i) => {
+      if (index + i < otpInputs.length) {
+        otpInputs[index + i].value = digit;
+      }
+    });
+    if (digits.length > 0) {
+      const nextIndex = Math.min(index + digits.length, otpInputs.length - 1);
+      otpInputs[nextIndex].focus();
+    }
+  });
+});
+
+// Phone number formatting
+document.getElementById('phone').addEventListener('input', (e) => {
+  let value = e.target.value.replace(/\D/g, '');
+  if (value.length > 10) value = value.slice(0, 10);
+  e.target.value = value;
 });
 
 // Send OTP
@@ -157,7 +497,15 @@ signupForm.addEventListener('submit', function(e){
   const email = document.getElementById('email').value.trim();
   const fullPhone = '+91' + phone;
 
-  if (!name || !phone || !email) { showToast('Please fill all fields.'); return; }
+  if (!name || !phone || !email) { 
+    showToast('Please fill all fields', 'error'); 
+    return; 
+  }
+  
+  if (phone.length !== 10) {
+    showToast('Please enter a valid 10-digit phone number', 'error');
+    return;
+  }
 
   // Add spinner to button
   signupBtn.disabled = true;
@@ -179,9 +527,9 @@ signupForm.addEventListener('submit', function(e){
     });
     
     if(driverExists) {
-      showToast('This number or email address is already being used');
+      showToast('This number or email address is already being used', 'error');
       signupBtn.disabled = false;
-      signupBtn.innerText = 'Send OTP';
+      signupBtn.innerHTML = 'Send OTP';
       return;
     }
     
@@ -195,9 +543,9 @@ signupForm.addEventListener('submit', function(e){
     });
     
     if(customerExists) {
-      showToast('Number registered as Customer, Please Use Different number!');
+      showToast('Number registered as Customer, Please Use Different number!', 'error');
       signupBtn.disabled = false;
-      signupBtn.innerText = 'Send OTP';
+      signupBtn.innerHTML = 'Send OTP';
       return;
     }
 
@@ -205,31 +553,42 @@ signupForm.addEventListener('submit', function(e){
     auth.signInWithPhoneNumber(fullPhone, window.reCAPTCHAVerifier)
       .then(res => {
         confirmationResultGlobal = res;
-        showToast('OTP sent! Check your phone.');
+        showToast('OTP sent successfully! Check your phone', 'success');
         otpSection.style.display = 'block';
-        otpInputs.forEach(i=>i.value='');
+        otpInputs.forEach(i => i.value = '');
         otpInputs[0].focus();
-        // Remove Send OTP button after OTP is sent
-        signupBtn.style.display = 'none';
+        
+        // Hide signup form with animation
+        signupForm.classList.add('fade-out');
+        setTimeout(() => {
+          signupForm.style.display = 'none';
+        }, 300);
+        
         startResendCountdown();
       })
       .catch(err => {
-        showToast('Error sending OTP: ' + err.message);
+        showToast('Error sending OTP: ' + err.message, 'error');
         signupBtn.disabled = false;
-        signupBtn.innerText = 'Send OTP';
+        signupBtn.innerHTML = 'Send OTP';
       });
       
   }).catch(err => {
-    showToast('Error checking database: ' + err.message);
+    showToast('Error checking database: ' + err.message, 'error');
     signupBtn.disabled = false;
-    signupBtn.innerText = 'Send OTP';
+    signupBtn.innerHTML = 'Send OTP';
   });
 });
 
 // Verify OTP
 verifyBtn.addEventListener('click', () => {
   const otp = Array.from(otpInputs).map(input => input.value).join('');
-  if(otp.length !== 6){ showToast('Enter complete 6-digit OTP'); return; }
+  if(otp.length !== 6){ 
+    showToast('Please enter the complete 6-digit OTP', 'error'); 
+    return; 
+  }
+
+  verifyBtn.disabled = true;
+  verifyBtn.innerHTML = 'Verifying <span class="spinner"></span>';
 
   confirmationResultGlobal.confirm(otp)
     .then(userCredential => {
@@ -242,43 +601,64 @@ verifyBtn.addEventListener('click', () => {
       // Add role: 'driver' along with other details
       database.ref('driverdetails/' + driverId).set({name, phone, email, createdAt, role: 'driver'})
         .then(()=>{
-          showToast('Signup successful! Redirecting...');
-          setTimeout(()=>{ window.location.href='driverdashboard.html'; }, 2000);
+          showToast('🎉 Signup successful! Redirecting to dashboard...', 'success');
+          setTimeout(()=>{ 
+            window.location.href='driverdashboard.html'; 
+          }, 2000);
         })
-        .catch(err=>{ showToast('Error saving data: '+err.message); });
+        .catch(err => { 
+          showToast('Error saving data: ' + err.message, 'error');
+          verifyBtn.disabled = false;
+          verifyBtn.innerHTML = 'Verify & Complete Signup';
+        });
     })
-    .catch(err => { showToast('Invalid OTP: '+err.message); });
+    .catch(err => { 
+      showToast('Invalid OTP. Please try again', 'error');
+      verifyBtn.disabled = false;
+      verifyBtn.innerHTML = 'Verify & Complete Signup';
+      
+      // Clear OTP inputs and focus first one
+      otpInputs.forEach(input => input.value = '');
+      otpInputs[0].focus();
+    });
 });
 
 // Resend OTP with 60-sec countdown
 function startResendCountdown(){
-  resendBtn.style.display='block';
-  resendBtn.disabled=true;
-  let counter=60;
-  resendBtn.innerText = `Resend OTP (${counter})`;
-  const interval = setInterval(()=>{
+  resendBtn.style.display = 'block';
+  resendBtn.disabled = true;
+  let counter = 60;
+  resendBtn.innerHTML = `Resend OTP (${counter})`;
+  
+  const interval = setInterval(() => {
     counter--;
-    resendBtn.innerText = `Resend OTP (${counter})`;
-    if(counter===0){
+    resendBtn.innerHTML = `Resend OTP (${counter})`;
+    if(counter === 0){
       clearInterval(interval);
-      resendBtn.innerText = 'Resend OTP';
-      resendBtn.disabled=false;
+      resendBtn.innerHTML = 'Resend OTP';
+      resendBtn.disabled = false;
     }
-  },1000);
+  }, 1000);
 }
 
-resendBtn.addEventListener('click', ()=>{
-  resendBtn.disabled=true;
+resendBtn.addEventListener('click', () => {
+  resendBtn.disabled = true;
+  resendBtn.innerHTML = 'Sending...';
   const phone = '+91' + document.getElementById('phone').value.trim();
+  
   auth.signInWithPhoneNumber(phone, window.reCAPTCHAVerifier)
     .then(res => {
       confirmationResultGlobal = res;
-      showToast('OTP resent!');
-      otpInputs.forEach(i=>i.value='');
+      showToast('OTP resent successfully!', 'success');
+      otpInputs.forEach(i => i.value = '');
       otpInputs[0].focus();
       startResendCountdown();
     })
-    .catch(err => { showToast('Error resending OTP: ' + err.message); resendBtn.disabled=false; });
+    .catch(err => { 
+      showToast('Error resending OTP: ' + err.message, 'error');
+      resendBtn.disabled = false;
+      resendBtn.innerHTML = 'Resend OTP';
+    });
 });
 </script>
 
