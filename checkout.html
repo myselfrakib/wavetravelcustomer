@@ -1,51 +1,173 @@
-<!-- File: checkout-with-cashfree.html (contains two files below)
-
---- checkout.html ---
--->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Checkout – WaveTravel (Cashfree)</title>
+  <title>Checkout – WaveTravel</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    :root{ --primary:#0077ff; --accent:#ffd700; --bg-grad: linear-gradient(to right,#16425b, #81c3d7); --card-bg: #ffffff; --muted:#6b7280; --danger:#ff4d4f; --success:#28a745; }
+    :root{
+      --primary:#0077ff;
+      --accent:#ffd700;
+      --bg-grad: linear-gradient(to right,#16425b, #81c3d7);
+      --card-bg: #ffffff;
+      --muted:#6b7280;
+      --danger:#ff4d4f;
+      --success:#28a745;
+    }
     * { box-sizing: border-box; }
     html,body { height:100%; margin:0; font-family:'Poppins',sans-serif; background:var(--bg-grad); color: #0b1220; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
-    .page { min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:18px; padding-bottom:80px; }
-    .wrap { width:100%; max-width:720px; }
-    header.app-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
-    .app-title { color:#fff; font-size:1.25rem; font-weight:700; letter-spacing:0.2px; }
-    .back-btn { background:rgba(255,255,255,0.12); border:none; color:#fff; padding:8px 10px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
-    .summary-card { background: var(--card-bg); border-radius:14px; padding:16px; box-shadow: 0 6px 22px rgba(11,18,32,0.12); color:var(--dark, #0b1220); overflow:hidden; }
-    .summary-grid { display:grid; grid-template-columns: 1fr auto; gap:12px 16px; align-items:center; }
-    .info-row { display:flex; gap:12px; align-items:center; background: rgba(11,18,32,0.02); padding:10px; border-radius:10px; }
-    .info-row .icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(0,119,255,0.12), rgba(0,119,255,0.06)); color:var(--primary); font-size:1.15rem; flex-shrink:0; }
-    .info-row .meta { display:flex; flex-direction:column; }
+    .page {
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:18px;
+      padding-bottom:80px;
+    }
+    .wrap {
+      width:100%;
+      max-width:720px;
+    }
+
+    header.app-header {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .app-title {
+      color:#fff;
+      font-size:1.25rem;
+      font-weight:700;
+      letter-spacing:0.2px;
+    }
+    .back-btn {
+      background:rgba(255,255,255,0.12);
+      border:none; color:#fff; padding:8px 10px; border-radius:10px; cursor:pointer;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+
+    .summary-card {
+      background: var(--card-bg);
+      border-radius:14px;
+      padding:16px;
+      box-shadow: 0 6px 22px rgba(11,18,32,0.12);
+      color:var(--dark, #0b1220);
+      overflow:hidden;
+    }
+    .summary-grid {
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:12px 16px;
+      align-items:center;
+    }
+
+    /* nice info rows */
+    .info-row {
+      display:flex; gap:12px; align-items:center;
+      background: rgba(11,18,32,0.02);
+      padding:10px; border-radius:10px;
+    }
+    .info-row .icon {
+      width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(0,119,255,0.12), rgba(0,119,255,0.06));
+      color:var(--primary); font-size:1.15rem;
+      flex-shrink:0;
+    }
+    .info-row .meta {
+      display:flex; flex-direction:column;
+    }
     .meta .label { font-weight:700; color:#071124; font-size:0.95rem; }
     .meta .val { color:var(--muted); font-size:0.9rem; margin-top:2px; max-width:100%; word-break:break-word; }
-    .summary-grid .fare-box { background: linear-gradient(180deg,#fdf6e6,#fff6d9); border-radius:10px; padding:12px 16px; text-align:center; min-width:140px; align-self:center; box-shadow: 0 4px 14px rgba(2,6,23,0.06); }
+
+    .summary-grid .fare-box {
+      background: linear-gradient(180deg,#fdf6e6,#fff6d9);
+      border-radius:10px;
+      padding:12px 16px;
+      text-align:center;
+      min-width:140px;
+      align-self:center;
+      box-shadow: 0 4px 14px rgba(2,6,23,0.06);
+    }
     .fare-box .label { color:#8a6b00; font-weight:700; font-size:0.9rem; }
     .fare-box .amt { font-size:1.25rem; font-weight:800; color:#402a00; margin-top:6px; }
-    .details { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .detail-pill { background: rgba(11,18,32,0.03); padding:8px; border-radius:10px; display:flex; flex-direction:column; }
+
+    .details {
+      margin-top:12px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .detail-pill {
+      background: rgba(11,18,32,0.03);
+      padding:8px; border-radius:10px;
+      display:flex; flex-direction:column;
+    }
     .detail-pill small { color:var(--muted); font-size:0.82rem; }
     .detail-pill strong { font-size:0.98rem; margin-top:6px; color:#071124; }
-    .terms { margin-top:14px; display:flex; gap:10px; align-items:center; }
-    .checkbox { width:22px; height:22px; border-radius:6px; border:2px solid rgba(7,17,36,0.08); background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+
+    /* terms */
+    .terms {
+      margin-top:14px; display:flex; gap:10px; align-items:center;
+    }
+    .checkbox {
+      width:22px; height:22px; border-radius:6px; border:2px solid rgba(7,17,36,0.08);
+      background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+    }
     .checkbox input { display:none; }
     .checkbox.checked { background:var(--primary); border-color:var(--primary); color:#fff; }
+
     .terms-label { font-size:0.95rem; color:#fff; text-shadow: 0 1px 0 rgba(11,18,32,0.12); }
-    #payBtn { margin-top:16px; width:100%; padding:12px 14px; background: linear-gradient(90deg,var(--primary), #005dc1); border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1.05rem; box-shadow: 0 8px 26px rgba(2,6,23,0.12); transition: transform .14s ease, opacity .12s ease; }
+
+    /* Pay button */
+    #payBtn {
+      margin-top:16px;
+      width:100%;
+      padding:12px 14px;
+      background: linear-gradient(90deg,var(--primary), #005dc1);
+      border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1.05rem;
+      box-shadow: 0 8px 26px rgba(2,6,23,0.12);
+      transition: transform .14s ease, opacity .12s ease;
+    }
     #payBtn:active { transform: translateY(1px) scale(.998); }
     #payBtn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
-    #center-toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.95); background: rgba(11,18,32,0.94); color: #fff; padding: 28px 36px; border-radius: 14px; box-shadow: 0 12px 36px rgba(2,6,23,0.6); opacity: 0; pointer-events: none; transition: opacity .22s ease, transform .22s ease; z-index: 9999; font-weight: 700; min-width: 420px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 1.05rem; }
+
+    /* Centered toast — doubled size */
+    #center-toast {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      background: rgba(11,18,32,0.94);
+      color: #fff;
+      padding: 28px 36px;
+      border-radius: 14px;
+      box-shadow: 0 12px 36px rgba(2,6,23,0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+      z-index: 9999;
+      font-weight: 700;
+      min-width: 420px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      font-size: 1.05rem;
+    }
     #center-toast.show { opacity:1; transform: translate(-50%,-50%) scale(1); pointer-events:auto; }
     #center-toast .icon { width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:var(--success); color:#fff; font-size:18px; flex:0 0 40px; }
-    @media (max-width:720px){ .summary-grid { grid-template-columns: 1fr; } .fare-box { order:-1; margin-bottom:8px; } #center-toast { min-width: calc(100% - 32px); padding:18px 20px; gap:10px; font-size:1rem; } .wrap { padding:6px; } }
+
+    @media (max-width:720px){
+      .summary-grid { grid-template-columns: 1fr; }
+      .fare-box { order:-1; margin-bottom:8px; }
+      #center-toast { min-width: calc(100% - 32px); padding:18px 20px; gap:10px; font-size:1rem; }
+      .wrap { padding:6px; }
+    }
+
     .card-heading { font-size:0.95rem; color:#071124; font-weight:800; margin-bottom:6px; }
     .muted { color:var(--muted); font-size:0.9rem; }
   </style>
@@ -53,6 +175,7 @@
 <body>
   <div class="page">
     <div class="wrap">
+
       <header class="app-header">
         <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
         <div class="app-title">Confirm &amp; Pay</div>
@@ -74,6 +197,7 @@
         <div class="terms-label">I agree to the <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a></div>
       </div>
 
+      <!-- PAY BUTTON placed right after terms (per your instruction) -->
       <button id="payBtn" disabled>Pay &amp; Book</button>
 
     </div>
@@ -86,15 +210,13 @@
 
   <div style="height: 80px;"></div>
 
-  <!-- Firebase & Cashfree SDK -->
+  <!-- Firebase & Razorpay -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <!-- Cashfree JS SDK -->
-  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <script>
-    // ======= CONFIG =======
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -108,9 +230,6 @@
     const db   = firebase.database();
     const auth = firebase.auth();
 
-    // Use the single key you provided for demo. IMPORTANT: do NOT keep secrets in client-side code in production.
-    const CASHFREE_KEY = 'TEST10801062113fea721c252d5ba22c26010801';
-
     const summaryEl = document.getElementById('summary');
     const payBtn    = document.getElementById('payBtn');
     const termsChk  = document.getElementById('termsChk');
@@ -119,6 +238,7 @@
 
     const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
+    // centered toast helper
     function showCenterToast(message, duration = 2200) {
       const toast = document.getElementById('center-toast');
       const text = document.getElementById('center-toast-text');
@@ -127,6 +247,7 @@
       setTimeout(() => toast.classList.remove('show'), duration);
     }
 
+    // sync custom checkbox UI with real input
     function setCheckboxChecked(state) {
       if (state) {
         termsBox.classList.add('checked');
@@ -229,7 +350,10 @@
           userData = snapUid.val();
         } else {
           if (user.phoneNumber) {
-            const phoneSnap = await db.ref("users").orderByChild("phone").equalTo(user.phoneNumber).once("value");
+            const phoneSnap = await db.ref("users")
+              .orderByChild("phone")
+              .equalTo(user.phoneNumber)
+              .once("value");
             if (phoneSnap.exists()) {
               const rec = phoneSnap.val();
               dbUid = Object.keys(rec)[0];
@@ -237,7 +361,10 @@
             }
           }
           if (!userData && user.email) {
-            const emailSnap = await db.ref("users").orderByChild("email").equalTo(user.email).once("value");
+            const emailSnap = await db.ref("users")
+              .orderByChild("email")
+              .equalTo(user.email)
+              .once("value");
             if (emailSnap.exists()) {
               const rec = emailSnap.val();
               dbUid = Object.keys(rec)[0];
@@ -289,281 +416,89 @@
               return;
             }
 
-            // === Create Cashfree Order (NOTE: ideally this MUST be done server-side with your secret key) ===
-            try {
-              const orderId = 'wavetravel_' + Date.now();
-              const createResp = await fetch('https://sandbox.cashfree.com/pg/orders', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'x-api-version': '2025-01-01',
-                  'x-client-id': CASHFREE_KEY,
-                  'x-client-secret': CASHFREE_KEY
-                },
-                body: JSON.stringify({
-                  order_amount: Number(booking.fare),
-                  order_currency: 'INR',
-                  order_id: orderId,
-                  customer_details: {
-                    customer_id: dbUid,
-                    customer_name: name || 'WaveTravel user',
-                    customer_phone: phone || (user.phoneNumber || ''),
-                    customer_email: user.email || ''
-                  },
-                  order_meta: {
-                    // this is where Cashfree will redirect after payment; return handler below will process the result.
-                    return_url: window.location.origin + '/cashfree_return.html'
+            new Razorpay({
+              key: 'rzp_live_RIzA7k5JUhsCRp',
+              amount: booking.fare * 100,
+              currency: 'INR',
+              name: 'WaveTravel',
+              description: 'Ride Booking',
+              prefill: { name, contact: phone, email: user.email || '' },
+              handler: res => {
+                slotRef.transaction(cur => {
+                  if (!cur) return cur;
+                  const currentSeats = parseInt(cur.seats, 10);
+                  const requested = parseInt(booking.seatsRequested, 10);
+                  if (isNaN(currentSeats) || isNaN(requested)) return cur;
+                  if (currentSeats < requested) return;
+                  const newSeats = currentSeats - requested;
+                  return { ...cur, seats: String(newSeats) };
+                }, async (error, committed) => {
+                  if (error) {
+                    console.error('Seat deduction failed:', error);
+                    alert('Seat deduction failed. Please contact support.');
+                    return;
                   }
-                })
-              });
+                  if (!committed) {
+                    alert('Seats just ran out. Payment captured; please contact support for refund/alternate slot.');
+                    return;
+                  }
 
-              const createData = await createResp.json();
-              if (!createResp.ok) {
-                console.error('Create order failed', createData);
-                alert('Payment setup failed. Please try later.');
-                return;
+                  try {
+                    const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+                    const newBookingRef = bookingsRef.push();
+                    const bookingData = {
+                      ...booking,
+                      userId: dbUid,
+                      userName: name,
+                      userPhone: phone,
+                      paymentId: res.razorpay_payment_id,
+                      bookedAt: new Date().toISOString(),
+                      status: 'confirmed'
+                    };
+
+                    await newBookingRef.set(bookingData);
+
+                    // driver wallet entry unchanged
+                    await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
+                      amount: booking.fare * 0.6,
+                      status: 'unpaid',
+                      booking: bookingData,
+                      date: new Date().toISOString()
+                    });
+
+                    // show centered toast and redirect
+                    showCenterToast('Payment successful & booking confirmed!', 2000);
+                    setTimeout(() => {
+                      localStorage.removeItem('selectedBooking');
+                      window.location = 'mybookings.html';
+                    }, 2100);
+
+                  } catch (err) {
+                    console.error(err);
+                    alert('Error saving booking or wallet entry. Contact support.');
+                  }
+                });
               }
-
-              const paymentSessionId = createData.payment_session_id;
-              if (!paymentSessionId) {
-                console.error('No payment_session_id returned', createData);
-                alert('Payment setup failed. Please contact support.');
-                return;
-              }
-
-              // Initialize Cashfree SDK and open checkout
-              const cashfree = Cashfree({ mode: 'sandbox' });
-              // pass the session id. Cashfree will redirect the customer to return_url after payment completion.
-              cashfree.checkout({ paymentSessionId }).then(result => {
-                if (result && result.error) {
-                  console.error('Checkout error', result.error);
-                  alert('Payment failed to start: ' + (result.error.message || 'Unknown'));
-                }
-                // If redirect happens, the user will be taken to return_url and this page won't execute further.
-              }).catch(err => {
-                console.error('Checkout exception', err);
-                alert('Payment could not be opened.');
-              });
-
-            } catch (err) {
-              console.error('Order creation error', err);
-              alert('Could not initialize payment.');
-            }
-
-          }); // payBtn click
+            }).open();
+          });
         }
-      }); // onAuthStateChanged
+      });
     }
 
-    function formatDate(d) { if (!d || typeof d !== 'string') return d || '-'; const [y, m, dd] = d.split('-'); if (!dd) return d; return `${dd}/${m}/${y}`; }
-    function formatTime(t) { if (!t || typeof t !== 'string') return t || '-'; let [h, mm] = t.split(':').map(Number); if (isNaN(h)) return t; const suffix = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`; }
+    function formatDate(d) {
+      if (!d || typeof d !== 'string') return d || '-';
+      const [y, m, dd] = d.split('-');
+      if (!dd) return d;
+      return `${dd}/${m}/${y}`;
+    }
+    function formatTime(t) {
+      if (!t || typeof t !== 'string') return t || '-';
+      let [h, mm] = t.split(':').map(Number);
+      if (isNaN(h)) return t;
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
+    }
   </script>
 </body>
 </html>
-
-
-<!--
---- cashfree_return.html ---
-This file receives Cashfree's redirect after payment (Cashfree appends ?order_id=... to the return_url).
-The page verifies order status by calling Cashfree orders and payments APIs and then performs the same booking + wallet writes.
-
-IMPORTANT: The calls here use the client key for demo only. Move all verification and order creation to a secure server in production and rely on server-side webhooks.
--->
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Payment result — WaveTravel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
-  <style>body{font-family:Poppins,system-ui,Segoe UI,Arial;margin:18px;} .box{max-width:720px;margin:24px auto;padding:20px;border-radius:12px;background:#fff;box-shadow:0 8px 26px rgba(2,6,23,0.06);} .ok{color:green;} .bad{color:#b91c1c;}</style>
-</head>
-<body>
-  <div class="box" id="result">Verifying payment…</div>
-
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const auth = firebase.auth();
-
-    // Demo key (you gave this). In production, DO NOT place secret keys in client code.
-    const CASHFREE_KEY = 'TEST10801062113fea721c252d5ba22c26010801';
-
-    const resultEl = document.getElementById('result');
-
-    // parse order_id from query string
-    const params = new URLSearchParams(window.location.search);
-    const orderId = params.get('order_id');
-
-    if (!orderId) {
-      resultEl.innerHTML = '<div class="bad">No order id provided by Cashfree.</div>';
-      throw new Error('Missing order_id');
-    }
-
-    async function fetchOrder() {
-      const resp = await fetch(`https://sandbox.cashfree.com/pg/orders/${encodeURIComponent(orderId)}`, {
-        headers: { 'x-api-version': '2025-01-01', 'x-client-id': CASHFREE_KEY, 'x-client-secret': CASHFREE_KEY }
-      });
-      return resp.json();
-    }
-
-    async function fetchPaymentsForOrder(orderId) {
-      const resp = await fetch(`https://sandbox.cashfree.com/pg/orders/${encodeURIComponent(orderId)}/payments`, {
-        headers: { 'x-api-version': '2025-01-01', 'x-client-id': CASHFREE_KEY, 'x-client-secret': CASHFREE_KEY }
-      });
-      return resp.json();
-    }
-
-    (async () => {
-      resultEl.innerText = 'Checking order status...';
-
-      let order;
-      try {
-        order = await fetchOrder();
-      } catch (e) {
-        console.error(e);
-        resultEl.innerHTML = '<div class="bad">Could not fetch order details. Try later.</div>';
-        return;
-      }
-
-      if (!order || !order.order_status) {
-        resultEl.innerHTML = '<div class="bad">Invalid order response from Cashfree.</div>';
-        console.error('Invalid order', order);
-        return;
-      }
-
-      // If order is PAID, proceed to save booking. Otherwise show status.
-      if (order.order_status !== 'PAID') {
-        // Could be FAILED or ACTIVE/EXPIRED.
-        resultEl.innerHTML = `<div>Payment not completed. Order status: <strong>${order.order_status}</strong></div>`;
-        // You may want to show payments endpoint to help debugging
-        return;
-      }
-
-      resultEl.innerHTML = '<div class="ok">Payment confirmed. Saving booking…</div>';
-
-      // get payment id (first payment) so we can store it in the booking
-      let payments = [];
-      try { payments = await fetchPaymentsForOrder(orderId); } catch (e) { console.warn('Could not fetch payments', e); }
-      // payments may be returned as object {payments: [...] } or as array. Normalize.
-      let paymentId = '';
-      if (Array.isArray(payments)) {
-        if (payments[0] && (payments[0].cf_payment_id || payments[0].payment_id)) paymentId = payments[0].cf_payment_id || payments[0].payment_id;
-      } else if (payments && Array.isArray(payments.payments)) {
-        const p = payments.payments[0];
-        paymentId = (p && (p.cf_payment_id || p.payment_id)) || '';
-      }
-
-      // now proceed with the same booking flow as before
-      const booking = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
-      if (!booking) {
-        resultEl.innerHTML += '<div class="bad">No booking in localStorage.</div>';
-        return;
-      }
-
-      // ensure user is signed in (we need dbUid and user email etc).
-      auth.onAuthStateChanged(async user => {
-        if (!user) {
-          resultEl.innerHTML += '<div class="bad">Please login and try again.</div>';
-          return;
-        }
-
-        let dbUid = user.uid;
-        let userData = null;
-
-        const snapUid = await db.ref(`users/${dbUid}`).once('value');
-        if (snapUid.exists()) {
-          userData = snapUid.val();
-        } else {
-          if (user.phoneNumber) {
-            const phoneSnap = await db.ref("users").orderByChild("phone").equalTo(user.phoneNumber).once("value");
-            if (phoneSnap.exists()) { const rec = phoneSnap.val(); dbUid = Object.keys(rec)[0]; userData = rec[dbUid]; }
-          }
-          if (!userData && user.email) {
-            const emailSnap = await db.ref("users").orderByChild("email").equalTo(user.email).once("value");
-            if (emailSnap.exists()) { const rec = emailSnap.val(); dbUid = Object.keys(rec)[0]; userData = rec[dbUid]; }
-          }
-        }
-
-        if (!userData) {
-          resultEl.innerHTML += '<div class="bad">Profile not found in /users. Contact support.</div>';
-          return;
-        }
-
-        const { name, phone } = userData;
-
-        // run transaction to reduce seats
-        const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
-        slotRef.transaction(cur => {
-          if (!cur) return cur;
-          const currentSeats = parseInt(cur.seats, 10);
-          const requested = parseInt(booking.seatsRequested, 10);
-          if (isNaN(currentSeats) || isNaN(requested)) return cur;
-          if (currentSeats < requested) return; // abort
-          const newSeats = currentSeats - requested;
-          return { ...cur, seats: String(newSeats) };
-        }, async (error, committed, snapshot) => {
-          if (error) {
-            console.error('Seat deduction failed:', error);
-            resultEl.innerHTML += '<div class="bad">Seat deduction failed. Contact support.</div>';
-            return;
-          }
-          if (!committed) {
-            resultEl.innerHTML += '<div class="bad">Seats just ran out. Please choose another slot.</div>';
-            return;
-          }
-
-          try {
-            const bookingsRef = db.ref(`bookings/${booking.driverId}`);
-            const newBookingRef = bookingsRef.push();
-            const bookingData = {
-              ...booking,
-              userId: dbUid,
-              userName: name,
-              userPhone: phone,
-              paymentId: paymentId || (orderId),
-              bookedAt: new Date().toISOString(),
-              status: 'confirmed'
-            };
-
-            await newBookingRef.set(bookingData);
-
-            await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
-              amount: booking.fare * 0.6,
-              status: 'unpaid',
-              booking: bookingData,
-              date: new Date().toISOString()
-            });
-
-            // Clear booking and inform user
-            localStorage.removeItem('selectedBooking');
-            resultEl.innerHTML += '<div class="ok">Booking saved — redirecting to My Bookings…</div>';
-            setTimeout(() => { window.location = 'mybookings.html'; }, 1400);
-
-          } catch (err) {
-            console.error(err);
-            resultEl.innerHTML += '<div class="bad">Error saving booking. Contact support.</div>';
-          }
-        }); // transaction
-
-      }); // auth state
-
-    })();
-  </script>
-</body>
-</html>
-
