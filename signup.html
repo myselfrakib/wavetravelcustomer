@@ -5,14 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>WaveTravel - Sign Up (OTP)</title>
   <style>
-    :root { --accent:#ff6ec4; --bg1:#8e2de2; --bg2:#4a00e0; }
+    :root { --accent:#ff6ec4; --primary:#1e40af; --secondary:#0ea5e9; }
     html,body { height:100%; margin:0; }
     body{
       font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-      background: linear-gradient(to right, var(--bg1), var(--bg2));
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      position: relative;
       display:flex; align-items:center; justify-content:center;
       color:white;
       height:100vh;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 110, 199, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(14, 165, 233, 0.2) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
     }
     .container{
       width:92%; max-width:440px;
@@ -205,6 +222,17 @@
     }
   }
 
+  // NEW: Check if phone exists in driverdetails collection
+  async function phoneExistsInDrivers(fullPhone) {
+    try {
+      const snapshot = await db.ref('driverdetails').orderByChild('phone').equalTo(fullPhone).once('value');
+      return snapshot.exists();
+    } catch(e) {
+      console.error('phoneExistsInDrivers error', e);
+      return false;
+    }
+  }
+
   // --- Spinner helpers ---
   function setSending(sending) {
     if (sending) {
@@ -279,9 +307,15 @@
 
     try {
       if (!isResend) {
-        // avoid duplicate registration on initial send
+        // Check if phone exists in users collection
         if (await phoneExists(fullPhone)) {
           showToast('Phone number already registered. Please login instead.', 'error');
+          return false;
+        }
+
+        // NEW: Check if phone exists in driverdetails collection
+        if (await phoneExistsInDrivers(fullPhone)) {
+          showToast('Driver account is found with this number, Please login or use different mobile number', 'error');
           return false;
         }
       }
