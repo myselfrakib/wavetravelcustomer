@@ -259,7 +259,7 @@ if (!booking) {
 
         // Call your Node.js server to create order
         try {
-          const resp = await fetch('https://YOUR_SERVER_DOMAIN_OR_IP/create-order', {
+          const resp = await fetch('https://wavetravel-razorpay-backend.onrender.com', {
             method:'POST', headers:{ 'Content-Type':'application/json' },
             body: JSON.stringify({ amount: booking.fare * 100 })
           });
