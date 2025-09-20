@@ -18,38 +18,184 @@
     }
     * { box-sizing: border-box; }
     html,body { height:100%; margin:0; font-family:'Poppins',sans-serif; background:var(--bg-grad); color: #0b1220; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
-    .page { min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:18px; padding-bottom:80px; }
-    .wrap { width:100%; max-width:720px; }
-    header.app-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
-    .app-title { color:#fff; font-size:1.25rem; font-weight:700; letter-spacing:0.2px; }
-    .back-btn { background:rgba(255,255,255,0.12); border:none; color:#fff; padding:8px 10px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
-    .summary-card { background: var(--card-bg); border-radius:14px; padding:16px; box-shadow: 0 6px 22px rgba(11,18,32,0.12); color:var(--dark, #0b1220); overflow:hidden; }
-    .summary-grid { display:grid; grid-template-columns: 1fr auto; gap:12px 16px; align-items:center; }
-    .info-row { display:flex; gap:12px; align-items:center; background: rgba(11,18,32,0.02); padding:10px; border-radius:10px; }
-    .info-row .icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(0,119,255,0.12), rgba(0,119,255,0.06)); color:var(--primary); font-size:1.15rem; flex-shrink:0; }
-    .info-row .meta { display:flex; flex-direction:column; }
+    .page {
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:18px;
+      padding-bottom:80px;
+    }
+    .wrap {
+      width:100%;
+      max-width:720px;
+    }
+
+    header.app-header {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .app-title {
+      color:#fff;
+      font-size:1.25rem;
+      font-weight:700;
+      letter-spacing:0.2px;
+    }
+    .back-btn {
+      background:rgba(255,255,255,0.12);
+      border:none; color:#fff; padding:8px 10px; border-radius:10px; cursor:pointer;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+
+    .summary-card {
+      background: var(--card-bg);
+      border-radius:14px;
+      padding:16px;
+      box-shadow: 0 6px 22px rgba(11,18,32,0.12);
+      color:var(--dark, #0b1220);
+      overflow:hidden;
+    }
+    .summary-grid {
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:12px 16px;
+      align-items:center;
+    }
+
+    /* nice info rows */
+    .info-row {
+      display:flex; gap:12px; align-items:center;
+      background: rgba(11,18,32,0.02);
+      padding:10px; border-radius:10px;
+    }
+    .info-row .icon {
+      width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(0,119,255,0.12), rgba(0,119,255,0.06));
+      color:var(--primary); font-size:1.15rem;
+      flex-shrink:0;
+    }
+    .info-row .meta {
+      display:flex; flex-direction:column;
+    }
     .meta .label { font-weight:700; color:#071124; font-size:0.95rem; }
     .meta .val { color:var(--muted); font-size:0.9rem; margin-top:2px; max-width:100%; word-break:break-word; }
-    .summary-grid .fare-box { background: linear-gradient(180deg,#fdf6e6,#fff6d9); border-radius:10px; padding:12px 16px; text-align:center; min-width:140px; align-self:center; box-shadow: 0 4px 14px rgba(2,6,23,0.06); }
+
+    .summary-grid .fare-box {
+      background: linear-gradient(180deg,#fdf6e6,#fff6d9);
+      border-radius:10px;
+      padding:12px 16px;
+      text-align:center;
+      min-width:140px;
+      align-self:center;
+      box-shadow: 0 4px 14px rgba(2,6,23,0.06);
+    }
     .fare-box .label { color:#8a6b00; font-weight:700; font-size:0.9rem; }
     .fare-box .amt { font-size:1.25rem; font-weight:800; color:#402a00; margin-top:6px; }
-    .details { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .detail-pill { background: rgba(11,18,32,0.03); padding:8px; border-radius:10px; display:flex; flex-direction:column; }
+
+    .details {
+      margin-top:12px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .detail-pill {
+      background: rgba(11,18,32,0.03);
+      padding:8px; border-radius:10px;
+      display:flex; flex-direction:column;
+    }
     .detail-pill small { color:var(--muted); font-size:0.82rem; }
     .detail-pill strong { font-size:0.98rem; margin-top:6px; color:#071124; }
-    .terms { margin-top:14px; display:flex; gap:10px; align-items:center; }
-    .checkbox { width:22px; height:22px; border-radius:6px; border:2px solid rgba(7,17,36,0.08); background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+
+    /* terms */
+    .terms {
+      margin-top:14px; display:flex; gap:10px; align-items:center;
+    }
+    .checkbox {
+      width:22px; height:22px; border-radius:6px; border:2px solid rgba(7,17,36,0.08);
+      background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+    }
     .checkbox input { display:none; }
     .checkbox.checked { background:var(--primary); border-color:var(--primary); color:#fff; }
+
     .terms-label { font-size:0.95rem; color:#fff; text-shadow: 0 1px 0 rgba(11,18,32,0.12); }
-    #payBtn { margin-top:16px; width:100%; padding:12px 14px; background: linear-gradient(90deg,var(--primary), #005dc1); border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1.05rem; box-shadow: 0 8px 26px rgba(2,6,23,0.12); transition: transform .14s ease, opacity .12s ease; }
+
+    /* Pay button */
+    #payBtn {
+      margin-top:16px;
+      width:100%;
+      padding:12px 14px;
+      background: linear-gradient(90deg,var(--primary), #005dc1);
+      border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1.05rem;
+      box-shadow: 0 8px 26px rgba(2,6,23,0.12);
+      transition: transform .14s ease, opacity .12s ease;
+    }
     #payBtn:active { transform: translateY(1px) scale(.998); }
     #payBtn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
-    #center-toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.95); background: rgba(11,18,32,0.94); color: #fff; padding: 28px 36px; border-radius: 14px; box-shadow: 0 12px 36px rgba(2,6,23,0.6); opacity: 0; pointer-events: none; transition: opacity .22s ease, transform .22s ease; z-index: 9999; font-weight: 700; min-width: 420px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 1.05rem; }
+
+    /* Loading state for pay button */
+    #payBtn.loading {
+      opacity: 0.7;
+      cursor: not-allowed;
+      position: relative;
+    }
+    #payBtn.loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      margin: auto;
+      border: 2px solid transparent;
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: button-loading-spinner 1s ease infinite;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    @keyframes button-loading-spinner {
+      from { transform: translate(-50%, -50%) rotate(0turn); }
+      to { transform: translate(-50%, -50%) rotate(1turn); }
+    }
+
+    /* Centered toast — doubled size */
+    #center-toast {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      background: rgba(11,18,32,0.94);
+      color: #fff;
+      padding: 28px 36px;
+      border-radius: 14px;
+      box-shadow: 0 12px 36px rgba(2,6,23,0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+      z-index: 9999;
+      font-weight: 700;
+      min-width: 420px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      font-size: 1.05rem;
+    }
     #center-toast.show { opacity:1; transform: translate(-50%,-50%) scale(1); pointer-events:auto; }
     #center-toast .icon { width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:var(--success); color:#fff; font-size:18px; flex:0 0 40px; }
-    @media (max-width:720px){ .summary-grid { grid-template-columns: 1fr; } .fare-box { order:-1; margin-bottom:8px; } #center-toast { min-width: calc(100% - 32px); padding:18px 20px; gap:10px; font-size:1rem; } .wrap { padding:6px; }
+
+    /* Error toast styling */
+    #center-toast.error .icon { background: var(--danger); }
+
+    @media (max-width:720px){
+      .summary-grid { grid-template-columns: 1fr; }
+      .fare-box { order:-1; margin-bottom:8px; }
+      #center-toast { min-width: calc(100% - 32px); padding:18px 20px; gap:10px; font-size:1rem; }
+      .wrap { padding:6px; }
     }
+
     .card-heading { font-size:0.95rem; color:#071124; font-weight:800; margin-bottom:6px; }
     .muted { color:var(--muted); font-size:0.9rem; }
   </style>
@@ -79,6 +225,7 @@
         <div class="terms-label">I agree to the <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a></div>
       </div>
 
+      <!-- PAY BUTTON placed right after terms (per your instruction) -->
       <button id="payBtn" disabled>Pay &amp; Book</button>
 
     </div>
@@ -111,6 +258,9 @@
     const db   = firebase.database();
     const auth = firebase.auth();
 
+    // Backend URL - update this if needed
+    const BACKEND_URL = 'https://wavetravel-razorpay-backend.onrender.com';
+
     const summaryEl = document.getElementById('summary');
     const payBtn    = document.getElementById('payBtn');
     const termsChk  = document.getElementById('termsChk');
@@ -119,16 +269,60 @@
 
     const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
-    const backendUrl = 'https://wavetravel-razorpay-backend.onrender.com'; // updated Render backend URL
-
-    function showCenterToast(message, duration = 2200) {
+    // centered toast helper
+    function showCenterToast(message, duration = 2200, isError = false) {
       const toast = document.getElementById('center-toast');
       const text = document.getElementById('center-toast-text');
       text.textContent = message;
+      
+      // Add/remove error class for styling
+      if (isError) {
+        toast.classList.add('error');
+      } else {
+        toast.classList.remove('error');
+      }
+      
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), duration);
     }
 
+    // Function to create Razorpay order via backend
+    async function createRazorpayOrder(amount) {
+      try {
+        const response = await fetch(`${BACKEND_URL}/create-order`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ amount: amount })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const order = await response.json();
+        return order;
+      } catch (error) {
+        console.error('Error creating Razorpay order:', error);
+        throw error;
+      }
+    }
+
+    // Set loading state for pay button
+    function setPayButtonLoading(loading) {
+      if (loading) {
+        payBtn.classList.add('loading');
+        payBtn.textContent = '';
+        payBtn.disabled = true;
+      } else {
+        payBtn.classList.remove('loading');
+        payBtn.textContent = 'Pay & Book';
+        payBtn.disabled = !termsChk.checked;
+      }
+    }
+
+    // sync custom checkbox UI with real input
     function setCheckboxChecked(state) {
       if (state) {
         termsBox.classList.add('checked');
@@ -138,7 +332,7 @@
         tickSvg.style.display = 'none';
       }
       termsChk.checked = !!state;
-      payBtn.disabled = !termsChk.checked;
+      payBtn.disabled = !termsChk.checked || payBtn.classList.contains('loading');
     }
     termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
@@ -267,80 +461,236 @@
         if (!bound) {
           bound = true;
 
-          termsChk.addEventListener('change', () => { payBtn.disabled = !termsChk.checked; });
+          termsChk.addEventListener('change', () => { 
+            payBtn.disabled = !termsChk.checked || payBtn.classList.contains('loading');
+          });
 
           payBtn.addEventListener('click', async () => {
-            if (!termsChk.checked) return;
+            if (!termsChk.checked || payBtn.classList.contains('loading')) return;
+
+            const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
 
             try {
-              // request order creation from backend
-              const res = await fetch(`${backendUrl}/create-order`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: booking.fare * 100, currency: 'INR', receipt: `${Date.now()}` })
-              });
-              const orderData = await res.json();
+              // Set loading state
+              setPayButtonLoading(true);
 
-              if (!orderData || !orderData.id) throw new Error('Order creation failed');
+              // Verify slot availability
+              const snap = await slotRef.once('value');
+              if (!snap.exists()) {
+                showCenterToast('Slot no longer exists.', 3000, true);
+                setPayButtonLoading(false);
+                return;
+              }
+              const cur = snap.val();
+              const available = parseInt(cur.seats, 10);
+              const requested = parseInt(booking.seatsRequested, 10);
+              if (isNaN(available) || isNaN(requested)) {
+                showCenterToast('Seat information invalid. Contact support.', 3000, true);
+                setPayButtonLoading(false);
+                return;
+              }
+              if (available < requested) {
+                showCenterToast(`Only ${available} seats left. Please reduce seats or choose another slot.`, 4000, true);
+                setPayButtonLoading(false);
+                return;
+              }
 
-              new Razorpay({
-                key: orderData.key, // use key returned from backend
-                amount: orderData.amount,
-                currency: orderData.currency,
+              // Create Razorpay order via backend
+              const order = await createRazorpayOrder(booking.fare);
+              
+              // Remove loading state before opening Razorpay
+              setPayButtonLoading(false);
+
+              // Detect if running in mobile WebView environment
+              const isMobileWebView = () => {
+                const userAgent = navigator.userAgent.toLowerCase();
+                const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+                const isWebView = /wv|webview/i.test(userAgent) || 
+                                 (window.ReactNativeWebView !== undefined) || 
+                                 (window.flutter_inappwebview !== undefined) ||
+                                 (window.webkit && window.webkit.messageHandlers);
+                return isMobile && isWebView;
+              };
+
+              // Configure Razorpay options based on environment
+              const razorpayOptions = {
+                key: order.key_id || 'rzp_live_RIzA7k5JUhsCRp',
+                amount: order.amount,
+                currency: order.currency,
                 name: 'WaveTravel',
-                description: 'Ride Booking',
-                order_id: orderData.id,
-                prefill: { name, contact: phone, email: user.email || '' },
-                handler: async function(r) {
-                  // update seats and booking
-                  const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
-                  await slotRef.transaction(cur => {
-                    if (!cur) return cur;
-                    const currentSeats = parseInt(cur.seats, 10);
-                    const requested = parseInt(booking.seatsRequested, 10);
-                    if (isNaN(currentSeats) || currentSeats < requested) return cur;
-                    return { ...cur, seats: String(currentSeats - requested) };
-                  });
-
-                  const bookingsRef = db.ref(`bookings/${booking.driverId}`);
-                  const newBookingRef = bookingsRef.push();
-                  await newBookingRef.set({
-                    ...booking,
-                    userId: dbUid,
-                    userName: name,
-                    userPhone: phone,
-                    paymentId: r.razorpay_payment_id,
-                    bookedAt: new Date().toISOString(),
-                    status: 'confirmed'
-                  });
-
-                  await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
-                    amount: booking.fare * 0.6,
-                    status: 'unpaid',
-                    booking: { ...booking },
-                    date: new Date().toISOString()
-                  });
-
-                  showCenterToast('Payment successful & booking confirmed!', 2000);
-                  setTimeout(() => {
-                    localStorage.removeItem('selectedBooking');
-                    window.location = 'mybookings.html';
-                  }, 2100);
+                description: `Ride from ${booking.pickup} to ${booking.dropoff}`,
+                order_id: order.id,
+                prefill: { 
+                  name, 
+                  contact: phone, 
+                  email: user.email || '' 
+                },
+                theme: {
+                  color: '#0077ff'
+                },
+                handler: res => {
+                  processSuccessfulPayment(res, slotRef, dbUid, name, phone, order);
+                },
+                modal: {
+                  ondismiss: function() {
+                    setPayButtonLoading(false);
+                  }
                 }
-              }).open();
+              };
 
-            } catch(e) {
-              console.error('Payment initiation failed:', e);
-              alert('Payment failed to start. Try again.');
+              // Add WebView-specific UPI Intent configuration
+              if (isMobileWebView()) {
+                razorpayOptions.config = {
+                  display: {
+                    blocks: {
+                      upi: {
+                        name: 'Pay with UPI',
+                        instruments: [
+                          {
+                            method: 'upi',
+                            flows: ['intent'] // Direct UPI app opening in WebView
+                          }
+                        ]
+                      },
+                      other: {
+                        name: 'Other Methods',
+                        instruments: [
+                          { method: 'upi', flows: ['collect'] }, // Manual UPI ID as fallback
+                          { method: 'card' },
+                          { method: 'netbanking' }
+                        ]
+                      }
+                    },
+                    sequence: ['block.upi', 'block.other'],
+                    preferences: {
+                      show_default_blocks: false
+                    }
+                  }
+                };
+                
+                // Enable automatic UPI intent for mobile WebView
+                razorpayOptions.method = {
+                  upi: true
+                };
+                
+                // Add WebView-specific settings
+                razorpayOptions.external = {
+                  wallets: ['paytm'] // Enable wallet deep links
+                };
+                
+                // Optimize for mobile WebView experience
+                razorpayOptions.modal = {
+                  ...razorpayOptions.modal,
+                  backdropclose: false, // Prevent accidental closure
+                  escape: false,
+                  handleback: false
+                };
+              }
+
+              const razorpayInstance = new Razorpay(razorpayOptions);
+
+              razorpayInstance.open();
+
+            } catch (error) {
+              console.error('Payment initiation failed:', error);
+              setPayButtonLoading(false);
+              
+              if (error.message.includes('HTTP error')) {
+                showCenterToast('Backend service unavailable. Please try again.', 3000, true);
+              } else {
+                showCenterToast('Failed to initiate payment. Please try again.', 3000, true);
+              }
             }
-
           });
         }
       });
     }
 
-    function formatDate(d) { if (!d || typeof d !== 'string') return d || '-'; const [y,m,dd] = d.split('-'); if(!dd) return d; return `${dd}/${m}/${y}`; }
-    function formatTime(t) { if (!t || typeof t !== 'string') return t || '-'; let [h,mm] = t.split(':').map(Number); if (isNaN(h)) return t; const suffix = h>=12?'PM':'AM'; h=h%12||12; return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`; }
+    // Handle successful payment
+    async function processSuccessfulPayment(paymentResponse, slotRef, dbUid, name, phone, order) {
+      try {
+        // Show processing message
+        showCenterToast('Processing booking...', 1000);
+
+        // Deduct seats using transaction
+        slotRef.transaction(cur => {
+          if (!cur) return cur;
+          const currentSeats = parseInt(cur.seats, 10);
+          const requested = parseInt(booking.seatsRequested, 10);
+          if (isNaN(currentSeats) || isNaN(requested)) return cur;
+          if (currentSeats < requested) return;
+          const newSeats = currentSeats - requested;
+          return { ...cur, seats: String(newSeats) };
+        }, async (error, committed) => {
+          if (error) {
+            console.error('Seat deduction failed:', error);
+            showCenterToast('Seat deduction failed. Please contact support.', 4000, true);
+            return;
+          }
+          if (!committed) {
+            showCenterToast('Seats just ran out. Payment captured; please contact support for refund/alternate slot.', 5000, true);
+            return;
+          }
+
+          try {
+            // Save booking to database
+            const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+            const newBookingRef = bookingsRef.push();
+            const bookingData = {
+              ...booking,
+              userId: dbUid,
+              userName: name,
+              userPhone: phone,
+              paymentId: paymentResponse.razorpay_payment_id,
+              orderId: paymentResponse.razorpay_order_id || order.id,
+              signature: paymentResponse.razorpay_signature,
+              bookedAt: new Date().toISOString(),
+              status: 'confirmed'
+            };
+
+            await newBookingRef.set(bookingData);
+
+            // Update driver wallet
+            await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
+              amount: booking.fare * 0.6,
+              status: 'unpaid',
+              booking: bookingData,
+              date: new Date().toISOString()
+            });
+
+            // Show success message and redirect
+            showCenterToast('Payment successful & booking confirmed!', 2000);
+            setTimeout(() => {
+              localStorage.removeItem('selectedBooking');
+              window.location = 'mybookings.html';
+            }, 2100);
+
+          } catch (err) {
+            console.error('Error saving booking:', err);
+            showCenterToast('Error saving booking. Contact support with payment ID: ' + paymentResponse.razorpay_payment_id, 5000, true);
+          }
+        });
+
+      } catch (error) {
+        console.error('Payment processing error:', error);
+        showCenterToast('Error processing payment. Contact support.', 4000, true);
+      }
+    }
+
+    function formatDate(d) {
+      if (!d || typeof d !== 'string') return d || '-';
+      const [y, m, dd] = d.split('-');
+      if (!dd) return d;
+      return `${dd}/${m}/${y}`;
+    }
+    function formatTime(t) {
+      if (!t || typeof t !== 'string') return t || '-';
+      let [h, mm] = t.split(':').map(Number);
+      if (isNaN(h)) return t;
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
+    }
   </script>
 </body>
 </html>
