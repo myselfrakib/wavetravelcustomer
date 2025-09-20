@@ -121,18 +121,60 @@
 
     .terms-label { font-size:0.95rem; color:#fff; text-shadow: 0 1px 0 rgba(11,18,32,0.12); }
 
-    /* Pay button */
-    #payBtn {
+    /* Payment options */
+    .payment-options {
       margin-top:16px;
+      display:grid;
+      gap:10px;
+    }
+
+    .payment-btn {
       width:100%;
       padding:12px 14px;
-      background: linear-gradient(90deg,var(--primary), #005dc1);
-      border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1.05rem;
-      box-shadow: 0 8px 26px rgba(2,6,23,0.12);
-      transition: transform .14s ease, opacity .12s ease;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius:10px;
+      color:#fff;
+      font-weight:700;
+      font-size:1rem;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      cursor:pointer;
+      transition: all 0.3s ease;
+      text-decoration:none;
     }
-    #payBtn:active { transform: translateY(1px) scale(.998); }
-    #payBtn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+
+    .payment-btn.upi {
+      background: linear-gradient(90deg, #00c851, #009639);
+      box-shadow: 0 8px 26px rgba(0,200,81,0.3);
+    }
+
+    .payment-btn.other {
+      background: linear-gradient(90deg,var(--primary), #005dc1);
+      box-shadow: 0 8px 26px rgba(2,6,23,0.12);
+    }
+
+    .payment-btn:active { transform: translateY(1px) scale(.998); }
+    .payment-btn:disabled { 
+      opacity:0.6; 
+      cursor:not-allowed; 
+      transform:none; 
+      box-shadow:none; 
+    }
+
+    .payment-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(2,6,23,0.2);
+    }
+
+    .payment-btn.upi:hover:not(:disabled) {
+      box-shadow: 0 12px 32px rgba(0,200,81,0.4);
+    }
+
+    .payment-btn .icon {
+      font-size:1.2rem;
+    }
 
     /* Centered toast — doubled size */
     #center-toast {
@@ -197,8 +239,18 @@
         <div class="terms-label">I agree to the <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a></div>
       </div>
 
-      <!-- PAY BUTTON placed right after terms (per your instruction) -->
-      <button id="payBtn" disabled>Pay &amp; Book</button>
+      <!-- Payment Options -->
+      <div class="payment-options">
+        <button id="upiBtn" class="payment-btn upi" disabled>
+          <span class="icon">📱</span>
+          <span>Pay with UPI (Instant)</span>
+          <small id="upiHint" style="display:block;font-size:0.8rem;opacity:0.8;margin-top:4px;">Detecting UPI apps...</small>
+        </button>
+        <button id="otherBtn" class="payment-btn other" disabled>
+          <span class="icon">💳</span>
+          <span>Cards, Wallets & More</span>
+        </button>
+      </div>
 
     </div>
   </div>
@@ -217,6 +269,86 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <script>
+    // WebView UPI Intent Helper
+    function isWebView() {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      return /wv|WebView|Version.*Chrome\/[.0-9]*.*Mobile/i.test(userAgent);
+    }
+
+    function isMobile() {
+      return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    // Detect available UPI apps
+    function detectUPIApps() {
+      const upiApps = [
+        { name: 'Google Pay', scheme: 'tez://', package: 'com.google.android.apps.nbu.paisa.user' },
+        { name: 'PhonePe', scheme: 'phonepe://', package: 'com.phonepe.app' },
+        { name: 'Paytm', scheme: 'paytmmp://', package: 'net.one97.paytm' },
+        { name: 'Amazon Pay', scheme: 'amazonpay://', package: 'in.amazon.mShop.android.shopping' },
+        { name: 'BHIM', scheme: 'bhim://', package: 'in.org.npci.upiapp' }
+      ];
+      
+      return upiApps;
+    }
+
+    // Enhanced toast with better styling
+    function showEnhancedToast(message, type = 'info', duration = 3000) {
+      const toast = document.getElementById('center-toast');
+      const text = document.getElementById('center-toast-text');
+      const icon = toast.querySelector('.icon');
+      
+      // Update content
+      text.textContent = message;
+      
+      // Update styling based on type
+      switch(type) {
+        case 'success':
+          toast.style.background = 'rgba(40, 167, 69, 0.95)';
+          icon.innerHTML = '✓';
+          icon.style.background = '#28a745';
+          break;
+        case 'error':
+          toast.style.background = 'rgba(220, 53, 69, 0.95)';
+          icon.innerHTML = '✕';
+          icon.style.background = '#dc3545';
+          break;
+        case 'warning':
+          toast.style.background = 'rgba(255, 193, 7, 0.95)';
+          icon.innerHTML = '⚠';
+          icon.style.background = '#ffc107';
+          icon.style.color = '#000';
+          break;
+        default:
+          toast.style.background = 'rgba(11,18,32,0.94)';
+          icon.innerHTML = 'ℹ';
+          icon.style.background = '#007bff';
+          icon.style.color = '#fff';
+      }
+      
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    // Handle UPI deep links for WebView
+    function handleUPIIntent(vpa, amount, name, description) {
+      const upiURL = `upi://pay?pa=${vpa}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR&tn=${encodeURIComponent(description)}`;
+      
+      // Try to open UPI app directly
+      if (isWebView()) {
+        window.location.href = upiURL;
+        
+        // Fallback after 3 seconds if UPI app doesn't open
+        setTimeout(() => {
+          if (confirm('UPI app not found. Open Google Pay?')) {
+            window.location.href = `https://pay.google.com/gp/p/ui/pay?pa=${vpa}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR`;
+          }
+        }, 3000);
+      }
+    }
+  </script>
+
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -231,7 +363,8 @@
     const auth = firebase.auth();
 
     const summaryEl = document.getElementById('summary');
-    const payBtn    = document.getElementById('payBtn');
+    const upiBtn    = document.getElementById('upiBtn');
+    const otherBtn  = document.getElementById('otherBtn');
     const termsChk  = document.getElementById('termsChk');
     const termsBox  = document.getElementById('termsBox');
     const tickSvg   = document.getElementById('termsTick');
@@ -257,14 +390,16 @@
         tickSvg.style.display = 'none';
       }
       termsChk.checked = !!state;
-      payBtn.disabled = !termsChk.checked;
+      upiBtn.disabled = !termsChk.checked;
+      otherBtn.disabled = !termsChk.checked;
     }
     termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
 
     if (!booking) {
       summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Please select a slot first.</div>';
-      payBtn.disabled = true;
+      upiBtn.disabled = true;
+      otherBtn.disabled = true;
     } else {
       let bound = false;
 
@@ -335,6 +470,151 @@
         `;
       }
 
+      function initiatePayment(method) {
+        return new Promise((resolve, reject) => {
+          const options = {
+            key: 'rzp_live_RIzA7k5JUhsCRp',
+            amount: booking.fare * 100,
+            currency: 'INR',
+            name: 'WaveTravel',
+            description: `Ride booking from ${booking.pickup} to ${booking.dropoff}`,
+            order_id: '', // Generate this from your backend for better security
+            prefill: { 
+              name: userData.name, 
+              contact: userData.phone, 
+              email: auth.currentUser?.email || '' 
+            },
+            handler: (response) => {
+              console.log('Payment successful:', response);
+              resolve(response);
+            },
+            modal: {
+              ondismiss: () => {
+                console.log('Payment dismissed');
+                reject(new Error('Payment cancelled'));
+              }
+            },
+            theme: {
+              color: '#0077ff',
+              backdrop_color: 'rgba(0,0,0,0.6)'
+            }
+          };
+
+          if (method === 'upi') {
+            // Configuration for direct UPI app opening
+            options.method = ['upi'];
+            
+            // Enhanced configuration for WebView/Mobile apps
+            if (isWebView() || isMobile()) {
+              console.log('WebView/Mobile detected - configuring for UPI intent');
+              
+              options.config = {
+                display: {
+                  language: 'en',
+                  hide: ['email', 'contact'],
+                  blocks: {
+                    utib: {
+                      name: 'Pay using UPI Apps',
+                      instruments: [
+                        {
+                          method: 'upi',
+                          flows: ['intent'], // Force intent flow for direct app opening
+                          apps: ['all'] // Allow all UPI apps
+                        }
+                      ]
+                    }
+                  },
+                  hide_topbar: false,
+                  sequence: ['block.utib'],
+                  preferences: {
+                    show_default_blocks: false // Hide other payment options
+                  }
+                }
+              };
+              
+              // Mobile-specific modal settings
+              options.modal = {
+                confirm_close: false,
+                ondismiss: () => {
+                  console.log('UPI payment dismissed');
+                  reject(new Error('Payment cancelled'));
+                },
+                animation: false,
+                backdrop_close: false,
+                escape: false
+              };
+              
+              // Additional theme for mobile
+              options.theme = {
+                color: '#0077ff',
+                backdrop_color: 'rgba(0,0,0,0.8)',
+                image_frame: true,
+                image_padding: false
+              };
+              
+              // Callback URLs for better WebView integration
+              options.callback_url = window.location.href;
+              
+            } else {
+              // Desktop/Web browser UPI configuration
+              options.config = {
+                display: {
+                  blocks: {
+                    banks: {
+                      name: 'UPI Payment',
+                      instruments: [
+                        {
+                          method: 'upi'
+                        }
+                      ]
+                    }
+                  },
+                  sequence: ['block.banks'],
+                  preferences: {
+                    show_default_blocks: false
+                  }
+                }
+              };
+            }
+            
+            // Add retry mechanism for UPI
+            options.retry = {
+              enabled: true,
+              max_count: 3
+            };
+          }
+
+          // Create Razorpay instance
+          const rzp = new Razorpay(options);
+          
+          // Enhanced event handling for UPI
+          if (method === 'upi') {
+            rzp.on('payment.submit', function(response) {
+              console.log('Payment submitted:', response);
+              showEnhancedToast('Opening UPI app...', 'info', 2000);
+            });
+            
+            rzp.on('payment.screen', function(response) {
+              console.log('Payment screen:', response);
+            });
+            
+            rzp.on('payment.error', function(response) {
+              console.log('Payment error:', response);
+              showEnhancedToast('Payment failed. Please try again.', 'error', 3000);
+            });
+            
+            rzp.on('payment.cancelled', function(response) {
+              console.log('Payment cancelled:', response);
+            });
+          }
+
+          // Open Razorpay checkout
+          rzp.open();
+        });
+      }
+
+      let userData = null;
+
       auth.onAuthStateChanged(async user => {
         if (!user) {
           alert('Please login first.');
@@ -343,7 +623,6 @@
         }
 
         let dbUid = user.uid;
-        let userData = null;
 
         const snapUid = await db.ref(`users/${dbUid}`).once('value');
         if (snapUid.exists()) {
@@ -375,7 +654,8 @@
 
         if (!userData) {
           summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Profile not found. Cannot proceed.</div>';
-          payBtn.disabled = true;
+          upiBtn.disabled = true;
+          otherBtn.disabled = true;
           return;
         }
 
@@ -383,17 +663,349 @@
         renderSummary(name, phone);
         setCheckboxChecked(false);
 
+        // Detect UPI environment
+        setTimeout(() => {
+          const upiHint = document.getElementById('upiHint');
+          if (upiHint) {
+            if (isWebView() || isMobile()) {
+              upiHint.textContent = '✓ UPI apps will open directly';
+              upiHint.style.color = '#28a745';
+            } else {
+              upiHint.textContent = 'QR code or UPI ID entry';
+              upiHint.style.color = '#6b7280';
+            }
+          }
+        }, 1000);
+
         if (!bound) {
           bound = true;
 
-          termsChk.addEventListener('change', () => { payBtn.disabled = !termsChk.checked; });
+          async function handleDirectUPI() {
+            if (!termsChk.checked) return;
 
-          payBtn.addEventListener('click', async () => {
+            // Generate unique transaction ID
+            const transactionId = 'WT_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            // First create a pending payment record
+            const pendingPaymentRef = db.ref(`pendingPayments/${transactionId}`);
+            await pendingPaymentRef.set({
+              bookingData: booking,
+              userId: dbUid,
+              userName: userData.name,
+              userPhone: userData.phone,
+              amount: booking.fare,
+              status: 'pending',
+              createdAt: new Date().toISOString(),
+              expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes expiry
+            });
+
+            // Show payment instructions with transaction ID
+            const paymentInstructions = `
+              <div style="background: #fff3cd; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <h3 style="margin: 0 0 12px 0; color: #856404;">⚠️ Important Payment Instructions</h3>
+                <p style="margin: 8px 0; color: #856404;"><strong>1. Pay exactly ₹${booking.fare} to our UPI ID</strong></p>
+                <p style="margin: 8px 0; color: #856404;"><strong>2. UPI ID: wavetravel@paytm</strong></p>
+                <p style="margin: 8px 0; color: #856404;"><strong>3. Transaction Note: ${transactionId}</strong></p>
+                <p style="margin: 8px 0; color: #856404;"><strong>4. Screenshot the payment success page</strong></p>
+                <p style="margin: 8px 0; color: #856404;"><strong>5. Return to app and click "I've Paid"</strong></p>
+                <div style="margin-top: 16px;">
+                  <button id="openUpiApp" style="background: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 6px; margin-right: 8px;">Open UPI App</button>
+                  <button id="copyTransactionId" style="background: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 6px;">Copy Transaction ID</button>
+                </div>
+              </div>
+            `;
+
+            // Update summary with instructions
+            summaryEl.innerHTML += paymentInstructions;
+
+            // Add event listeners for the new buttons
+            document.getElementById('openUpiApp').onclick = () => {
+              const upiUrl = `upi://pay?pa=wavetravel@paytm&pn=WaveTravel&am=${booking.fare}&cu=INR&tn=${encodeURIComponent(transactionId)}`;
+              window.location.href = upiUrl;
+            };
+
+            document.getElementById('copyTransactionId').onclick = () => {
+              navigator.clipboard.writeText(transactionId).then(() => {
+                showCenterToast('Transaction ID copied!', 1500);
+              });
+            };
+
+            // Replace the direct UPI button with payment status buttons
+            directUpiBtn.style.display = 'none';
+            upiBtn.style.display = 'none';
+            otherBtn.style.display = 'none';
+
+            // Add payment confirmation buttons
+            const confirmationButtons = document.createElement('div');
+            confirmationButtons.innerHTML = `
+              <div style="display: grid; gap: 10px; margin-top: 16px;">
+                <button id="checkPaymentBtn" class="payment-btn other">
+                  <span class="icon">🔍</span>
+                  <span>Check Payment Status</span>
+                </button>
+                <button id="paidBtn" class="payment-btn upi">
+                  <span class="icon">✅</span>
+                  <span>I've Completed Payment</span>
+                </button>
+                <button id="cancelPaymentBtn" class="payment-btn" style="background: #dc3545;">
+                  <span class="icon">❌</span>
+                  <span>Cancel Payment</span>
+                </button>
+              </div>
+            `;
+            
+            document.querySelector('.payment-options').appendChild(confirmationButtons);
+
+            // Check payment status function
+            document.getElementById('checkPaymentBtn').onclick = async () => {
+              try {
+                showCenterToast('Checking payment status...', 2000);
+                
+                // Check if payment record has been updated (by webhook or manual verification)
+                const paymentSnap = await pendingPaymentRef.once('value');
+                if (paymentSnap.exists()) {
+                  const paymentData = paymentSnap.val();
+                  if (paymentData.status === 'verified') {
+                    await handlePaymentSuccess(paymentData.paymentId || transactionId);
+                    return;
+                  } else if (paymentData.status === 'failed') {
+                    alert('Payment verification failed. Please try again or contact support.');
+                    return;
+                  }
+                }
+                
+                showCenterToast('Payment not yet verified. Please wait and try again.', 3000);
+              } catch (error) {
+                console.error('Error checking payment:', error);
+                alert('Error checking payment status. Please try again.');
+              }
+            };
+
+            // I've paid button
+            document.getElementById('paidBtn').onclick = async () => {
+              const confirmed = confirm(`Have you completed the payment of ₹${booking.fare} with transaction note "${transactionId}"?\n\nClick OK only if payment is completed.`);
+              if (confirmed) {
+                try {
+                  // Update payment record as claimed
+                  await pendingPaymentRef.update({
+                    status: 'claimed',
+                    claimedAt: new Date().toISOString()
+                  });
+
+                  showCenterToast('Payment claimed! We will verify and confirm your booking within 5 minutes.', 4000);
+                  
+                  // Start verification polling
+                  const verificationInterval = setInterval(async () => {
+                    const snap = await pendingPaymentRef.once('value');
+                    if (snap.exists()) {
+                      const data = snap.val();
+                      if (data.status === 'verified') {
+                        clearInterval(verificationInterval);
+                        await handlePaymentSuccess(data.paymentId || transactionId);
+                      } else if (data.status === 'failed') {
+                        clearInterval(verificationInterval);
+                        alert('Payment verification failed. Please contact support with your transaction ID: ' + transactionId);
+                      }
+                    }
+                  }, 10000); // Check every 10 seconds
+
+                  // Stop checking after 10 minutes
+                  setTimeout(() => {
+                    clearInterval(verificationInterval);
+                  }, 600000);
+
+                } catch (error) {
+                  console.error('Error claiming payment:', error);
+                  alert('Error claiming payment. Please try again.');
+                }
+              }
+            };
+
+            // Cancel payment
+            document.getElementById('cancelPaymentBtn').onclick = async () => {
+              const confirmed = confirm('Are you sure you want to cancel this payment?');
+              if (confirmed) {
+                await pendingPaymentRef.remove();
+                location.reload(); // Refresh the page
+              }
+            };
+          }
+
+          async function handlePaymentSuccess(paymentId) {
+            const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+            
+            slotRef.transaction(cur => {
+              if (!cur) return cur;
+              const currentSeats = parseInt(cur.seats, 10);
+              const requested = parseInt(booking.seatsRequested, 10);
+              if (isNaN(currentSeats) || isNaN(requested)) return cur;
+              if (currentSeats < requested) return;
+              const newSeats = currentSeats - requested;
+              return { ...cur, seats: String(newSeats) };
+            }, async (error, committed) => {
+              if (error) {
+                console.error('Seat deduction failed:', error);
+                alert('Seat deduction failed. Please contact support.');
+                return;
+              }
+              if (!committed) {
+                alert('Seats just ran out. Please contact support.');
+                return;
+              }
+
+              try {
+                const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+                const newBookingRef = bookingsRef.push();
+                const bookingData = {
+                  ...booking,
+                  userId: dbUid,
+                  userName: userData.name,
+                  userPhone: userData.phone,
+                  paymentId: paymentId,
+                  bookedAt: new Date().toISOString(),
+                  status: 'confirmed'
+                };
+
+                await newBookingRef.set(bookingData);
+
+                await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
+                  amount: booking.fare * 0.6,
+                  status: 'unpaid',
+                  booking: bookingData,
+                  date: new Date().toISOString()
+                });
+
+                showCenterToast('Booking confirmed successfully!', 2000);
+                setTimeout(() => {
+                  localStorage.removeItem('selectedBooking');
+                  window.location = 'mybookings.html';
+                }, 2100);
+
+              } catch (err) {
+                console.error(err);
+                alert('Error saving booking. Contact support.');
+              }
+            });
+          }
+
+          async function handleDirectUPI() {
+            if (!termsChk.checked) return;
+
+            const merchantUPI = "wavetravel@paytm"; // Replace with your actual UPI ID
+            const amount = booking.fare;
+            const transactionNote = `WaveTravel booking ${booking.slotKey}`;
+            
+            // Create UPI payment URLs for different apps
+            const upiApps = [
+              {
+                name: "Google Pay",
+                url: `tez://upi/pay?pa=${merchantUPI}&pn=WaveTravel&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`
+              },
+              {
+                name: "PhonePe", 
+                url: `phonepe://pay?pa=${merchantUPI}&pn=WaveTravel&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`
+              },
+              {
+                name: "Paytm",
+                url: `paytmmp://pay?pa=${merchantUPI}&pn=WaveTravel&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`
+              },
+              {
+                name: "Generic UPI",
+                url: `upi://pay?pa=${merchantUPI}&pn=WaveTravel&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`
+              }
+            ];
+
+            // Show app selection if in WebView
+            if (isWebView()) {
+              const appChoice = confirm(`Choose UPI App:\nOK for Google Pay\nCancel for PhonePe`);
+              const selectedApp = appChoice ? upiApps[0] : upiApps[1];
+              
+              try {
+                window.location.href = selectedApp.url;
+                
+                // Show instructions
+                showCenterToast(`Opening ${selectedApp.name}... Complete payment and return to app`, 4000);
+                
+                // Note: In real implementation, you'd need webhook to confirm payment
+                setTimeout(() => {
+                  if (confirm('Payment completed? Click OK to confirm booking.')) {
+                    // Here you would verify payment through your backend
+                    // For now, we'll simulate successful payment
+                    handlePaymentSuccess('direct_upi_' + Date.now());
+                  }
+                }, 10000);
+                
+              } catch (error) {
+                alert('Could not open UPI app. Please try other payment methods.');
+              }
+            } else {
+              // Fallback for desktop - show QR code or UPI ID
+              alert(`UPI ID: ${merchantUPI}\nAmount: ₹${amount}\nNote: ${transactionNote}`);
+            }
+          }
+
+          async function handlePaymentSuccess(paymentId) {
+            const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+            
+            slotRef.transaction(cur => {
+              if (!cur) return cur;
+              const currentSeats = parseInt(cur.seats, 10);
+              const requested = parseInt(booking.seatsRequested, 10);
+              if (isNaN(currentSeats) || isNaN(requested)) return cur;
+              if (currentSeats < requested) return;
+              const newSeats = currentSeats - requested;
+              return { ...cur, seats: String(newSeats) };
+            }, async (error, committed) => {
+              if (error) {
+                console.error('Seat deduction failed:', error);
+                alert('Seat deduction failed. Please contact support.');
+                return;
+              }
+              if (!committed) {
+                alert('Seats just ran out. Please contact support.');
+                return;
+              }
+
+              try {
+                const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+                const newBookingRef = bookingsRef.push();
+                const bookingData = {
+                  ...booking,
+                  userId: dbUid,
+                  userName: userData.name,
+                  userPhone: userData.phone,
+                  paymentId: paymentId,
+                  bookedAt: new Date().toISOString(),
+                  status: 'confirmed'
+                };
+
+                await newBookingRef.set(bookingData);
+
+                await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
+                  amount: booking.fare * 0.6,
+                  status: 'unpaid',
+                  booking: bookingData,
+                  date: new Date().toISOString()
+                });
+
+                showCenterToast('Booking confirmed successfully!', 2000);
+                setTimeout(() => {
+                  localStorage.removeItem('selectedBooking');
+                  window.location = 'mybookings.html';
+                }, 2100);
+
+              } catch (err) {
+                console.error(err);
+                alert('Error saving booking. Contact support.');
+              }
+            });
+          }
             if (!termsChk.checked) return;
 
             const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
 
             try {
+              // Pre-check seats availability
               const snap = await slotRef.once('value');
               if (!snap.exists()) {
                 alert('Slot no longer exists.');
@@ -410,77 +1022,77 @@
                 alert(`Only ${available} seats left. Please reduce seats or choose another slot.`);
                 return;
               }
-            } catch (e) {
-              console.error('Pre-check failed:', e);
-              alert('Failed to verify seats. Please try again.');
-              return;
-            }
 
-            new Razorpay({
-              key: 'rzp_live_RIzA7k5JUhsCRp',
-              amount: booking.fare * 100,
-              currency: 'INR',
-              name: 'WaveTravel',
-              description: 'Ride Booking',
-              prefill: { name, contact: phone, email: user.email || '' },
-              handler: res => {
-                slotRef.transaction(cur => {
-                  if (!cur) return cur;
-                  const currentSeats = parseInt(cur.seats, 10);
-                  const requested = parseInt(booking.seatsRequested, 10);
-                  if (isNaN(currentSeats) || isNaN(requested)) return cur;
-                  if (currentSeats < requested) return;
-                  const newSeats = currentSeats - requested;
-                  return { ...cur, seats: String(newSeats) };
-                }, async (error, committed) => {
-                  if (error) {
-                    console.error('Seat deduction failed:', error);
-                    alert('Seat deduction failed. Please contact support.');
-                    return;
-                  }
-                  if (!committed) {
-                    alert('Seats just ran out. Payment captured; please contact support for refund/alternate slot.');
-                    return;
-                  }
+              // Initiate payment
+              const paymentResponse = await initiatePayment(method);
+              
+              // Handle successful payment
+              slotRef.transaction(cur => {
+                if (!cur) return cur;
+                const currentSeats = parseInt(cur.seats, 10);
+                const requested = parseInt(booking.seatsRequested, 10);
+                if (isNaN(currentSeats) || isNaN(requested)) return cur;
+                if (currentSeats < requested) return;
+                const newSeats = currentSeats - requested;
+                return { ...cur, seats: String(newSeats) };
+              }, async (error, committed) => {
+                if (error) {
+                  console.error('Seat deduction failed:', error);
+                  alert('Seat deduction failed. Please contact support.');
+                  return;
+                }
+                if (!committed) {
+                  alert('Seats just ran out. Payment captured; please contact support for refund/alternate slot.');
+                  return;
+                }
 
-                  try {
-                    const bookingsRef = db.ref(`bookings/${booking.driverId}`);
-                    const newBookingRef = bookingsRef.push();
-                    const bookingData = {
-                      ...booking,
-                      userId: dbUid,
-                      userName: name,
-                      userPhone: phone,
-                      paymentId: res.razorpay_payment_id,
-                      bookedAt: new Date().toISOString(),
-                      status: 'confirmed'
-                    };
+                try {
+                  const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+                  const newBookingRef = bookingsRef.push();
+                  const bookingData = {
+                    ...booking,
+                    userId: dbUid,
+                    userName: name,
+                    userPhone: phone,
+                    paymentId: paymentResponse.razorpay_payment_id,
+                    bookedAt: new Date().toISOString(),
+                    status: 'confirmed'
+                  };
 
-                    await newBookingRef.set(bookingData);
+                  await newBookingRef.set(bookingData);
 
-                    // driver wallet entry unchanged
-                    await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
-                      amount: booking.fare * 0.6,
-                      status: 'unpaid',
-                      booking: bookingData,
-                      date: new Date().toISOString()
-                    });
+                  // driver wallet entry
+                  await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
+                    amount: booking.fare * 0.6,
+                    status: 'unpaid',
+                    booking: bookingData,
+                    date: new Date().toISOString()
+                  });
 
-                    // show centered toast and redirect
-                    showCenterToast('Payment successful & booking confirmed!', 2000);
-                    setTimeout(() => {
-                      localStorage.removeItem('selectedBooking');
-                      window.location = 'mybookings.html';
-                    }, 2100);
+                  // show centered toast and redirect
+                  showCenterToast('Payment successful & booking confirmed!', 2000);
+                  setTimeout(() => {
+                    localStorage.removeItem('selectedBooking');
+                    window.location = 'mybookings.html';
+                  }, 2100);
 
-                  } catch (err) {
-                    console.error(err);
-                    alert('Error saving booking or wallet entry. Contact support.');
-                  }
-                });
+                } catch (err) {
+                  console.error(err);
+                  alert('Error saving booking or wallet entry. Contact support.');
+                }
+              });
+
+            } catch (error) {
+              if (error.message !== 'Payment cancelled') {
+                console.error('Payment failed:', error);
+                alert('Payment failed. Please try again.');
               }
-            }).open();
-          });
+            }
+          }
+
+          upiBtn.addEventListener('click', () => handlePayment('upi'));
+          directUpiBtn.addEventListener('click', handleDirectUPI);
+          otherBtn.addEventListener('click', () => handlePayment('other'));
         }
       });
     }
