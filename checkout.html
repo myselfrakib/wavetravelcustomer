@@ -281,6 +281,1039 @@
     // Get device information
     const deviceInfo = getDeviceInfo();
 
+    // Backend API configuration
+    const BACKEND_URL = 'https://wavetravel-razorpay-backend.onrender.com';
+
+    // API helper functions
+    async function createOrder(orderData) {
+      try {
+        const response = await fetch(`${BACKEND_URL}/create-order`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderData)
+        });
+
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to create order');
+        }
+
+        return data.order;
+      } catch (error) {
+        console.error('Error creating order:', error);
+        throw error;
+      }
+    }
+
+    async function verifyPayment(verificationData) {
+      try {
+        const response = await fetch(`${BACKEND_URL}/verify-payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(verificationData)
+        });
+
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Payment verification failed');
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Error verifying payment:', error);
+        throw error;
+      }
+    }
+
+    // Function to configure Razorpay based on device
+    function getRazorpayConfig(baseConfig) {
+      const config = { ...baseConfig };
+      
+      if (deviceInfo.isMobile) {
+        // Mobile-specific configuration
+        config.modal = {
+          ...config.modal,
+          backdropclose: false, // Prevent accidental closes on mobile
+          escape: false,
+          handleback: true,
+          confirm_close: true
+        };
+        
+        // Mobile-specific theme
+        config.theme = {
+          color: '#0077ff',
+          backdrop_color: 'rgba(0,0,0,0.6)'
+        };
+        
+        // For mobile browsers, ensure proper handling
+        if (deviceInfo.isPhone) {
+          config.readonly = {
+            contact: true, // Make contact readonly on mobile to avoid issues
+            email: false,
+            name: true
+          };
+        }
+        
+        // iOS Safari specific handling
+        if (deviceInfo.isiOS && deviceInfo.isSafari) {
+          config.remember_customer = false; // Avoid issues with Safari's restrictions
+        }
+        
+      } else {
+        // Desktop-specific configuration
+        config.theme = {
+          color: '#0077ff'
+        };
+      }
+      
+      return config;
+    }
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db   = firebase.database();
+    const auth = firebase.auth();
+
+    const summaryEl = document.getElementById('summary');
+    const payBtn    = document.getElementById('payBtn');
+    const termsChk  = document.getElementById('termsChk');
+    const termsBox  = document.getElementById('termsBox');
+    const tickSvg   = document.getElementById('termsTick');
+
+    const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
+
+    // centered toast helper
+    function showCenterToast(message, duration = 2200) {
+      const toast = document.getElementById('center-toast');
+      const text = document.getElementById('center-toast-text');
+      text.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    // sync custom checkbox UI with real input
+    function setCheckboxChecked(state) {
+      if (state) {
+        termsBox.classList.add('checked');
+        tickSvg.style.display = 'inline-block';
+      } else {
+        termsBox.classList.remove('checked');
+        tickSvg.style.display = 'none';
+      }
+      termsChk.checked = !!state;
+      payBtn.disabled = !termsChk.checked;
+    }
+    termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
+    termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
+
+    if (!booking) {
+      summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Please select a slot first.</div>';
+      payBtn.disabled = true;
+    } else {
+      let bound = false;
+
+      function renderSummary(userName, userPhone) {
+        const pickup = booking.pickup || '—';
+        const dropoff = booking.dropoff || '—';
+        const date = booking.date || '—';
+        const time = booking.time || '—';
+        const seats = booking.seatsRequested || 1;
+        const fare = booking.fare || 0;
+        summaryEl.innerHTML = `
+          <div class="summary-grid" role="region" aria-label="Booking summary">
+            <div>
+              <div class="card-heading">Passenger</div>
+              <div class="info-row" style="margin-bottom:10px">
+                <div class="icon"><i class="fas fa-user"></i></div>
+                <div class="meta">
+                  <div class="label">${userName || 'Guest'}</div>
+                  <div class="val">${userPhone || 'No phone'}</div>
+                </div>
+              </div>
+
+              <div class="card-heading">Route</div>
+              <div class="info-row">
+                <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
+                <div class="meta">
+                  <div class="label">Pickup</div>
+                  <div class="val">${pickup}</div>
+                </div>
+              </div>
+              <div style="height:8px"></div>
+              <div class="info-row">
+                <div class="icon" style="background: linear-gradient(180deg,#ffdede,#fff7f7); color:var(--danger)"><i class="fas fa-map-pin"></i></div>
+                <div class="meta">
+                  <div class="label">Dropoff</div>
+                  <div class="val">${dropoff}</div>
+                </div>
+              </div>
+
+              <div style="height:12px"></div>
+
+              <div class="details" aria-hidden="false">
+                <div class="detail-pill">
+                  <small>Date</small>
+                  <strong>${formatDate(date)}</strong>
+                </div>
+                <div class="detail-pill">
+                  <small>Time</small>
+                  <strong>${formatTime(time)}</strong>
+                </div>
+                <div class="detail-pill">
+                  <small>Seats</small>
+                  <strong>${seats}</strong>
+                </div>
+                <div class="detail-pill">
+                  <small>Fare</small>
+                  <strong>₹${fare}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="fare-box" aria-hidden="true">
+              <div class="label">Amount to pay</div>
+              <div class="amt">₹${fare}</div>
+              <div class="muted" style="margin-top:6px;font-weight:600">Secure payment</div>
+            </div>
+          </div>
+        `;
+      }
+
+      auth.onAuthStateChanged(async user => {
+        if (!user) {
+          alert('Please login first.');
+          window.location = 'index.html';
+          return;
+        }
+
+        let dbUid = user.uid;
+        let userData = null;
+
+        const snapUid = await db.ref(`users/${dbUid}`).once('value');
+        if (snapUid.exists()) {
+          userData = snapUid.val();
+        } else {
+          if (user.phoneNumber) {
+            const phoneSnap = await db.ref("users")
+              .orderByChild("phone")
+              .equalTo(user.phoneNumber)
+              .once("value");
+            if (phoneSnap.exists()) {
+              const rec = phoneSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
+          }
+          if (!userData && user.email) {
+            const emailSnap = await db.ref("users")
+              .orderByChild("email")
+              .equalTo(user.email)
+              .once("value");
+            if (emailSnap.exists()) {
+              const rec = emailSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
+          }
+        }
+
+        if (!userData) {
+          summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Profile not found. Cannot proceed.</div>';
+          payBtn.disabled = true;
+          return;
+        }
+
+        const { name, phone } = userData;
+        renderSummary(name, phone);
+        setCheckboxChecked(false);
+
+        if (!bound) {
+          bound = true;
+
+          termsChk.addEventListener('change', () => { payBtn.disabled = !termsChk.checked; });
+
+          payBtn.addEventListener('click', async () => {
+            if (!termsChk.checked) return;
+
+            // Disable button and show loading
+            payBtn.disabled = true;
+            payBtn.textContent = 'Processing...';
+
+            const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+
+            try {
+              // Pre-check seat availability
+              const snap = await slotRef.once('value');
+              if (!snap.exists()) {
+                alert('Slot no longer exists.');
+                return;
+              }
+              const cur = snap.val();
+              const available = parseInt(cur.seats, 10);
+              const requested = parseInt(booking.seatsRequested, 10);
+              if (isNaN(available) || isNaN(requested)) {
+                alert('Seat information invalid. Contact support.');
+                return;
+              }
+              if (available < requested) {
+                alert(`Only ${available} seats left. Please reduce seats or choose another slot.`);
+                return;
+              }
+
+              // Create order on backend
+              const orderData = {
+                amount: booking.fare,
+                currency: 'INR',
+                receipt: `booking_${booking.slotKey}_${Date.now()}`,
+                notes: {
+                  booking_id: booking.slotKey,
+                  driver_id: booking.driverId,
+                  user_id: dbUid,
+                  user_name: name,
+                  user_phone: phone,
+                  pickup: booking.pickup,
+                  dropoff: booking.dropoff,
+                  date: booking.date,
+                  time: booking.time,
+                  seats: booking.seatsRequested,
+                  device_type: deviceInfo.isPhone ? 'mobile' : deviceInfo.isTablet ? 'tablet' : 'desktop',
+                  platform: deviceInfo.isAndroid ? 'android' : deviceInfo.isiOS ? 'ios' : 'web'
+                }
+              };
+
+              const order = await createOrder(orderData);
+
+              // Base Razorpay configuration
+              const baseRazorpayConfig = {
+                key: 'rzp_live_RJxLTulsCPKQqD',
+                amount: order.amount,
+                currency: order.currency,
+                name: 'WaveTravel',
+                description: 'Ride Booking',
+                image: '', // Add your logo URL here if needed
+                order_id: order.id,
+                prefill: { 
+                  name, 
+                  contact: phone, 
+                  email: user.email || '' 
+                },
+                notes: orderData.notes,
+                handler: async (response) => {
+                  try {
+                    // Verify payment on backend
+                    const verificationData = {
+                      razorpay_order_id: response.razorpay_order_id,
+                      razorpay_payment_id: response.razorpay_payment_id,
+                      razorpay_signature: response.razorpay_signature,
+                      booking_details: booking
+                    };
+
+                    const verificationResult = await verifyPayment(verificationData);
+
+                    if (verificationResult.success) {
+                      // Payment verified successfully, now update seats and save booking
+                      slotRef.transaction(cur => {
+                        if (!cur) return cur;
+                        const currentSeats = parseInt(cur.seats, 10);
+                        const requested = parseInt(booking.seatsRequested, 10);
+                        if (isNaN(currentSeats) || isNaN(requested)) return cur;
+                        if (currentSeats < requested) return;
+                        const newSeats = currentSeats - requested;
+                        return { ...cur, seats: String(newSeats) };
+                      }, async (error, committed) => {
+                        if (error) {
+                          console.error('Seat deduction failed:', error);
+                          alert('Seat deduction failed. Payment was successful. Please contact support.');
+                          return;
+                        }
+                        if (!committed) {
+                          alert('Seats just ran out. Payment was successful. Please contact support for refund/alternate slot.');
+                          return;
+                        }
+
+                        try {
+                          const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+                          const newBookingRef = bookingsRef.push();
+                          const bookingData = {
+                            ...booking,
+                            userId: dbUid,
+                            userName: name,
+                            userPhone: phone,
+                            orderId: response.razorpay_order_id,
+                            paymentId: response.razorpay_payment_id,
+                            bookedAt: new Date().toISOString(),
+                            status: 'confirmed',
+                            deviceInfo: {
+                              isMobile: deviceInfo.isMobile,
+                              isPhone: deviceInfo.isPhone,
+                              platform: deviceInfo.isAndroid ? 'Android' : deviceInfo.isiOS ? 'iOS' : 'Other'
+                            },
+                            paymentDetails: verificationResult.payment
+                          };
+
+                          await newBookingRef.set(bookingData);
+
+                          // driver wallet entry
+                          await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
+                            amount: booking.fare * 0.6,
+                            status: 'unpaid',
+                            booking: bookingData,
+                            date: new Date().toISOString()
+                          });
+
+                          // show centered toast and redirect
+                          showCenterToast('Payment successful & booking confirmed!', 2000);
+                          setTimeout(() => {
+                            localStorage.removeItem('selectedBooking');
+                            window.location = 'mybookings.html';
+                          }, 2100);
+
+                        } catch (err) {
+                          console.error('Error saving booking:', err);
+                          alert('Payment successful but error saving booking. Please contact support with payment ID: ' + response.razorpay_payment_id);
+                        }
+                      });
+                    } else {
+                      alert('Payment verification failed. Please contact support.');
+                    }
+                  } catch (verificationError) {
+                    console.error('Payment verification error:', verificationError);
+                    alert('Payment may be successful but verification failed. Please contact support with payment ID: ' + response.razorpay_payment_id);
+                  }
+                },
+                modal: {
+                  ondismiss: function() {
+                    console.log('Payment cancelled by user');
+                    payBtn.disabled = false;
+                    payBtn.textContent = 'Pay & Book';
+                  }
+                }
+              };
+
+              // Get device-optimized Razorpay configuration
+              const razorpayConfig = getRazorpayConfig(baseRazorpayConfig);
+
+              // Initialize Razorpay with device-optimized config
+              try {
+                const razorpay = new Razorpay(razorpayConfig);
+                razorpay.open();
+                
+                // Re-enable button in case user closes without paying
+                payBtn.disabled = false;
+                payBtn.textContent = 'Pay & Book';
+                
+              } catch (razorpayError) {
+                console.error('Razorpay initialization failed:', razorpayError);
+                alert('Payment gateway initialization failed. Please try again or contact support.');
+                payBtn.disabled = false;
+                payBtn.textContent = 'Pay & Book';
+              }
+
+            } catch (e) {
+              console.error('Error during payment process:', e);
+              alert('Failed to initiate payment. Please try again.');
+              payBtn.disabled = false;
+              payBtn.textContent = 'Pay & Book';
+            }
+          });
+        }
+      });
+    }
+
+    function formatDate(d) {
+      if (!d || typeof d !== 'string') return d || '-';
+      const [y, m, dd] = d.split('-');
+      if (!dd) return d;
+      return `${dd}/${m}/${y}`;
+    }
+    function formatTime(t) {
+      if (!t || typeof t !== 'string') return t || '-';
+      let [h, mm] = t.split(':').map(Number);
+      if (isNaN(h)) return t;
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
+    }
+
+    // Handle orientation changes on mobile
+    if (deviceInfo.isMobile) {
+      window.addEventListener('orientationchange', function() {
+        setTimeout(function() {
+          // Force a layout recalculation after orientation change
+          window.scrollTo(0, 1);
+          window.scrollTo(0, 0);
+        }, 500);
+      });
+    };
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Device orientation
+      const isPortrait = screenHeight > screenWidth;
+      const isLandscape = screenWidth > screenHeight;
+      
+      // Browser detection
+      const isChrome = /chrome|chromium|crios/i.test(userAgent);
+      const isSafari = /safari/i.test(userAgent) && !/chrome|chromium|crios/i.test(userAgent);
+      const isFirefox = /firefox|fxios/i.test(userAgent);
+      const isEdge = /edge|edgios/i.test(userAgent);
+      
+      return {
+        isMobile,
+        isPhone,
+        isTablet,
+        isDesktop,
+        isAndroid,
+        isiOS,
+        isTouchDevice,
+        isPortrait,
+        isLandscape,
+        isChrome,
+        isSafari,
+        isFirefox,
+        isEdge,
+        screenWidth,
+        screenHeight,
+        viewportWidth,
+        viewportHeight,
+        userAgent: userAgent.substring(0, 100) + '...' // Truncated for display
+      };
+    }
+
+    // Get device information
+    const deviceInfo = getDeviceInfo();
+
+    // Backend API configuration
+    const BACKEND_URL = 'https://wavetravel-razorpay-backend.onrender.com';
+
+    // API helper functions
+    async function createOrder(orderData) {
+      try {
+        const response = await fetch(`${BACKEND_URL}/create-order`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderData)
+        });
+
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to create order');
+        }
+
+        return data.order;
+      } catch (error) {
+        console.error('Error creating order:', error);
+        throw error;
+      }
+    }
+
+    async function verifyPayment(verificationData) {
+      try {
+        const response = await fetch(`${BACKEND_URL}/verify-payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(verificationData)
+        });
+
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Payment verification failed');
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Error verifying payment:', error);
+        throw error;
+      }
+    }
+
+    // Function to configure Razorpay based on device
+    function getRazorpayConfig(baseConfig) {
+      const config = { ...baseConfig };
+      
+      if (deviceInfo.isMobile) {
+        // Mobile-specific configuration
+        config.modal = {
+          ...config.modal,
+          backdropclose: false, // Prevent accidental closes on mobile
+          escape: false,
+          handleback: true,
+          confirm_close: true
+        };
+        
+        // Mobile-specific theme
+        config.theme = {
+          color: '#0077ff',
+          backdrop_color: 'rgba(0,0,0,0.6)'
+        };
+        
+        // For mobile browsers, ensure proper handling
+        if (deviceInfo.isPhone) {
+          config.readonly = {
+            contact: true, // Make contact readonly on mobile to avoid issues
+            email: false,
+            name: true
+          };
+        }
+        
+        // iOS Safari specific handling
+        if (deviceInfo.isiOS && deviceInfo.isSafari) {
+          config.remember_customer = false; // Avoid issues with Safari's restrictions
+        }
+        
+      } else {
+        // Desktop-specific configuration
+        config.theme = {
+          color: '#0077ff'
+        };
+      }
+      
+      return config;
+    }
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db   = firebase.database();
+    const auth = firebase.auth();
+
+    const summaryEl = document.getElementById('summary');
+    const payBtn    = document.getElementById('payBtn');
+    const termsChk  = document.getElementById('termsChk');
+    const termsBox  = document.getElementById('termsBox');
+    const tickSvg   = document.getElementById('termsTick');
+
+    const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
+
+    // centered toast helper
+    function showCenterToast(message, duration = 2200) {
+      const toast = document.getElementById('center-toast');
+      const text = document.getElementById('center-toast-text');
+      text.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    // sync custom checkbox UI with real input
+    function setCheckboxChecked(state) {
+      if (state) {
+        termsBox.classList.add('checked');
+        tickSvg.style.display = 'inline-block';
+      } else {
+        termsBox.classList.remove('checked');
+        tickSvg.style.display = 'none';
+      }
+      termsChk.checked = !!state;
+      payBtn.disabled = !termsChk.checked;
+    }
+    termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
+    termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
+
+    if (!booking) {
+      summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Please select a slot first.</div>';
+      payBtn.disabled = true;
+    } else {
+      let bound = false;
+
+      function renderSummary(userName, userPhone) {
+        const pickup = booking.pickup || '—';
+        const dropoff = booking.dropoff || '—';
+        const date = booking.date || '—';
+        const time = booking.time || '—';
+        const seats = booking.seatsRequested || 1;
+        const fare = booking.fare || 0;
+        summaryEl.innerHTML = `
+          <div class="summary-grid" role="region" aria-label="Booking summary">
+            <div>
+              <div class="card-heading">Passenger</div>
+              <div class="info-row" style="margin-bottom:10px">
+                <div class="icon"><i class="fas fa-user"></i></div>
+                <div class="meta">
+                  <div class="label">${userName || 'Guest'}</div>
+                  <div class="val">${userPhone || 'No phone'}</div>
+                </div>
+              </div>
+
+              <div class="card-heading">Route</div>
+              <div class="info-row">
+                <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
+                <div class="meta">
+                  <div class="label">Pickup</div>
+                  <div class="val">${pickup}</div>
+                </div>
+              </div>
+              <div style="height:8px"></div>
+              <div class="info-row">
+                <div class="icon" style="background: linear-gradient(180deg,#ffdede,#fff7f7); color:var(--danger)"><i class="fas fa-map-pin"></i></div>
+                <div class="meta">
+                  <div class="label">Dropoff</div>
+                  <div class="val">${dropoff}</div>
+                </div>
+              </div>
+
+              <div style="height:12px"></div>
+
+              <div class="details" aria-hidden="false">
+                <div class="detail-pill">
+                  <small>Date</small>
+                  <strong>${formatDate(date)}</strong>
+                </div>
+                <div class="detail-pill">
+                  <small>Time</small>
+                  <strong>${formatTime(time)}</strong>
+                </div>
+                <div class="detail-pill">
+                  <small>Seats</small>
+                  <strong>${seats}</strong>
+                </div>
+                <div class="detail-pill">
+                  <small>Fare</small>
+                  <strong>₹${fare}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="fare-box" aria-hidden="true">
+              <div class="label">Amount to pay</div>
+              <div class="amt">₹${fare}</div>
+              <div class="muted" style="margin-top:6px;font-weight:600">Secure payment</div>
+            </div>
+          </div>
+        `;
+      }
+
+      auth.onAuthStateChanged(async user => {
+        if (!user) {
+          alert('Please login first.');
+          window.location = 'index.html';
+          return;
+        }
+
+        let dbUid = user.uid;
+        let userData = null;
+
+        const snapUid = await db.ref(`users/${dbUid}`).once('value');
+        if (snapUid.exists()) {
+          userData = snapUid.val();
+        } else {
+          if (user.phoneNumber) {
+            const phoneSnap = await db.ref("users")
+              .orderByChild("phone")
+              .equalTo(user.phoneNumber)
+              .once("value");
+            if (phoneSnap.exists()) {
+              const rec = phoneSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
+          }
+          if (!userData && user.email) {
+            const emailSnap = await db.ref("users")
+              .orderByChild("email")
+              .equalTo(user.email)
+              .once("value");
+            if (emailSnap.exists()) {
+              const rec = emailSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
+          }
+        }
+
+        if (!userData) {
+          summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Profile not found. Cannot proceed.</div>';
+          payBtn.disabled = true;
+          return;
+        }
+
+        const { name, phone } = userData;
+        renderSummary(name, phone);
+        setCheckboxChecked(false);
+
+        if (!bound) {
+          bound = true;
+
+          termsChk.addEventListener('change', () => { payBtn.disabled = !termsChk.checked; });
+
+          payBtn.addEventListener('click', async () => {
+            if (!termsChk.checked) return;
+
+            // Disable button and show loading
+            payBtn.disabled = true;
+            payBtn.textContent = 'Processing...';
+
+            const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+
+            try {
+              // Pre-check seat availability
+              const snap = await slotRef.once('value');
+              if (!snap.exists()) {
+                alert('Slot no longer exists.');
+                return;
+              }
+              const cur = snap.val();
+              const available = parseInt(cur.seats, 10);
+              const requested = parseInt(booking.seatsRequested, 10);
+              if (isNaN(available) || isNaN(requested)) {
+                alert('Seat information invalid. Contact support.');
+                return;
+              }
+              if (available < requested) {
+                alert(`Only ${available} seats left. Please reduce seats or choose another slot.`);
+                return;
+              }
+
+              // Create order on backend
+              const orderData = {
+                amount: booking.fare,
+                currency: 'INR',
+                receipt: `booking_${booking.slotKey}_${Date.now()}`,
+                notes: {
+                  booking_id: booking.slotKey,
+                  driver_id: booking.driverId,
+                  user_id: dbUid,
+                  user_name: name,
+                  user_phone: phone,
+                  pickup: booking.pickup,
+                  dropoff: booking.dropoff,
+                  date: booking.date,
+                  time: booking.time,
+                  seats: booking.seatsRequested,
+                  device_type: deviceInfo.isPhone ? 'mobile' : deviceInfo.isTablet ? 'tablet' : 'desktop',
+                  platform: deviceInfo.isAndroid ? 'android' : deviceInfo.isiOS ? 'ios' : 'web'
+                }
+              };
+
+              const order = await createOrder(orderData);
+
+              // Base Razorpay configuration
+              const baseRazorpayConfig = {
+                key: 'rzp_live_RJxLTulsCPKQqD',
+                amount: order.amount,
+                currency: order.currency,
+                name: 'WaveTravel',
+                description: 'Ride Booking',
+                image: '', // Add your logo URL here if needed
+                order_id: order.id,
+                prefill: { 
+                  name, 
+                  contact: phone, 
+                  email: user.email || '' 
+                },
+                notes: orderData.notes,
+                handler: async (response) => {
+                  try {
+                    // Verify payment on backend
+                    const verificationData = {
+                      razorpay_order_id: response.razorpay_order_id,
+                      razorpay_payment_id: response.razorpay_payment_id,
+                      razorpay_signature: response.razorpay_signature,
+                      booking_details: booking
+                    };
+
+                    const verificationResult = await verifyPayment(verificationData);
+
+                    if (verificationResult.success) {
+                      // Payment verified successfully, now update seats and save booking
+                      slotRef.transaction(cur => {
+                        if (!cur) return cur;
+                        const currentSeats = parseInt(cur.seats, 10);
+                        const requested = parseInt(booking.seatsRequested, 10);
+                        if (isNaN(currentSeats) || isNaN(requested)) return cur;
+                        if (currentSeats < requested) return;
+                        const newSeats = currentSeats - requested;
+                        return { ...cur, seats: String(newSeats) };
+                      }, async (error, committed) => {
+                        if (error) {
+                          console.error('Seat deduction failed:', error);
+                          alert('Seat deduction failed. Payment was successful. Please contact support.');
+                          return;
+                        }
+                        if (!committed) {
+                          alert('Seats just ran out. Payment was successful. Please contact support for refund/alternate slot.');
+                          return;
+                        }
+
+                        try {
+                          const bookingsRef = db.ref(`bookings/${booking.driverId}`);
+                          const newBookingRef = bookingsRef.push();
+                          const bookingData = {
+                            ...booking,
+                            userId: dbUid,
+                            userName: name,
+                            userPhone: phone,
+                            orderId: response.razorpay_order_id,
+                            paymentId: response.razorpay_payment_id,
+                            bookedAt: new Date().toISOString(),
+                            status: 'confirmed',
+                            deviceInfo: {
+                              isMobile: deviceInfo.isMobile,
+                              isPhone: deviceInfo.isPhone,
+                              platform: deviceInfo.isAndroid ? 'Android' : deviceInfo.isiOS ? 'iOS' : 'Other'
+                            },
+                            paymentDetails: verificationResult.payment
+                          };
+
+                          await newBookingRef.set(bookingData);
+
+                          // driver wallet entry
+                          await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
+                            amount: booking.fare * 0.6,
+                            status: 'unpaid',
+                            booking: bookingData,
+                            date: new Date().toISOString()
+                          });
+
+                          // show centered toast and redirect
+                          showCenterToast('Payment successful & booking confirmed!', 2000);
+                          setTimeout(() => {
+                            localStorage.removeItem('selectedBooking');
+                            window.location = 'mybookings.html';
+                          }, 2100);
+
+                        } catch (err) {
+                          console.error('Error saving booking:', err);
+                          alert('Payment successful but error saving booking. Please contact support with payment ID: ' + response.razorpay_payment_id);
+                        }
+                      });
+                    } else {
+                      alert('Payment verification failed. Please contact support.');
+                    }
+                  } catch (verificationError) {
+                    console.error('Payment verification error:', verificationError);
+                    alert('Payment may be successful but verification failed. Please contact support with payment ID: ' + response.razorpay_payment_id);
+                  }
+                },
+                modal: {
+                  ondismiss: function() {
+                    console.log('Payment cancelled by user');
+                    payBtn.disabled = false;
+                    payBtn.textContent = 'Pay & Book';
+                  }
+                }
+              };
+
+              // Get device-optimized Razorpay configuration
+              const razorpayConfig = getRazorpayConfig(baseRazorpayConfig);
+
+              // Initialize Razorpay with device-optimized config
+              try {
+                const razorpay = new Razorpay(razorpayConfig);
+                razorpay.open();
+                
+                // Re-enable button in case user closes without paying
+                payBtn.disabled = false;
+                payBtn.textContent = 'Pay & Book';
+                
+              } catch (razorpayError) {
+                console.error('Razorpay initialization failed:', razorpayError);
+                alert('Payment gateway initialization failed. Please try again or contact support.');
+                payBtn.disabled = false;
+                payBtn.textContent = 'Pay & Book';
+              }
+
+            } catch (e) {
+              console.error('Error during payment process:', e);
+              alert('Failed to initiate payment. Please try again.');
+              payBtn.disabled = false;
+              payBtn.textContent = 'Pay & Book';
+            }
+          });
+        }
+      });
+    }
+
+    function formatDate(d) {
+      if (!d || typeof d !== 'string') return d || '-';
+      const [y, m, dd] = d.split('-');
+      if (!dd) return d;
+      return `${dd}/${m}/${y}`;
+    }
+    function formatTime(t) {
+      if (!t || typeof t !== 'string') return t || '-';
+      let [h, mm] = t.split(':').map(Number);
+      if (isNaN(h)) return t;
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
+    }
+
+    // Handle orientation changes on mobile
+    if (deviceInfo.isMobile) {
+      window.addEventListener('orientationchange', function() {
+        setTimeout(function() {
+          // Force a layout recalculation after orientation change
+          window.scrollTo(0, 1);
+          window.scrollTo(0, 0);
+        }, 500);
+      });
+    }
+  </script>;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Device orientation
+      const isPortrait = screenHeight > screenWidth;
+      const isLandscape = screenWidth > screenHeight;
+      
+      // Browser detection
+      const isChrome = /chrome|chromium|crios/i.test(userAgent);
+      const isSafari = /safari/i.test(userAgent) && !/chrome|chromium|crios/i.test(userAgent);
+      const isFirefox = /firefox|fxios/i.test(userAgent);
+      const isEdge = /edge|edgios/i.test(userAgent);
+      
+      return {
+        isMobile,
+        isPhone,
+        isTablet,
+        isDesktop,
+        isAndroid,
+        isiOS,
+        isTouchDevice,
+        isPortrait,
+        isLandscape,
+        isChrome,
+        isSafari,
+        isFirefox,
+        isEdge,
+        screenWidth,
+        screenHeight,
+        viewportWidth,
+        viewportHeight,
+        userAgent: userAgent.substring(0, 100) + '...' // Truncated for display
+      };
+    }
+
+    // Get device information
+    const deviceInfo = getDeviceInfo();
+
     // Function to configure Razorpay based on device
     function getRazorpayConfig(baseConfig) {
       const config = { ...baseConfig };
@@ -526,7 +1559,7 @@
 
             // Base Razorpay configuration
             const baseRazorpayConfig = {
-              key: 'rzp_live_RJxLTulsCPKQqD', // Using test key to avoid 401 errors
+              key: 'rzp_test_9WzaX8z8BGjMk2', // Using test key to avoid 401 errors
               amount: booking.fare * 100,
               currency: 'INR',
               name: 'WaveTravel',
