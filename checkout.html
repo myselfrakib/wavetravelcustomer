@@ -18,42 +18,146 @@
     }
     * { box-sizing: border-box; }
     html,body { height:100%; margin:0; font-family:'Poppins',sans-serif; background:var(--bg-grad); color: #0b1220; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
-    .page { min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:18px; padding-bottom:80px; }
-    .wrap { width:100%; max-width:720px; }
+    .page {
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:18px;
+      padding-bottom:80px;
+    }
+    .wrap {
+      width:100%;
+      max-width:720px;
+    }
 
-    header.app-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
-    .app-title { color:#fff; font-size:1.25rem; font-weight:700; letter-spacing:0.2px; }
-    .back-btn { background:rgba(255,255,255,0.12); border:none; color:#fff; padding:8px 10px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+    header.app-header {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .app-title {
+      color:#fff;
+      font-size:1.25rem;
+      font-weight:700;
+      letter-spacing:0.2px;
+    }
+    .back-btn {
+      background:rgba(255,255,255,0.12);
+      border:none; color:#fff; padding:8px 10px; border-radius:10px; cursor:pointer;
+      display:inline-flex; align-items:center; gap:8px;
+    }
 
-    .summary-card { background: var(--card-bg); border-radius:14px; padding:16px; box-shadow: 0 6px 22px rgba(11,18,32,0.12); color:var(--dark, #0b1220); overflow:hidden; }
-    .summary-grid { display:grid; grid-template-columns: 1fr auto; gap:12px 16px; align-items:center; }
+    .summary-card {
+      background: var(--card-bg);
+      border-radius:14px;
+      padding:16px;
+      box-shadow: 0 6px 22px rgba(11,18,32,0.12);
+      color:var(--dark, #0b1220);
+      overflow:hidden;
+    }
+    .summary-grid {
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:12px 16px;
+      align-items:center;
+    }
 
-    .info-row { display:flex; gap:12px; align-items:center; background: rgba(11,18,32,0.02); padding:10px; border-radius:10px; }
-    .info-row .icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(0,119,255,0.12), rgba(0,119,255,0.06)); color:var(--primary); font-size:1.15rem; flex-shrink:0; }
-    .info-row .meta { display:flex; flex-direction:column; }
+    /* nice info rows */
+    .info-row {
+      display:flex; gap:12px; align-items:center;
+      background: rgba(11,18,32,0.02);
+      padding:10px; border-radius:10px;
+    }
+    .info-row .icon {
+      width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(0,119,255,0.12), rgba(0,119,255,0.06));
+      color:var(--primary); font-size:1.15rem;
+      flex-shrink:0;
+    }
+    .info-row .meta {
+      display:flex; flex-direction:column;
+    }
     .meta .label { font-weight:700; color:#071124; font-size:0.95rem; }
     .meta .val { color:var(--muted); font-size:0.9rem; margin-top:2px; max-width:100%; word-break:break-word; }
 
-    .summary-grid .fare-box { background: linear-gradient(180deg,#fdf6e6,#fff6d9); border-radius:10px; padding:12px 16px; text-align:center; min-width:140px; align-self:center; box-shadow: 0 4px 14px rgba(2,6,23,0.06); }
+    .summary-grid .fare-box {
+      background: linear-gradient(180deg,#fdf6e6,#fff6d9);
+      border-radius:10px;
+      padding:12px 16px;
+      text-align:center;
+      min-width:140px;
+      align-self:center;
+      box-shadow: 0 4px 14px rgba(2,6,23,0.06);
+    }
     .fare-box .label { color:#8a6b00; font-weight:700; font-size:0.9rem; }
     .fare-box .amt { font-size:1.25rem; font-weight:800; color:#402a00; margin-top:6px; }
 
-    .details { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .detail-pill { background: rgba(11,18,32,0.03); padding:8px; border-radius:10px; display:flex; flex-direction:column; }
+    .details {
+      margin-top:12px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .detail-pill {
+      background: rgba(11,18,32,0.03);
+      padding:8px; border-radius:10px;
+      display:flex; flex-direction:column;
+    }
     .detail-pill small { color:var(--muted); font-size:0.82rem; }
     .detail-pill strong { font-size:0.98rem; margin-top:6px; color:#071124; }
 
-    .terms { margin-top:14px; display:flex; gap:10px; align-items:center; }
-    .checkbox { width:22px; height:22px; border-radius:6px; border:2px solid rgba(7,17,36,0.08); background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+    /* terms */
+    .terms {
+      margin-top:14px; display:flex; gap:10px; align-items:center;
+    }
+    .checkbox {
+      width:22px; height:22px; border-radius:6px; border:2px solid rgba(7,17,36,0.08);
+      background:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+    }
     .checkbox input { display:none; }
     .checkbox.checked { background:var(--primary); border-color:var(--primary); color:#fff; }
+
     .terms-label { font-size:0.95rem; color:#fff; text-shadow: 0 1px 0 rgba(11,18,32,0.12); }
 
-    #payBtn { margin-top:16px; width:100%; padding:12px 14px; background: linear-gradient(90deg,var(--primary), #005dc1); border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1.05rem; box-shadow: 0 8px 26px rgba(2,6,23,0.12); transition: transform .14s ease, opacity .12s ease; }
+    /* Pay button */
+    #payBtn {
+      margin-top:16px;
+      width:100%;
+      padding:12px 14px;
+      background: linear-gradient(90deg,var(--primary), #005dc1);
+      border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1.05rem;
+      box-shadow: 0 8px 26px rgba(2,6,23,0.12);
+      transition: transform .14s ease, opacity .12s ease;
+    }
     #payBtn:active { transform: translateY(1px) scale(.998); }
     #payBtn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
 
-    #center-toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.95); background: rgba(11,18,32,0.94); color: #fff; padding: 28px 36px; border-radius: 14px; box-shadow: 0 12px 36px rgba(2,6,23,0.6); opacity: 0; pointer-events: none; transition: opacity .22s ease, transform .22s ease; z-index: 9999; font-weight: 700; min-width: 420px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 1.05rem; }
+    /* Centered toast — doubled size */
+    #center-toast {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      background: rgba(11,18,32,0.94);
+      color: #fff;
+      padding: 28px 36px;
+      border-radius: 14px;
+      box-shadow: 0 12px 36px rgba(2,6,23,0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+      z-index: 9999;
+      font-weight: 700;
+      min-width: 420px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      font-size: 1.05rem;
+    }
     #center-toast.show { opacity:1; transform: translate(-50%,-50%) scale(1); pointer-events:auto; }
     #center-toast .icon { width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:var(--success); color:#fff; font-size:18px; flex:0 0 40px; }
 
@@ -71,12 +175,15 @@
 <body>
   <div class="page">
     <div class="wrap">
+
       <header class="app-header">
         <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
         <div class="app-title">Confirm &amp; Pay</div>
       </header>
 
-      <div id="summary" class="summary-card" aria-live="polite">Loading booking…</div>
+      <div id="summary" class="summary-card" aria-live="polite">
+        Loading booking…
+      </div>
 
       <div style="height:8px;"></div>
 
@@ -90,7 +197,9 @@
         <div class="terms-label">I agree to the <a href="terms.html" style="color:#fff; text-decoration:underline;">Terms &amp; Conditions</a></div>
       </div>
 
+      <!-- PAY BUTTON placed right after terms (per your instruction) -->
       <button id="payBtn" disabled>Pay &amp; Book</button>
+
     </div>
   </div>
 
@@ -101,12 +210,16 @@
 
   <div style="height: 80px;"></div>
 
+  <!-- Firebase & Razorpay -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <script>
+    // Mark that page is opened inside WaveTravel WebView mobile app
+    window.isWaveTravelApp = true;
+
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -128,6 +241,7 @@
 
     const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
+    // centered toast helper
     function showCenterToast(message, duration = 2200) {
       const toast = document.getElementById('center-toast');
       const text = document.getElementById('center-toast-text');
@@ -136,6 +250,7 @@
       setTimeout(() => toast.classList.remove('show'), duration);
     }
 
+    // sync custom checkbox UI with real input
     function setCheckboxChecked(state) {
       if (state) {
         termsBox.classList.add('checked');
@@ -195,10 +310,22 @@
               <div style="height:12px"></div>
 
               <div class="details" aria-hidden="false">
-                <div class="detail-pill"><small>Date</small><strong>${formatDate(date)}</strong></div>
-                <div class="detail-pill"><small>Time</small><strong>${formatTime(time)}</strong></div>
-                <div class="detail-pill"><small>Seats</small><strong>${seats}</strong></div>
-                <div class="detail-pill"><small>Fare</small><strong>₹${fare}</strong></div>
+                <div class="detail-pill">
+                  <small>Date</small>
+                  <strong>${formatDate(date)}</strong>
+                </div>
+                <div class="detail-pill">
+                  <small>Time</small>
+                  <strong>${formatTime(time)}</strong>
+                </div>
+                <div class="detail-pill">
+                  <small>Seats</small>
+                  <strong>${seats}</strong>
+                </div>
+                <div class="detail-pill">
+                  <small>Fare</small>
+                  <strong>₹${fare}</strong>
+                </div>
               </div>
             </div>
 
@@ -222,15 +349,30 @@
         let userData = null;
 
         const snapUid = await db.ref(`users/${dbUid}`).once('value');
-        if (snapUid.exists()) userData = snapUid.val();
-        else {
+        if (snapUid.exists()) {
+          userData = snapUid.val();
+        } else {
           if (user.phoneNumber) {
-            const phoneSnap = await db.ref("users").orderByChild("phone").equalTo(user.phoneNumber).once("value");
-            if (phoneSnap.exists()) { const rec = phoneSnap.val(); dbUid = Object.keys(rec)[0]; userData = rec[dbUid]; }
+            const phoneSnap = await db.ref("users")
+              .orderByChild("phone")
+              .equalTo(user.phoneNumber)
+              .once("value");
+            if (phoneSnap.exists()) {
+              const rec = phoneSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
           }
           if (!userData && user.email) {
-            const emailSnap = await db.ref("users").orderByChild("email").equalTo(user.email).once("value");
-            if (emailSnap.exists()) { const rec = emailSnap.val(); dbUid = Object.keys(rec)[0]; userData = rec[dbUid]; }
+            const emailSnap = await db.ref("users")
+              .orderByChild("email")
+              .equalTo(user.email)
+              .once("value");
+            if (emailSnap.exists()) {
+              const rec = emailSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
           }
         }
 
@@ -247,54 +389,97 @@
         if (!bound) {
           bound = true;
 
-          const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-          const isWebView = window.isWaveTravelApp || new URLSearchParams(location.search).get('webview') === '1';
-          const allowUPI = isMobile || isWebView;
+          termsChk.addEventListener('change', () => { payBtn.disabled = !termsChk.checked; });
 
           payBtn.addEventListener('click', async () => {
             if (!termsChk.checked) return;
 
             const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
+
             try {
               const snap = await slotRef.once('value');
-              if (!snap.exists()) { alert('Slot no longer exists.'); return; }
+              if (!snap.exists()) {
+                alert('Slot no longer exists.');
+                return;
+              }
               const cur = snap.val();
-              const available = parseInt(cur.seats,10);
-              const requested = parseInt(booking.seatsRequested,10);
-              if (isNaN(available) || isNaN(requested)) { alert('Seat info invalid.'); return; }
-              if (available < requested) { alert(`Only ${available} seats left.`); return; }
-            } catch(e) { console.error(e); alert('Failed to verify seats.'); return; }
+              const available = parseInt(cur.seats, 10);
+              const requested = parseInt(booking.seatsRequested, 10);
+              if (isNaN(available) || isNaN(requested)) {
+                alert('Seat information invalid. Contact support.');
+                return;
+              }
+              if (available < requested) {
+                alert(`Only ${available} seats left. Please reduce seats or choose another slot.`);
+                return;
+              }
+            } catch (e) {
+              console.error('Pre-check failed:', e);
+              alert('Failed to verify seats. Please try again.');
+              return;
+            }
 
             new Razorpay({
               key: 'rzp_live_RIzA7k5JUhsCRp',
-              amount: booking.fare*100,
+              amount: booking.fare * 100,
               currency: 'INR',
               name: 'WaveTravel',
               description: 'Ride Booking',
-              prefill: { name, contact: phone, email: user.email||'' },
-              method: allowUPI ? 'upi' : undefined,
-              handler: async function(res){
+              prefill: { name, contact: phone, email: user.email || '' },
+              handler: res => {
                 slotRef.transaction(cur => {
-                  if(!cur) return cur;
-                  const currentSeats = parseInt(cur.seats,10);
-                  const requested = parseInt(booking.seatsRequested,10);
-                  if(isNaN(currentSeats) || isNaN(requested)) return cur;
-                  if(currentSeats < requested) return;
+                  if (!cur) return cur;
+                  const currentSeats = parseInt(cur.seats, 10);
+                  const requested = parseInt(booking.seatsRequested, 10);
+                  if (isNaN(currentSeats) || isNaN(requested)) return cur;
+                  if (currentSeats < requested) return;
                   const newSeats = currentSeats - requested;
-                  return {...cur, seats: String(newSeats)};
-                }, async (error, committed)=>{
-                  if(error){ console.error(error); alert('Seat deduction failed.'); return; }
-                  if(!committed){ alert('Seats ran out. Payment captured; contact support.'); return; }
+                  return { ...cur, seats: String(newSeats) };
+                }, async (error, committed) => {
+                  if (error) {
+                    console.error('Seat deduction failed:', error);
+                    alert('Seat deduction failed. Please contact support.');
+                    return;
+                  }
+                  if (!committed) {
+                    alert('Seats just ran out. Payment captured; please contact support for refund/alternate slot.');
+                    return;
+                  }
 
                   try {
                     const bookingsRef = db.ref(`bookings/${booking.driverId}`);
                     const newBookingRef = bookingsRef.push();
-                    const bookingData = {...booking, userId: dbUid, userName:name, userPhone:phone, paymentId:res.razorpay_payment_id, bookedAt:new Date().toISOString(), status:'confirmed'};
+                    const bookingData = {
+                      ...booking,
+                      userId: dbUid,
+                      userName: name,
+                      userPhone: phone,
+                      paymentId: res.razorpay_payment_id,
+                      bookedAt: new Date().toISOString(),
+                      status: 'confirmed'
+                    };
+
                     await newBookingRef.set(bookingData);
-                    await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({amount:booking.fare*0.6,status:'unpaid',booking:bookingData,date:new Date().toISOString()});
-                    showCenterToast('Payment successful & booking confirmed!',2000);
-                    setTimeout(()=>{ localStorage.removeItem('selectedBooking'); window.location='mybookings.html'; },2100);
-                  } catch(err){ console.error(err); alert('Error saving booking.'); }
+
+                    // driver wallet entry unchanged
+                    await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
+                      amount: booking.fare * 0.6,
+                      status: 'unpaid',
+                      booking: bookingData,
+                      date: new Date().toISOString()
+                    });
+
+                    // show centered toast and redirect
+                    showCenterToast('Payment successful & booking confirmed!', 2000);
+                    setTimeout(() => {
+                      localStorage.removeItem('selectedBooking');
+                      window.location = 'mybookings.html';
+                    }, 2100);
+
+                  } catch (err) {
+                    console.error(err);
+                    alert('Error saving booking or wallet entry. Contact support.');
+                  }
                 });
               }
             }).open();
@@ -303,8 +488,20 @@
       });
     }
 
-    function formatDate(d){ if(!d||typeof d!=='string') return d||'-'; const [y,m,dd] = d.split('-'); if(!dd) return d; return `${dd}/${m}/${y}`; }
-    function formatTime(t){ if(!t||typeof t!=='string') return t||'-'; let [h,mm]=t.split(':').map(Number); if(isNaN(h)) return t; const suffix=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`; }
+    function formatDate(d) {
+      if (!d || typeof d !== 'string') return d || '-';
+      const [y, m, dd] = d.split('-');
+      if (!dd) return d;
+      return `${dd}/${m}/${y}`;
+    }
+    function formatTime(t) {
+      if (!t || typeof t !== 'string') return t || '-';
+      let [h, mm] = t.split(':').map(Number);
+      if (isNaN(h)) return t;
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
+    }
   </script>
 </body>
 </html>
