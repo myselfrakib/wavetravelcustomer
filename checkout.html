@@ -295,53 +295,56 @@
       return isInWebView() && isMobileDevice();
     }
 
-    // Force mobile user agent and modify browser properties for Razorpay UPI intent
-    function forceRazorpayUPIIntent() {
-      // Override user agent to appear as mobile Chrome
+    // Enhanced mobile detection and user agent override
+    function forceRazorpayMobileMode() {
+      // Set a proper mobile user agent that Razorpay recognizes
+      const mobileUA = 'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+      
+      // Override user agent
       Object.defineProperty(navigator, 'userAgent', {
-        value: 'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-        writable: false,
+        get: function() { return mobileUA; },
         configurable: true
       });
       
       // Override platform
       Object.defineProperty(navigator, 'platform', {
-        value: 'Linux armv7l',
-        writable: false,
+        get: function() { return 'Linux armv7l'; },
         configurable: true
       });
       
-      // Add mobile-specific properties
-      Object.defineProperty(window, 'orientation', {
-        value: 0,
-        writable: true,
-        configurable: true
-      });
-      
-      // Force touch events
-      window.TouchEvent = window.TouchEvent || class TouchEvent extends Event {};
-      
-      // Override screen properties to appear mobile
+      // Add mobile screen properties
       Object.defineProperty(screen, 'width', {
-        value: 393,
-        writable: false,
+        get: function() { return 393; },
         configurable: true
       });
       
       Object.defineProperty(screen, 'height', {
-        value: 851,
-        writable: false,
+        get: function() { return 851; },
         configurable: true
       });
       
       // Add device pixel ratio
-      Object.defineProperty(window, 'devicePixelRatio', {
-        value: 3,
-        writable: false,
-        configurable: true
-      });
+      if (!window.devicePixelRatio || window.devicePixelRatio === 1) {
+        Object.defineProperty(window, 'devicePixelRatio', {
+          get: function() { return 3; },
+          configurable: true
+        });
+      }
       
-      console.log('Razorpay UPI intent mode enabled');
+      // Add touch support
+      if (!window.TouchEvent) {
+        window.TouchEvent = class TouchEvent extends Event {};
+      }
+      
+      // Add orientation
+      if (typeof window.orientation === 'undefined') {
+        Object.defineProperty(window, 'orientation', {
+          get: function() { return 0; },
+          configurable: true
+        });
+      }
+      
+      console.log('Mobile mode forced for Razorpay - UA:', navigator.userAgent);
     }
 
     // UPI Intent generator
@@ -610,13 +613,13 @@
         renderSummary(name, phone);
         setCheckboxChecked(false);
 
-        // Force Razorpay UPI intent mode if in WebView
+        // Force Razorpay mobile mode if in WebView for UPI intent
         if (shouldShowUPIDirect()) {
           upiDirectBtn.style.display = 'block';
-          console.log('WebView detected - forcing Razorpay UPI intent mode');
+          console.log('WebView detected - forcing mobile mode for UPI intent');
           
-          // Force all browser properties to appear as mobile for Razorpay
-          forceRazorpayUPIIntent();
+          // Apply mobile overrides immediately
+          forceRazorpayMobileMode();
         }
 
         if (!bound) {
@@ -656,141 +659,66 @@
               return;
             }
 
-            // Enhanced Razorpay options for WebView UPI intent
+            // Simplified Razorpay options for WebView UPI intent
             const rzpOptions = {
               key: 'rzp_live_RJxLTulsCPKQqD',
               amount: booking.fare * 100,
               currency: 'INR',
               name: 'WaveTravel',
               description: 'Ride Booking',
-              order_id: `order_${Date.now()}`, // Add order ID for better tracking
               prefill: { 
                 name, 
                 contact: phone, 
                 email: user.email || ''
               },
-              config: {
-                display: {
-                  blocks: {
-                    utib: {
-                      name: "Pay using UPI",
-                      instruments: [
-                        {
-                          method: "upi",
-                          flows: ["intent", "collect", "qr"] // Prioritize intent
-                        }
-                      ]
-                    },
-                    banks: {
-                      name: "Other Payment Methods",
-                      instruments: [
-                        { method: "card" },
-                        { method: "netbanking" }
-                      ]
-                    }
-                  },
-                  hide: [
-                    {
-                      method: "card"
-                    },
-                    {
-                      method: "netbanking" 
-                    },
-                    {
-                      method: "wallet"
-                    }
-                  ],
-                  sequence: ["utib"], // Only show UPI block
-                  preferences: {
-                    show_default_blocks: false // Don't show default blocks
-                  }
-                }
-              },
-              method: {
-                upi: {
-                  flow: "intent" // Force UPI intent flow
-                }
-              },
               theme: {
-                color: '#0077ff',
-                backdrop_color: 'rgba(0,0,0,0.6)',
-                image_padding: false
-              },
-              modal: {
-                backdropclose: true,
-                escape: true,
-                handleback: true,
-                confirm_close: true,
-                ondismiss: function() {
-                  console.log('Razorpay modal dismissed');
-                },
-                animation: true
-              },
-              remember_customer: false,
-              readonly: {
-                contact: true,
-                email: true,
-                name: true
-              },
-              hidden: {
-                contact: false,
-                email: false,
-                name: false
+                color: '#0077ff'
               },
               handler: res => {
                 processSuccessfulPayment(res.razorpay_payment_id, booking, userData);
               },
-              timeout: 300, // 5 minutes timeout
-              retry: {
-                enabled: false
+              modal: {
+                ondismiss: function() {
+                  console.log('Payment cancelled by user');
+                }
               }
             };
 
-            // For WebView, add additional UPI-specific options
+            // For WebView - Add UPI-specific configuration
             if (shouldShowUPIDirect()) {
-              rzpOptions.config.display.blocks = {
-                utib: {
-                  name: "Pay with UPI",
-                  instruments: [
-                    {
-                      method: "upi",
-                      flows: ["intent"] // Only intent flow
-                    }
-                  ]
-                }
-              };
-              rzpOptions.config.display.sequence = ["utib"];
-              rzpOptions.config.display.preferences.show_default_blocks = false;
+              console.log('WebView detected - configuring for UPI intent');
               
-              // Force UPI intent
+              // Simple UPI priority configuration that actually works
               rzpOptions.method = {
-                upi: {
-                  flow: "intent",
-                  config: {
-                    display: {
-                      name: "Pay using UPI App"
+                upi: true,
+                card: false,
+                netbanking: false,
+                wallet: false,
+                emi: false
+              };
+              
+              // Add config to prioritize UPI intent
+              rzpOptions.config = {
+                display: {
+                  blocks: {
+                    utib: {
+                      name: "Pay with UPI",
+                      instruments: [
+                        {
+                          method: "upi"
+                        }
+                      ]
                     }
+                  },
+                  sequence: ["utib"],
+                  preferences: {
+                    show_default_blocks: true
                   }
                 }
               };
-              
-              console.log('Razorpay configured for UPI intent only');
             }
 
             const rzp = new Razorpay(rzpOptions);
-            
-            // Override Razorpay's device detection
-            if (shouldShowUPIDirect() && rzp.get) {
-              try {
-                // Force mobile detection in Razorpay
-                rzp.get('device_type', 'mobile');
-                rzp.get('is_mobile', true);
-                rzp.get('platform', 'android');
-              } catch (e) {
-                console.log('Could not override Razorpay device detection:', e);
-              }
-            }
-            
             rzp.open();
           });
 
@@ -856,25 +784,9 @@
       document.documentElement.style.setProperty('--mobile-detected', '1');
     }
 
-    // Apply WebView overrides immediately when script loads
+    // Apply mobile overrides immediately when needed
     if (shouldShowUPIDirect()) {
-      forceRazorpayUPIIntent();
-      
-      // Add meta tag to force mobile view
-      const mobileViewMeta = document.createElement('meta');
-      mobileViewMeta.name = 'mobile-web-app-capable';
-      mobileViewMeta.content = 'yes';
-      document.head.appendChild(mobileViewMeta);
-      
-      // Set CSS media query override
-      const style = document.createElement('style');
-      style.textContent = `
-        @media screen and (max-width: 9999px) {
-          html { font-size: 14px !important; }
-          body { -webkit-text-size-adjust: none !important; }
-        }
-      `;
-      document.head.appendChild(style);
+      forceRazorpayMobileMode();
     }
   </script>
 </body>
