@@ -7,7 +7,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    /* === SAME CSS AS YOUR CURRENT PAGE === */
     :root{
       --primary:#0077ff;
       --accent:#ffd700;
@@ -28,6 +27,7 @@
 
     .summary-card { background: var(--card-bg); border-radius:14px; padding:16px; box-shadow: 0 6px 22px rgba(11,18,32,0.12); color:var(--dark, #0b1220); overflow:hidden; }
     .summary-grid { display:grid; grid-template-columns: 1fr auto; gap:12px 16px; align-items:center; }
+
     .info-row { display:flex; gap:12px; align-items:center; background: rgba(11,18,32,0.02); padding:10px; border-radius:10px; }
     .info-row .icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(0,119,255,0.12), rgba(0,119,255,0.06)); color:var(--primary); font-size:1.15rem; flex-shrink:0; }
     .info-row .meta { display:flex; flex-direction:column; }
@@ -71,15 +71,12 @@
 <body>
   <div class="page">
     <div class="wrap">
-
       <header class="app-header">
         <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
         <div class="app-title">Confirm &amp; Pay</div>
       </header>
 
-      <div id="summary" class="summary-card" aria-live="polite">
-        Loading booking…
-      </div>
+      <div id="summary" class="summary-card" aria-live="polite">Loading booking…</div>
 
       <div style="height:8px;"></div>
 
@@ -94,7 +91,6 @@
       </div>
 
       <button id="payBtn" disabled>Pay &amp; Book</button>
-
     </div>
   </div>
 
@@ -105,7 +101,6 @@
 
   <div style="height: 80px;"></div>
 
-  <!-- Firebase & Razorpay -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -200,22 +195,10 @@
               <div style="height:12px"></div>
 
               <div class="details" aria-hidden="false">
-                <div class="detail-pill">
-                  <small>Date</small>
-                  <strong>${formatDate(date)}</strong>
-                </div>
-                <div class="detail-pill">
-                  <small>Time</small>
-                  <strong>${formatTime(time)}</strong>
-                </div>
-                <div class="detail-pill">
-                  <small>Seats</small>
-                  <strong>${seats}</strong>
-                </div>
-                <div class="detail-pill">
-                  <small>Fare</small>
-                  <strong>₹${fare}</strong>
-                </div>
+                <div class="detail-pill"><small>Date</small><strong>${formatDate(date)}</strong></div>
+                <div class="detail-pill"><small>Time</small><strong>${formatTime(time)}</strong></div>
+                <div class="detail-pill"><small>Seats</small><strong>${seats}</strong></div>
+                <div class="detail-pill"><small>Fare</small><strong>₹${fare}</strong></div>
               </div>
             </div>
 
@@ -229,7 +212,11 @@
       }
 
       auth.onAuthStateChanged(async user => {
-        if (!user) { alert('Please login first.'); window.location = 'index.html'; return; }
+        if (!user) {
+          alert('Please login first.');
+          window.location = 'index.html';
+          return;
+        }
 
         let dbUid = user.uid;
         let userData = null;
@@ -237,98 +224,86 @@
         const snapUid = await db.ref(`users/${dbUid}`).once('value');
         if (snapUid.exists()) userData = snapUid.val();
         else {
-          if(user.phoneNumber){
+          if (user.phoneNumber) {
             const phoneSnap = await db.ref("users").orderByChild("phone").equalTo(user.phoneNumber).once("value");
-            if(phoneSnap.exists()){ const rec = phoneSnap.val(); dbUid=Object.keys(rec)[0]; userData=rec[dbUid]; }
+            if (phoneSnap.exists()) { const rec = phoneSnap.val(); dbUid = Object.keys(rec)[0]; userData = rec[dbUid]; }
           }
-          if(!userData && user.email){
+          if (!userData && user.email) {
             const emailSnap = await db.ref("users").orderByChild("email").equalTo(user.email).once("value");
-            if(emailSnap.exists()){ const rec=emailSnap.val(); dbUid=Object.keys(rec)[0]; userData=rec[dbUid]; }
+            if (emailSnap.exists()) { const rec = emailSnap.val(); dbUid = Object.keys(rec)[0]; userData = rec[dbUid]; }
           }
         }
 
-        if(!userData){ summaryEl.innerHTML='<div style="padding:18px;color:#6b7280;font-weight:700">Profile not found. Cannot proceed.</div>'; payBtn.disabled=true; return; }
+        if (!userData) {
+          summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Profile not found. Cannot proceed.</div>';
+          payBtn.disabled = true;
+          return;
+        }
 
         const { name, phone } = userData;
         renderSummary(name, phone);
         setCheckboxChecked(false);
 
-        if(!bound){
+        if (!bound) {
           bound = true;
-          termsChk.addEventListener('change',()=>{ payBtn.disabled = !termsChk.checked; });
 
-          payBtn.addEventListener('click', async ()=>{
-            if(!termsChk.checked) return;
+          const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          const isWebView = window.isWaveTravelApp || new URLSearchParams(location.search).get('webview') === '1';
+          const allowUPI = isMobile || isWebView;
+
+          payBtn.addEventListener('click', async () => {
+            if (!termsChk.checked) return;
 
             const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
             try {
               const snap = await slotRef.once('value');
-              if(!snap.exists()){ alert('Slot no longer exists.'); return; }
+              if (!snap.exists()) { alert('Slot no longer exists.'); return; }
               const cur = snap.val();
               const available = parseInt(cur.seats,10);
               const requested = parseInt(booking.seatsRequested,10);
-              if(isNaN(available) || isNaN(requested)){ alert('Seat info invalid. Contact support.'); return; }
-              if(available<requested){ alert(`Only ${available} seats left.`); return; }
-            } catch(e){ console.error(e); alert('Seat verification failed.'); return; }
+              if (isNaN(available) || isNaN(requested)) { alert('Seat info invalid.'); return; }
+              if (available < requested) { alert(`Only ${available} seats left.`); return; }
+            } catch(e) { console.error(e); alert('Failed to verify seats.'); return; }
 
-            // === Razorpay UPI Intent Checkout ===
-            const options = {
+            new Razorpay({
               key: 'rzp_live_RIzA7k5JUhsCRp',
-              amount: booking.fare * 100,
+              amount: booking.fare*100,
               currency: 'INR',
               name: 'WaveTravel',
               description: 'Ride Booking',
               prefill: { name, contact: phone, email: user.email||'' },
-              method: 'upi',
+              method: allowUPI ? 'upi' : undefined,
               handler: async function(res){
-                try {
-                  // Verify payment via backend
-                  const verify = await fetch('/verify-payment', {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify(res)
-                  });
-                  const data = await verify.json();
-                  if(data.status!=='success'){ alert('Payment verification failed.'); return; }
+                slotRef.transaction(cur => {
+                  if(!cur) return cur;
+                  const currentSeats = parseInt(cur.seats,10);
+                  const requested = parseInt(booking.seatsRequested,10);
+                  if(isNaN(currentSeats) || isNaN(requested)) return cur;
+                  if(currentSeats < requested) return;
+                  const newSeats = currentSeats - requested;
+                  return {...cur, seats: String(newSeats)};
+                }, async (error, committed)=>{
+                  if(error){ console.error(error); alert('Seat deduction failed.'); return; }
+                  if(!committed){ alert('Seats ran out. Payment captured; contact support.'); return; }
 
-                  // Deduct seats
-                  slotRef.transaction(cur=>{
-                    if(!cur) return cur;
-                    const newSeats = parseInt(cur.seats,10)-parseInt(booking.seatsRequested,10);
-                    if(newSeats<0) return cur;
-                    return {...cur,seats:String(newSeats)};
-                  }, async (err, committed)=>{
-                    if(err){ alert('Seat deduction failed.'); return; }
-                    if(!committed){ alert('Seats ran out. Payment captured. Contact support.'); return; }
-
-                    // Save booking
+                  try {
                     const bookingsRef = db.ref(`bookings/${booking.driverId}`);
                     const newBookingRef = bookingsRef.push();
-                    const bookingData = {...booking,userId:dbUid,userName:name,userPhone:phone,paymentId:res.razorpay_payment_id,bookedAt:new Date().toISOString(),status:'confirmed'};
+                    const bookingData = {...booking, userId: dbUid, userName:name, userPhone:phone, paymentId:res.razorpay_payment_id, bookedAt:new Date().toISOString(), status:'confirmed'};
                     await newBookingRef.set(bookingData);
-
-                    // Driver wallet
-                    await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({
-                      amount: booking.fare*0.6,
-                      status:'unpaid',
-                      booking:bookingData,
-                      date:new Date().toISOString()
-                    });
-
+                    await db.ref(`driverWallet/${booking.driverId}/${newBookingRef.key}`).set({amount:booking.fare*0.6,status:'unpaid',booking:bookingData,date:new Date().toISOString()});
                     showCenterToast('Payment successful & booking confirmed!',2000);
                     setTimeout(()=>{ localStorage.removeItem('selectedBooking'); window.location='mybookings.html'; },2100);
-                  });
-                } catch(err){ console.error(err); alert('Payment verification or booking failed.'); }
+                  } catch(err){ console.error(err); alert('Error saving booking.'); }
+                });
               }
-            };
-            const rzp = new Razorpay(options);
-            rzp.open();
+            }).open();
           });
         }
       });
     }
 
-    function formatDate(d){ if(!d||typeof d!=='string') return d||'-'; const [y,m,dd]=d.split('-'); return dd?`${dd}/${m}/${y}`:d; }
+    function formatDate(d){ if(!d||typeof d!=='string') return d||'-'; const [y,m,dd] = d.split('-'); if(!dd) return d; return `${dd}/${m}/${y}`; }
     function formatTime(t){ if(!t||typeof t!=='string') return t||'-'; let [h,mm]=t.split(':').map(Number); if(isNaN(h)) return t; const suffix=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`; }
   </script>
 </body>
