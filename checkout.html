@@ -438,10 +438,52 @@
     termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
 
-    // Apply overrides IMMEDIATELY if we detect WebView
-    if (isInWebView()) {
-      console.log('WebView detected - applying overrides before Razorpay initialization');
-      forceNativeAppMode();
+    // Payment status checker for WebView browser redirect
+    function checkPaymentStatus(sessionId) {
+      console.log('Starting payment status check for session:', sessionId);
+      
+      const statusRef = db.ref(`paymentSessions/${sessionId}/status`);
+      
+      showCenterToast('Payment opened in browser. Complete payment and return to app.', 5000);
+      
+      // Listen for status changes
+      const statusListener = statusRef.on('value', async (snapshot) => {
+        const status = snapshot.val();
+        console.log('Payment status update:', status);
+        
+        if (status === 'completed') {
+          // Get the full payment session data
+          const sessionData = await db.ref(`paymentSessions/${sessionId}`).once('value');
+          const session = sessionData.val();
+          
+          if (session && session.paymentId) {
+            showCenterToast('Payment successful! Processing booking...', 3000);
+            
+            // Process the successful payment
+            await processSuccessfulPayment(session.paymentId, session.bookingData, session.userData);
+            
+            // Clean up the session
+            await db.ref(`paymentSessions/${sessionId}`).remove();
+            
+            // Remove listener
+            statusRef.off('value', statusListener);
+          }
+        } else if (status === 'failed') {
+          showCenterToast('Payment failed. Please try again.', 3000);
+          statusRef.off('value', statusListener);
+          
+          // Clean up failed session after delay
+          setTimeout(async () => {
+            await db.ref(`paymentSessions/${sessionId}`).remove();
+          }, 5000);
+        }
+      });
+      
+      // Set a timeout to clean up if no response
+      setTimeout(() => {
+        statusRef.off('value', statusListener);
+        console.log('Payment check timeout for session:', sessionId);
+      }, 300000); // 5 minutes timeout
     }
 
     if (!booking) {
@@ -573,7 +615,7 @@
             payBtn.disabled = !termsChk.checked; 
           });
 
-          // Enhanced Razorpay payment with WebView UPI optimization
+          // Smart payment handler - WebView opens in browser, native stays in app
           payBtn.addEventListener('click', async () => {
             if (!termsChk.checked) return;
 
@@ -602,7 +644,52 @@
               return;
             }
 
-            // Enhanced Razorpay options for consistent UPI experience
+            // If WebView, redirect to mobile browser for payment
+            if (isInWebView()) {
+              console.log('WebView detected - redirecting to mobile browser for payment');
+              
+              // Create a unique payment session ID
+              const paymentSessionId = `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              
+              // Store payment data in Firebase for the browser session
+              const paymentData = {
+                bookingData: booking,
+                userData: userData,
+                sessionId: paymentSessionId,
+                createdAt: new Date().toISOString(),
+                status: 'pending'
+              };
+              
+              try {
+                await db.ref(`paymentSessions/${paymentSessionId}`).set(paymentData);
+                
+                // Create the payment URL for mobile browser
+                const currentUrl = window.location.href;
+                const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+                const paymentUrl = `${baseUrl}/payment.html?session=${paymentSessionId}`;
+                
+                // Show user instruction
+                showCenterToast('Redirecting to browser for secure payment...', 3000);
+                
+                // Open in mobile browser
+                setTimeout(() => {
+                  window.open(paymentUrl, '_blank');
+                  
+                  // Start checking for payment completion
+                  checkPaymentStatus(paymentSessionId);
+                }, 1000);
+                
+              } catch (error) {
+                console.error('Failed to create payment session:', error);
+                alert('Failed to initialize payment. Please try again.');
+              }
+              
+              return;
+            }
+
+            // For native mobile browser, use direct Razorpay
+            console.log('Native browser - using direct Razorpay');
+            
             const rzpOptions = {
               key: 'rzp_live_RJxLTulsCPKQqD',
               amount: booking.fare * 100,
@@ -627,60 +714,6 @@
               }
             };
 
-            // Force UPI-first experience for all mobile devices
-            if (isMobileDevice()) {
-              console.log('Mobile device detected - forcing UPI-first experience');
-              
-              rzpOptions.method = {
-                upi: true,
-                card: true,
-                netbanking: true,
-                wallet: true
-              };
-
-              // Enhanced display configuration for UPI priority
-              rzpOptions.config = {
-                display: {
-                  blocks: {
-                    upi: {
-                      name: "UPI",
-                      instruments: [
-                        { method: "upi" }
-                      ]
-                    },
-                    other: {
-                      name: "Other Payment Methods", 
-                      instruments: [
-                        { method: "card" },
-                        { method: "netbanking" },
-                        { method: "wallet" }
-                      ]
-                    }
-                  },
-                  sequence: ["upi", "other"],
-                  preferences: {
-                    show_default_blocks: false
-                  }
-                }
-              };
-
-              // Additional configuration for WebView
-              if (isInWebView()) {
-                console.log('WebView detected - applying additional UPI optimizations');
-                
-                // Force intent-based UPI configuration
-                rzpOptions.integration = 'mobile_web';
-                rzpOptions.platform = 'android';
-                
-                // Override checkout behavior for WebView
-                rzpOptions.external = {
-                  wallets: []
-                };
-              }
-            }
-
-            console.log('Opening Razorpay with options:', rzpOptions);
-            
             try {
               const rzp = new Razorpay(rzpOptions);
               rzp.open();
