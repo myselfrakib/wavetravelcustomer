@@ -668,20 +668,87 @@
                 const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
                 const paymentUrl = `${baseUrl}/payment.html?session=${paymentSessionId}`;
                 
-                // Show user instruction
-                showCenterToast('Redirecting to browser for secure payment...', 3000);
+                console.log('Payment URL created:', paymentUrl);
                 
-                // Open in mobile browser
+                // Show user instruction
+                showCenterToast('Opening payment in browser...', 2000);
+                
+                // Multiple fallback methods to open browser
                 setTimeout(() => {
-                  window.open(paymentUrl, '_blank');
+                  let browserOpened = false;
                   
-                  // Start checking for payment completion
-                  checkPaymentStatus(paymentSessionId);
-                }, 1000);
+                  // Method 1: Try window.open with different targets
+                  try {
+                    const newWindow = window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+                    if (newWindow && !newWindow.closed) {
+                      console.log('Browser opened with window.open(_blank)');
+                      browserOpened = true;
+                    } else {
+                      throw new Error('window.open returned null');
+                    }
+                  } catch (e) {
+                    console.warn('window.open(_blank) failed:', e);
+                  }
+                  
+                  // Method 2: Try with _system target (for some WebViews)
+                  if (!browserOpened) {
+                    try {
+                      const systemWindow = window.open(paymentUrl, '_system');
+                      if (systemWindow) {
+                        console.log('Browser opened with window.open(_system)');
+                        browserOpened = true;
+                      }
+                    } catch (e) {
+                      console.warn('window.open(_system) failed:', e);
+                    }
+                  }
+                  
+                  // Method 3: Try direct location assignment
+                  if (!browserOpened) {
+                    try {
+                      window.location.href = paymentUrl;
+                      console.log('Redirecting with location.href');
+                      browserOpened = true;
+                    } catch (e) {
+                      console.warn('location.href failed:', e);
+                    }
+                  }
+                  
+                  // Method 4: Create invisible link and click
+                  if (!browserOpened) {
+                    try {
+                      const link = document.createElement('a');
+                      link.href = paymentUrl;
+                      link.target = '_blank';
+                      link.rel = 'noopener noreferrer';
+                      link.style.display = 'none';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      console.log('Browser opened with link click');
+                      browserOpened = true;
+                    } catch (e) {
+                      console.warn('Link click method failed:', e);
+                    }
+                  }
+                  
+                  if (browserOpened) {
+                    // Start checking for payment completion
+                    checkPaymentStatus(paymentSessionId);
+                    
+                    // Show success message
+                    setTimeout(() => {
+                      showCenterToast('Payment opened in browser. Complete payment and return to app.', 5000);
+                    }, 1000);
+                  } else {
+                    // All methods failed - show manual option
+                    showManualPaymentOption(paymentUrl, paymentSessionId);
+                  }
+                }, 800);
                 
               } catch (error) {
                 console.error('Failed to create payment session:', error);
-                alert('Failed to initialize payment. Please try again.');
+                alert('Failed to initialize payment session. Please try again.');
               }
               
               return;
