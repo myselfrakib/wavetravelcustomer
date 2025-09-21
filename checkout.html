@@ -134,20 +134,6 @@
     #payBtn:active { transform: translateY(1px) scale(.998); }
     #payBtn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
 
-    /* UPI Direct Pay Button */
-    #upiDirectBtn {
-      margin-top:8px;
-      width:100%;
-      padding:12px 14px;
-      background: linear-gradient(90deg, #28a745, #1e7e34);
-      border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1.05rem;
-      box-shadow: 0 8px 26px rgba(2,6,23,0.12);
-      transition: transform .14s ease, opacity .12s ease;
-      display: none;
-    }
-    #upiDirectBtn:active { transform: translateY(1px) scale(.998); }
-    #upiDirectBtn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
-
     /* Centered toast — doubled size */
     #center-toast {
       position: fixed;
@@ -213,11 +199,6 @@
 
       <!-- PAY BUTTON placed right after terms -->
       <button id="payBtn" disabled>Pay &amp; Book</button>
-      
-      <!-- UPI DIRECT BUTTON for WebView -->
-      <button id="upiDirectBtn" disabled>
-        <i class="fas fa-mobile-alt"></i> Pay with UPI
-      </button>
 
     </div>
   </div>
@@ -251,14 +232,13 @@
 
     const summaryEl = document.getElementById('summary');
     const payBtn    = document.getElementById('payBtn');
-    const upiDirectBtn = document.getElementById('upiDirectBtn');
     const termsChk  = document.getElementById('termsChk');
     const termsBox  = document.getElementById('termsBox');
     const tickSvg   = document.getElementById('termsTick');
 
     const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
-    // Enhanced WebView and mobile detection
+    // Enhanced WebView detection
     function isInWebView() {
       const ua = navigator.userAgent.toLowerCase();
       
@@ -266,7 +246,6 @@
       const webviewIndicators = [
         'wv', // Chrome WebView
         'android.*version.*safari', // Android WebView
-        'iphone.*safari.*version.*mobile', // iOS WebView (partial)
         'webview',
         'fb_iab', // Facebook in-app browser
         'twitter',
@@ -279,8 +258,8 @@
         const regex = new RegExp(indicator);
         return regex.test(ua);
       }) || (
-        // Additional checks
-        window.navigator.standalone === false && // iOS
+        // iOS WebView detection
+        window.navigator.standalone === false && 
         /iphone|ipad|ipod/i.test(ua) &&
         !/safari/i.test(ua)
       );
@@ -291,121 +270,92 @@
              window.innerWidth <= 768;
     }
 
-    function shouldShowUPIDirect() {
-      return isInWebView() && isMobileDevice();
-    }
-
-    // Enhanced mobile detection and user agent override
-    function forceRazorpayMobileMode() {
-      // Set a proper mobile user agent that Razorpay recognizes
+    // CRITICAL: Override navigator properties BEFORE Razorpay loads
+    function forceNativeAppMode() {
+      console.log('Forcing native app mode for Razorpay...');
+      
+      // Store original values
+      const originalUserAgent = navigator.userAgent;
+      
+      // Create a convincing mobile browser user agent (not WebView)
       const mobileUA = 'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
       
-      // Override user agent
-      Object.defineProperty(navigator, 'userAgent', {
-        get: function() { return mobileUA; },
-        configurable: true
-      });
-      
-      // Override platform
-      Object.defineProperty(navigator, 'platform', {
-        get: function() { return 'Linux armv7l'; },
-        configurable: true
-      });
-      
-      // Add mobile screen properties
-      Object.defineProperty(screen, 'width', {
-        get: function() { return 393; },
-        configurable: true
-      });
-      
-      Object.defineProperty(screen, 'height', {
-        get: function() { return 851; },
-        configurable: true
-      });
-      
-      // Add device pixel ratio
-      if (!window.devicePixelRatio || window.devicePixelRatio === 1) {
-        Object.defineProperty(window, 'devicePixelRatio', {
-          get: function() { return 3; },
-          configurable: true
-        });
-      }
-      
-      // Add touch support
-      if (!window.TouchEvent) {
-        window.TouchEvent = class TouchEvent extends Event {};
-      }
-      
-      // Add orientation
-      if (typeof window.orientation === 'undefined') {
-        Object.defineProperty(window, 'orientation', {
-          get: function() { return 0; },
-          configurable: true
-        });
-      }
-      
-      console.log('Mobile mode forced for Razorpay - UA:', navigator.userAgent);
-    }
-
-    // UPI Intent generator
-    function generateUPIIntent(amount, name, phone, orderId) {
-      const merchantVPA = 'your-merchant-vpa@paytm'; // Replace with your UPI ID
-      const merchantName = 'WaveTravel';
-      
-      // Standard UPI URL format
-      const upiUrl = `upi://pay?pa=${merchantVPA}&pn=${encodeURIComponent(merchantName)}&tr=${orderId}&tn=${encodeURIComponent(`Payment for WaveTravel booking ${orderId}`)}&am=${amount}&cu=INR`;
-      
-      return upiUrl;
-    }
-
-    // Direct UPI payment handler
-    async function handleDirectUPIPayment(bookingData, userData) {
-      const orderId = `WT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const amount = bookingData.fare;
-      
+      // Override user agent to remove WebView indicators
       try {
-        // Generate UPI intent URL
-        const upiUrl = generateUPIIntent(amount, userData.name, userData.phone, orderId);
-        
-        // Create a temporary form to trigger UPI intent
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = upiUrl;
-        form.style.display = 'none';
-        document.body.appendChild(form);
-        
-        // Try to open UPI app
-        const link = document.createElement('a');
-        link.href = upiUrl;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        
-        // Trigger the UPI intent
-        link.click();
-        
-        // Clean up
-        setTimeout(() => {
-          document.body.removeChild(form);
-          document.body.removeChild(link);
-        }, 1000);
-        
-        // Show waiting message
-        showCenterToast('Opening UPI app... Please complete the payment', 4000);
-        
-        // Simulate payment success after user returns (you'll need to implement actual verification)
-        setTimeout(() => {
-          if (confirm('Payment completed successfully? Click OK if yes, Cancel if payment failed.')) {
-            processSuccessfulPayment(orderId, bookingData, userData);
-          }
-        }, 5000);
-        
-      } catch (error) {
-        console.error('UPI intent failed:', error);
-        alert('Failed to open UPI app. Please try the regular payment method.');
+        Object.defineProperty(navigator, 'userAgent', {
+          get: function() { return mobileUA; },
+          configurable: true
+        });
+        console.log('User agent overridden:', navigator.userAgent);
+      } catch (e) {
+        console.warn('Could not override userAgent:', e);
       }
+
+      // Override platform
+      try {
+        Object.defineProperty(navigator, 'platform', {
+          get: function() { return 'Linux armv8l'; },
+          configurable: true
+        });
+      } catch (e) {
+        console.warn('Could not override platform:', e);
+      }
+
+      // Force mobile screen properties
+      try {
+        Object.defineProperty(screen, 'width', {
+          get: function() { return 393; },
+          configurable: true
+        });
+        
+        Object.defineProperty(screen, 'height', {
+          get: function() { return 851; },
+          configurable: true
+        });
+      } catch (e) {
+        console.warn('Could not override screen properties:', e);
+      }
+
+      // Add device pixel ratio if missing
+      if (!window.devicePixelRatio || window.devicePixelRatio === 1) {
+        try {
+          Object.defineProperty(window, 'devicePixelRatio', {
+            get: function() { return 3; },
+            configurable: true
+          });
+        } catch (e) {
+          console.warn('Could not set devicePixelRatio:', e);
+        }
+      }
+
+      // Add orientation support
+      if (typeof window.orientation === 'undefined') {
+        try {
+          Object.defineProperty(window, 'orientation', {
+            get: function() { return 0; },
+            configurable: true
+          });
+        } catch (e) {
+          console.warn('Could not set orientation:', e);
+        }
+      }
+
+      // Override document.documentElement.webkitRequestFullScreen to simulate native
+      if (!document.documentElement.webkitRequestFullScreen) {
+        document.documentElement.webkitRequestFullScreen = function() {};
+      }
+
+      // Remove WebView specific properties
+      try {
+        delete window.navigator.standalone;
+      } catch (e) {
+        console.warn('Could not delete standalone property:', e);
+      }
+
+      console.log('Native app mode configuration complete');
     }
 
-    // Process successful payment (common function)
+    // Process successful payment
     async function processSuccessfulPayment(paymentId, bookingData, userData) {
       const slotRef = db.ref(`availableslots/${bookingData.driverId}/${bookingData.slotKey}`);
       
@@ -483,16 +433,20 @@
       }
       termsChk.checked = !!state;
       payBtn.disabled = !termsChk.checked;
-      upiDirectBtn.disabled = !termsChk.checked;
     }
     
     termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
 
+    // Apply overrides IMMEDIATELY if we detect WebView
+    if (isInWebView()) {
+      console.log('WebView detected - applying overrides before Razorpay initialization');
+      forceNativeAppMode();
+    }
+
     if (!booking) {
       summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Please select a slot first.</div>';
       payBtn.disabled = true;
-      upiDirectBtn.disabled = true;
     } else {
       let bound = false;
 
@@ -604,33 +558,22 @@
         if (!userData) {
           summaryEl.innerHTML = '<div style="padding:18px;color:#6b7280;font-weight:700">Profile not found. Cannot proceed.</div>';
           payBtn.disabled = true;
-          upiDirectBtn.disabled = true;
           return;
         }
 
         const { name, phone } = userData;
-        userData.uid = dbUid; // Add uid to userData
+        userData.uid = dbUid;
         renderSummary(name, phone);
         setCheckboxChecked(false);
-
-        // Force Razorpay mobile mode if in WebView for UPI intent
-        if (shouldShowUPIDirect()) {
-          upiDirectBtn.style.display = 'block';
-          console.log('WebView detected - forcing mobile mode for UPI intent');
-          
-          // Apply mobile overrides immediately
-          forceRazorpayMobileMode();
-        }
 
         if (!bound) {
           bound = true;
 
           termsChk.addEventListener('change', () => { 
             payBtn.disabled = !termsChk.checked; 
-            upiDirectBtn.disabled = !termsChk.checked;
           });
 
-          // Regular Razorpay payment
+          // Enhanced Razorpay payment with WebView UPI optimization
           payBtn.addEventListener('click', async () => {
             if (!termsChk.checked) return;
 
@@ -659,7 +602,7 @@
               return;
             }
 
-            // Simplified Razorpay options for WebView UPI intent
+            // Enhanced Razorpay options for consistent UPI experience
             const rzpOptions = {
               key: 'rzp_live_RJxLTulsCPKQqD',
               amount: booking.fare * 100,
@@ -684,74 +627,69 @@
               }
             };
 
-            // For WebView - Add UPI-specific configuration
-            if (shouldShowUPIDirect()) {
-              console.log('WebView detected - configuring for UPI intent');
+            // Force UPI-first experience for all mobile devices
+            if (isMobileDevice()) {
+              console.log('Mobile device detected - forcing UPI-first experience');
               
-              // Simple UPI priority configuration that actually works
               rzpOptions.method = {
                 upi: true,
-                card: false,
-                netbanking: false,
-                wallet: false,
-                emi: false
+                card: true,
+                netbanking: true,
+                wallet: true
               };
-              
-              // Add config to prioritize UPI intent
+
+              // Enhanced display configuration for UPI priority
               rzpOptions.config = {
                 display: {
                   blocks: {
-                    utib: {
-                      name: "Pay with UPI",
+                    upi: {
+                      name: "UPI",
                       instruments: [
-                        {
-                          method: "upi"
-                        }
+                        { method: "upi" }
+                      ]
+                    },
+                    other: {
+                      name: "Other Payment Methods",
+                      instruments: [
+                        { method: "card" },
+                        { method: "netbanking" },
+                        { method: "wallet" }
                       ]
                     }
                   },
-                  sequence: ["utib"],
+                  sequence: ["upi", "other"],
                   preferences: {
-                    show_default_blocks: true
+                    show_default_blocks: false
                   }
                 }
               };
+
+              // Additional configuration for WebView
+              if (isInWebView()) {
+                console.log('WebView detected - applying additional UPI optimizations');
+                
+                // Force intent-based UPI
+                rzpOptions._: {
+                  integration: 'mobile_web',
+                  platform: 'android'
+                };
+                
+                // Override checkout behavior
+                rzpOptions.external = {
+                  wallets: []
+                };
+              }
             }
 
-            const rzp = new Razorpay(rzpOptions);
-            rzp.open();
-          });
-
-          // Direct UPI payment
-          upiDirectBtn.addEventListener('click', async () => {
-            if (!termsChk.checked) return;
-
-            const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
-
+            console.log('Opening Razorpay with options:', rzpOptions);
+            
             try {
-              const snap = await slotRef.once('value');
-              if (!snap.exists()) {
-                alert('Slot no longer exists.');
-                return;
-              }
-              const cur = snap.val();
-              const available = parseInt(cur.seats, 10);
-              const requested = parseInt(booking.seatsRequested, 10);
-              if (isNaN(available) || isNaN(requested)) {
-                alert('Seat information invalid. Contact support.');
-                return;
-              }
-              if (available < requested) {
-                alert(`Only ${available} seats left. Please reduce seats or choose another slot.`);
-                return;
-              }
-            } catch (e) {
-              console.error('Pre-check failed:', e);
-              alert('Failed to verify seats. Please try again.');
-              return;
+              const rzp = new Razorpay(rzpOptions);
+              rzp.open();
+            } catch (error) {
+              console.error('Razorpay initialization failed:', error);
+              alert('Payment initialization failed. Please try again.');
             }
-
-            await handleDirectUPIPayment(booking, userData);
           });
         }
       });
@@ -772,21 +710,12 @@
       return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
     }
 
-    // Force Razorpay to load in mobile mode immediately
+    // Force mobile viewport for consistent behavior
     if (isMobileDevice()) {
-      // Set viewport meta tag for mobile
       const viewport = document.querySelector('meta[name="viewport"]');
       if (viewport) {
         viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
       }
-      
-      // Force mobile styling
-      document.documentElement.style.setProperty('--mobile-detected', '1');
-    }
-
-    // Apply mobile overrides immediately when needed
-    if (shouldShowUPIDirect()) {
-      forceRazorpayMobileMode();
     }
   </script>
 </body>
