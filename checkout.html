@@ -610,14 +610,14 @@
               name: 'WaveTravel',
               description: 'Ride Booking',
               prefill: { 
-                name, 
+                name: name, 
                 contact: phone, 
                 email: user.email || ''
               },
               theme: {
                 color: '#0077ff'
               },
-              handler: res => {
+              handler: function(res) {
                 processSuccessfulPayment(res.razorpay_payment_id, booking, userData);
               },
               modal: {
@@ -649,7 +649,7 @@
                       ]
                     },
                     other: {
-                      name: "Other Payment Methods",
+                      name: "Other Payment Methods", 
                       instruments: [
                         { method: "card" },
                         { method: "netbanking" },
@@ -668,13 +668,11 @@
               if (isInWebView()) {
                 console.log('WebView detected - applying additional UPI optimizations');
                 
-                // Force intent-based UPI
-                rzpOptions._: {
-                  integration: 'mobile_web',
-                  platform: 'android'
-                };
+                // Force intent-based UPI configuration
+                rzpOptions.integration = 'mobile_web';
+                rzpOptions.platform = 'android';
                 
-                // Override checkout behavior
+                // Override checkout behavior for WebView
                 rzpOptions.external = {
                   wallets: []
                 };
@@ -701,6 +699,7 @@
       if (!dd) return d;
       return `${dd}/${m}/${y}`;
     }
+    
     function formatTime(t) {
       if (!t || typeof t !== 'string') return t || '-';
       let [h, mm] = t.split(':').map(Number);
