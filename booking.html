@@ -36,6 +36,44 @@
       font-size: 1.5rem; text-align: center; margin-bottom: 14px;
       color: var(--light);
     }
+
+    /* Tab Navigation */
+    .tab-nav {
+      display: flex;
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: var(--light);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .tab-btn.active {
+      background: linear-gradient(90deg, var(--primary), var(--sky));
+      color: white;
+      box-shadow: 0 4px 12px rgba(47,102,144,0.3);
+    }
+    .tab-btn:hover:not(.active) {
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
     .form-group { margin-bottom: 12px; }
     label {
       display: block; margin-bottom: 8px; font-weight: 600; color: var(--light);
@@ -114,17 +152,16 @@
       border-radius:999px; padding:6px 8px; font-weight:700; font-size:0.85rem; color:var(--dark);
       display:inline-flex; gap:8px; align-items:center; box-shadow: 0 3px 8px rgba(2,6,23,0.04);
     }
-    .seat-pill { background: linear-gradient(90deg,#e6f7fb,#cfeff6); color: var(--dark); }
+    .trip-pill { background: linear-gradient(90deg,#e6f7fb,#cfeff6); color: var(--dark); }
     .date-pill { background: linear-gradient(90deg,#eaf6ff,#dbeffb); color: var(--primary); }
     .time-pill { background: linear-gradient(90deg,#eefafc,#dff4f8); color:#0b5966; }
-    .perseat-pill { background: linear-gradient(90deg,#f7fbff,#e8f2fb); color:var(--primary); font-weight:800; }
+    .fare-pill { background: linear-gradient(90deg,#f7fbff,#e8f2fb); color:var(--primary); font-weight:800; }
 
     .slot-right {
       display:flex; flex-direction:column; align-items:flex-end; gap:8px; margin-left:8px;
       justify-self:end;
     }
     .fare-large { font-weight:900; font-size:1.18rem; color:var(--dark); background:linear-gradient(90deg,rgba(0,0,0,0.02),transparent); padding:6px 10px; border-radius:10px; }
-    .fare-small { font-size:12px; color:var(--muted); display:none; }
 
     .slot-actions {
       display:grid;
@@ -151,8 +188,8 @@
     }
     .btn-action:active { transform: translateY(1px); }
 
-    .btn-single { background: linear-gradient(90deg, var(--sky), var(--accent)); color:#fff; }
-    .btn-full   { background: linear-gradient(90deg, var(--accent), var(--primary)); color:#fff; }
+    .btn-oneway { background: linear-gradient(90deg, var(--sky), var(--accent)); color:#fff; }
+    .btn-roundtrip { background: linear-gradient(90deg, var(--accent), var(--primary)); color:#fff; }
 
     .btn-left { display:flex; align-items:center; gap:12px; min-width:0; overflow:hidden; }
     .btn-left i { width:34px; text-align:center; font-size:1.15rem; }
@@ -179,29 +216,59 @@
   <div class="container">
     <h1>Book Your Ride</h1>
 
-    <div class="form-group">
-      <label for="pickup">Pickup Location</label>
-      <select id="pickup"><option value="">Select Pickup</option></select>
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('oneway')">
+        <i class="fas fa-arrow-right"></i> Oneway
+      </button>
+      <button class="tab-btn" onclick="switchTab('roundtrip')">
+        <i class="fas fa-exchange-alt"></i> Roundtrip
+      </button>
     </div>
 
-    <div class="form-group">
-      <label for="dropoff">Dropoff Location</label>
-      <select id="dropoff"><option value="">Select Dropoff</option></select>
+    <!-- Oneway Tab -->
+    <div id="oneway-tab" class="tab-content active">
+      <div class="form-group">
+        <label for="pickup-oneway">Pickup Location</label>
+        <select id="pickup-oneway"><option value="">Select Pickup</option></select>
+      </div>
+
+      <div class="form-group">
+        <label for="dropoff-oneway">Dropoff Location</label>
+        <select id="dropoff-oneway"><option value="">Select Dropoff</option></select>
+      </div>
+
+      <div class="form-group">
+        <label for="date-oneway">Select Date</label>
+        <input type="date" id="date-oneway"/>
+      </div>
+
+      <button class="search-btn" onclick="searchSlots('oneway')">Search Oneway Rides</button>
+
+      <div class="slots" id="slots-oneway"></div>
     </div>
 
-    <div class="form-group">
-      <label for="date">Select Date</label>
-      <input type="date" id="date"/>
+    <!-- Roundtrip Tab -->
+    <div id="roundtrip-tab" class="tab-content">
+      <div class="form-group">
+        <label for="pickup-roundtrip">Pickup Location</label>
+        <select id="pickup-roundtrip"><option value="">Select Pickup</option></select>
+      </div>
+
+      <div class="form-group">
+        <label for="dropoff-roundtrip">Dropoff Location</label>
+        <select id="dropoff-roundtrip"><option value="">Select Dropoff</option></select>
+      </div>
+
+      <div class="form-group">
+        <label for="date-roundtrip">Select Date</label>
+        <input type="date" id="date-roundtrip"/>
+      </div>
+
+      <button class="search-btn" onclick="searchSlots('roundtrip')">Search Roundtrip Rides</button>
+
+      <div class="slots" id="slots-roundtrip"></div>
     </div>
-
-    <div class="form-group">
-      <label for="seats">Seats Needed</label>
-      <input type="number" id="seats" min="1" placeholder="Enter seats"/>
-    </div>
-
-    <button class="search-btn" onclick="searchSlots()">Search Available Slots</button>
-
-    <div class="slots" id="slots"></div>
   </div>
 
   <div class="navbar">
@@ -229,15 +296,8 @@
     const db   = firebase.database();
     const auth = firebase.auth();
 
-    const pickupEl  = document.getElementById('pickup');
-    const dropoffEl = document.getElementById('dropoff');
-    const dateEl    = document.getElementById('date');
-    const seatsEl   = document.getElementById('seats');
-    const slotsDiv  = document.getElementById('slots');
-    const locationIndexMap = {}; // still used for populating selects
-
-    // locationFareMap will now be loaded from /locations in your RTDB (using the 'fare' field)
-    const locationFareMap = {};
+    let currentTab = 'oneway';
+    const locationFareMap = {}; // Will store {name: {onewayfare: x, twowayfare: y}}
 
     // Debounce helper
     function debounce(fn, wait = 350) {
@@ -248,37 +308,47 @@
       };
     }
 
-    // nearest number that ends with 99 (closest)
-    function nearestEnding99(n) {
-      if (!Number.isFinite(n)) return n;
-      const base = Math.floor(n / 100);
-      const candidates = [
-        (base - 1) * 100 + 99,
-        base * 100 + 99,
-        (base + 1) * 100 + 99
-      ].filter(c => c > 0);
-      let best = candidates[0];
-      let bestDiff = Math.abs(n - best);
-      for (let i = 1; i < candidates.length; i++) {
-        const d = Math.abs(n - candidates[i]);
-        if (d < bestDiff) { best = candidates[i]; bestDiff = d; }
-      }
-      return best;
+    function switchTab(tabName) {
+      currentTab = tabName;
+      
+      // Update tab buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById(`${tabName}-tab`).classList.add('active');
     }
 
-    // Always use the fare map loaded from /locations. If missing, log & return 0.
-    function getPerSeatFare(puName, doName) {
-      if (!(puName in locationFareMap)) console.warn('Missing fare mapping for pickup:', puName);
-      if (!(doName in locationFareMap)) console.warn('Missing fare mapping for dropoff:', doName);
-      const puFare = Number(locationFareMap[puName] || 0);
-      const doFare = Number(locationFareMap[doName] || 0);
-      return Math.abs(puFare - doFare);
+    // Calculate fare based on trip type
+    function calculateFare(pickup, dropoff, tripType) {
+      const pickupData = locationFareMap[pickup];
+      const dropoffData = locationFareMap[dropoff];
+      
+      if (!pickupData || !dropoffData) {
+        console.warn('Missing fare data for:', pickup, dropoff);
+        return 0;
+      }
+
+      if (tripType === 'oneway') {
+        const pickupFare = Number(pickupData.onewayfare || 0);
+        const dropoffFare = Number(dropoffData.onewayfare || 0);
+        return Math.abs(pickupFare - dropoffFare);
+      } else {
+        const pickupFare = Number(pickupData.twowayfare || 0);
+        const dropoffFare = Number(dropoffData.twowayfare || 0);
+        return Math.abs(pickupFare - dropoffFare);
+      }
     }
 
     // Debounced auto-search wrapper
     const debounceSearch = debounce(() => {
-      if (pickupEl.value && dropoffEl.value && dateEl.value) {
-        searchSlots();
+      const pickup = document.getElementById(`pickup-${currentTab}`);
+      const dropoff = document.getElementById(`dropoff-${currentTab}`);
+      const date = document.getElementById(`date-${currentTab}`);
+      
+      if (pickup.value && dropoff.value && date.value) {
+        searchSlots(currentTab);
       }
     }, 350);
 
@@ -286,69 +356,94 @@
       if (!user) {
         window.location.href = 'index.html';
       } else {
-        loadLocations(); // loads /locations and builds both select options and fare map
+        loadLocations();
       }
     });
 
     function loadLocations() {
-      // Load available 'locations' for selects and also build fare map from the same node
       return db.ref('locations').once('value').then(snap => {
-        let puOpts = '<option value="">Select Pickup</option>',
-            doOpts = '<option value="">Select Dropoff</option>';
+        let puOpts = '<option value="">Select Pickup</option>';
+        let doOpts = '<option value="">Select Dropoff</option>';
+        
         snap.forEach(child => {
           const loc = child.val();
-          // handle cases where loc might be a string or an object
           const name = (loc && typeof loc === 'object' && loc.name) ? loc.name : child.key;
-          const fare = (loc && typeof loc === 'object' && loc.fare != null) ? Number(loc.fare) : 0;
-          const idx  = (loc && typeof loc === 'object' && loc.index != null) ? loc.index : null;
-
-          if (name) {
-            locationIndexMap[name] = idx;
-            locationFareMap[name] = Number(fare);
-            puOpts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-            doOpts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+          
+          if (name && loc && typeof loc === 'object') {
+            // Store fare data
+            locationFareMap[name] = {
+              onewayfare: Number(loc.onewayfare || 0),
+              twowayfare: Number(loc.twowayfare || 0)
+            };
+            
+            const option = `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+            puOpts += option;
+            doOpts += option;
           }
         });
-        pickupEl.innerHTML  = puOpts;
-        dropoffEl.innerHTML = doOpts;
+        
+        // Update all dropdowns
+        ['oneway', 'roundtrip'].forEach(tabType => {
+          document.getElementById(`pickup-${tabType}`).innerHTML = puOpts;
+          document.getElementById(`dropoff-${tabType}`).innerHTML = doOpts;
+        });
 
-        // After load, set defaults and initial auto-search if possible
+        // Set defaults
         const today = new Date().toISOString().split('T')[0];
-        dateEl.value  = today;
-        seatsEl.value = '1';
+        document.getElementById('date-oneway').value = today;
+        document.getElementById('date-roundtrip').value = today;
 
-        const defaultPickup  = 'Berhampore Mohona Bus Stand';
+        const defaultPickup = 'Berhampore Mohona Bus Stand';
         const defaultDropoff = 'Kolkata Airport';
-        Array.from(pickupEl.options).forEach(opt => {
-          if (opt.text === defaultPickup) opt.selected = true;
-        });
-        Array.from(dropoffEl.options).forEach(opt => {
-          if (opt.text === defaultDropoff) opt.selected = true;
+        
+        ['oneway', 'roundtrip'].forEach(tabType => {
+          const pickupEl = document.getElementById(`pickup-${tabType}`);
+          const dropoffEl = document.getElementById(`dropoff-${tabType}`);
+          
+          Array.from(pickupEl.options).forEach(opt => {
+            if (opt.text === defaultPickup) opt.selected = true;
+          });
+          Array.from(dropoffEl.options).forEach(opt => {
+            if (opt.text === defaultDropoff) opt.selected = true;
+          });
         });
 
-        // Auto-search once after initial load if defaults are set
-        if (pickupEl.value && dropoffEl.value && dateEl.value) {
-          setTimeout(() => searchSlots(), 150);
+        // Setup event listeners
+        setupEventListeners();
+
+        // Auto-search for oneway tab
+        if (document.getElementById('pickup-oneway').value && 
+            document.getElementById('dropoff-oneway').value && 
+            document.getElementById('date-oneway').value) {
+          setTimeout(() => searchSlots('oneway'), 150);
         }
       }).catch(err => {
         console.error('Failed to load locations', err);
       });
     }
 
-    // Mobile-friendly event bindings for date field
-    dateEl.addEventListener('change', () => debounceSearch());
-    dateEl.addEventListener('input', () => debounceSearch());
-    dateEl.addEventListener('blur', () => debounceSearch());
-    dateEl.addEventListener('focusout', () => debounceSearch());
-    dateEl.addEventListener('touchend', () => { setTimeout(() => debounceSearch(), 500); });
-    dateEl.addEventListener('pointerup', () => { setTimeout(() => debounceSearch(), 350); });
+    function setupEventListeners() {
+      ['oneway', 'roundtrip'].forEach(tabType => {
+        const pickup = document.getElementById(`pickup-${tabType}`);
+        const dropoff = document.getElementById(`dropoff-${tabType}`);
+        const date = document.getElementById(`date-${tabType}`);
 
-    pickupEl.addEventListener('change', () => {
-      if (dateEl.value && dropoffEl.value) debounceSearch();
-    });
-    dropoffEl.addEventListener('change', () => {
-      if (dateEl.value && pickupEl.value) debounceSearch();
-    });
+        pickup.addEventListener('change', () => {
+          if (currentTab === tabType && dropoff.value && date.value) debounceSearch();
+        });
+        
+        dropoff.addEventListener('change', () => {
+          if (currentTab === tabType && pickup.value && date.value) debounceSearch();
+        });
+
+        date.addEventListener('change', () => {
+          if (currentTab === tabType) debounceSearch();
+        });
+        date.addEventListener('input', () => {
+          if (currentTab === tabType) debounceSearch();
+        });
+      });
+    }
 
     function formatTime24to12(time24) {
       const [hourStr, minute] = (time24||'00:00').split(':');
@@ -363,30 +458,32 @@
       return `${day}/${month}/${year}`;
     }
 
-    function searchSlots() {
+    function searchSlots(tripType) {
+      const slotsDiv = document.getElementById(`slots-${tripType}`);
       slotsDiv.innerHTML = '';
-      const pu  = pickupEl.value;
-      const dof = dropoffEl.value;
-      const dt  = dateEl.value;
-      const req = parseInt(seatsEl.value, 10) || 1;
-      if (!pu || !dof || !dt) {
+      
+      const pickup = document.getElementById(`pickup-${tripType}`).value;
+      const dropoff = document.getElementById(`dropoff-${tripType}`).value;
+      const date = document.getElementById(`date-${tripType}`).value;
+      
+      if (!pickup || !dropoff || !date) {
         return;
       }
 
-      // Save this search to /searches (push a new record) and later update with resultCount
+      // Save search to Firebase
       let searchRef = null;
       try {
         const user = auth.currentUser;
         searchRef = db.ref('searches').push();
         const searchData = {
           customerId: user ? user.uid : null,
-          pickup: pu,
-          dropoff: dof,
-          date: dt,
-          seatsRequested: req,
+          pickup: pickup,
+          dropoff: dropoff,
+          date: date,
+          tripType: tripType,
           timestamp: firebase.database.ServerValue.TIMESTAMP
         };
-        searchRef.set(searchData).catch(err => console.warn('Failed to save search initial', err));
+        searchRef.set(searchData).catch(err => console.warn('Failed to save search', err));
       } catch (err) {
         console.warn('Error creating search record', err);
       }
@@ -397,28 +494,36 @@
           driverSnap.forEach(slotSnap => {
             all.push({
               driverId: driverSnap.key,
-              slotKey:  slotSnap.key,
+              slotKey: slotSnap.key,
               ...slotSnap.val()
             });
           });
         });
 
-        // Exact matches only — no fallback to index-based alternatives
-        const matched = all.filter(s => s.pickup === pu && s.dropoff === dof && s.date === dt);
+        // Filter by exact match and trip type
+        const matched = all.filter(s => 
+          s.pickup === pickup && 
+          s.dropoff === dropoff && 
+          s.date === date && 
+          s.triptype === tripType
+        );
 
-        // Update search record with result metadata
+        // Update search record
         try {
           if (searchRef) {
-            searchRef.update({ resultCount: matched.length, fallbackUsed: false }).catch(err => console.warn('Failed to update search record', err));
+            searchRef.update({ 
+              resultCount: matched.length, 
+              fallbackUsed: false 
+            }).catch(err => console.warn('Failed to update search record', err));
           }
         } catch (err) {
           console.warn('Error updating search record', err);
         }
 
         if (!matched.length) {
-          slotsDiv.innerHTML = `<div class="no-slots">No slots found.</div>`;
+          slotsDiv.innerHTML = `<div class="no-slots">No ${tripType} rides found for this route.</div>`;
         } else {
-          renderSlots(matched, req, { used: false, pickup: pu, dropoff: dof, date: dt });
+          renderSlots(matched, tripType, slotsDiv);
         }
       }).catch(err => {
         console.warn('Failed to fetch availableslots', err);
@@ -428,48 +533,34 @@
       });
     }
 
-    function renderSlots(slots, reqSeats, fallbackInfo = { used: false }) {
-      if (fallbackInfo.used) {
-        const friendlyDate = formatDateISOtoDMY(fallbackInfo.date);
-        slotsDiv.innerHTML = `<div class="fallback-msg">No Car is Available From <strong>${escapeHtml(fallbackInfo.pickup)}</strong> but here are some alternatives to <strong>${escapeHtml(fallbackInfo.dropoff)}</strong> on <strong>${friendlyDate}</strong></div>`;
-      } else {
-        slotsDiv.innerHTML = '';
-      }
-
+    function renderSlots(slots, tripType, slotsDiv) {
+      slotsDiv.innerHTML = '';
       const user = auth.currentUser;
+      
       if (!user) {
         alert('Please login first');
         return;
       }
 
-      const driverCarCache = {};
-
       slots.forEach((slot, idx) => {
-        const avail = parseInt(slot.seats, 10);
-        if (avail < reqSeats) return;
-
-        // Always use locations fares (loaded into locationFareMap)
-        const perSeatFare = getPerSeatFare(slot.pickup, slot.dropoff);
-        const fare  = perSeatFare * reqSeats;
-
+        const fare = calculateFare(slot.pickup, slot.dropoff, tripType);
         const displayTime = formatTime24to12(slot.time);
         const displayDate = formatDateISOtoDMY(slot.date);
+        const carBrand = slot.carBrand || 'Car';
 
         const card = document.createElement('div');
         card.className = 'slot-card';
 
-        const carBrand = slot.carBrand || 'Car';
-
-        const slotNumberHtml = `<div style="display:flex;align-items:center;gap:10px;">
-                                  <div class="slot-number" aria-hidden="true">${idx + 1}</div>
-                                </div>`;
+        const tripTypeDisplay = tripType === 'oneway' ? 'Oneway' : 'Roundtrip';
+        const tripTypeClass = tripType === 'oneway' ? 'btn-oneway' : 'btn-roundtrip';
+        const tripIcon = tripType === 'oneway' ? 'fa-arrow-right' : 'fa-exchange-alt';
 
         card.innerHTML = `
           <div class="slot-accent" aria-hidden="true"></div>
 
           <div class="slot-main">
             <div style="display:flex;gap:12px;align-items:center;">
-              ${slotNumberHtml}
+              <div class="slot-number" aria-hidden="true">${idx + 1}</div>
               <div style="flex:1;min-width:0;">
                 <div class="pickup-drop">
                   <div class="pd-row">
@@ -490,24 +581,23 @@
 
             <div class="slot-mid">
               <div class="slot-mid-left">
+                <div class="pill trip-pill"><i class="fas ${tripIcon}"></i>${tripTypeDisplay}</div>
                 <div class="pill date-pill">${escapeHtml(displayDate)}</div>
                 <div class="pill time-pill">${escapeHtml(displayTime)}</div>
-                <div class="pill seat-pill">${avail} seats</div>
-                <div class="pill perseat-pill">₹${perSeatFare}/seat</div>
+                <div class="pill fare-pill">₹${fare}</div>
               </div>
             </div>
 
             <div class="slot-actions" role="group" aria-label="Booking actions">
-              <div class="action-wrap">
-                <button id="bookBtn${idx}" class="btn-action btn-single" aria-label="Book ${reqSeats} seats for ₹${fare}">
-                  <div class="btn-left"><i class="fa fa-user-plus"></i><span>Book ${reqSeats} Seats</span></div>
-                  <div class="btn-right"><span class="price-pill">₹${fare}</span></div>
-                </button>
-              </div>
-              <div class="action-wrap">
-                <button id="bookFullBtn${idx}" class="btn-action btn-full" style="display:none" aria-label="Book Entire car for special price">
-                  <div class="btn-left"><i class="fa fa-car"></i><span>Book Entire car</span></div>
-                  <div class="btn-right"><span class="price-pill">₹<span id="fullFare${idx}"></span></span></div>
+              <div class="action-wrap" style="grid-column: 1 / -1;">
+                <button class="btn-action ${tripTypeClass}" onclick="bookTrip(${idx}, '${tripType}')">
+                  <div class="btn-left">
+                    <i class="fas ${tripIcon}"></i>
+                    <span>Book ${tripTypeDisplay}</span>
+                  </div>
+                  <div class="btn-right">
+                    <span class="price-pill">₹${fare}</span>
+                  </div>
                 </button>
               </div>
             </div>
@@ -515,111 +605,58 @@
 
           <div class="slot-right" aria-hidden="true">
             <div class="fare-large">₹${fare}</div>
-            <div class="fare-small"></div>
           </div>
         `;
 
         slotsDiv.appendChild(card);
 
-        document.getElementById(`bookBtn${idx}`).addEventListener('click', async () => {
-          const profileSnap = await db.ref(`users/${user.uid}`).once('value');
-          const profile     = profileSnap.val() || {};
-
-          const bookingData = {
-            driverId:       slot.driverId,
-            slotKey:        slot.slotKey,
-            pickup:         slot.pickup,
-            dropoff:        slot.dropoff,
-            date:           slot.date,
-            time:           slot.time,
-            seatsRequested: reqSeats,
-            seatsAvailable: avail,
-            fare:           fare,
-            customerId:     user.uid,
-            carBrand:       slot.carBrand     || '',
-            carReg:         slot.carReg       || '',
-            driverName:     slot.driverName   || '',
-            driverNumber:   slot.driverNumber || ''
-          };
-          localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
-          window.location.href = 'checkout.html';
-        });
-
-        (async function decideFullBooking(slot, idx, availSeats, perSeatFareLocal){
-          const maybeTotal = slot.maxSeats || slot.totalSeats || slot.carSeats || slot.seatCapacity;
-          let carTotalSeats = (maybeTotal !== undefined && maybeTotal !== null) ? Number(maybeTotal) : NaN;
-
-          try {
-            if (!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) {
-              const driverId = slot.driverId;
-              if (driverCarCache[driverId]) {
-                const map = driverCarCache[driverId];
-                if (slot.carReg && map.byReg && map.byReg[slot.carReg]) carTotalSeats = Number(map.byReg[slot.carReg].seats || map.byReg[slot.carReg].seat || NaN);
-                if ((!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) && slot.carBrand && map.byBrand && map.byBrand[slot.carBrand]) carTotalSeats = Number(map.byBrand[slot.carBrand].seats || map.byBrand[slot.carBrand].seat || NaN);
-              } else {
-                const snap = await db.ref(`approvedcars/${slot.driverId}`).once('value');
-                const map = { byReg: {}, byBrand: {} };
-                if (snap.exists()) {
-                  snap.forEach(ch => {
-                    const c = ch.val();
-                    const reg = c.carReg || '';
-                    const brand = c.carBrand || '';
-                    map.byReg[reg] = c;
-                    map.byBrand[brand] = c;
-                  });
-                }
-                driverCarCache[slot.driverId] = map;
-                if (slot.carReg && map.byReg && map.byReg[slot.carReg]) carTotalSeats = Number(map.byReg[slot.carReg].seats || map.byReg[slot.carReg].seat || NaN);
-                if ((!Number.isFinite(carTotalSeats) || carTotalSeats <= 0) && slot.carBrand && map.byBrand && map.byBrand[slot.carBrand]) carTotalSeats = Number(map.byBrand[slot.carBrand].seats || map.byBrand[slot.carBrand].seat || NaN);
-              }
-            }
-          } catch (err) {
-            console.warn('Failed to fetch approvedcars for full-book decision', err);
-          }
-
-          if (Number.isFinite(carTotalSeats) && carTotalSeats > 0 && Number(availSeats) === Number(carTotalSeats)) {
-            // Entire-car fare: raw then adjust to nearest ending with 99 (no discount)
-            const rawFullFare = (Number(perSeatFareLocal) || 0) * carTotalSeats;
-            const adjustedFullFare = nearestEnding99(rawFullFare);
-            const fullFareEl = document.getElementById(`fullFare${idx}`);
-            if (fullFareEl) fullFareEl.textContent = adjustedFullFare;
-
-            const fullBtn = document.getElementById(`bookFullBtn${idx}`);
-            if (fullBtn) {
-              fullBtn.style.display = 'inline-flex';
-              const newBtn = fullBtn.cloneNode(true);
-              fullBtn.parentNode.replaceChild(newBtn, fullBtn);
-              newBtn.addEventListener('click', async () => {
-                const profileSnap = await db.ref(`users/${user.uid}`).once('value');
-                const profile     = profileSnap.val() || {};
-
-                const bookingData = {
-                  driverId:       slot.driverId,
-                  slotKey:        slot.slotKey,
-                  pickup:         slot.pickup,
-                  dropoff:        slot.dropoff,
-                  date:           slot.date,
-                  time:           slot.time,
-                  seatsRequested: carTotalSeats,
-                  seatsAvailable: availSeats,
-                  fare:           adjustedFullFare,
-                  customerId:     user.uid,
-                  carBrand:       slot.carBrand     || '',
-                  carReg:         slot.carReg       || '',
-                  driverName:     slot.driverName   || '',
-                  driverNumber:   slot.driverNumber || '',
-                  bookEntireCar:  true
-                };
-                localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
-                window.location.href = 'checkout.html';
-              });
-            }
-          } else {
-            const fullBtn = document.getElementById(`bookFullBtn${idx}`);
-            if (fullBtn) fullBtn.style.display = 'none';
-          }
-        })(slot, idx, avail, perSeatFare);
+        // Store slot data for booking
+        card.setAttribute('data-slot', JSON.stringify({
+          driverId: slot.driverId,
+          slotKey: slot.slotKey,
+          pickup: slot.pickup,
+          dropoff: slot.dropoff,
+          date: slot.date,
+          time: slot.time,
+          tripType: tripType,
+          fare: fare,
+          carBrand: slot.carBrand || '',
+          carReg: slot.carReg || '',
+          driverName: slot.driverName || '',
+          driverNumber: slot.driverNumber || ''
+        }));
       });
+    }
+
+    function bookTrip(slotIndex, tripType) {
+      const user = auth.currentUser;
+      if (!user) {
+        alert('Please login first');
+        return;
+      }
+
+      const slotsDiv = document.getElementById(`slots-${tripType}`);
+      const slotCard = slotsDiv.children[slotIndex];
+      const slotData = JSON.parse(slotCard.getAttribute('data-slot'));
+
+      const bookingData = {
+        driverId: slotData.driverId,
+        slotKey: slotData.slotKey,
+        pickup: slotData.pickup,
+        dropoff: slotData.dropoff,
+        date: slotData.date,
+        time: slotData.time,
+        tripType: slotData.tripType,
+        fare: slotData.fare,
+        customerId: user.uid,
+        carBrand: slotData.carBrand,
+        carReg: slotData.carReg,
+        driverName: slotData.driverName,
+        driverNumber: slotData.driverNumber
+      };
+
+      localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
+      window.location.href = 'checkout.html';
     }
 
     function escapeHtml(str) {
