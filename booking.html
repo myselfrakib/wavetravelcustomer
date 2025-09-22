@@ -310,7 +310,6 @@
     const auth = firebase.auth();
 
     let currentTab = 'oneway';
-    let locationFareMap = {}; // Will store {name: {onewayfare: x, twowayfare: y}}
     let debugMode = false; // Set to true to enable debug logging
 
     // Debug helper
@@ -341,31 +340,8 @@
       document.getElementById(`${tabName}-tab`).classList.add('active');
     }
 
-    // Calculate fare based on trip type
-    function calculateFare(pickup, dropoff, tripType) {
-      const pickupData = locationFareMap[pickup];
-      const dropoffData = locationFareMap[dropoff];
-      
-      if (!pickupData || !dropoffData) {
-        debugLog('Missing fare data for:', pickup, dropoff);
-        // Return a default fare if fare data is missing
-        return tripType === 'roundtrip' ? 1000 : 500;
-      }
-
-      let fare = 0;
-      if (tripType === 'oneway') {
-        const pickupFare = Number(pickupData.onewayfare || 0);
-        const dropoffFare = Number(dropoffData.onewayfare || 0);
-        fare = Math.abs(pickupFare - dropoffFare);
-      } else if (tripType === 'roundtrip') {
-        const pickupFare = Number(pickupData.twowayfare || 0);
-        const dropoffFare = Number(dropoffData.twowayfare || 0);
-        fare = Math.abs(pickupFare - dropoffFare);
-      }
-      
-      // If calculated fare is 0, use a default
-      return fare > 0 ? fare : (tripType === 'roundtrip' ? 1000 : 500);
-    }
+    // Calculate fare based on trip type - REMOVED
+    // Now fetching fare directly from slot data
 
     // Debounced auto-search wrapper
     const debounceSearch = debounce(() => {
@@ -398,20 +374,12 @@
           const loc = child.val();
           const name = (loc && typeof loc === 'object' && loc.name) ? loc.name : child.key;
           
-          if (name && loc && typeof loc === 'object') {
-            // Store fare data
-            locationFareMap[name] = {
-              onewayfare: Number(loc.onewayfare || 0),
-              twowayfare: Number(loc.twowayfare || 0)
-            };
-            
+          if (name) {
             const option = `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
             puOpts += option;
             doOpts += option;
           }
         });
-        
-        debugLog('Location fare map:', locationFareMap);
         
         // Update all dropdowns
         ['oneway', 'roundtrip'].forEach(tabType => {
@@ -575,7 +543,7 @@
                     
                     // Additional fields that might exist
                     status: slotData.status || 'available',
-                    fare: slotData.fare || null,
+                    fare: Number(slotData.fare) || 0, // Get fare directly from slot data
                     distance: slotData.distance || null,
                     duration: slotData.duration || null,
                     notes: slotData.notes || '',
@@ -711,7 +679,8 @@
       debugLog('Rendering slots:', slots);
 
       slots.forEach((slot, idx) => {
-        const fare = slot.fare || calculateFare(slot.pickup, slot.dropoff, tripType);
+        // Use fare directly from slot data - no calculation needed
+        const fare = Number(slot.fare) || 0;
         const displayTime = formatTime24to12(slot.time);
         const displayDate = formatDateISOtoDMY(slot.date);
         const carInfo = `${slot.carBrand}${slot.carReg ? ' (' + slot.carReg + ')' : ''}`;
@@ -724,6 +693,9 @@
         const tripTypeClass = tripType === 'oneway' ? 'btn-oneway' : 'btn-roundtrip';
         const tripIcon = tripType === 'oneway' ? 'fa-arrow-right' : 'fa-exchange-alt';
 
+        // Show fare only if it exists and is greater than 0
+        const showFare = fare > 0;
+        
         card.innerHTML = `
           <div class="slot-accent" aria-hidden="true"></div>
 
@@ -766,7 +738,7 @@
                 <div class="pill date-pill">${escapeHtml(displayDate)}</div>
                 <div class="pill time-pill">${escapeHtml(displayTime)}</div>
                 ${slot.seats ? `<div class="pill" style="background: linear-gradient(90deg,#fff2e6,#ffecd6); color: #d97706;"><i class="fas fa-users"></i>${slot.seats} seats</div>` : ''}
-                <div class="pill fare-pill">₹${fare}</div>
+                ${showFare ? `<div class="pill fare-pill">₹${fare}</div>` : ''}
               </div>
             </div>
 
@@ -778,7 +750,7 @@
                     <span>Book ${tripTypeDisplay}</span>
                   </div>
                   <div class="btn-right">
-                    <span class="price-pill">₹${fare}</span>
+                    ${showFare ? `<span class="price-pill">₹${fare}</span>` : '<span class="price-pill">Contact</span>'}
                   </div>
                 </button>
               </div>
@@ -786,7 +758,7 @@
           </div>
 
           <div class="slot-right" aria-hidden="true">
-            <div class="fare-large">₹${fare}</div>
+            <div class="fare-large">${showFare ? `₹${fare}` : 'Contact for fare'}</div>
             ${debugMode ? `<div style="font-size: 0.7rem; color: var(--muted); margin-top: 4px;">ID: ${slot.slotId.substring(0, 8)}...</div>` : ''}
           </div>
         `;
