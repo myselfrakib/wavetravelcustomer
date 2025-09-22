@@ -266,7 +266,7 @@
       } else if (!booking || booking.fare <= 0) {
         payBtnText.textContent = 'Contact for Booking';
       } else {
-        payBtnText.innerHTML = '<i class="fas fa-lock"></i> Pay & Book';
+        payBtnText.innerHTML = 'Pay & Book';
       }
     }
 
@@ -471,12 +471,13 @@
           return;
         }
 
+        // Store user data and render
         userData.uid = user.uid;
         currentUser = userData;
         renderBookingSummary(userData);
         
-        // Quick setup
-        setCheckboxChecked(false);
+        // Auto-tick terms and conditions
+        setCheckboxChecked(true);
         updatePayButton();
 
       } catch (err) {
