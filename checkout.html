@@ -336,37 +336,6 @@
 
     const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
-    // Enhanced WebView detection
-    function isInWebView() {
-      const ua = navigator.userAgent.toLowerCase();
-      
-      const webviewIndicators = [
-        'wv', // Chrome WebView
-        'android.*version.*safari', // Android WebView
-        'webview',
-        'fb_iab', // Facebook in-app browser
-        'twitter',
-        'instagram',
-        'tiktok',
-        'linkedin'
-      ];
-      
-      return webviewIndicators.some(indicator => {
-        const regex = new RegExp(indicator);
-        return regex.test(ua);
-      }) || (
-        // iOS WebView detection
-        window.navigator.standalone === false && 
-        /iphone|ipad|ipod/i.test(ua) &&
-        !/safari/i.test(ua)
-      );
-    }
-
-    function isMobileDevice() {
-      return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase()) ||
-             window.innerWidth <= 768;
-    }
-
     // Process successful payment (Updated for trip-based booking with slot removal)
     async function processSuccessfulPayment(paymentId, bookingData, userData) {
       try {
@@ -438,48 +407,6 @@
     
     termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
-
-    // Payment status checker for WebView browser redirect
-    function checkPaymentStatus(sessionId) {
-      console.log('Starting payment status check for session:', sessionId);
-      
-      const statusRef = db.ref(`paymentSessions/${sessionId}/status`);
-      
-      showCenterToast('Payment opened in browser. Complete payment and return to app.', 5000);
-      
-      // Listen for status changes
-      const statusListener = statusRef.on('value', async (snapshot) => {
-        const status = snapshot.val();
-        console.log('Payment status update:', status);
-        
-        if (status === 'completed') {
-          const sessionData = await db.ref(`paymentSessions/${sessionId}`).once('value');
-          const session = sessionData.val();
-          
-          if (session && session.paymentId) {
-            showCenterToast('Payment successful! Processing booking...', 3000);
-            
-            await processSuccessfulPayment(session.paymentId, session.bookingData, session.userData);
-            
-            await db.ref(`paymentSessions/${sessionId}`).remove();
-            statusRef.off('value', statusListener);
-          }
-        } else if (status === 'failed') {
-          showCenterToast('Payment failed. Please try again.', 3000);
-          statusRef.off('value', statusListener);
-          
-          setTimeout(async () => {
-            await db.ref(`paymentSessions/${sessionId}`).remove();
-          }, 5000);
-        }
-      });
-      
-      // Set a timeout to clean up if no response
-      setTimeout(() => {
-        statusRef.off('value', statusListener);
-        console.log('Payment check timeout for session:', sessionId);
-      }, 300000); // 5 minutes timeout
-    }
 
     if (!booking) {
       summaryEl.innerHTML = '<div style="padding:16px;color:#6b7280;font-weight:700">Please select a trip first.</div>';
@@ -616,7 +543,7 @@
             payBtn.disabled = !termsChk.checked; 
           });
 
-          // Payment handler
+          // Payment handler - Simple Razorpay integration only
           payBtn.addEventListener('click', async () => {
             if (!termsChk.checked) return;
 
@@ -642,107 +569,7 @@
               }
             }
 
-            // If WebView, redirect to mobile browser for payment
-            if (isInWebView()) {
-              console.log('WebView detected - redirecting to mobile browser for payment');
-              
-              const paymentSessionId = `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-              
-              const paymentData = {
-                bookingData: booking,
-                userData: userData,
-                sessionId: paymentSessionId,
-                createdAt: new Date().toISOString(),
-                status: 'pending'
-              };
-              
-              try {
-                await db.ref(`paymentSessions/${paymentSessionId}`).set(paymentData);
-                
-                const currentUrl = window.location.href;
-                const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
-                const paymentUrl = `${baseUrl}/payment.html?session=${paymentSessionId}`;
-                
-                console.log('Payment URL created:', paymentUrl);
-                
-                showCenterToast('Opening payment in browser...', 2000);
-                
-                setTimeout(() => {
-                  let browserOpened = false;
-                  
-                  // Try multiple methods to open browser
-                  try {
-                    const newWindow = window.open(paymentUrl, '_blank', 'noopener,noreferrer');
-                    if (newWindow && !newWindow.closed) {
-                      console.log('Browser opened with window.open(_blank)');
-                      browserOpened = true;
-                    } else {
-                      throw new Error('window.open returned null');
-                    }
-                  } catch (e) {
-                    console.warn('window.open(_blank) failed:', e);
-                  }
-                  
-                  if (!browserOpened) {
-                    try {
-                      const systemWindow = window.open(paymentUrl, '_system');
-                      if (systemWindow) {
-                        console.log('Browser opened with window.open(_system)');
-                        browserOpened = true;
-                      }
-                    } catch (e) {
-                      console.warn('window.open(_system) failed:', e);
-                    }
-                  }
-                  
-                  if (!browserOpened) {
-                    try {
-                      window.location.href = paymentUrl;
-                      console.log('Redirecting with location.href');
-                      browserOpened = true;
-                    } catch (e) {
-                      console.warn('location.href failed:', e);
-                    }
-                  }
-                  
-                  if (!browserOpened) {
-                    try {
-                      const link = document.createElement('a');
-                      link.href = paymentUrl;
-                      link.target = '_blank';
-                      link.rel = 'noopener noreferrer';
-                      link.style.display = 'none';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                      console.log('Browser opened with link click');
-                      browserOpened = true;
-                    } catch (e) {
-                      console.warn('Link click method failed:', e);
-                    }
-                  }
-                  
-                  if (browserOpened) {
-                    checkPaymentStatus(paymentSessionId);
-                    setTimeout(() => {
-                      showCenterToast('Payment opened in browser. Complete payment and return to app.', 5000);
-                    }, 1000);
-                  } else {
-                    alert('Unable to open payment page. Please try again or use a different browser.');
-                  }
-                }, 800);
-                
-              } catch (error) {
-                console.error('Failed to create payment session:', error);
-                alert('Failed to initialize payment session. Please try again.');
-              }
-              
-              return;
-            }
-
-            // For native mobile browser, use direct Razorpay
-            console.log('Native browser - using direct Razorpay');
-            
+            // Direct Razorpay payment
             const rzpOptions = {
               key: 'rzp_live_RJxLTulsCPKQqD',
               amount: booking.fare * 100,
@@ -793,14 +620,6 @@
       const suffix = h >= 12 ? 'PM' : 'AM';
       h = h % 12 || 12;
       return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
-    }
-
-    // Force mobile viewport for consistent behavior
-    if (isMobileDevice()) {
-      const viewport = document.querySelector('meta[name="viewport"]');
-      if (viewport) {
-        viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-      }
     }
   </script>
 </body>
