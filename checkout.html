@@ -544,24 +544,9 @@
       }
     });
 
-    // Error handling
+    // Error handling without page navigation warnings
     window.addEventListener('unhandledrejection', function(event) {
       console.error('Unhandled promise rejection:', event.reason);
-      if (isProcessing) {
-        showProgress(false);
-        isProcessing = false;
-        updatePayButton();
-        showCenterToast('An unexpected error occurred. Please try again.', 3000, 'error');
-      }
-    });
-
-    // Prevent accidental page refresh during processing
-    window.addEventListener('beforeunload', function(e) {
-      if (isProcessing) {
-        e.preventDefault();
-        e.returnValue = 'Payment is being processed. Are you sure you want to leave?';
-        return e.returnValue;
-      }
     });
 
     console.log('Checkout page initialized');
