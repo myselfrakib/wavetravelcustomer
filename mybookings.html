@@ -554,7 +554,6 @@
 
         // Now render cards (uses possibly updated pickupTime)
         bookingsEl.innerHTML = myBookings.map((b, i) => {
-          const seats = b.seatsRequested || b.seatsBooked || b.seats || '—';
           const carText = (b.carBrand ? b.carBrand : '—') + (b.carReg ? ` (${b.carReg})` : '');
           const fareText = (b.fare !== undefined && b.fare !== null) ? `₹${b.fare}` : 'N/A';
           const driverNumber = (b.driverNumber || b.driver_phone || b.driverPhone || b.driverContact || '').toString().trim();
@@ -575,7 +574,6 @@
               <div class="info"><i class="fas fa-clock"></i> <span>${to12Hour(b.time)}</span></div>
               <div class="info"><i class="fas fa-map-marker-alt"></i> <span>Pickup: ${b.pickup}</span></div>
               <div class="info"><i class="fas fa-flag-checkered"></i> <span>Dropoff: ${b.dropoff}</span></div>
-              <div class="info"><i class="fas fa-users"></i> <span>Seats: ${seats}</span></div>
               <div class="info"><i class="fas fa-car"></i> <span>${carText}</span></div>
 
               <div class="fare-row">
@@ -765,4 +763,3 @@
 
 </body>
 </html>
-
