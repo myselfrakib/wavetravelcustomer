@@ -16,8 +16,8 @@
       --muted: #6da5d0;
       --bg-grad: linear-gradient(to right, var(--accent), var(--dark));
       --card-bg: #ffffff;
-      --danger: #ff4d4f;
-      --success: #28a745;
+      --danger:#ff4d4f;
+      --success:#28a745;
     }
     * { box-sizing: border-box; }
     html,body { height:100%; margin:0; font-family:'Poppins',sans-serif; background:var(--bg-grad); color: #0b1220; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
@@ -382,11 +382,8 @@
              window.innerWidth <= 768;
     }
 
-    // Process successful payment
+    // Process successful payment (Updated for trip-based booking)
     async function processSuccessfulPayment(paymentId, bookingData, userData) {
-      // For trip booking, we don't need to update seat availability like before
-      // Just create the booking directly
-      
       try {
         const bookingsRef = db.ref(`bookings/${bookingData.driverId}`);
         const newBookingRef = bookingsRef.push();
@@ -410,8 +407,7 @@
           date: new Date().toISOString()
         });
 
-        // If this is a slot booking, we might want to mark it as booked or reduce availability
-        // This depends on your business logic - whether one slot can have multiple bookings
+        // Mark slot as booked (instead of reducing seat count)
         if (bookingData.slotKey) {
           try {
             await db.ref(`availableslots/${bookingData.driverId}/${bookingData.slotKey}/status`).set('booked');
@@ -656,6 +652,12 @@
                 const snap = await slotRef.once('value');
                 if (!snap.exists()) {
                   alert('This trip is no longer available. Please search for another one.');
+                  return;
+                }
+                // Check if already booked
+                const slotData = snap.val();
+                if (slotData.status === 'booked') {
+                  alert('This trip has already been booked. Please search for another one.');
                   return;
                 }
               } catch (e) {
