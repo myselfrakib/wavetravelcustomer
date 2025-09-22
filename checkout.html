@@ -278,42 +278,22 @@
     });
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
 
-    // Enhanced atomic booking process with proper slot deletion
+    // Streamlined atomic booking process - fast execution
     async function processSuccessfulPayment(paymentId, bookingData, userData) {
-      if (isProcessing) return;
-      isProcessing = true;
-      
-      showProgress(true);
-      
       try {
-        console.log('Starting payment processing...', { paymentId, bookingData });
-
-        if (!bookingData || !bookingData.driverId) {
-          throw new Error('Missing booking data or driver ID');
-        }
-
-        if (!bookingData.slotKey) {
-          throw new Error('Missing slot key - cannot remove slot');
+        if (!bookingData || !bookingData.driverId || !bookingData.slotKey) {
+          alert('Booking info incomplete. Contact support with Payment ID: ' + paymentId);
+          return;
         }
 
         const driverId = bookingData.driverId;
         const slotKey = bookingData.slotKey;
 
-        console.log('Processing booking for:', { driverId, slotKey });
-
-        // First verify the slot still exists
-        const slotCheckSnapshot = await db.ref(`availableslots/${driverId}/${slotKey}`).once('value');
-        if (!slotCheckSnapshot.exists()) {
-          throw new Error('This ride is no longer available. Please contact support if payment was deducted.');
-        }
-
         // Create booking reference
         const newBookingRef = db.ref(`bookings/${driverId}`).push();
         const bookingKey = newBookingRef.key;
 
-        console.log('Generated booking key:', bookingKey);
-
-        // Prepare final booking data
+        // Final booking data
         const finalBookingData = {
           ...bookingData,
           userId: userData.uid,
@@ -321,73 +301,38 @@
           userPhone: userData.phone,
           paymentId: paymentId,
           bookedAt: new Date().toISOString(),
-          status: 'confirmed',
-          bookingId: bookingKey
+          status: 'confirmed'
         };
 
         // Driver wallet entry
         const walletEntry = {
-          amount: (bookingData.fare || 0) * 0.6, // 60% commission
+          amount: (bookingData.fare || 0) * 0.6,
           status: 'unpaid',
           bookingId: bookingKey,
           booking: finalBookingData,
-          date: new Date().toISOString(),
-          paymentId: paymentId
+          date: new Date().toISOString()
         };
 
-        console.log('Preparing atomic update...', { 
-          bookingPath: `bookings/${driverId}/${bookingKey}`,
-          walletPath: `driverWallet/${driverId}/${bookingKey}`,
-          slotPath: `availableslots/${driverId}/${slotKey}`
-        });
-
-        // Build atomic update: write booking + wallet, delete slot
+        // Atomic update: save booking + wallet, delete slot
         const updates = {};
         updates[`bookings/${driverId}/${bookingKey}`] = finalBookingData;
         updates[`driverWallet/${driverId}/${bookingKey}`] = walletEntry;
-        updates[`availableslots/${driverId}/${slotKey}`] = null; // This deletes the slot
+        updates[`availableslots/${driverId}/${slotKey}`] = null; // Delete slot
 
-        // Execute atomic update
+        // Execute instantly
         await db.ref().update(updates);
         
-        console.log('Atomic update successful! Booking saved and slot deleted:', {
-          driverId,
-          slotKey,
-          bookingKey,
-          paymentId
-        });
-
-        // Success handling
-        showProgress(false);
-        showCenterToast('Payment successful & booking confirmed!', 3000, 'success');
+        // Immediate success feedback and redirect
+        showCenterToast('Payment successful & booking confirmed!', 1500);
+        localStorage.removeItem('selectedBooking');
         
-        // Clear localStorage and redirect
         setTimeout(() => {
-          localStorage.removeItem('selectedBooking');
           window.location.href = 'mybookings.html';
-        }, 2000);
+        }, 1000);
 
       } catch (err) {
-        console.error('Error in processSuccessfulPayment:', err);
-        showProgress(false);
-        
-        let errorMessage = 'Booking failed after payment. ';
-        
-        if (err.message) {
-          errorMessage += err.message;
-        } else if (err.code) {
-          errorMessage += `Error: ${err.code}`;
-        } else {
-          errorMessage += 'Please contact support.';
-        }
-        
-        errorMessage += ` Payment ID: ${paymentId}`;
-        
-        showCenterToast(errorMessage, 5000, 'error');
-        
-        // Re-enable payment button for retry
-        isProcessing = false;
-        updatePayButton();
+        console.error('Booking error:', err);
+        alert('Error saving booking. Contact support with Payment ID: ' + paymentId);
       }
     }
 
@@ -505,181 +450,105 @@
       `;
     }
 
-    // Initialize and load booking data
+    // Streamlined initialization - fast loading
     function initializeBooking() {
       try {
         const bookingStr = localStorage.getItem('selectedBooking');
         if (!bookingStr) {
           showError('Please select a trip first.');
-          payBtn.disabled = true;
           return;
         }
 
         booking = JSON.parse(bookingStr);
-        console.log('Loaded booking data:', booking);
-
+        
         if (!booking.driverId || !booking.slotKey) {
           showError('Invalid booking data. Missing required information.');
-          payBtn.disabled = true;
           return;
         }
 
-        // Verify slot is still available
-        db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`).once('value')
-          .then(snapshot => {
-            if (!snapshot.exists()) {
-              showError('This ride is no longer available. Please search for another one.');
-              payBtn.disabled = true;
-              return;
-            }
-            
-            // Slot exists, proceed with loading user data
-            loadUserData();
-          })
-          .catch(err => {
-            console.error('Error checking slot availability:', err);
-            showError('Failed to verify ride availability. Please try again.');
-            payBtn.disabled = true;
-          });
+        // Load user data immediately without extra checks
+        loadUserData();
 
       } catch (err) {
         console.error('Error parsing booking data:', err);
         showError('Invalid booking data. Please try again.');
-        payBtn.disabled = true;
       }
     }
 
+    // Fast user data loading
     async function loadUserData() {
       const user = auth.currentUser;
       if (!user) {
         showError('Please login first.');
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 2000);
         return;
       }
-
-      let dbUid = user.uid;
-      let userData = null;
 
       try {
-        // Try to get user by UID first
-        const snapUid = await db.ref(`users/${dbUid}`).once('value');
-        if (snapUid.exists()) {
-          userData = snapUid.val();
-        } else {
-          // Fallback: search by phone or email
-          if (user.phoneNumber) {
-            const phoneSnap = await db.ref("users").orderByChild("phone").equalTo(user.phoneNumber).once("value");
-            if (phoneSnap.exists()) {
-              const rec = phoneSnap.val();
-              dbUid = Object.keys(rec)[0];
-              userData = rec[dbUid];
-            }
-          }
-          
-          if (!userData && user.email) {
-            const emailSnap = await db.ref("users").orderByChild("email").equalTo(user.email).once("value");
-            if (emailSnap.exists()) {
-              const rec = emailSnap.val();
-              dbUid = Object.keys(rec)[0];
-              userData = rec[dbUid];
-            }
-          }
+        // Quick user data fetch
+        const snapUid = await db.ref(`users/${user.uid}`).once('value');
+        let userData = snapUid.val();
+
+        if (!userData) {
+          showError('Profile not found. Please complete your profile first.');
+          return;
         }
+
+        userData.uid = user.uid;
+        currentUser = userData;
+        renderBookingSummary(userData);
+        
+        // Quick setup
+        setCheckboxChecked(false);
+        updatePayButton();
+
       } catch (err) {
-        console.error('Error fetching user data:', err);
-        showError('Failed to load user profile. Please try again.');
-        return;
+        console.error('Error loading user data:', err);
+        showError('Failed to load profile. Please try again.');
       }
-
-      if (!userData) {
-        showError('Profile not found. Please complete your profile first.');
-        setTimeout(() => {
-          window.location.href = 'profile.html';
-        }, 2000);
-        return;
-      }
-
-      // Store user data and render
-      userData.uid = dbUid;
-      currentUser = userData;
-      renderBookingSummary(userData);
-      
-      // Initialize checkbox and button states
-      setCheckboxChecked(false);
-      updatePayButton();
     }
 
-    // Payment processing
+    // Simplified payment initialization
     function initializePayment() {
-      if (isProcessing || !booking || !currentUser || !termsChk.checked) {
+      if (!booking || !currentUser || !termsChk.checked || isProcessing) {
         return;
       }
 
       isProcessing = true;
       updatePayButton();
 
-      // Double-check slot availability before payment
-      db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`).once('value')
-        .then(snapshot => {
-          if (!snapshot.exists()) {
+      // Direct payment without extra checks
+      const rzpOptions = {
+        key: 'rzp_live_RJxLTulsCPKQqD',
+        amount: (booking.fare || 0) * 100,
+        currency: 'INR',
+        name: 'WaveTravel',
+        description: `${booking.triptype || booking.tripType || 'Trip'} Booking`,
+        prefill: {
+          name: currentUser.name || '',
+          contact: currentUser.phone || '',
+          email: auth.currentUser.email || ''
+        },
+        theme: { color: '#2f6690' },
+        handler: function(response) {
+          processSuccessfulPayment(response.razorpay_payment_id, booking, currentUser);
+        },
+        modal: {
+          ondismiss: function() {
             isProcessing = false;
             updatePayButton();
-            showCenterToast('This ride is no longer available. Please search for another one.', 3000, 'error');
-            return;
           }
+        }
+      };
 
-          // Proceed with Razorpay payment
-          const rzpOptions = {
-            key: 'rzp_live_RJxLTulsCPKQqD', // Your Razorpay key
-            amount: (booking.fare || 0) * 100, // Amount in paisa
-            currency: 'INR',
-            name: 'WaveTravel',
-            description: `${booking.triptype || booking.tripType || 'Trip'} Booking`,
-            prefill: {
-              name: currentUser.name || '',
-              contact: currentUser.phone || '',
-              email: auth.currentUser.email || ''
-            },
-            theme: { color: '#2f6690' },
-            handler: function(response) {
-              console.log('Payment successful:', response);
-              processSuccessfulPayment(response.razorpay_payment_id, booking, currentUser);
-            },
-            modal: {
-              ondismiss: function() {
-                console.log('Payment cancelled by user');
-                isProcessing = false;
-                updatePayButton();
-                showCenterToast('Payment was cancelled.', 2000, 'error');
-              }
-            }
-          };
-
-          try {
-            const rzp = new Razorpay(rzpOptions);
-            rzp.on('payment.failed', function(response) {
-              console.error('Payment failed:', response.error);
-              isProcessing = false;
-              updatePayButton();
-              showCenterToast(`Payment failed: ${response.error.description}`, 4000, 'error');
-            });
-            
-            rzp.open();
-          } catch (error) {
-            console.error('Razorpay initialization failed:', error);
-            isProcessing = false;
-            updatePayButton();
-            showCenterToast('Payment system failed to load. Please try again.', 3000, 'error');
-          }
-        })
-        .catch(err => {
-          console.error('Availability check failed:', err);
-          isProcessing = false;
-          updatePayButton();
-          showCenterToast('Failed to verify availability. Please try again.', 3000, 'error');
-        });
+      try {
+        const rzp = new Razorpay(rzpOptions);
+        rzp.open();
+      } catch (error) {
+        console.error('Razorpay failed:', error);
+        isProcessing = false;
+        updatePayButton();
+        alert('Payment failed to load. Please try again.');
+      }
     }
 
     // Event listeners
