@@ -49,6 +49,19 @@
       font-size: 1rem;
       cursor: pointer;
     }
+    .fare-display {
+      margin-top: 15px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    .fare-display.show {
+      background: rgba(255, 215, 0, 0.2);
+      border: 2px solid #ffd700;
+    }
     .slot-list {
       margin-top: 24px;
     }
@@ -61,6 +74,14 @@
     .slot-card p {
       margin: 6px 0;
       font-size: 0.9rem;
+    }
+    .slot-card .fare-highlight {
+      background: rgba(255, 215, 0, 0.2);
+      padding: 8px;
+      border-radius: 6px;
+      margin: 8px 0;
+      font-weight: bold;
+      text-align: center;
     }
     .slot-card button {
       background: #ff4d4d;
@@ -181,6 +202,9 @@
     const slotList = document.getElementById("slotList");
     const addBtn = document.getElementById("addSlotBtn");
 
+    // Store location fare data
+    let locationFareMap = {};
+
     // Populate hour/minute selectors
     for (let i = 1; i <= 12; i++) hour.innerHTML += `<option>${i}</option>`;
     for (let i = 0; i < 60; i += 5) {
@@ -221,6 +245,63 @@
         .replace(/'/g, '&#39;');
     }
 
+    // Calculate fare based on pickup, dropoff, and trip type
+    function calculateFare(pickupName, dropoffName, tripType) {
+      const pickupData = locationFareMap[pickupName];
+      const dropoffData = locationFareMap[dropoffName];
+      
+      if (!pickupData || !dropoffData) {
+        console.warn('Missing fare data for:', pickupName, dropoffName);
+        return 0;
+      }
+
+      let fare = 0;
+      if (tripType === 'oneway') {
+        const pickupFare = Number(pickupData.onewayfare || 0);
+        const dropoffFare = Number(dropoffData.onewayfare || 0);
+        fare = Math.abs(pickupFare - dropoffFare);
+      } else if (tripType === 'roundtrip') {
+        const pickupFare = Number(pickupData.roundtripfare || pickupData.roundtrip || 0);
+        const dropoffFare = Number(dropoffData.roundtripfare || dropoffData.roundtrip || 0);
+        fare = Math.abs(pickupFare - dropoffFare);
+      }
+      
+      return fare;
+    }
+
+    // Update fare display when pickup, dropoff, or trip type changes
+    function updateFareDisplay() {
+      const pickupValue = pickup.value;
+      const dropoffValue = dropoff.value;
+      const tripTypeValue = triptype.value;
+      
+      if (!pickupValue || !dropoffValue) {
+        fareDisplay.textContent = "Select pickup and dropoff to see fare";
+        fareDisplay.classList.remove('show');
+        return;
+      }
+      
+      if (pickupValue === dropoffValue) {
+        fareDisplay.textContent = "Pickup and dropoff cannot be the same";
+        fareDisplay.classList.remove('show');
+        return;
+      }
+      
+      const fare = calculateFare(pickupValue, dropoffValue, tripTypeValue);
+      const tripTypeDisplay = tripTypeValue === 'roundtrip' ? 'Round Trip' : 'One Way';
+      
+      if (fare > 0) {
+        fareDisplay.innerHTML = `
+          <div style="font-size: 0.9rem; margin-bottom: 5px;">${tripTypeDisplay} Fare</div>
+          <div style="font-size: 1.3rem; color: #ffd700;">₹${fare}</div>
+        `;
+        fareDisplay.classList.add('show');
+      } else {
+        fareDisplay.textContent = "Unable to calculate fare";
+        fareDisplay.classList.remove('show');
+      }
+    }
+
     /**
      * Load locations and set defaults:
      * - Pickup default to "Berhampore" (with flexible matching for spaces/case)
@@ -233,6 +314,9 @@
         let opts = "";
         let pickupDefaultOption = null;
         let dropoffDefaultOption = null;
+        
+        // Clear fare map
+        locationFareMap = {};
         
         // If nothing, clear selects
         if (!val) {
@@ -249,7 +333,7 @@
           for (const l of val) {
             if (!l) continue;
             const name = l.name || String(l);
-            locationNames.push(name);
+            locationNames.push({ name, data: l });
           }
         } else {
           // object: iterate keys so structure like /locations/8 works
@@ -257,16 +341,24 @@
             const l = val[k];
             if (!l) continue;
             const name = (typeof l === 'object' && l.name) ? l.name : String(l);
-            locationNames.push(name);
+            locationNames.push({ name, data: l });
           }
         }
 
-        // Build options and find defaults
-        for (const name of locationNames) {
+        // Build options, fare map, and find defaults
+        for (const { name, data } of locationNames) {
           const cleanName = String(name).trim();
           const nameLower = cleanName.toLowerCase();
           
           opts += `<option value="${escapeHtml(cleanName)}">${escapeHtml(cleanName)}</option>`;
+          
+          // Store fare data
+          if (typeof data === 'object' && data !== null) {
+            locationFareMap[cleanName] = {
+              onewayfare: Number(data.onewayfare || 0),
+              roundtripfare: Number(data.roundtripfare || data.roundtrip || 0)
+            };
+          }
           
           // Check for Berhampore (flexible matching - handles "Berhampore ", "berhampore", etc.)
           if (nameLower === "berhampore" && !pickupDefaultOption) {
@@ -302,8 +394,8 @@
           }
         }
         
-        // Debug: log all available locations
-        console.log('Available locations:', locationNames);
+        console.log('Available locations:', locationNames.map(l => l.name));
+        console.log('Location fare map:', locationFareMap);
         console.log('Pickup default found:', pickupDefaultOption);
         console.log('Dropoff default found:', dropoffDefaultOption);
       }, err => {
@@ -319,6 +411,7 @@
         snap.forEach(ch => {
           const s = ch.val();
           const tripTypeDisplay = s.triptype === 'roundtrip' ? 'Round Trip' : 'One Way';
+          
           html += `
             <div class="slot-card">
               <p><strong>Sl No. ${cnt++}</strong></p>
@@ -342,6 +435,11 @@
         remove(ref(db, `availableslots/${driverId}/${key}`));
       }
     };
+
+    // Add event listeners for fare calculation
+    // pickup.addEventListener('change', updateFareDisplay);
+    // dropoff.addEventListener('change', updateFareDisplay);
+    // triptype.addEventListener('change', updateFareDisplay);
 
     onAuthStateChanged(auth, user => {
       if (!user) {
@@ -373,8 +471,19 @@
               h  = hour.value,
               mi = minute.value,
               ap = ampm.value;
+              
         if (!cid || !pu || !dr || !tt || !dt || !h || !mi || !ap) {
           return alert("All fields are required");
+        }
+        
+        if (pu === dr) {
+          return alert("Pickup and dropoff locations must be different");
+        }
+
+        // Calculate fare
+        const fare = calculateFare(pu, dr, tt);
+        if (fare <= 0) {
+          return alert("Unable to calculate fare. Please check pickup and dropoff locations.");
         }
 
         // Fetch car details (including seats) from approvedcars
@@ -389,6 +498,7 @@
           triptype: tt,
           date: dt,
           time: t24,
+          fare: fare, // Include calculated fare
           seats: seatCount,
           driverName: cd.driverName || "",
           driverNumber: cd.driverNumber || "",
@@ -396,8 +506,20 @@
           carReg: cd.carReg || ""
         };
 
-        await push(ref(db, `availableslots/${driverId}`), slotData);
-        alert("Slot added successfully");
+        try {
+          await push(ref(db, `availableslots/${driverId}`), slotData);
+          alert("Slot added successfully!");
+          
+          // Reset form (optional)
+          // car.selectedIndex = 0;
+          // date.value = iso;
+          // hour.selectedIndex = 0;
+          // minute.selectedIndex = 0;
+          // ampm.value = "AM";
+        } catch (error) {
+          console.error("Error adding slot:", error);
+          alert("Failed to add slot. Please try again.");
+        }
       };
     });
   </script>
