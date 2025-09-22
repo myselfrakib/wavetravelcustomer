@@ -270,30 +270,6 @@
       .card-heading { font-size:0.85rem; margin-bottom:5px; }
       .trip-type-badge { font-size:0.7rem; padding:3px 6px; }
     }
-
-    /* WebView fallback modal styles */
-    #wv-fallback-modal {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items:center;
-      justify-content:center;
-      background: rgba(0,0,0,0.45);
-      z-index: 99998;
-    }
-    #wv-fallback-card {
-      background: #fff; padding: 18px; border-radius: 10px; width: 94%; max-width:520px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.25); font-family: 'Poppins', system-ui, sans-serif;
-      color: #111;
-    }
-    #wv-fallback-card h3 { margin:0 0 8px; font-size:16px; color:var(--dark); }
-    #wv-fallback-card p { margin:0 0 12px; color:#444; font-size:14px; }
-    .wv-copy { width:100%; padding:8px; margin-bottom:8px; border-radius:6px; border:1px solid #e5e7eb; font-size:13px; }
-    .wv-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-    .btn { padding:8px 10px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
-    .btn.primary { background:var(--primary); color:white; }
-    .btn.ghost { background:#f3f4f6; color:#111; }
-    .wv-qr { display:block; margin:8px auto 0; max-width:180px; }
   </style>
 </head>
 <body>
@@ -332,24 +308,6 @@
     <span id="center-toast-text">Success</span>
   </div>
 
-  <!-- WebView fallback modal -->
-  <div id="wv-fallback-modal" aria-hidden="true">
-    <div id="wv-fallback-card" role="dialog" aria-modal="true" aria-labelledby="wv-title">
-      <h3 id="wv-title">Payments inside some apps may be limited</h3>
-      <p>If you prefer UPI, try opening the payment in your phone's UPI app or open this page in your system browser. Otherwise continue with web checkout (cards/netbanking).</p>
-
-      <input id="wv-upi-text" class="wv-copy" readonly aria-label="UPI payment string" />
-      <img id="wv-qr" class="wv-qr" src="" alt="UPI QR code" style="display:none" />
-
-      <div class="wv-actions">
-        <button id="wv-try-intent-btn" class="btn primary">Try UPI app</button>
-        <button id="wv-open-browser-btn" class="btn ghost">Open in Browser</button>
-        <button id="wv-continue-web-btn" class="btn ghost">Continue with Web Checkout</button>
-        <button id="wv-copy-btn" class="btn ghost">Copy UPI</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Firebase & Razorpay -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -376,19 +334,18 @@
     const termsBox  = document.getElementById('termsBox');
     const tickSvg   = document.getElementById('termsTick');
 
-    const wvModal = document.getElementById('wv-fallback-modal');
-    const wvUpiInput = document.getElementById('wv-upi-text');
-    const wvQr = document.getElementById('wv-qr');
-    const wvTryIntentBtn = document.getElementById('wv-try-intent-btn');
-    const wvOpenBrowserBtn = document.getElementById('wv-open-browser-btn');
-    const wvContinueWebBtn = document.getElementById('wv-continue-web-btn');
-    const wvCopyBtn = document.getElementById('wv-copy-btn');
-
     const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
-    // Process successful payment (atomic update to remove slot)
+    // Process successful payment (Updated for trip-based booking with atomic update)
     async function processSuccessfulPayment(paymentId, bookingData, userData) {
       try {
+        if (!bookingData || !bookingData.driverId) {
+          console.error('Missing bookingData or driverId; cannot proceed to save booking.');
+          alert('Booking information incomplete. Contact support with Payment ID: ' + paymentId);
+          return;
+        }
+
+        // Prepare final booking object
         const bookingsRef = db.ref(`bookings/${bookingData.driverId}`);
         const newBookingRef = bookingsRef.push();
         const bookingKey = newBookingRef.key;
@@ -403,21 +360,49 @@
           status: 'confirmed'
         };
 
+        // Prepare driver wallet entry
         const walletEntry = {
-          amount: (bookingData.fare || 0) * 0.6,
+          amount: (bookingData.fare || 0) * 0.6, // 60% to driver
           status: 'unpaid',
           bookingId: bookingKey,
           booking: finalBookingData,
           date: new Date().toISOString()
         };
 
+        // Build multi-path update object for atomicity:
         const updates = {};
         updates[`bookings/${bookingData.driverId}/${bookingKey}`] = finalBookingData;
         updates[`driverWallet/${bookingData.driverId}/${bookingKey}`] = walletEntry;
+
+        // === Remove booked slot from availableslots ===
+        // Preferred: use slotKey if provided. If not, fall back to matching slotNumber.
+        const driverId = bookingData.driverId;
+
         if (bookingData.slotKey) {
-          updates[`availableslots/${bookingData.driverId}/${bookingData.slotKey}`] = null;
+          updates[`availableslots/${driverId}/${bookingData.slotKey}`] = null;
+        } else if (bookingData.slotNumber !== undefined && bookingData.slotNumber !== null) {
+          // Find slot(s) under driver with matching slotNumber and remove them
+          try {
+            const slotsSnap = await db.ref(`availableslots/${driverId}`).orderByChild('slotNumber').equalTo(bookingData.slotNumber).once('value');
+            if (slotsSnap.exists()) {
+              const slots = slotsSnap.val();
+              Object.keys(slots).forEach(key => {
+                updates[`availableslots/${driverId}/${key}`] = null;
+              });
+            } else {
+              // No matching slot found; continue without error. The slot may already be removed.
+              console.warn('No availableslot found matching slotNumber for deletion. driverId:', driverId, 'slotNumber:', bookingData.slotNumber);
+            }
+          } catch (err) {
+            console.error('Error searching availableslots by slotNumber:', err);
+            // continue — don't block the primary booking save; but don't attempt deletion if search fails
+          }
+        } else {
+          // No slotKey or slotNumber provided — nothing to remove
+          console.warn('No slotKey or slotNumber present in bookingData; skipping slot deletion.');
         }
 
+        // Apply atomic update (booking + wallet + slot removals)
         await db.ref().update(updates);
 
         showCenterToast('Payment successful & booking confirmed!', 2000);
@@ -432,7 +417,7 @@
       }
     }
 
-    // Center toast helper
+    // Centered toast helper
     function showCenterToast(message, duration = 2200) {
       const toast = document.getElementById('center-toast');
       const text = document.getElementById('center-toast-text');
@@ -441,7 +426,7 @@
       setTimeout(() => toast.classList.remove('show'), duration);
     }
 
-    // Checkbox UI sync
+    // Sync custom checkbox UI with real input
     function setCheckboxChecked(state) {
       if (state) {
         termsBox.classList.add('checked');
@@ -453,142 +438,9 @@
       termsChk.checked = !!state;
       payBtn.disabled = !termsChk.checked;
     }
+    
     termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
-
-    // Detect third-party WebView heuristics
-    function isInWebView() {
-      const ua = navigator.userAgent || '';
-      return /wv|Android.*WebView|FBAN|FBAV|Instagram|Twitter|Line|WhatsApp/i.test(ua) || !!window.ReactNativeWebView;
-    }
-
-    // Modal controls
-    function showWvModal() { wvModal.style.display = 'flex'; wvModal.setAttribute('aria-hidden', 'false'); }
-    function hideWvModal() { wvModal.style.display = 'none'; wvModal.setAttribute('aria-hidden', 'true'); }
-
-    // Attempt to open UPI intent or fallback to modal
-    function tryOpenIntentThenFallback({ upiUri, intentUri, fallbackExternalUrl }) {
-      wvUpiInput.value = upiUri;
-      // generate a simple QR using Google Chart API
-      try {
-        const qrURL = 'https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=' + encodeURIComponent(upiUri);
-        wvQr.src = qrURL;
-        wvQr.style.display = 'block';
-      } catch (e) {
-        wvQr.style.display = 'none';
-      }
-
-      // copy handler
-      wvCopyBtn.onclick = async () => {
-        try {
-          await navigator.clipboard.writeText(upiUri);
-          alert('UPI text copied. Open your UPI app and paste to pay.');
-        } catch (err) {
-          wvUpiInput.select();
-          document.execCommand('copy');
-          alert('Copied. Open your UPI app and paste the text.');
-        }
-      };
-
-      // Open in system browser
-      wvOpenBrowserBtn.onclick = () => {
-        const openUrl = fallbackExternalUrl || location.href;
-        try { window.open(openUrl, '_blank', 'noopener'); } catch(e) { location.href = openUrl; }
-        hideWvModal();
-      };
-
-      // Try intent
-      wvTryIntentBtn.onclick = () => {
-        attemptOpen();
-        hideWvModal();
-      };
-
-      // Continue with web checkout (close modal and trigger RZP)
-      wvContinueWebBtn.onclick = () => {
-        hideWvModal();
-        // dispatch a custom event so the flow continues (RZP flow is bound to payBtn click)
-        payBtn.dispatchEvent(new CustomEvent('continue-web-checkout'));
-      };
-
-      function attemptOpen() {
-        const start = Date.now();
-
-        if (intentUri && /Android/i.test(navigator.userAgent)) {
-          // try intent scheme first on Android
-          try { window.location.href = intentUri; }
-          catch (e) {}
-        } else {
-          // fallback older iframe method (some webviews allow)
-          const iframe = document.createElement('iframe');
-          iframe.style.display = 'none';
-          iframe.src = upiUri;
-          document.body.appendChild(iframe);
-          setTimeout(() => {
-            try { document.body.removeChild(iframe); } catch (e) {}
-          }, 1000);
-        }
-
-        setTimeout(() => {
-          if (document.hidden || document.visibilityState === 'hidden') {
-            return; // likely succeeded
-          }
-          // assume blocked; show modal to let user copy/open in browser
-          showWvModal();
-        }, 1200);
-      }
-
-      // initially try direct attempt once before showing the modal
-      attemptOpen();
-    }
-
-    // Build UPI URI (best-effort; placeholder VPA used if none provided)
-    function buildUpiUri({pa, pn, am, tn, cu = 'INR'}) {
-      // pa (payee vpa) should be provided by merchant. If not, show an informational placeholder.
-      const params = new URLSearchParams();
-      if (pa) params.set('pa', pa);
-      if (pn) params.set('pn', pn);
-      if (am) params.set('am', Number(am).toFixed(2));
-      if (tn) params.set('tn', tn);
-      params.set('cu', cu);
-      return 'upi://pay?' + params.toString();
-    }
-
-    // Start Razorpay checkout (extracted into function to reuse)
-    function startRazorpayCheckout(name, phone, email, bookingObj, userData) {
-      const rzpOptions = {
-        key: 'rzp_live_RJxLTulsCPKQqD',
-        amount: (bookingObj.fare || 0) * 100,
-        currency: 'INR',
-        name: 'WaveTravel',
-        description: `${bookingObj.tripType} Trip Booking`,
-        prefill: { 
-          name: name, 
-          contact: phone, 
-          email: email || ''
-        },
-        theme: {
-          color: '#2f6690'
-        },
-        handler: function(res) {
-          processSuccessfulPayment(res.razorpay_payment_id, bookingObj, userData);
-        },
-        modal: {
-          ondismiss: function() {
-            console.log('Payment cancelled by user');
-            payBtn.disabled = false;
-          }
-        }
-      };
-
-      try {
-        const rzp = new Razorpay(rzpOptions);
-        rzp.open();
-      } catch (error) {
-        console.error('Razorpay initialization failed:', error);
-        alert('Payment initialization failed. Please try again.');
-        payBtn.disabled = false;
-      }
-    }
 
     if (!booking) {
       summaryEl.innerHTML = '<div style="padding:16px;color:#6b7280;font-weight:700">Please select a trip first.</div>';
@@ -725,10 +577,11 @@
             payBtn.disabled = !termsChk.checked; 
           });
 
-          // Main click handler decides between webview fallback or normal checkout
+          // Payment handler - Simple Razorpay integration only
           payBtn.addEventListener('click', async () => {
             if (!termsChk.checked) return;
-            // Prevent double-clicks
+
+            // Prevent double-click / double-init
             payBtn.disabled = true;
 
             // Verify slot still exists (basic check)
@@ -741,6 +594,7 @@
                   payBtn.disabled = false;
                   return;
                 }
+                // Check if already booked
                 const slotData = snap.val();
                 if (slotData && slotData.status === 'booked') {
                   alert('This trip has already been booked. Please search for another one.');
@@ -753,112 +607,67 @@
                 payBtn.disabled = false;
                 return;
               }
-            }
-
-            // If inside a third-party WebView, show the WebView-friendly modal with options
-            if (isInWebView()) {
-              // Build a best-effort UPI URI for users to copy / attempt. 
-              // NOTE: merchant VPA should be replaced with your actual VPA. Using a placeholder if not known.
-              const merchantVpa = booking.merchantVpa || booking.vpa || 'merchant@upi';
-              const upiNote = `WaveTravel trip ${booking.pickup || ''} → ${booking.dropoff || ''}`;
-              const upiUri = buildUpiUri({
-                pa: merchantVpa,
-                pn: 'WaveTravel',
-                am: booking.fare,
-                tn: upiNote
-              });
-              // Intent wrapper (prefers Google Pay package; adjust as needed)
-              const intentUri = `intent:${upiUri.replace(/^upi:\/\//,'') }#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
-
-              // Configure fallback URL (open same page in browser)
-              const fallbackExternalUrl = location.href;
-
-              // Populate modal fields now and show it
-              wvUpiInput.value = upiUri;
+            } else if (booking.slotNumber !== undefined && booking.slotNumber !== null) {
+              // If slotKey not provided, try to ensure a slot with same slotNumber still exists
               try {
-                wvQr.src = 'https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=' + encodeURIComponent(upiUri);
-                wvQr.style.display = 'block';
-              } catch (e) { wvQr.style.display = 'none'; }
-
-              // set handlers to attempt intent/open browser/continue web
-              wvCopyBtn.onclick = async () => {
-                try {
-                  await navigator.clipboard.writeText(upiUri);
-                  alert('UPI text copied. Open your UPI app and paste to pay.');
-                } catch (err) {
-                  wvUpiInput.select();
-                  document.execCommand('copy');
-                  alert('Copied. Open your UPI app and paste the text.');
+                const snap = await db.ref(`availableslots/${booking.driverId}`)
+                  .orderByChild('slotNumber')
+                  .equalTo(booking.slotNumber)
+                  .once('value');
+                if (!snap.exists()) {
+                  alert('This trip is no longer available. Please search for another one.');
+                  payBtn.disabled = false;
+                  return;
                 }
-              };
-              wvOpenBrowserBtn.onclick = () => {
-                try { window.open(fallbackExternalUrl, '_blank', 'noopener'); } catch(e) { location.href = fallbackExternalUrl; }
-                hideWvModal();
-                // re-enable pay button so user can come back
+                // If found, optionally could check statuses of results. We'll proceed.
+              } catch (e) {
+                console.error('Slot verification by slotNumber failed:', e);
+                alert('Failed to verify trip availability. Please try again.');
                 payBtn.disabled = false;
-              };
-              wvTryIntentBtn.onclick = () => {
-                // attempt to open via intent/iframe
-                const start = Date.now();
-                if (intentUri && /Android/i.test(navigator.userAgent)) {
-                  try { window.location.href = intentUri; }
-                  catch(e) {}
-                } else {
-                  const iframe = document.createElement('iframe');
-                  iframe.style.display = 'none';
-                  iframe.src = upiUri;
-                  document.body.appendChild(iframe);
-                  setTimeout(() => {
-                    try { document.body.removeChild(iframe); } catch (e) {}
-                  }, 1000);
-                }
-                hideWvModal();
-                // allow some time; re-enable pay button
-                setTimeout(() => { payBtn.disabled = false; }, 1400);
-              };
-              wvContinueWebBtn.onclick = () => {
-                hideWvModal();
-                // Continue with web checkout (trigger the RZP flow below)
-                startRazorpayCheckout(name, phone, user.email || '', booking, userData);
-              };
-
-              // Show the modal to the user (also try a quick attempt and fall back to modal)
-              // First attempt a quick 'intent' opening; if nothing happens, modal will remain visible via fallback logic.
-              const quickAttempt = () => {
-                const start = Date.now();
-                if (intentUri && /Android/i.test(navigator.userAgent)) {
-                  try { window.location.href = intentUri; }
-                  catch (e) {}
-                } else {
-                  const iframe = document.createElement('iframe');
-                  iframe.style.display = 'none';
-                  iframe.src = upiUri;
-                  document.body.appendChild(iframe);
-                  setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 1000);
-                }
-                // If after 1.2s the page is still visible, show the modal
-                setTimeout(() => {
-                  if (document.hidden || document.visibilityState === 'hidden') {
-                    // likely succeeded; re-enable pay button not necessary
-                    return;
-                  }
-                  showWvModal();
-                  payBtn.disabled = false; // let user choose
-                }, 1200);
-              };
-
-              quickAttempt();
-              return; // exit click handler (modal will allow continuing)
+                return;
+              }
             }
 
-            // Not in a WebView — proceed with Razorpay web checkout
-            startRazorpayCheckout(name, phone, user.email || '', booking, userData);
-          });
+            // Direct Razorpay payment
+            const rzpOptions = {
+              key: 'rzp_live_RJxLTulsCPKQqD',
+              amount: (booking.fare || 0) * 100,
+              currency: 'INR',
+              name: 'WaveTravel',
+              description: `${booking.tripType} Trip Booking`,
+              prefill: { 
+                name: name, 
+                contact: phone, 
+                email: user.email || ''
+              },
+              theme: {
+                color: '#2f6690'
+              },
+              handler: function(res) {
+                // On success, finalize booking & remove slot atomically
+                processSuccessfulPayment(res.razorpay_payment_id, booking, userData)
+                  .catch(err => {
+                    console.error('Processing payment callback failed:', err);
+                    alert('There was an error processing your booking after payment. Contact support with Payment ID: ' + res.razorpay_payment_id);
+                  });
+              },
+              modal: {
+                ondismiss: function() {
+                  console.log('Payment cancelled by user');
+                  // re-enable pay button so user can retry
+                  payBtn.disabled = false;
+                }
+              }
+            };
 
-          // Also listen for custom event when modal's "Continue with Web Checkout" dispatches
-          payBtn.addEventListener('continue-web-checkout', () => {
-            // when this event is fired we should start RZP checkout.
-            startRazorpayCheckout(userData.name || '', userData.phone || '', user.email || '', booking, userData);
+            try {
+              const rzp = new Razorpay(rzpOptions);
+              rzp.open();
+            } catch (error) {
+              console.error('Razorpay initialization failed:', error);
+              alert('Payment initialization failed. Please try again.');
+              payBtn.disabled = false;
+            }
           });
         }
       });
