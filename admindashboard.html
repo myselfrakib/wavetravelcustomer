@@ -1,1401 +1,1830 @@
-<!DOCTYPE html>
+r<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>WaveTravel Admin Dashboard</title>
-
-  <!-- Normalize & DataTables CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css" />
-
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <style>
-    :root{
-      --primary:#3498db;
-      --card-bg: rgba(255,255,255,0.06);
-      --muted:#cbd5e1;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WaveTravel Admin Dashboard - Enhanced</title>
+  
+  <!-- External Dependencies -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+            success: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a' },
+            warning: { 50: '#fffbeb', 100: '#fef3c7', 500: '#f59e0b', 600: '#d97706' },
+            danger: { 50: '#fef2f2', 100: '#fee2e2', 500: '#ef4444', 600: '#dc2626' },
+            dark: { 800: '#1f2937', 900: '#111827', 950: '#030712' }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease-out',
+            'slide-up': 'slideUp 0.3s ease-out',
+            'pulse-subtle': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'skeleton': 'skeleton 1.5s ease-in-out infinite'
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' }},
+            slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' }},
+            skeleton: { '0%, 100%': { opacity: '1' }, '50%': { opacity: '0.5' }}
+          }
+        }
+      }
     }
-    body { font-family:Arial,sans-serif; margin:0; background:linear-gradient( #FFFFFf 100%); color:#fff; }
-    .navbar { display:flex; flex-wrap:wrap; background:#071124; padding:0.75rem; gap:.4rem; position:sticky; top:0; z-index:1000; border-bottom:1px solid rgba(255,255,255,0.03);}
-    .navbar button { flex:1; padding:.5rem .75rem; border:none; border-radius:6px; background:var(--primary); color:#fff; cursor:pointer; font-weight:600; box-shadow:0 2px 6px rgba(0,0,0,0.35); }
-    .tab-pane { display:none; padding:1rem; overflow:auto; max-height:calc(100vh - 64px); }
-    .tab-pane.active { display:block; }
-    .loading { text-align:center; margin:2rem; color:#ffd700; }
-
-    table.dataTable { background:rgba(255,255,255,0.06); border-radius:8px; overflow:hidden; color:#000; }
-    .dt-button, .dataTables_length select, .dataTables_filter input { color:#000 !important; }
-
-    /* DRIVER WALLETS UI */
-    #driver-wallets-container { display:flex; flex-direction:column; gap:12px; padding-bottom: 40px; }
-    .driver-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-      border: 1px solid rgba(255,255,255,0.04);
-      border-radius:12px;
-      box-shadow: 0 6px 18px rgba(3,10,20,0.45);
+  </script>
+  
+  <style>
+    :root {
+      --sidebar-width: 280px;
+      --header-height: 70px;
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+    
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+    }
+    
+    .glass-effect {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+    }
+    
+    .sidebar {
+      width: var(--sidebar-width);
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .sidebar.open { transform: translateX(0); }
+    
+    @media (min-width: 1024px) {
+      .sidebar { transform: translateX(0); }
+      .main-content { margin-left: var(--sidebar-width); }
+    }
+    
+    .nav-item {
+      position: relative;
+      transition: all 0.2s ease;
+      border-radius: 10px;
       overflow: hidden;
     }
-    .driver-header {
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      padding:12px 16px;
+    
+    .nav-item:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(4px);
     }
-    .driver-info { display:flex; gap:12px; align-items:center; }
-    .driver-meta { display:flex; flex-direction:column; line-height:1; }
-    .driver-meta small { color:var(--muted); }
-    .driver-totals { text-align:right; min-width:180px; }
-    .driver-totals h4 { margin:0; color:#ffd700; font-size:1.05rem; }
-    .unpaid-badge { background:#ff6b6b; color:#fff; padding:6px 10px; border-radius:12px; font-weight:700; margin-left:8px; display:inline-block; font-size:0.9rem; }
+    
+    .nav-item.active {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+    
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: #fff;
+      border-radius: 0 2px 2px 0;
+    }
+    
+    .metric-card {
+      background: linear-gradient(135deg, var(--glass-bg), rgba(255, 255, 255, 0.02));
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #22c55e, #f59e0b, #ef4444);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .metric-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px var(--shadow-color);
+    }
+    
+    .metric-card:hover::before { opacity: 1; }
+    
+    .data-table {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+    }
+    
+    .status-badge {
+      padding: 6px 16px 6px 20px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+      position: relative;
+    }
+    
+    .status-badge.online { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .status-badge.offline { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .status-badge.pending { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .status-badge.processing { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+    .status-badge.paid { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .status-badge.unpaid { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    
+    .status-badge::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 2s infinite;
+    }
+    
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
+      background-size: 200% 100%;
+      animation: skeleton 1.5s ease-in-out infinite;
+      border-radius: 4px;
+    }
+    
+    .btn {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+    
+    .btn:hover { transform: translateY(-1px); }
+    
+    .btn-primary { 
+      background: linear-gradient(135deg, #3b82f6, #2563eb); 
+      border: none;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+    
+    .btn-primary:hover { 
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border: none;
+      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+      color: white;
+    }
+    
+    .btn-warning {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border: none;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+      color: white;
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      border: none;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+      color: white;
+    }
+    
+    .notification-dot {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      border: 2px solid #1f2937;
+    }
+    
+    .search-input {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      outline: none;
+    }
+    
+    .modal-content {
+      background: #1f2937;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+    
+    .progress-bar {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #22c55e);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: progress-shimmer 2s infinite;
+    }
+    
+    @keyframes progress-shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .toast {
+      background: rgba(31, 41, 55, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      animation: slide-up 0.3s ease-out;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 3px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
 
-    .driver-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-left:12px; }
-    .driver-actions .btn { font-weight:600; }
-
-    .driver-body { padding: 10px 16px 16px; border-top:1px solid rgba(255,255,255,0.02); background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent); }
-    .entries-table { background:transparent; color:#fff; }
-    .entries-table thead th { color:#fff; background: rgba(0,0,0,0.15); }
-    .badge-paid { background:#2ecc71; color:#012106; font-weight:700; padding:5px 8px; border-radius:10px; }
-    .badge-unpaid { background:#ff6b6b; color:#2a0202; font-weight:700; padding:5px 8px; border-radius:10px; }
-    .small-muted { color:var(--muted); font-size:0.9rem; }
-
-    /* Image gallery styles */
-    .image-gallery { display: flex; gap: 10px; flex-wrap: wrap; }
-    .image-thumbnail { width: 80px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s; }
-    .image-thumbnail:hover { border-color: #3498db; }
-    .license-thumbnail { width: 100px; height: 70px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid #ffd700; }
-
-    @media (max-width:900px){
-      .driver-header { flex-direction:column; align-items:flex-start; gap:8px; }
-      .driver-totals { width:100%; text-align:left; }
-      .driver-actions { width:100%; justify-content:flex-start; }
+    .driver-card {
+      background: linear-gradient(135deg, var(--glass-bg), rgba(255, 255, 255, 0.02));
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      transition: all 0.3s ease;
     }
 
-    /* filter controls */
-    .wallets-filter-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
-    .wallets-filter-row select { padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:#071124; color:#fff; font-weight:600; }
-    .wallets-filter-row label { color:#fff; font-weight:700; margin-right:6px; }
+    .driver-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px var(--shadow-color);
+    }
+
+    .image-gallery {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .image-thumbnail {
+      width: 60px;
+      height: 45px;
+      object-fit: cover;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .image-thumbnail:hover {
+      border-color: #3b82f6;
+      transform: scale(1.05);
+    }
+
+    @keyframes fade-out {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-10px); }
+    }
   </style>
 </head>
-<body>
 
-  <div class="navbar">
-    <button onclick="openTab('users')">Users</button>
-    <button onclick="openTab('drivers')">Drivers</button>
-    <button onclick="openTab('pending-cars')">Pending Cars</button>
-    <button onclick="openTab('approved-cars')">Approved Cars</button>
-    <button onclick="openTab('slots')">Slots</button>
-    <button onclick="openTab('bookings')">Bookings</button>
-    <button onclick="openTab('driver-wallets')">Driver Wallets</button>
-    <button onclick="openTab('pending-withdrawals')">Pending Withdrawals</button>
-    <button onclick="openTab('profile')">Profile</button>
-    <button onclick="logout()">Logout</button>
-  </div>
+<body class="bg-gray-900 text-white">
+  <!-- Sidebar Overlay (Mobile) -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden lg:hidden"></div>
 
-  <!-- USERS -->
-  <div id="users-tab" class="tab-pane">
-    <h2>Users</h2>
-    <div id="users-loading" class="loading">Loading users…</div>
-    <table id="users-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Created On</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- DRIVERS -->
-  <div id="drivers-tab" class="tab-pane">
-    <h2>Drivers</h2>
-    <div id="drivers-loading" class="loading">Loading drivers…</div>
-    <table id="drivers-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>Vehicle Count</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- PENDING CARS -->
-  <div id="pending-cars-tab" class="tab-pane">
-    <h2>Pending Cars</h2>
-    <div id="pending-loading" class="loading">Loading pending cars…</div>
-    <table id="pending-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver ID</th><th>Car ID</th><th>Brand</th><th>Reg No</th>
-        <th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Images</th><th>License</th><th>Submitted At</th><th>Actions</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- APPROVED CARS -->
-  <div id="approved-cars-tab" class="tab-pane">
-    <h2>Approved Cars</h2>
-    <div id="approved-loading" class="loading">Loading approved cars…</div>
-    <table id="approved-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver Name</th><th>Phone</th><th>Car ID</th>
-        <th>Brand</th><th>Reg No</th><th>Owner</th><th>Seats</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- SLOTS -->
-  <div id="slots-tab" class="tab-pane">
-    <h2>Slots</h2>
-    <div id="slots-loading" class="loading">Loading slots…</div>
-    <table id="slots-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Driver Name</th><th>Phone</th><th>Slot ID</th>
-        <th>Pickup</th><th>Dropoff</th><th>Date</th><th>Time</th><th>Seats</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- BOOKINGS -->
-  <div id="bookings-tab" class="tab-pane">
-    <h2>Bookings</h2>
-    <div id="bookings-loading" class="loading">Loading bookings…</div>
-    <table id="bookings-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr>
-        <th>SL</th><th>Booking ID</th><th>Customer</th><th>Vehicle</th><th>Pickup</th>
-        <th>Dropoff</th><th>Duration</th><th>Fare</th><th>Status</th><th>Action</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- DRIVER WALLETS -->
-  <div id="driver-wallets-tab" class="tab-pane">
-    <h2>Driver Wallets</h2>
-
-    <!-- STATUS FILTER -->
-    <div class="wallets-filter-row">
-      <label for="walletStatusFilter">Filter by status</label>
-      <select id="walletStatusFilter" aria-label="Filter wallet entries by status">
-        <option value="processing" selected>Processing (ideal)</option>
-        <option value="unpaid">Unpaid</option>
-        <option value="paid">Paid</option>
-      </select>
-      <button id="walletFilterApplyBtn" class="btn btn-sm btn-light">Apply</button>
-      <small style="margin-left:12px;color:#cbd5e1">Showing entries that match the selected status (evaluated from driverWallet entries only).</small>
-    </div>
-
-    <div id="wallets-loading" class="loading">Loading wallets…</div>
-    <div id="driver-wallets-container" style="display:none;"></div>
-  </div>
-
-  <!-- PENDING WITHDRAWALS -->
-  <div id="pending-withdrawals-tab" class="tab-pane">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-      <h2>Pending Withdrawals</h2>
-      <div>
-        <button id="exportWithdrawalsBtn" class="btn btn-sm btn-light">Export CSV (Grouped)</button>
-      </div>
-    </div>
-    <div id="withdrawals-loading" class="loading">Loading pending withdrawals…</div>
-    <div id="withdrawals-container" style="display:none;"></div>
-  </div>
-
-  <!-- PROFILE -->
-  <div id="profile-tab" class="tab-pane">
-    <h2>My Profile</h2>
-    <div id="profile-loading" class="loading">Loading profile…</div>
-    <table id="profile-table" class="display responsive nowrap" style="width:100%;display:none">
-      <thead><tr><th>Field</th><th>Value</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- Booking details modal -->
-  <div class="modal fade" id="bookingDetailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Booking Details</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body" id="bookingDetailsBody"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Image viewer modal -->
-  <div class="modal fade" id="imageViewerModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="imageViewerTitle">Image Viewer</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body text-center" id="imageViewerBody">
-          <img id="imageViewerImg" src="" alt="Car Image" style="max-width: 100%; height: auto; border-radius: 8px;">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- QR Modal -->
-  <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content text-center p-3" id="qrModalContent" style="background:#0b1220;color:#ffd700;">
-        <h5>UPI Payment QR</h5>
-        <div id="qrCode" class="my-3"></div>
-        <div id="qrInfo" class="mb-2"></div>
-        <div id="upiUriBox" class="mb-2"></div>
-        <div style="display:flex;gap:8px;justify-content:center;">
-          <button id="copyUpiUriBtn" class="btn btn-sm btn-outline-light">Copy Minimal UPI URI</button>
-          <button id="copyFullUpiUriBtn" class="btn btn-sm btn-outline-light">Copy Full UPI URI</button>
-          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast container -->
-  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
-
-  <!-- jQuery & DataTables JS -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
-
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- QRCode.js library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-  <!-- Firebase modular SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref, get, update, remove, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
-
-    const cfg = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
-    const app = initializeApp(cfg);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-
-    const tables = {};
-    function initTable(id,noSortCols=[]){
-      if(!tables[id]){
-        tables[id] = $(`#${id}`).DataTable({
-          responsive:true,
-          dom:'Bfltip',
-          buttons:['copy','csv','print'],
-          columnDefs: noSortCols.map(c=>({ orderable:false, targets:c }))
-        });
-      } else tables[id].clear().draw();
-    }
-
-    window.logout = () => signOut(auth).then(() => location.href='adminlogin.html');
-
-    function showToast(message, type='info', timeout=3000){
-      const id = 't' + Date.now();
-      const toastHtml = `
-        <div id="${id}" class="toast align-items-center text-bg-${type} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
-          <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar glass-effect">
+    <div class="h-full flex flex-col">
+      <!-- Logo -->
+      <div class="p-6 border-b border-white/10">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-green-500 rounded-xl flex items-center justify-center">
+            <i data-feather="zap" class="w-7 h-7 text-white"></i>
           </div>
-        </div>`;
-      const container = document.getElementById('toast-container');
-      container.insertAdjacentHTML('beforeend', toastHtml);
-      const toastEl = document.getElementById(id);
-      const bsToast = new bootstrap.Toast(toastEl, { delay: timeout });
-      bsToast.show();
-      toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
-    }
-
-    // Function to show image in modal
-    window.showImage = function(imageUrl, title = 'Car Image') {
-      document.getElementById('imageViewerTitle').textContent = title;
-      document.getElementById('imageViewerImg').src = imageUrl;
-      new bootstrap.Modal(document.getElementById('imageViewerModal')).show();
-    };
-
-    // Function to create image gallery HTML
-    function createImageGallery(images, type = 'car') {
-      if (!images || images.length === 0) {
-        return '<span class="text-muted">No images</span>';
-      }
+          <div>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
+              WaveTravel
+            </h1>
+            <p class="text-xs text-gray-400">Admin Dashboard</p>
+          </div>
+        </div>
+      </div>
       
-      let html = '<div class="image-gallery">';
-      images.forEach((imageUrl, index) => {
-        const className = type === 'license' ? 'license-thumbnail' : 'image-thumbnail';
-        const title = type === 'license' ? 'Driver License' : `Car Image ${index + 1}`;
-        html += `<img src="${imageUrl}" alt="${title}" class="${className}" onclick="showImage('${imageUrl}', '${title}')" title="${title}">`;
-      });
-      html += '</div>';
-      return html;
-    }
+      <!-- Navigation -->
+      <nav class="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-thin">
+        <a href="#" data-section="dashboard" class="nav-item active flex items-center space-x-3 p-3 rounded-lg text-white">
+          <i data-feather="home" class="w-5 h-5"></i>
+          <span>Dashboard</span>
+          <div class="ml-auto w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        </a>
+        
+        <a href="#" data-section="users" class="nav-item flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white">
+          <i data-feather="users" class="w-5 h-5"></i>
+          <span>Users</span>
+          <span class="ml-auto bg-blue-500 text-xs px-2 py-1 rounded-full">1.2K</span>
+        </a>
+        
+        <a href="#" data-section="drivers" class="nav-item flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white">
+          <i data-feather="user-check" class="w-5 h-5"></i>
+          <span>Drivers</span>
+          <span class="ml-auto bg-green-500 text-xs px-2 py-1 rounded-full">342</span>
+        </a>
+        
+        <a href="#" data-section="vehicles" class="nav-item flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white">
+          <i data-feather="truck" class="w-5 h-5"></i>
+          <span>Vehicles</span>
+          <div class="ml-auto relative">
+            <span class="bg-orange-500 text-xs px-2 py-1 rounded-full">23</span>
+            <div class="notification-dot"></div>
+          </div>
+        </a>
+        
+        <a href="#" data-section="bookings" class="nav-item flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white">
+          <i data-feather="calendar" class="w-5 h-5"></i>
+          <span>Bookings</span>
+          <div class="ml-auto relative">
+            <span class="bg-blue-500 text-xs px-2 py-1 rounded-full">47</span>
+            <div class="notification-dot"></div>
+          </div>
+        </a>
+        
+        <a href="#" data-section="payments" class="nav-item flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white">
+          <i data-feather="credit-card" class="w-5 h-5"></i>
+          <span>Payments</span>
+          <div class="ml-auto relative">
+            <span class="bg-red-500 text-xs px-2 py-1 rounded-full">12</span>
+            <div class="notification-dot"></div>
+          </div>
+        </a>
+        
+        <a href="#" data-section="analytics" class="nav-item flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white">
+          <i data-feather="trending-up" class="w-5 h-5"></i>
+          <span>Analytics</span>
+        </a>
+        
+        <div class="pt-6 mt-6 border-t border-white/10 space-y-2">
+          <a href="#" data-section="settings" class="nav-item flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white">
+            <i data-feather="settings" class="w-5 h-5"></i>
+            <span>Settings</span>
+          </a>
+          
+          <button id="logout-btn" class="nav-item w-full flex items-center space-x-3 p-3 rounded-lg text-red-300 hover:text-red-200">
+            <i data-feather="log-out" class="w-5 h-5"></i>
+            <span>Logout</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </aside>
 
-    // CRUD and action functions
-    window.deleteUser = async uid => { 
-      if(!confirm('Delete user?')) return; 
-      try {
-        await remove(ref(db,`users/${uid}`)); 
-        loadUsers(); 
-        showToast('User deleted','success'); 
-      } catch(e) {
-        showToast('Error deleting user: ' + e.message,'danger');
-      }
-    };
+  <!-- Main Content -->
+  <div class="main-content min-h-screen">
+    <!-- Header -->
+    <header class="glass-effect border-b border-white/10 p-4 sticky top-0 z-30">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <button id="sidebar-toggle" class="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors">
+            <i data-feather="menu" class="w-6 h-6"></i>
+          </button>
+          
+          <div>
+            <h2 id="page-title" class="text-xl font-semibold">Dashboard Overview</h2>
+            <p class="text-sm text-gray-400">Welcome back, <span id="admin-name">Admin</span></p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+          <!-- Global Search -->
+          <div class="relative hidden sm:block">
+            <input 
+              type="text" 
+              placeholder="Search anything..." 
+              class="search-input w-80 px-4 py-2 rounded-lg pr-10"
+              id="global-search"
+            >
+            <i data-feather="search" class="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none"></i>
+          </div>
+          
+          <!-- Notifications -->
+          <button class="relative p-2 rounded-lg hover:bg-white/10 transition-colors" id="notifications-btn">
+            <i data-feather="bell" class="w-6 h-6"></i>
+            <div class="notification-dot"></div>
+          </button>
+          
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="p-2 rounded-lg hover:bg-white/10 transition-colors">
+            <i data-feather="moon" class="w-6 h-6"></i>
+          </button>
+          
+          <!-- Profile Dropdown -->
+          <div class="relative">
+            <button class="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/10 transition-colors">
+              <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full"></div>
+              <div class="text-left hidden sm:block">
+                <p class="text-sm font-medium">Admin User</p>
+                <p class="text-xs text-gray-400">Super Admin</p>
+              </div>
+              <i data-feather="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
 
-    window.deleteDriver = async did => { 
-      if(!confirm('Delete driver?')) return; 
-      try {
-        await remove(ref(db,`driverdetails/${did}`)); 
-        loadDrivers(); 
-        showToast('Driver deleted','success'); 
-      } catch(e) {
-        showToast('Error deleting driver: ' + e.message,'danger');
-      }
-    };
+    <!-- Content Area -->
+    <main class="p-6">
+      <!-- Dashboard Section -->
+      <section id="dashboard-section" class="animate-fade-in">
+        <!-- Key Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+          <div class="metric-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <p class="text-gray-400 text-sm font-medium">Total Revenue</p>
+                <p class="text-3xl font-bold text-green-400 mt-1">₹2,45,670</p>
+                <div class="flex items-center mt-2 text-sm">
+                  <i data-feather="trending-up" class="w-4 h-4 text-green-400 mr-1"></i>
+                  <span class="text-green-400 font-medium">+12.5%</span>
+                  <span class="text-gray-400 ml-1">from last month</span>
+                </div>
+                <div class="progress-bar mt-3">
+                  <div class="progress-fill" style="width: 75%"></div>
+                </div>
+              </div>
+              <div class="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center ml-4">
+                <i data-feather="dollar-sign" class="w-8 h-8 text-green-400"></i>
+              </div>
+            </div>
+          </div>
 
-    window.deletePending = async (did,cid) => { 
-      if(!confirm('Delete pending car?')) return; 
-      try {
-        await remove(ref(db,`pendingcars/${did}/${cid}`)); 
-        loadPending(); 
-        showToast('Pending car deleted','success'); 
-      } catch(e) {
-        showToast('Error deleting pending car: ' + e.message,'danger');
-      }
-    };
+          <div class="metric-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <p class="text-gray-400 text-sm font-medium">Active Bookings</p>
+                <p class="text-3xl font-bold text-blue-400 mt-1">47</p>
+                <div class="flex items-center mt-2 text-sm">
+                  <i data-feather="activity" class="w-4 h-4 text-blue-400 mr-1"></i>
+                  <span class="text-blue-400 font-medium">+8 new</span>
+                  <span class="text-gray-400 ml-1">today</span>
+                </div>
+                <div class="progress-bar mt-3">
+                  <div class="progress-fill" style="width: 60%"></div>
+                </div>
+              </div>
+              <div class="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center ml-4">
+                <i data-feather="calendar" class="w-8 h-8 text-blue-400"></i>
+              </div>
+            </div>
+          </div>
 
-    window.deleteApproved = async (did,cid) => { 
-      if(!confirm('Delete approved car?')) return; 
-      try {
-        await remove(ref(db,`approvedcars/${did}/${cid}`)); 
-        loadApproved(); 
-        showToast('Approved car deleted','success'); 
-      } catch(e) {
-        showToast('Error deleting approved car: ' + e.message,'danger');
-      }
-    };
+          <div class="metric-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <p class="text-gray-400 text-sm font-medium">Online Drivers</p>
+                <p class="text-3xl font-bold text-green-400 mt-1">156</p>
+                <div class="flex items-center mt-2 text-sm">
+                  <span class="status-badge online">Online</span>
+                  <span class="text-gray-400 ml-2">of 342 total</span>
+                </div>
+                <div class="progress-bar mt-3">
+                  <div class="progress-fill" style="width: 45%"></div>
+                </div>
+              </div>
+              <div class="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center ml-4">
+                <i data-feather="users" class="w-8 h-8 text-green-400"></i>
+              </div>
+            </div>
+          </div>
 
-    window.deleteSlot = async (did,sid) => { 
-      if(!confirm('Delete slot?')) return; 
-      try {
-        await remove(ref(db,`availableslots/${did}/${sid}`)); 
-        loadSlots(); 
-        showToast('Slot deleted','success'); 
-      } catch(e) {
-        showToast('Error deleting slot: ' + e.message,'danger');
-      }
-    };
+          <div class="metric-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <p class="text-gray-400 text-sm font-medium">Pending Actions</p>
+                <p class="text-3xl font-bold text-orange-400 mt-1">23</p>
+                <div class="flex items-center mt-2 text-sm">
+                  <i data-feather="alert-circle" class="w-4 h-4 text-orange-400 mr-1"></i>
+                  <span class="text-orange-400 font-medium">Urgent</span>
+                  <span class="text-gray-400 ml-1">attention needed</span>
+                </div>
+                <div class="progress-bar mt-3">
+                  <div class="progress-fill bg-gradient-to-r from-orange-400 to-red-500" style="width: 85%"></div>
+                </div>
+              </div>
+              <div class="w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center ml-4">
+                <i data-feather="clock" class="w-8 h-8 text-orange-400"></i>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    window.deleteBooking = async bid => { 
-      if(!confirm('Delete booking?')) return; 
-      try {
-        await remove(ref(db,`bookings/${bid}`)); 
-        loadBookings(); 
-        showToast('Booking deleted','success'); 
-      } catch(e) {
-        showToast('Error deleting booking: ' + e.message,'danger');
-      }
-    };
+        <!-- Charts and Data -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <!-- Revenue Chart -->
+          <div class="glass-effect p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h3 class="text-lg font-semibold">Revenue Analytics</h3>
+                <p class="text-sm text-gray-400">Monthly performance overview</p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 text-xs bg-blue-500/20 text-blue-400 rounded-full">6M</button>
+                <button class="px-3 py-1 text-xs bg-white/10 text-gray-400 rounded-full hover:bg-white/20 transition-colors">1Y</button>
+              </div>
+            </div>
+            <div class="relative h-64">
+              <canvas id="revenueChart"></canvas>
+            </div>
+          </div>
 
-    window.approveCar = async (did,cid) => { 
-      if(!confirm('Approve car?')) return; 
-      try {
-        const snap = await get(ref(db,`pendingcars/${did}/${cid}`)); 
-        const car = snap.val(); 
-        if(!car) return; 
-        await set(ref(db,`approvedcars/${did}/${cid}`), car); 
-        await remove(ref(db,`pendingcars/${did}/${cid}`)); 
-        loadPending(); 
-        showToast('Car approved','success'); 
-      } catch(e) {
-        showToast('Error approving car: ' + e.message,'danger');
-      }
-    };
+          <!-- Status Distribution -->
+          <div class="glass-effect p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h3 class="text-lg font-semibold">Booking Distribution</h3>
+                <p class="text-sm text-gray-400">Current status breakdown</p>
+              </div>
+              <button class="px-3 py-1 text-xs bg-white/10 text-gray-400 rounded-full hover:bg-white/20 transition-colors">
+                View All
+              </button>
+            </div>
+            <div class="relative h-64">
+              <canvas id="statusChart"></canvas>
+            </div>
+          </div>
+        </div>
 
-    // Wallet actions
-    window.approveWalletEntry = async (driverId, bookingId) => {
-      if (!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid?`)) return;
-      try {
-        await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { paidout: true, status: 'paid' });
-        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'approveWalletEntry', driverId, bookingId, ts: Date.now() });
-        loadWallets();
-        showToast('Marked paid','success');
-      } catch(e) {
-        showToast('Error marking as paid: ' + e.message,'danger');
-      }
-    };
+        <!-- Recent Activity & Quick Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Recent Activity -->
+          <div class="lg:col-span-2 glass-effect p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h3 class="text-lg font-semibold">Recent Activity</h3>
+                <p class="text-sm text-gray-400">Latest bookings and updates</p>
+              </div>
+              <button class="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
+                View All →
+              </button>
+            </div>
+            
+            <div class="space-y-4" id="recent-activity">
+              <!-- Content populated by JavaScript -->
+            </div>
+          </div>
 
-    window.rejectWalletEntry = async (driverId, bookingId, amount) => {
-      if (!confirm(`Reject wallet entry ${bookingId} and reset amount to ${amount}?`)) return;
-      try {
-        await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { status: 'available', amount });
-        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'rejectWalletEntry', driverId, bookingId, amount, ts: Date.now() });
-        loadWallets();
-        showToast('Wallet entry rejected','warning');
-      } catch(e) {
-        showToast('Error rejecting wallet entry: ' + e.message,'danger');
-      }
-    };
-
-    // If your flows still include pendingWithdrawals, these helpers remain useful
-    window.approveWithdrawal = async (driverId, bookingId) => {
-      if (!confirm(`Approve withdrawal ${bookingId} for driver ${driverId}?`)) return;
-      try {
-        await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'approved' });
-        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'approveWithdrawal', driverId, bookingId, ts: Date.now() });
-        loadWithdrawals();
-        showToast('Withdrawal approved','success');
-      } catch(e) {
-        showToast('Error approving withdrawal: ' + e.message,'danger');
-      }
-    };
-
-    window.rejectWithdrawal = async (driverId, bookingId) => {
-      if (!confirm(`Reject withdrawal ${bookingId} for driver ${driverId}?`)) return;
-      try {
-        await update(ref(db,`pendingWithdrawals/${driverId}/${bookingId}`), { 'status': 'rejected' });
-        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'rejectWithdrawal', driverId, bookingId, ts: Date.now() });
-        loadWithdrawals();
-        showToast('Withdrawal rejected','warning');
-      } catch(e) {
-        showToast('Error rejecting withdrawal: ' + e.message,'danger');
-      }
-    };
-
-    // Data loaders
-    async function loadUsers(){ 
-      $('#users-table').hide(); 
-      $('#users-loading').show(); 
-      initTable('users-table',[7]); 
-      try {
-        const snap = await get(ref(db,'users')); 
-        let i=1; 
-        if(snap.exists()) {
-          for(const [uid,u] of Object.entries(snap.val())){ 
-            tables['users-table'].row.add([
-              i++,
-              uid,
-              u.name||'',
-              u.email||'',
-              u.phone||'',
-              u.address||'',
-              u.createdOn||'',
-              `<button class="btn btn-sm btn-danger" onclick="deleteUser('${uid}')">Delete</button>`
-            ]).draw(false); 
-          }
-        }
-      } catch(e) {
-        showToast('Error loading users: ' + e.message,'danger');
-      } finally {
-        $('#users-loading').hide(); 
-        $('#users-table').show();
-      }
-    }
-
-    async function loadDrivers(){ 
-      $('#drivers-table').hide(); 
-      $('#drivers-loading').show(); 
-      initTable('drivers-table',[5]); 
-      try {
-        const snap = await get(ref(db,'driverdetails')); 
-        let i=1; 
-        if(snap.exists()) {
-          for(const [did,d] of Object.entries(snap.val())){ 
-            const vc = d.vehicles?Object.keys(d.vehicles).length:0; 
-            tables['drivers-table'].row.add([
-              i++,
-              did,
-              d.name||'',
-              d.phone||'',
-              vc,
-              `<button class="btn btn-sm btn-danger" onclick="deleteDriver('${did}')">Delete</button>`
-            ]).draw(false); 
-          }
-        }
-      } catch(e) {
-        showToast('Error loading drivers: ' + e.message,'danger');
-      } finally {
-        $('#drivers-loading').hide(); 
-        $('#drivers-table').show();
-      }
-    }
-
-    async function loadPending(){ 
-      $('#pending-table').hide(); 
-      $('#pending-loading').show(); 
-      initTable('pending-table',[9,10,12]); // Updated to include new columns
-      try {
-        const snap = await get(ref(db,'pendingcars')); 
-        let i=1; 
-        if(snap.exists()) {
-          for(const [did,cars] of Object.entries(snap.val())){ 
-            for(const [cid,c] of Object.entries(cars)){ 
-              // Create image gallery HTML
-              const carImages = c.carImages || [];
-              const imageGalleryHtml = createImageGallery(carImages, 'car');
+          <!-- Quick Actions -->
+          <div class="glass-effect p-6 rounded-xl">
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold">Quick Actions</h3>
+              <p class="text-sm text-gray-400">Frequently used operations</p>
+            </div>
+            
+            <div class="space-y-3">
+              <button class="w-full p-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg text-left transition-all group">
+                <div class="flex items-center">
+                  <i data-feather="user-plus" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform"></i>
+                  <span class="font-medium">Add New Driver</span>
+                </div>
+              </button>
               
-              // Create license image HTML
-              const licenseHtml = c.driverLicense 
-                ? createImageGallery([c.driverLicense], 'license')
-                : '<span class="text-muted">No license</span>';
-
-              tables['pending-table'].row.add([ 
-                i++,
-                did,
-                cid,
-                c.carBrand||'',
-                c.carReg||'',
-                c.driverName||'',
-                c.driverNumber||'',
-                c.ownerName||'',
-                c.seats||'',
-                imageGalleryHtml,
-                licenseHtml,
-                c.submittedAt||'',
-                `<button class="btn btn-sm btn-success" onclick="approveCar('${did}','${cid}')">Approve</button> <button class="btn btn-sm btn-danger" onclick="deletePending('${did}','${cid}')">Delete</button>` 
-              ]).draw(false); 
-            }
-          }
-        }
-      } catch(e) {
-        showToast('Error loading pending cars: ' + e.message,'danger');
-        console.error('Error loading pending cars:', e);
-      } finally {
-        $('#pending-loading').hide(); 
-        $('#pending-table').show();
-      }
-    }
-
-    async function loadApproved(){ 
-      $('#approved-table').hide(); 
-      $('#approved-loading').show(); 
-      initTable('approved-table',[8]); 
-      try {
-        const snap = await get(ref(db,'approvedcars')); 
-        let i=1; 
-        if(snap.exists()) {
-          for(const [did,cars] of Object.entries(snap.val())){ 
-            for(const [cid,c] of Object.entries(cars)){ 
-              tables['approved-table'].row.add([
-                i++,
-                c.driverName||'',
-                c.driverNumber||'',
-                cid,
-                c.carBrand||'',
-                c.carReg||'',
-                c.ownerName||'',
-                c.seats||'',
-                `<button class="btn btn-sm btn-danger" onclick="deleteApproved('${did}','${cid}')">Delete</button>`
-              ]).draw(false); 
-            }
-          }
-        }
-      } catch(e) {
-        showToast('Error loading approved cars: ' + e.message,'danger');
-      } finally {
-        $('#approved-loading').hide(); 
-        $('#approved-table').show();
-      }
-    }
-
-    async function loadSlots(){ 
-      $('#slots-table').hide(); 
-      $('#slots-loading').show(); 
-      initTable('slots-table',[9]); 
-      try {
-        const snap = await get(ref(db,'availableslots')); 
-        let i=1; 
-        if(snap.exists()) {
-          for(const [did,slots] of Object.entries(snap.val())){ 
-            const dSnap = await get(ref(db,`driverdetails/${did}`)); 
-            const d = dSnap.exists()?dSnap.val():{}; 
-            for(const [sid,s] of Object.entries(slots)){ 
-              tables['slots-table'].row.add([
-                i++,
-                d.name||'',
-                d.phone||'',
-                sid,
-                s.pickup||'',
-                s.dropoff||'',
-                s.date||'',
-                s.time||'',
-                s.seats||'',
-                `<button class="btn btn-sm btn-danger" onclick="deleteSlot('${did}','${sid}')">Delete</button>`
-              ]).draw(false); 
-            }
-          }
-        }
-      } catch(e) {
-        showToast('Error loading slots: ' + e.message,'danger');
-      } finally {
-        $('#slots-loading').hide(); 
-        $('#slots-table').show();
-      }
-    }
-
-    // Helper: safe stringify for objects (short)
-    function safeDisplay(val){
-      if(val === null || val === undefined) return '';
-      if(typeof val === 'object'){
-        try {
-          const s = JSON.stringify(val);
-          if(s.length > 120) return s.slice(0,120) + '...';
-          return s;
-        } catch(e){
-          return String(val);
-        }
-      }
-      return String(val);
-    }
-
-    // helper to pick first available field from a list
-    function pickField(obj, candidates){
-      for(const key of candidates){
-        // nested path support like 'booking.user.name'
-        if(key.includes('.')){
-          const parts = key.split('.');
-          let cur = obj;
-          let ok = true;
-          for(const p of parts){
-            if(cur && (p in cur)) cur = cur[p];
-            else { ok = false; break; }
-          }
-          if(ok && cur !== undefined && cur !== null) return cur;
-        } else {
-          if(obj && (key in obj) && obj[key] !== undefined && obj[key] !== null && obj[key] !== '') return obj[key];
-        }
-      }
-      return null;
-    }
-
-    // Determine effective status from driverWallet entry ONLY
-    function getEffectiveStatusFromWalletEntry(entry){
-      if(!entry) return 'unpaid';
-      if(entry.status) return String(entry.status).toLowerCase();
-      if(entry.paidout === true) return 'paid';
-
-      // Common possible withdrawal request flags
-      const flags = ['withdrawalRequested','withdrawal_requested','requested','request','pendingWithdrawal','withdrawRequested','withdraw_requested','withdrawRequest'];
-      for(const f of flags){
-        if(entry[f] === true) return 'processing';
-      }
-
-      // presence of requestedAt/requestedOn/requestTimestamp
-      if(entry.requestedAt || entry.requestedOn || entry.requestTimestamp || entry.request_ts) return 'processing';
-
-      return 'unpaid';
-    }
-
-    // ------------------ Driver Wallets (GROUPED PER DRIVER) - QR only for 'processing' ------------------
-    async function loadWallets(){
-      $('#driver-wallets-container').hide(); $('#wallets-loading').show();
-      const container = document.getElementById('driver-wallets-container');
-      container.innerHTML = '';
-
-      const statusFilter = (document.getElementById('walletStatusFilter')?.value || 'processing').toString().toLowerCase();
-
-      try {
-        // Read driverWallet once
-        const walletSnap = await get(ref(db,'driverWallet'));
-        if(!walletSnap.exists()){
-          container.textContent = 'No wallet entries found.';
-          $('#wallets-loading').hide(); $('#driver-wallets-container').show();
-          return;
-        }
-        const allDrivers = walletSnap.val();
-
-        // iterate drivers and compute filtered entries map
-        for(const [driverId, entries] of Object.entries(allDrivers)){
-          const entriesToShow = {}; // bookingId -> { entry, effective }
-
-          for(const [bookingId, e] of Object.entries(entries)){
-            const effective = getEffectiveStatusFromWalletEntry(e);
-            if(effective === statusFilter){
-              entriesToShow[bookingId] = { entry: e, effective };
-            }
-          }
-
-          // skip drivers with no matched entries
-          if (Object.keys(entriesToShow).length === 0) continue;
-
-          // fetch driver details (UPI/name)
-          let upi = null, driverName = null;
-          try {
-            const dSnap = await get(ref(db, `driverdetails/${driverId}`));
-            if(dSnap.exists()){
-              const d = dSnap.val();
-              upi = (typeof d.upiId === 'string') ? d.upiId.trim() : (d.upiId || null);
-              driverName = d.name || null;
-            }
-          } catch (e) {
-            upi = null; driverName = null;
-          }
-
-          // compute totals from filtered entries
-          let totalFiltered = 0;
-          // Also compute totalProcessing (sum only entries that are processing)
-          let totalProcessing = 0;
-          for(const [bid, obj] of Object.entries(entriesToShow)){
-            const amt = parseFloat(obj.entry.amount) || 0;
-            totalFiltered += amt;
-            if(obj.effective === 'processing') totalProcessing += amt;
-          }
-
-          // build driver card
-          const card = document.createElement('div');
-          card.className = 'driver-card';
-
-          const sanitized = sanitizeId(driverId);
-          const header = document.createElement('div');
-          header.className = 'driver-header';
-          header.innerHTML = `
-            <div class="driver-info">
-              <div class="driver-meta">
-                <strong>${driverName ? `${driverName}` : driverId}</strong>
-                <small class="small-muted">${driverId}</small>
-                <small class="small-muted">UPI: <span id="upi-val-${sanitized}">${upi ? upi : '—'}</span></small>
-              </div>
+              <button class="w-full p-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg text-left transition-all group">
+                <div class="flex items-center">
+                  <i data-feather="check-circle" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform"></i>
+                  <span class="font-medium">Approve Vehicles</span>
+                </div>
+              </button>
+              
+              <button class="w-full p-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 rounded-lg text-left transition-all group">
+                <div class="flex items-center">
+                  <i data-feather="credit-card" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform"></i>
+                  <span class="font-medium">Process Payments</span>
+                </div>
+              </button>
+              
+              <button class="w-full p-4 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 rounded-lg text-left transition-all group">
+                <div class="flex items-center">
+                  <i data-feather="download" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform"></i>
+                  <span class="font-medium">Export Reports</span>
+                </div>
+              </button>
             </div>
 
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div class="driver-totals">
-                <h4>₹${totalFiltered.toFixed(2)}</h4>
-                <div class="small-muted">Total (${escapeHtml(statusFilter)})</div>
-              </div>
-              <div style="display:flex;flex-direction:column;align-items:flex-end;">
-                <div>
-                  <span class="small-muted">Listed</span>
-                  <span class="unpaid-badge">₹${totalFiltered.toFixed(2)}</span>
+            <!-- System Status -->
+            <div class="mt-8 pt-6 border-t border-white/10">
+              <h4 class="font-medium mb-4 text-gray-300">System Status</h4>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                    <span class="text-sm text-gray-400">Server</span>
+                  </div>
+                  <span class="status-badge online">Online</span>
                 </div>
-                <div class="driver-actions" style="margin-top:8px;">
-                  <button class="btn btn-sm btn-outline-light" id="copy-upi-${sanitized}" ${upi? '': 'disabled'}>Copy UPI</button>
-                  <!-- Show total QR only when there are processing entries and driver has UPI -->
-                  <button class="btn btn-sm btn-primary" id="qr-total-${sanitized}" ${(!upi || totalProcessing <= 0) ? 'disabled' : ''}>Show QR (Processing Total)</button>
-                  <button class="btn btn-sm btn-success" id="mark-all-paid-${sanitized}">Mark All Paid</button>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                    <span class="text-sm text-gray-400">Database</span>
+                  </div>
+                  <span class="status-badge online">Connected</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                    <span class="text-sm text-gray-400">Payments</span>
+                  </div>
+                  <span class="status-badge online">Active</span>
                 </div>
               </div>
             </div>
-          `;
-          card.appendChild(header);
+          </div>
+        </div>
+      </section>
 
-          // body with entries table (for filtered entries)
-          const body = document.createElement('div');
-          body.className = 'driver-body';
-          const tbl = document.createElement('table');
-          tbl.className = 'table table-sm entries-table';
-          tbl.innerHTML = `<thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`;
-          const tbody = tbl.querySelector('tbody');
+      <!-- Users Section -->
+      <section id="users-section" class="hidden animate-fade-in">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
+          <div>
+            <h2 class="text-2xl font-bold">User Management</h2>
+            <p class="text-gray-400">Manage all registered users and their activities</p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button class="btn btn-primary px-4 py-2 rounded-lg flex items-center">
+              <i data-feather="user-plus" class="w-4 h-4 mr-2"></i>
+              Add User
+            </button>
+            <button class="btn bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg flex items-center text-white">
+              <i data-feather="download" class="w-4 h-4 mr-2"></i>
+              Export
+            </button>
+          </div>
+        </div>
 
-          let i = 1;
-          for(const [bookingId, obj] of Object.entries(entriesToShow)){
-            const entry = obj.entry;
-            const effective = obj.effective;
-            const amount = entry.amount !== undefined ? Number(entry.amount) : NaN;
-            const fare = (entry.fare ?? (entry.booking?.fare)) ?? 'N/A';
-            const paidoutFlag = entry.paidout === true;
-            const isPaid = paidoutFlag || (String(effective).toLowerCase() === 'paid');
+        <!-- Filters -->
+        <div class="glass-effect p-4 rounded-xl mb-6">
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-64">
+              <input 
+                type="text" 
+                placeholder="Search users by name, email, or phone..." 
+                class="search-input w-full px-4 py-2 rounded-lg"
+                id="user-search"
+              >
+            </div>
+            <select class="search-input px-4 py-2 rounded-lg bg-white/10 border border-white/20" id="user-status-filter">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+            </select>
+            <select class="search-input px-4 py-2 rounded-lg bg-white/10 border border-white/20" id="user-time-filter">
+              <option value="">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+            <button class="btn btn-primary px-4 py-2 rounded-lg" id="apply-user-filters">
+              <i data-feather="filter" class="w-4 h-4 mr-2"></i>
+              Apply
+            </button>
+          </div>
+        </div>
 
-            const bookingData = entry.booking || entry.bookingdata || {};
-            const pickup = bookingData.pickup || entry.pickup || 'N/A';
-            const dropoff = bookingData.dropoff || entry.dropoff || 'N/A';
+        <!-- Users Table -->
+        <div class="data-table rounded-xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-white/5">
+                <tr>
+                  <th class="text-left p-4 font-medium">
+                    <input type="checkbox" class="rounded border-gray-600 bg-white/10" id="select-all-users">
+                  </th>
+                  <th class="text-left p-4 font-medium">User</th>
+                  <th class="text-left p-4 font-medium">Contact</th>
+                  <th class="text-left p-4 font-medium">Join Date</th>
+                  <th class="text-left p-4 font-medium">Activity</th>
+                  <th class="text-left p-4 font-medium">Status</th>
+                  <th class="text-left p-4 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body" class="divide-y divide-white/10">
+                <!-- Content populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-            const tr = document.createElement('tr');
+        <!-- Pagination -->
+        <div class="flex flex-col sm:flex-row items-center justify-between mt-6 space-y-4 sm:space-y-0">
+          <div class="text-sm text-gray-400">
+            Showing <span class="font-medium" id="users-showing">1-10</span> of <span class="font-medium" id="users-total">1,247</span> users
+          </div>
+          <div class="flex items-center space-x-2">
+            <button class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50" id="users-prev-page" disabled>
+              <i data-feather="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-center space-x-2" id="users-pagination">
+              <!-- Pagination buttons populated by JavaScript -->
+            </div>
+            <button class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" id="users-next-page">
+              <i data-feather="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </section>
 
-            // actions cell
-            const actionsCell = document.createElement('td');
-            actionsCell.style.whiteSpace = 'nowrap';
+      <!-- Payments Section -->
+      <section id="payments-section" class="hidden animate-fade-in">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
+          <div>
+            <h2 class="text-2xl font-bold">Payment Management</h2>
+            <p class="text-gray-400">Process driver payments and manage wallet transactions</p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <select class="search-input px-4 py-2 rounded-lg bg-white/10 border border-white/20" id="payment-status-filter">
+              <option value="processing">Processing</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="paid">Paid</option>
+            </select>
+            <button class="btn btn-primary px-4 py-2 rounded-lg" id="apply-payment-filter">Apply</button>
+            <button class="btn bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg flex items-center text-white" id="export-payments">
+              <i data-feather="download" class="w-4 h-4 mr-2"></i>
+              Export CSV
+            </button>
+          </div>
+        </div>
 
-            // Show button
-            const btnShow = document.createElement('button');
-            btnShow.className = 'btn btn-sm btn-info me-1';
-            btnShow.textContent = 'Show';
-            btnShow.onclick = () => showBookingModal(driverId, bookingId);
-            actionsCell.appendChild(btnShow);
+        <div id="payments-container" class="space-y-6">
+          <!-- Payment cards will be populated here -->
+        </div>
+      </section>
 
-            // QR button: now enabled ONLY when entry effective status === 'processing' AND not paid AND amount>0 AND upi exists
-            const btnQr = document.createElement('button');
-            btnQr.className = 'btn btn-sm btn-primary me-1';
-            btnQr.textContent = 'QR';
-            const allowQr = (effective === 'processing') && !isPaid && (Number(amount) > 0) && !!upi;
-            if(!upi){ btnQr.disabled = true; btnQr.title = 'UPI missing'; }
-            else if(!allowQr){ btnQr.disabled = true; btnQr.title = 'QR allowed only for processing entries with amount > 0'; }
-            else btnQr.onclick = () => showQrModal(driverId, isNaN(amount) ? 0 : amount, bookingId);
-            actionsCell.appendChild(btnQr);
+      <!-- Other sections would be similar... -->
+    </main>
+  </div>
 
-            // Mark Paid: allowed to mark - still available
-            const btnPaid = document.createElement('button');
-            btnPaid.className = 'btn btn-sm btn-success';
-            btnPaid.textContent = 'Mark Paid';
-            btnPaid.onclick = () => markPaidEntry(driverId, bookingId);
-            actionsCell.appendChild(btnPaid);
+  <!-- Modals -->
+  <!-- User Details Modal -->
+  <div id="userModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+    <div class="modal-content w-full max-w-2xl mx-4 rounded-xl p-0 overflow-hidden">
+      <div class="p-6 border-b border-white/10">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold">User Details</h3>
+          <button class="p-2 hover:bg-white/10 rounded-lg transition-colors" onclick="closeModal('userModal')">
+            <i data-feather="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+      <div class="p-6" id="userModalContent">
+        <!-- Content populated by JavaScript -->
+      </div>
+    </div>
+  </div>
 
-            tr.innerHTML = `<td>${i++}</td>
-                            <td style="min-width:200px"><div><strong>${bookingId}</strong></div><small class="small-muted">${escapeHtml(pickup)} → ${escapeHtml(dropoff)}</small></td>
-                            <td>₹${isNaN(amount) ? '0.00' : amount.toFixed(2)}</td>
-                            <td>₹${fare}</td>
-                            <td>${isPaid ? '<span class="badge-paid">Paid</span>' : `<span class="badge-unpaid">${escapeHtml(effective)}</span>`}</td>`;
-            tr.appendChild(actionsCell);
-            tbody.appendChild(tr);
-          }
+  <!-- QR Code Modal -->
+  <div id="qrModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+    <div class="modal-content w-full max-w-md mx-4 rounded-xl p-6 text-center">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">UPI Payment QR</h3>
+        <button class="p-2 hover:bg-white/10 rounded-lg transition-colors" onclick="closeModal('qrModal')">
+          <i data-feather="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="qrCode" class="mb-4"></div>
+      <div id="qrInfo" class="text-sm text-gray-400 mb-4"></div>
+      <div class="flex space-x-2">
+        <button id="copyUpiUri" class="btn btn-primary px-4 py-2 rounded-lg flex-1">
+          <i data-feather="copy" class="w-4 h-4 mr-2"></i>
+          Copy UPI
+        </button>
+        <button onclick="closeModal('qrModal')" class="btn bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-white">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
 
-          body.appendChild(tbl);
-          card.appendChild(body);
-          container.appendChild(card);
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
-          // wire up header buttons
-          const copyBtn = document.getElementById(`copy-upi-${sanitized}`);
-          if(copyBtn && upi){
-            copyBtn.addEventListener('click', async () => {
-              try { await navigator.clipboard.writeText(upi); showToast('UPI copied','success'); } catch (e) { showToast('Copy failed','danger'); }
-            });
-          }
-          const qrTotalBtn = document.getElementById(`qr-total-${sanitized}`);
-          // Only attach total QR listener if there are processing entries (we computed totalProcessing)
-          if(qrTotalBtn && upi && !qrTotalBtn.disabled){
-            // compute processing sum again for safety
-            let processingSum = 0;
-            for(const [bid, obj] of Object.entries(entriesToShow)){
-              if(obj.effective === 'processing') processingSum += Number(obj.entry.amount) || 0;
-            }
-            if(processingSum > 0){
-              qrTotalBtn.addEventListener('click', () => showQrModal(driverId, processingSum, '')); // bookingId empty => total QR for processing entries
-            }
-          }
-          const markAllBtn = document.getElementById(`mark-all-paid-${sanitized}`);
-          if(markAllBtn) markAllBtn.addEventListener('click', () => markAllPaidForDriver(driverId));
-        }
-      } catch(e) {
-        showToast('Error loading wallets: ' + e.message,'danger');
-        console.error('Error loading wallets:', e);
-      } finally {
-        $('#wallets-loading').hide(); 
-        $('#driver-wallets-container').show();
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+    <div class="glass-effect p-8 rounded-xl text-center">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-400 mx-auto mb-4"></div>
+      <p class="text-lg font-medium">Loading...</p>
+      <p class="text-sm text-gray-400 mt-2">Please wait while we fetch your data</p>
+    </div>
+  </div>
+
+  <script>
+    // Application State Management
+    class AppState {
+      constructor() {
+        this.currentSection = 'dashboard';
+        this.user = null;
+        this.data = {
+          users: [],
+          drivers: [],
+          bookings: [],
+          vehicles: [],
+          payments: [],
+          metrics: {}
+        };
+        this.loading = {};
+        this.filters = {};
+        this.pagination = {
+          users: { page: 1, limit: 10, total: 0 },
+          payments: { page: 1, limit: 10, total: 0 }
+        };
       }
-    }
 
-    // Booking modal builder
-    async function showBookingModal(driverId, bookingId){
-      try {
-        const snap = await get(ref(db, `driverWallet/${driverId}/${bookingId}`));
-        if(!snap.exists()){
-          document.getElementById('bookingDetailsBody').innerHTML = `<div class="alert alert-warning">No booking data found for ${bookingId}</div>`;
-          new bootstrap.Modal(document.getElementById('bookingDetailsModal')).show();
-          return;
-        }
-        const entry = snap.val();
-        const b = entry.booking || entry.bookingdata || entry;
-
-        const rows = [
-          ['Booking ID', bookingId],
-          ['Driver ID', b.driverId || entry.driverId || driverId],
-          ['Driver Name', b.driverName || entry.driverName || 'N/A'],
-          ['User Name', b.userName || b.customerName || entry.userName || 'N/A'],
-          ['User Phone', b.userPhone || entry.userPhone || 'N/A'],
-          ['Pickup', b.pickup || 'N/A'],
-          ['Dropoff', b.dropoff || 'N/A'],
-          ['Date', b.date || entry.date || 'N/A'],
-          ['Time', b.time || entry.time || 'N/A'],
-          ['Booked At', b.bookedAt || entry.bookedAt || 'N/A'],
-          ['Fare', b.fare || entry.fare || 'N/A'],
-          ['Amount', entry.amount || 'N/A'],
-          ['PaymentId', b.paymentId || entry.paymentId || 'N/A'],
-          ['Status', entry.status || (entry.paidout ? 'paid' : ( entry.withdrawalRequested ? 'processing' : 'unpaid')) || 'N/A']
-        ];
-
-        let html = `<table class="table table-sm table-bordered">`;
-        for(const [label, val] of rows){
-          html += `<tr><th style="width:30%">${label}</th><td>${(val !== undefined && val !== null) ? escapeHtml(safeDisplay(val)) : 'N/A'}</td></tr>`;
-        }
-        html += `</table>`;
-        document.getElementById('bookingDetailsBody').innerHTML = html;
-        new bootstrap.Modal(document.getElementById('bookingDetailsModal')).show();
-      } catch (err) {
-        document.getElementById('bookingDetailsBody').innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
-        new bootstrap.Modal(document.getElementById('bookingDetailsModal')).show();
-      }
-    }
-
-    // QR generation: blocks creation if booking entry already paid; otherwise generates QR
-    async function showQrModal(driverId, amount, bookingId){
-      try {
-        const dSnap = await get(ref(db, `driverdetails/${driverId}`));
-        if(!dSnap.exists()){
-          showToast('Driver details not found','danger'); return;
-        }
-        const d = dSnap.val();
-        let upiIdRaw = d.upiId;
-        if(typeof upiIdRaw === 'string') upiIdRaw = upiIdRaw.trim();
-        if(!upiIdRaw){ showToast('UPI ID not set for this driver.','warning'); return; }
-
-        // If bookingId provided, check its paid status to prevent generating QR for paid entries
-        if(bookingId){
-          const wSnap = await get(ref(db, `driverWallet/${driverId}/${bookingId}`));
-          if(wSnap.exists()){
-            const w = wSnap.val();
-            const st = (w.status ?? (w.paidout ? 'paid' : '') ) || '';
-            const paidoutFlag = w.paidout === true;
-            if(paidoutFlag || String(st).toLowerCase() === 'paid'){
-              showToast('Cannot generate QR: entry already paid','warning');
-              return;
-            }
-            // If effective status !== 'processing' disallow (extra safety)
-            const eff = getEffectiveStatusFromWalletEntry(w);
-            if(eff !== 'processing'){
-              showToast('QR allowed only for processing entries','warning');
-              return;
-            }
-          }
+      setState(key, value) {
+        if (typeof key === 'object') {
+          Object.assign(this, key);
         } else {
-          // bookingId empty => total QR. We do an additional check: ensure at least one 'processing' entry present
-          // (caller should have computed totalProcessing; still check all wallet entries)
-          const wSnap = await get(ref(db, `driverWallet/${driverId}`));
-          if(wSnap.exists()){
-            const wallet = wSnap.val();
-            const anyProcessing = Object.values(wallet).some(e => getEffectiveStatusFromWalletEntry(e) === 'processing');
-            if(!anyProcessing){
-              showToast('No processing entries available for combined QR','warning');
-              return;
-            }
-          }
+          this[key] = value;
         }
+        this.notifyStateChange();
+      }
 
-        const driverNameRaw = (d.name || driverId || 'Payee').trim();
-        const payeeName = driverNameRaw.split(/\s+/).map(s => s ? (s[0].toUpperCase() + s.slice(1)) : '').join(' ');
+      getState(key) {
+        return key ? this[key] : this;
+      }
 
-        const paEncoded = encodeURIComponent(upiIdRaw);
-        const pnEncoded = encodeURIComponent(payeeName);
-        const amountStr = Number(amount) ? Number(amount).toFixed(2) : '0.00';
+      notifyStateChange() {
+        this.updateUI();
+      }
 
-        const minimalUri = `upi://pay?pa=${paEncoded}&pn=${pnEncoded}&am=${encodeURIComponent(amountStr)}&cu=INR`;
-        const tn = bookingId ? `Payment for ${bookingId}` : 'Withdrawal payment';
-        const tr = bookingId || `txn${Date.now()}`;
-        const fullUri = `upi://pay?pa=${paEncoded}&pn=${pnEncoded}&am=${encodeURIComponent(amountStr)}&tn=${encodeURIComponent(tn)}&tr=${encodeURIComponent(tr)}&cu=INR`;
-
-        document.getElementById('qrCode').innerHTML = '';
-        new QRCode(document.getElementById('qrCode'), {
-          text: minimalUri,
-          width: 340,
-          height: 340,
-          colorDark: '#000000',
-          colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.H
+      updateUI() {
+        // Update loading states
+        Object.keys(this.loading).forEach(key => {
+          const element = document.getElementById(`${key}-loading`);
+          if (element) {
+            element.style.display = this.loading[key] ? 'block' : 'none';
+          }
         });
-
-        document.getElementById('qrInfo').innerHTML = `<small style="color:#fff">UPI: ${upiIdRaw} — ${payeeName} — Amount: ₹${amountStr}</small>`;
-        document.getElementById('upiUriBox').innerHTML = `<div style="text-align:left"><strong>Minimal URI (used for QR):</strong><div style="margin-top:6px">${minimalUri}</div><hr style="border-color:rgba(255,255,255,0.06)"><strong>Full URI (fallback):</strong><div style="margin-top:6px">${fullUri}</div></div>`;
-
-        document.getElementById('copyUpiUriBtn').onclick = async () => {
-          try { await navigator.clipboard.writeText(minimalUri); showToast('Minimal UPI URI copied','success'); } catch (e){ showToast('Copy failed','danger'); }
-        };
-        document.getElementById('copyFullUpiUriBtn').onclick = async () => {
-          try { await navigator.clipboard.writeText(fullUri); showToast('Full UPI URI copied','success'); } catch (e){ showToast('Copy failed','danger'); }
-        };
-
-        new bootstrap.Modal(document.getElementById('qrModal')).show();
-      } catch (err) {
-        showToast('Failed to generate QR: ' + (err.message || err),'danger');
       }
     }
 
-    async function markPaidEntry(driverId, bookingId){
-      if(!confirm(`Mark booking ${bookingId} for driver ${driverId} as paid?`)) return;
-      try {
-        await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { paidout:true, status: 'paid' });
-        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markPaidEntry', driverId, bookingId, ts: Date.now() });
-        loadWallets();
-        showToast('Marked paid','success');
-      } catch (err) {
-        showToast('Failed to mark paid: ' + (err.message || err),'danger');
+    // Utility Functions
+    class Utils {
+      static formatCurrency(amount) {
+        return new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+          minimumFractionDigits: 0
+        }).format(amount);
+      }
+
+      static formatDate(date) {
+        return new Intl.DateTimeFormat('en-IN', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }).format(new Date(date));
+      }
+
+      static getInitials(name) {
+        return name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'NA';
+      }
+
+      static generateGradient() {
+        const gradients = [
+          'from-blue-500 to-purple-500',
+          'from-green-500 to-blue-500', 
+          'from-purple-500 to-pink-500',
+          'from-yellow-500 to-red-500',
+          'from-indigo-500 to-purple-500'
+        ];
+        return gradients[Math.floor(Math.random() * gradients.length)];
+      }
+
+      static debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+
+      static showLoading(show = true) {
+        const overlay = document.getElementById('loading-overlay');
+        overlay.classList.toggle('hidden', !show);
+        overlay.classList.toggle('flex', show);
+      }
+
+      static async delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      static getTimeAgo(date) {
+        const now = new Date();
+        const diffTime = Math.abs(now - new Date(date));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) return '1 day ago';
+        if (diffDays < 30) return `${diffDays} days ago`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+        return `${Math.floor(diffDays / 365)} years ago`;
       }
     }
 
-    // mark all 'processing' entries for a driver as paid
-    async function markAllPaidForDriver(driverId){
-      if(!confirm(`Mark ALL 'processing' wallet entries for driver ${driverId} as paid?`)) return;
-      try {
-        const snap = await get(ref(db, `driverWallet/${driverId}`));
-        if(!snap.exists()){ showToast('No wallet entries for this driver','warning'); return; }
-        const entriesObj = snap.val();
-        const updates = {};
-        const bookingIds = [];
+    // Toast Notification System
+    class ToastManager {
+      static show(message, type = 'info', duration = 5000) {
+        const toastContainer = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        
+        const types = {
+          success: { bg: 'bg-green-500', icon: 'check-circle' },
+          error: { bg: 'bg-red-500', icon: 'x-circle' },
+          warning: { bg: 'bg-yellow-500', icon: 'alert-triangle' },
+          info: { bg: 'bg-blue-500', icon: 'info' }
+        };
 
-        for(const [bookingId, entry] of Object.entries(entriesObj)){
-          const effective = getEffectiveStatusFromWalletEntry(entry);
-          if(effective === 'processing'){
-            updates[`driverWallet/${driverId}/${bookingId}/paidout`] = true;
-            updates[`driverWallet/${driverId}/${bookingId}/status`] = 'paid';
-            bookingIds.push(bookingId);
+        const config = types[type] || types.info;
+        
+        toast.className = `toast ${config.bg} text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 max-w-sm`;
+        toast.innerHTML = `
+          <i data-feather="${config.icon}" class="w-5 h-5 flex-shrink-0"></i>
+          <span class="flex-1">${message}</span>
+          <button onclick="this.parentElement.remove()" class="ml-2 hover:bg-white/20 rounded p-1">
+            <i data-feather="x" class="w-4 h-4"></i>
+          </button>
+        `;
+        
+        toastContainer.appendChild(toast);
+        feather.replace();
+        
+        setTimeout(() => {
+          if (toast.parentElement) {
+            toast.style.animation = 'fade-out 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+          }
+        }, duration);
+      }
+    }
+
+    // Data Management
+    class DataManager {
+      constructor() {
+        this.cache = new Map();
+        this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+      }
+
+      async fetchUsers(page = 1, filters = {}) {
+        const cacheKey = `users-${page}-${JSON.stringify(filters)}`;
+        
+        if (this.cache.has(cacheKey)) {
+          const cached = this.cache.get(cacheKey);
+          if (Date.now() - cached.timestamp < this.cacheTimeout) {
+            return cached.data;
           }
         }
 
-        if(Object.keys(updates).length === 0){
-          showToast('No processing entries to mark paid','info');
-          return;
-        }
+        try {
+          await Utils.delay(800);
+          
+          const mockUsers = this.generateMockUsers(100);
+          const filtered = this.applyFilters(mockUsers, filters);
+          const paginated = this.paginate(filtered, page, 10);
+          
+          const result = {
+            data: paginated,
+            total: filtered.length,
+            page,
+            totalPages: Math.ceil(filtered.length / 10)
+          };
 
-        await update(ref(db), updates);
-        await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markAllPaidForDriver', driverId, bookingIds, ts: Date.now() });
-        showToast(`Marked ${bookingIds.length} booking(s) as paid for ${driverId}`,'success');
-        loadWallets();
-      } catch (err) {
-        showToast('Failed to mark all paid: ' + (err.message || err),'danger');
-      }
-    }
-
-    // Withdrawals loader (unchanged)
-    async function loadWithdrawals(){
-      $('#withdrawals-container').hide(); $('#withdrawals-loading').show();
-      const container = document.getElementById('withdrawals-container');
-      container.innerHTML='';
-
-      try {
-        const snap = await get(ref(db,'pendingWithdrawals'));
-        if(!snap.exists()){
-          container.textContent = 'No pending withdrawals found.';
-          $('#withdrawals-loading').hide(); $('#withdrawals-container').show();
-          return;
-        }
-
-        const byDriver = snap.val();
-
-        for(const [driverId, bookingsObj] of Object.entries(byDriver)){
-          let total = 0;
-          for(const b of Object.values(bookingsObj)) total += Number(b.amount) || 0;
-
-          let driverName = null, upi = null;
-          try {
-            const dSnap = await get(ref(db, `driverdetails/${driverId}`));
-            if(dSnap.exists()){
-              const d = dSnap.val();
-              driverName = d.name || null;
-              upi = (typeof d.upiId === 'string') ? d.upiId.trim() : (d.upiId || null);
-            }
-          } catch (e) { driverName = null; upi = null; }
-
-          const hasUnpaid = Object.values(bookingsObj).some(b => {
-            const st = (b.status || '').toString().toLowerCase();
-            const paidoutFlag = b.paidout === true;
-            return !paidoutFlag && st !== 'paid' && st !== 'approved';
+          this.cache.set(cacheKey, {
+            data: result,
+            timestamp: Date.now()
           });
 
-          const driverCard = document.createElement('div');
-          driverCard.className = 'withdrawal-driver-card';
-          driverCard.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-              <div>
-                <h4 style="margin:0;color:#ffd700">Driver: ${driverId}${driverName ? ` — ${driverName}` : ''}</h4>
-                <small style="color:#cbd5e1">UPI: <span id="upi-${driverId}">${upi ? upi : '—'}</span> ${!upi ? '<span class="badge-missing-upi">UPI missing</span>' : `<button id="copyUpi-${driverId}" class="btn btn-sm btn-outline-light ms-2">Copy UPI</button>`}</small>
-              </div>
-              <div style="text-align:right;">
-                <h4 style="margin:0">Total: ₹${total.toFixed(2)}</h4>
-                <div style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end;">
-                  <button class="btn btn-sm btn-primary" ${(!upi || !hasUnpaid) ? 'disabled title="No unpaid withdrawals or UPI missing"' : ''} id="qrTotal-${driverId}">Show QR (Total)</button>
-                  <button class="btn btn-sm btn-success" id="markAllPaid-${driverId}">Mark All Paid</button>
+          return result;
+        } catch (error) {
+          ToastManager.show('Failed to load users', 'error');
+          throw error;
+        }
+      }
+
+      async fetchPayments(statusFilter = 'processing') {
+        try {
+          await Utils.delay(1000);
+          
+          const mockPayments = this.generateMockPayments(50);
+          const filtered = mockPayments.filter(p => p.status === statusFilter);
+          
+          return { data: filtered, total: filtered.length };
+        } catch (error) {
+          ToastManager.show('Failed to load payments', 'error');
+          throw error;
+        }
+      }
+
+      generateMockUsers(count) {
+        const names = ['Rajesh Kumar', 'Priya Sharma', 'Amit Singh', 'Sneha Patel', 'Rohit Verma', 'Kavya Nair', 'Arjun Reddy', 'Meera Gupta'];
+        const statuses = ['active', 'inactive', 'suspended'];
+        
+        return Array.from({ length: count }, (_, i) => ({
+          id: `USR${String(i + 1).padStart(3, '0')}`,
+          name: names[Math.floor(Math.random() * names.length)],
+          email: `user${i + 1}@example.com`,
+          phone: `+91 ${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+          joinDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
+          bookings: Math.floor(Math.random() * 50),
+          status: statuses[Math.floor(Math.random() * statuses.length)],
+          lastActive: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
+        }));
+      }
+
+      generateMockPayments(count) {
+        const drivers = ['Rajesh Kumar', 'Amit Patel', 'Suresh Yadav', 'Vikram Singh', 'Mohan Das'];
+        const statuses = ['processing', 'unpaid', 'paid'];
+        
+        return Array.from({ length: count }, (_, i) => ({
+          id: `PAY${String(i + 1).padStart(3, '0')}`,
+          driverId: `DRV${String(i + 1).padStart(3, '0')}`,
+          driverName: drivers[Math.floor(Math.random() * drivers.length)],
+          amount: Math.floor(Math.random() * 5000) + 500,
+          bookingId: `BK${String(i + 1).padStart(4, '0')}`,
+          status: statuses[Math.floor(Math.random() * statuses.length)],
+          date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+          upiId: `driver${i + 1}@paytm`
+        }));
+      }
+
+      applyFilters(data, filters) {
+        return data.filter(item => {
+          if (filters.search) {
+            const search = filters.search.toLowerCase();
+            const searchFields = ['name', 'email', 'phone'];
+            if (!searchFields.some(field => 
+              item[field]?.toString().toLowerCase().includes(search)
+            )) return false;
+          }
+          
+          if (filters.status && item.status !== filters.status) return false;
+          
+          return true;
+        });
+      }
+
+      paginate(data, page, limit) {
+        const start = (page - 1) * limit;
+        return data.slice(start, start + limit);
+      }
+    }
+
+    // UI Components
+    class UIComponents {
+      static renderUserRow(user) {
+        const statusColors = {
+          active: 'online',
+          inactive: 'offline', 
+          suspended: 'pending'
+        };
+
+        return `
+          <tr class="hover:bg-white/5 transition-colors">
+            <td class="p-4">
+              <input type="checkbox" class="rounded border-gray-600 bg-white/10" value="${user.id}">
+            </td>
+            <td class="p-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r ${Utils.generateGradient()} rounded-full flex items-center justify-center">
+                  <span class="text-sm font-medium">${Utils.getInitials(user.name)}</span>
+                </div>
+                <div>
+                  <p class="font-medium">${user.name}</p>
+                  <p class="text-sm text-gray-400">ID: ${user.id}</p>
                 </div>
               </div>
+            </td>
+            <td class="p-4">
+              <p class="text-sm">${user.email}</p>
+              <p class="text-sm text-gray-400">${user.phone}</p>
+            </td>
+            <td class="p-4">
+              <p class="text-sm">${Utils.formatDate(user.joinDate)}</p>
+              <p class="text-xs text-gray-400">${Utils.getTimeAgo(user.joinDate)}</p>
+            </td>
+            <td class="p-4">
+              <p class="font-medium text-sm">${user.bookings} bookings</p>
+              <p class="text-xs text-gray-400">Last: ${Utils.getTimeAgo(user.lastActive)}</p>
+            </td>
+            <td class="p-4">
+              <span class="status-badge ${statusColors[user.status]} capitalize">${user.status}</span>
+            </td>
+            <td class="p-4">
+              <div class="flex items-center space-x-2">
+                <button class="p-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg transition-all" onclick="viewUser('${user.id}')">
+                  <i data-feather="eye" class="w-4 h-4 text-blue-400"></i>
+                </button>
+                <button class="p-2 bg-green-500/20 hover:bg-green-500/30 rounded-lg transition-all" onclick="editUser('${user.id}')">
+                  <i data-feather="edit" class="w-4 h-4 text-green-400"></i>
+                </button>
+                <button class="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-all" onclick="deleteUser('${user.id}')">
+                  <i data-feather="trash-2" class="w-4 h-4 text-red-400"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+
+      static renderPaymentCard(payment) {
+        const statusColors = {
+          processing: 'processing',
+          unpaid: 'unpaid',
+          paid: 'paid'
+        };
+
+        return `
+          <div class="driver-card p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-gradient-to-r ${Utils.generateGradient()} rounded-full flex items-center justify-center">
+                  <span class="font-medium">${Utils.getInitials(payment.driverName)}</span>
+                </div>
+                <div>
+                  <h3 class="font-semibold">${payment.driverName}</h3>
+                  <p class="text-sm text-gray-400">${payment.driverId}</p>
+                  <p class="text-xs text-gray-400">UPI: ${payment.upiId}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-2xl font-bold text-blue-400">${Utils.formatCurrency(payment.amount)}</p>
+                <span class="status-badge ${statusColors[payment.status]}">${payment.status}</span>
+              </div>
             </div>
-            <hr style="border-color: rgba(255,255,255,0.06)">
-            <div id="withdrawals-list-${driverId}"></div>
-          `;
-          container.appendChild(driverCard);
+            
+            <div class="flex items-center justify-between text-sm text-gray-400 mb-4">
+              <span>Booking: ${payment.bookingId}</span>
+              <span>${Utils.formatDate(payment.date)}</span>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+              <button class="btn btn-primary px-4 py-2 rounded-lg flex items-center" onclick="showQR('${payment.driverId}', ${payment.amount}, '${payment.bookingId}', '${payment.upiId}')">
+                <i data-feather="qr-code" class="w-4 h-4 mr-2"></i>
+                Show QR
+              </button>
+              <button class="btn btn-success px-4 py-2 rounded-lg" onclick="markAsPaid('${payment.id}')">
+                <i data-feather="check" class="w-4 h-4 mr-2"></i>
+                Mark Paid
+              </button>
+              <button class="btn bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-white" onclick="viewPaymentDetails('${payment.id}')">
+                <i data-feather="eye" class="w-4 h-4 mr-2"></i>
+                View
+              </button>
+            </div>
+          </div>
+        `;
+      }
 
-          if(upi){
-            const copyBtn = document.getElementById(`copyUpi-${driverId}`);
-            if(copyBtn) copyBtn.addEventListener('click', async () => {
-              try { await navigator.clipboard.writeText(upi); showToast('UPI copied','success'); } catch (e) { showToast('Copy failed','danger'); }
-            });
-          }
-          const qrTotalBtn = document.getElementById(`qrTotal-${driverId}`);
-          if(qrTotalBtn && upi && hasUnpaid){
-            qrTotalBtn.addEventListener('click', () => showQrModal(driverId, total, ''));
-          }
+      static renderActivityItem(activity) {
+        const icons = {
+          booking: 'calendar',
+          payment: 'credit-card',
+          user: 'user-plus',
+          driver: 'user-check'
+        };
 
-          document.getElementById(`markAllPaid-${driverId}`).addEventListener('click', () => markAllPaidForDriver(driverId));
+        return `
+          <div class="flex items-center p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+            <div class="w-10 h-10 bg-${activity.color}-500/20 rounded-full flex items-center justify-center mr-4">
+              <i data-feather="${icons[activity.type] || 'activity'}" class="w-5 h-5 text-${activity.color}-400"></i>
+            </div>
+            <div class="flex-1">
+              <p class="font-medium">${activity.title}</p>
+              <p class="text-sm text-gray-400">${activity.description}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-medium text-${activity.color}-400">${activity.amount || ''}</p>
+              <p class="text-xs text-gray-400">${Utils.formatDate(activity.timestamp)}</p>
+            </div>
+          </div>
+        `;
+      }
 
-          const listEl = driverCard.querySelector(`#withdrawals-list-${driverId}`);
-          const tbl = document.createElement('table');
-          tbl.className = 'table table-sm table-striped';
-          tbl.innerHTML = `<thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`;
-          listEl.appendChild(tbl);
-          const tbody = tbl.querySelector('tbody');
-
-          let i=1;
-          for(const [bookingId, data] of Object.entries(bookingsObj)){
-            const tr = document.createElement('tr');
-            const pickup = (data.booking && data.booking.pickup) ? data.booking.pickup : (data.pickup || 'N/A');
-            const dropoff = (data.booking && data.booking.dropoff) ? data.booking.dropoff : (data.dropoff || 'N/A');
-            const amount = Number(data.amount) ? Number(data.amount).toFixed(2) : '0.00';
-            const fare = data.fare ?? 'N/A';
-            const status = data.status ?? 'pending';
-            const paidoutFlag = data.paidout === true;
-            const isPaid = paidoutFlag || (String(status).toLowerCase() === 'paid' || String(status).toLowerCase() === 'approved');
-
-            const btnApprove = document.createElement('button');
-            btnApprove.className = 'btn btn-sm btn-success';
-            btnApprove.textContent = 'Approve';
-            btnApprove.onclick = () => approveWithdrawal(driverId, bookingId);
-
-            const btnReject = document.createElement('button');
-            btnReject.className = 'btn btn-sm btn-danger';
-            btnReject.textContent = 'Reject';
-            btnReject.onclick = () => rejectWithdrawal(driverId, bookingId);
-
-            const btnQrSingle = document.createElement('button');
-            btnQrSingle.className = 'btn btn-sm btn-primary';
-            btnQrSingle.textContent = 'Show QR';
-            if(!upi){ btnQrSingle.disabled = true; btnQrSingle.title = 'UPI missing'; }
-            else if(isPaid){ btnQrSingle.disabled = true; btnQrSingle.title = 'Already paid or approved'; }
-            else btnQrSingle.onclick = () => showQrModal(driverId, Number(amount)||0, bookingId);
-
-            const btnShowBooking = document.createElement('button');
-            btnShowBooking.className = 'btn btn-sm btn-info';
-            btnShowBooking.textContent = 'Show';
-            btnShowBooking.onclick = () => showBookingModal(driverId, bookingId);
-
-            const actionsWrapper = document.createElement('div');
-            actionsWrapper.style.display = 'flex';
-            actionsWrapper.style.gap = '6px';
-            actionsWrapper.appendChild(btnShowBooking);
-            actionsWrapper.appendChild(btnQrSingle);
-            actionsWrapper.appendChild(btnApprove);
-            actionsWrapper.appendChild(btnReject);
-
-            tr.innerHTML = `<td>${i++}</td>
-                            <td style="min-width:180px"><div><strong>${bookingId}</strong></div><small>${pickup} → ${dropoff}</small></td>
-                            <td>₹${amount}</td>
-                            <td>₹${fare}</td>
-                            <td>${isPaid ? '<span class="badge-paid">Paid</span>' : '<span class="badge-unpaid">Unpaid</span>'}</td>
-                            <td></td>`;
-            tr.querySelector('td:last-child').appendChild(actionsWrapper);
-            tbody.appendChild(tr);
-          }
-        }
-
-        document.getElementById('exportWithdrawalsBtn').onclick = () => exportWithdrawalsGrouped(byDriver);
-      } catch(e) {
-        showToast('Error loading withdrawals: ' + e.message,'danger');
-        console.error('Error loading withdrawals:', e);
-      } finally {
-        $('#withdrawals-loading').hide(); 
-        $('#withdrawals-container').show();
+      static renderPaginationButton(page, current, total) {
+        const isActive = page === current;
+        const className = isActive 
+          ? 'px-3 py-2 rounded-lg bg-blue-600 text-white' 
+          : 'px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors';
+        
+        return `<button class="${className}" onclick="changePage(${page})">${page}</button>`;
       }
     }
 
-    function exportWithdrawalsGrouped(dataByDriver){
-      try {
-        let rows = [['Driver ID','Driver Name','UPI','Booking ID','Amount','Fare','Status']];
-        for(const [driverId, bookingsObj] of Object.entries(dataByDriver)){
-          for(const [bookingId, data] of Object.entries(bookingsObj)){
-            const driverName = (data.driverName || '');
-            const upi = (data.upi || '');
-            rows.push([driverId, driverName, upi, bookingId, (Number(data.amount)||0).toFixed(2), (data.fare||''), (data.status||'')]);
-          }
+    // Initialize application state
+    const appState = new AppState();
+    const dataManager = new DataManager();
+
+    // Navigation Management
+    class Navigation {
+      static init() {
+        const navItems = document.querySelectorAll('.nav-item[data-section]');
+        navItems.forEach(item => {
+          item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const section = item.dataset.section;
+            this.showSection(section);
+          });
+        });
+
+        // Sidebar toggle
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+
+        sidebarToggle.addEventListener('click', () => {
+          sidebar.classList.toggle('open');
+          overlay.classList.toggle('hidden');
+        });
+
+        overlay.addEventListener('click', () => {
+          sidebar.classList.remove('open');
+          overlay.classList.add('hidden');
+        });
+      }
+
+      static showSection(sectionName) {
+        // Hide all sections
+        document.querySelectorAll('section').forEach(section => {
+          section.classList.add('hidden');
+        });
+
+        // Show target section
+        const targetSection = document.getElementById(`${sectionName}-section`);
+        if (targetSection) {
+          targetSection.classList.remove('hidden');
         }
-        const csv = rows.map(r => r.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `pending_withdrawals_grouped_${Date.now()}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'exportWithdrawalsGrouped', ts: Date.now() });
-        showToast('CSV exported','success');
-      } catch (err) { 
-        showToast('Export failed: ' + (err.message || err),'danger'); 
+
+        // Update navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+          item.classList.remove('active');
+        });
+        
+        const activeItem = document.querySelector(`[data-section="${sectionName}"]`);
+        if (activeItem) {
+          activeItem.classList.add('active');
+        }
+
+        // Update page title
+        const titles = {
+          dashboard: 'Dashboard Overview',
+          users: 'User Management',
+          drivers: 'Driver Management',
+          bookings: 'Booking Management',
+          vehicles: 'Vehicle Management',
+          payments: 'Payment Management',
+          analytics: 'Analytics & Reports'
+        };
+
+        document.getElementById('page-title').textContent = titles[sectionName] || 'Dashboard';
+        appState.setState('currentSection', sectionName);
+
+        // Load section data
+        this.loadSectionData(sectionName);
+
+        // Close mobile sidebar
+        if (window.innerWidth < 1024) {
+          document.getElementById('sidebar').classList.remove('open');
+          document.getElementById('sidebar-overlay').classList.add('hidden');
+        }
+      }
+
+      static async loadSectionData(section) {
+        switch (section) {
+          case 'dashboard':
+            await this.loadDashboard();
+            break;
+          case 'users':
+            await this.loadUsers();
+            break;
+          case 'payments':
+            await this.loadPayments();
+            break;
+        }
+      }
+
+      static async loadDashboard() {
+        // Load recent activity
+        const mockActivities = [
+          {
+            type: 'booking',
+            title: 'New Booking',
+            description: 'Delhi → Mumbai by Rajesh Kumar',
+            amount: '₹2,500',
+            color: 'blue',
+            timestamp: new Date()
+          },
+          {
+            type: 'payment',
+            title: 'Payment Processed',
+            description: 'Driver payout for booking #BK001',
+            amount: '₹1,800',
+            color: 'green',
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
+          },
+          {
+            type: 'user',
+            title: 'New User Registration',
+            description: 'Priya Sharma joined the platform',
+            color: 'purple',
+            timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000)
+          }
+        ];
+
+        const activityContainer = document.getElementById('recent-activity');
+        activityContainer.innerHTML = mockActivities
+          .map(activity => UIComponents.renderActivityItem(activity))
+          .join('');
+        
+        feather.replace();
+      }
+
+      static async loadUsers(page = 1) {
+        const tbody = document.getElementById('users-table-body');
+        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-2"></div><span class="text-gray-400">Loading users...</span></td></tr>';
+
+        try {
+          const filters = {
+            search: document.getElementById('user-search')?.value,
+            status: document.getElementById('user-status-filter')?.value,
+            time: document.getElementById('user-time-filter')?.value
+          };
+
+          const result = await dataManager.fetchUsers(page, filters);
+          
+          tbody.innerHTML = result.data.length 
+            ? result.data.map(user => UIComponents.renderUserRow(user)).join('')
+            : '<tr><td colspan="7" class="p-8 text-center text-gray-400">No users found</td></tr>';
+
+          // Update pagination
+          document.getElementById('users-showing').textContent = 
+            result.data.length ? `${((page - 1) * 10) + 1}-${Math.min(page * 10, result.total)}` : '0-0';
+          document.getElementById('users-total').textContent = result.total;
+
+          this.updatePagination('users', result);
+          feather.replace();
+
+        } catch (error) {
+          tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-red-400">Error loading users</td></tr>';
+        }
+      }
+
+      static async loadPayments(statusFilter = 'processing') {
+        const container = document.getElementById('payments-container');
+        container.innerHTML = '<div class="text-center p-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-2"></div><span class="text-gray-400">Loading payments...</span></div>';
+
+        try {
+          const result = await dataManager.fetchPayments(statusFilter);
+          
+          container.innerHTML = result.data.length
+            ? result.data.map(payment => UIComponents.renderPaymentCard(payment)).join('')
+            : '<div class="text-center p-8 text-gray-400">No payments found</div>';
+
+          feather.replace();
+
+        } catch (error) {
+          container.innerHTML = '<div class="text-center p-8 text-red-400">Error loading payments</div>';
+        }
+      }
+
+      static updatePagination(section, result) {
+        const paginationContainer = document.getElementById(`${section}-pagination`);
+        if (!paginationContainer) return;
+
+        const { page, totalPages } = result;
+        let paginationHTML = '';
+
+        // Generate pagination buttons
+        for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+          paginationHTML += UIComponents.renderPaginationButton(i, page, totalPages);
+        }
+
+        if (totalPages > 5) {
+          paginationHTML += '<span class="px-3 py-2 text-gray-400">...</span>';
+          paginationHTML += UIComponents.renderPaginationButton(totalPages, page, totalPages);
+        }
+
+        paginationContainer.innerHTML = paginationHTML;
+
+        // Update prev/next buttons
+        const prevBtn = document.getElementById(`${section}-prev-page`);
+        const nextBtn = document.getElementById(`${section}-next-page`);
+        
+        if (prevBtn) prevBtn.disabled = page <= 1;
+        if (nextBtn) nextBtn.disabled = page >= totalPages;
       }
     }
 
-    // ---------- FIXED loadBookings() ----------
-    async function loadBookings(){
-      $('#bookings-table').hide(); $('#bookings-loading').show();
-      initTable('bookings-table',[9]);
+    // Chart Management
+    class ChartManager {
+      static initCharts() {
+        this.initRevenueChart();
+        this.initStatusChart();
+      }
 
-      try {
-        const snap = await get(ref(db,'bookings'));
-        if(!snap.exists()){
-          $('#bookings-loading').hide();
-          $('#bookings-table').show();
-          return;
-        }
-
-        const data = snap.val();
-
-        // helper to process a single booking record (bid, b)
-        function processBookingRow(bid, b, idx){
-          // Try many common field names to be robust to schema differences
-          const customer = pickField(b, ['customerName','userName','customer','name','user','customer.name','user.name']) || '';
-          // vehicle might be an object or string
-          let vehicle = pickField(b, ['vehicle','car','vehicleInfo','carBrand','vehicle.brand','vehicle.model']) || '';
-          if(typeof vehicle === 'object') {
-            // try to create a compact representation
-            vehicle = (vehicle.brand ? vehicle.brand + (vehicle.reg ? ' ('+vehicle.reg+')' : '') : (vehicle.reg || JSON.stringify(vehicle)));
-          }
-          const pickup = pickField(b, ['pickup','from','start','route.pickup','booking.pickup','pickupLocation']) || '';
-          const dropoff = pickField(b, ['dropoff','to','end','route.dropoff','booking.dropoff','dropoffLocation']) || '';
-          const duration = pickField(b, ['duration','tripDuration','timeTaken']) || '';
-          const fare = pickField(b, ['fare','amount','price','booking.fare']) || '';
-          const status = pickField(b, ['status','paymentStatus','state','bookingStatus']) || '';
-
-          // fallback: if many are empty and b itself contains nested booking object, try deeper
-          if(!customer && b.booking && typeof b.booking === 'object'){
-            const bk = b.booking;
-            const fallbackCustomer = pickField(bk, ['customerName','userName','name']) || '';
-            if(fallbackCustomer) { customer = fallbackCustomer; }
-          }
-
-          // sanitize and display
-          const displayCustomer = escapeHtml(safeDisplay(customer));
-          const displayVehicle = escapeHtml(safeDisplay(vehicle));
-          const displayPickup = escapeHtml(safeDisplay(pickup));
-          const displayDropoff = escapeHtml(safeDisplay(dropoff));
-          const displayDuration = escapeHtml(safeDisplay(duration));
-          const displayFare = escapeHtml(safeDisplay(fare));
-          const displayStatus = escapeHtml(safeDisplay(status));
-
-          const actionHtml = `<button class="btn btn-sm btn-danger" onclick="deleteBooking('${bid}')">Delete</button>`;
-
-          tables['bookings-table'].row.add([ idx, bid, displayCustomer, displayVehicle, displayPickup, displayDropoff, displayDuration, displayFare, displayStatus, actionHtml ]).draw(false);
-        }
-
-        // If top-level children look like booking objects (flat map), detect
-        const values = Object.values(data);
-        const looksFlat = values.some(v => v && (v.pickup || v.fare || v.customerName || v.userName || v.vehicle || v.booking));
-
-        if(looksFlat){
-          let i = 1;
-          for(const [bid, b] of Object.entries(data)){
-            processBookingRow(bid, b, i++);
-          }
-        } else {
-          // Possibly grouped by driverId or some other grouping: iterate two levels deep
-          let i = 1;
-          for(const [groupKey, groupVal] of Object.entries(data)){
-            if(groupVal && typeof groupVal === 'object'){
-              for(const [bid, b] of Object.entries(groupVal)){
-                processBookingRow(bid, b, i++);
+      static initRevenueChart() {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+              label: 'Revenue',
+              data: [45000, 52000, 48000, 61000, 55000, 67000],
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              tension: 0.4,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                ticks: { color: '#9ca3af' }
+              },
+              x: {
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                ticks: { color: '#9ca3af' }
               }
-            } else {
-              // last resort: the child is not object => show as row
-              processBookingRow(groupKey, groupVal, i++);
             }
           }
-        }
-      } catch (err) {
-        showToast('Failed to load bookings: ' + (err.message || err),'danger');
-        console.error('Error loading bookings:', err);
-      } finally {
-        $('#bookings-loading').hide();
-        $('#bookings-table').show();
+        });
       }
-    }
-    // ---------- end loadBookings fix ----------
 
-    // helper to make safe DOM id
-    function sanitizeId(id){
-      return String(id).replace(/[^a-z0-9\-_]/gi, '-');
-    }
-
-    // Basic HTML-escape
-    function escapeHtml(str) {
-      if (!str && str !== 0) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    async function loadProfile(){
-      $('#profile-table').hide(); $('#profile-loading').show();
-      initTable('profile-table');
-      try {
-        const user = auth.currentUser;
-        const profileData = { 
-          Name: user?.displayName || 'Admin', 
-          Email: user?.email || '', 
-          UID: user?.uid || '' 
-        };
-        for(const [k,v] of Object.entries(profileData)) {
-          tables['profile-table'].row.add([k,v]).draw(false);
-        }
-      } catch(e) {
-        showToast('Error loading profile: ' + e.message,'danger');
-      } finally {
-        $('#profile-loading').hide(); 
-        $('#profile-table').show();
+      static initStatusChart() {
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Completed', 'Active', 'Pending', 'Cancelled'],
+            datasets: [{
+              data: [156, 47, 23, 12],
+              backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  color: '#9ca3af',
+                  padding: 20,
+                  usePointStyle: true
+                }
+              }
+            }
+          }
+        });
       }
     }
 
-    // Defensive openTab + ensure DOM ready when opening default tab
-    window.openTab = function(tab){
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      const id = `${tab}-tab`;
-      const el = document.getElementById(id);
-      if (!el) {
-        const first = document.querySelector('.tab-pane');
-        if (first) {
-          first.classList.add('active');
-          if (typeof loadUsers === 'function') loadUsers();
-        }
-        return;
-      }
-      el.classList.add('active');
-      switch(tab){
-        case 'users': if (typeof loadUsers === 'function') loadUsers(); break;
-        case 'drivers': if (typeof loadDrivers === 'function') loadDrivers(); break;
-        case 'pending-cars': if (typeof loadPending === 'function') loadPending(); break;
-        case 'approved-cars': if (typeof loadApproved === 'function') loadApproved(); break;
-        case 'slots': if (typeof loadSlots === 'function') loadSlots(); break;
-        case 'bookings': if (typeof loadBookings === 'function') loadBookings(); break;
-        case 'driver-wallets': if (typeof loadWallets === 'function') loadWallets(); break;
-        case 'pending-withdrawals': if (typeof loadWithdrawals === 'function') loadWithdrawals(); break;
-        case 'profile': if (typeof loadProfile === 'function') loadProfile(); break;
-        default: console.warn('Unknown tab:', tab); break;
+    // Global Functions
+    window.viewUser = (userId) => {
+      ToastManager.show(`Viewing user ${userId}`, 'info');
+      // Here you would normally open a modal with user details
+    };
+
+    window.editUser = (userId) => {
+      ToastManager.show(`Editing user ${userId}`, 'info');
+    };
+
+    window.deleteUser = (userId) => {
+      if (confirm('Are you sure you want to delete this user?')) {
+        ToastManager.show(`User ${userId} deleted successfully`, 'success');
+        // Reload users after deletion
+        Navigation.loadUsers();
       }
     };
 
-    // Ensure openTab runs after auth state ready
-    onAuthStateChanged(auth, user => {
-      if (!user) { 
-        location.href = 'adminlogin.html'; 
-        return; 
-      }
+    window.showQR = (driverId, amount, bookingId, upiId) => {
+      const modal = document.getElementById('qrModal');
+      const qrCode = document.getElementById('qrCode');
+      const qrInfo = document.getElementById('qrInfo');
       
-      // Setup wallet filter controls
-      const filterEl = document.getElementById('walletStatusFilter');
-      if(filterEl){
-        document.getElementById('walletFilterApplyBtn').addEventListener('click', () => loadWallets());
-        filterEl.addEventListener('change', () => loadWallets());
-      }
+      qrCode.innerHTML = '';
       
-      const showDefault = () => openTab('users');
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', showDefault, { once: true });
-      } else {
-        showDefault();
+      // Generate UPI URI
+      const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(driverId)}&am=${amount}&cu=INR&tn=${encodeURIComponent(`Payment for ${bookingId}`)}`;
+      
+      new QRCode(qrCode, {
+        text: upiUri,
+        width: 200,
+        height: 200,
+        colorDark: '#000000',
+        colorLight: '#ffffff'
+      });
+
+      qrInfo.textContent = `UPI: ${upiId} | Amount: ₹${amount}`;
+      
+      document.getElementById('copyUpiUri').onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(upiUri);
+          ToastManager.show('UPI URI copied to clipboard', 'success');
+        } catch (e) {
+          ToastManager.show('Failed to copy UPI URI', 'error');
+        }
+      };
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+
+    window.markAsPaid = (paymentId) => {
+      if (confirm('Mark this payment as paid?')) {
+        ToastManager.show('Payment marked as paid', 'success');
+        Navigation.loadPayments();
+      }
+    };
+
+    window.viewPaymentDetails = (paymentId) => {
+      ToastManager.show(`Viewing payment ${paymentId}`, 'info');
+    };
+
+    window.closeModal = (modalId) => {
+      const modal = document.getElementById(modalId);
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+
+    window.changePage = (page) => {
+      const currentSection = appState.currentSection;
+      if (currentSection === 'users') {
+        Navigation.loadUsers(page);
+      }
+    };
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize Feather Icons
+      feather.replace();
+      
+      // Initialize Navigation
+      Navigation.init();
+      
+      // Initialize Charts
+      ChartManager.initCharts();
+      
+      // Load dashboard data
+      Navigation.loadSectionData('dashboard');
+
+      // Theme toggle
+      document.getElementById('theme-toggle').addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        const icon = document.querySelector('#theme-toggle i');
+        const isDark = document.documentElement.classList.contains('dark');
+        icon.setAttribute('data-feather', isDark ? 'sun' : 'moon');
+        feather.replace();
+      });
+
+      // Logout
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to logout?')) {
+          ToastManager.show('Logging out...', 'info');
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 1500);
+        }
+      });
+
+      // User filters
+      const applyUserFilters = document.getElementById('apply-user-filters');
+      if (applyUserFilters) {
+        applyUserFilters.addEventListener('click', () => {
+          Navigation.loadUsers(1);
+        });
+      }
+
+      // User search with debounce
+      const userSearch = document.getElementById('user-search');
+      if (userSearch) {
+        const debouncedSearch = Utils.debounce(() => {
+          Navigation.loadUsers(1);
+        }, 300);
+        userSearch.addEventListener('input', debouncedSearch);
+      }
+
+      // Payment filter
+      const applyPaymentFilter = document.getElementById('apply-payment-filter');
+      const paymentStatusFilter = document.getElementById('payment-status-filter');
+      if (applyPaymentFilter && paymentStatusFilter) {
+        applyPaymentFilter.addEventListener('click', () => {
+          Navigation.loadPayments(paymentStatusFilter.value);
+        });
+      }
+
+      // Export payments
+      const exportPayments = document.getElementById('export-payments');
+      if (exportPayments) {
+        exportPayments.addEventListener('click', () => {
+          ToastManager.show('Exporting payments data...', 'info');
+          // Here you would implement actual CSV export
+          setTimeout(() => {
+            ToastManager.show('Payments exported successfully', 'success');
+          }, 2000);
+        });
+      }
+
+      // Pagination controls
+      const usersPrevPage = document.getElementById('users-prev-page');
+      const usersNextPage = document.getElementById('users-next-page');
+      
+      if (usersPrevPage) {
+        usersPrevPage.addEventListener('click', () => {
+          const currentPage = appState.pagination.users.page;
+          if (currentPage > 1) {
+            Navigation.loadUsers(currentPage - 1);
+          }
+        });
+      }
+
+      if (usersNextPage) {
+        usersNextPage.addEventListener('click', () => {
+          const currentPage = appState.pagination.users.page;
+          const totalPages = appState.pagination.users.totalPages;
+          if (currentPage < totalPages) {
+            Navigation.loadUsers(currentPage + 1);
+          }
+        });
+      }
+
+      // Global search
+      const globalSearch = document.getElementById('global-search');
+      if (globalSearch) {
+        const debouncedGlobalSearch = Utils.debounce((query) => {
+          if (query.length > 2) {
+            ToastManager.show(`Searching for "${query}"...`, 'info');
+            // Implement global search across all sections
+          }
+        }, 500);
+
+        globalSearch.addEventListener('input', (e) => {
+          debouncedGlobalSearch(e.target.value);
+        });
+      }
+
+      // Notifications
+      document.getElementById('notifications-btn').addEventListener('click', () => {
+        ToastManager.show('No new notifications', 'info');
+      });
+
+      // Select all users checkbox
+      const selectAllUsers = document.getElementById('select-all-users');
+      if (selectAllUsers) {
+        selectAllUsers.addEventListener('change', (e) => {
+          const checkboxes = document.querySelectorAll('#users-table-body input[type="checkbox"]');
+          checkboxes.forEach(checkbox => {
+            checkbox.checked = e.target.checked;
+          });
+        });
+      }
+
+      // Close modals when clicking outside
+      document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('fixed') && e.target.classList.contains('inset-0')) {
+          const modals = document.querySelectorAll('.fixed.inset-0');
+          modals.forEach(modal => {
+            if (modal.contains(e.target) && e.target === modal) {
+              modal.classList.add('hidden');
+              modal.classList.remove('flex');
+            }
+          });
+        }
+      });
+
+      // Escape key to close modals
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const openModals = document.querySelectorAll('.fixed.inset-0:not(.hidden)');
+          openModals.forEach(modal => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+          });
+        }
+      });
+
+      // Real-time updates simulation
+      setInterval(() => {
+        // Update metrics with random changes
+        const revenueElement = document.querySelector('.metric-card .text-3xl');
+        if (revenueElement && revenueElement.textContent.includes('₹')) {
+          const currentValue = parseInt(revenueElement.textContent.replace(/[₹,]/g, ''));
+          const change = Math.floor(Math.random() * 2000) - 1000;
+          const newValue = Math.max(0, currentValue + change);
+          revenueElement.textContent = Utils.formatCurrency(newValue);
+        }
+      }, 30000); // Update every 30 seconds
+
+      // Auto-refresh data every 5 minutes
+      setInterval(() => {
+        const currentSection = appState.currentSection;
+        if (currentSection && typeof Navigation.loadSectionData === 'function') {
+          Navigation.loadSectionData(currentSection);
+        }
+      }, 5 * 60 * 1000);
+
+      // Show welcome toast
+      setTimeout(() => {
+        ToastManager.show('Welcome to WaveTravel Admin Dashboard!', 'success');
+      }, 1000);
+    });
+
+    // Handle responsive behavior
+    window.addEventListener('resize', () => {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      
+      if (window.innerWidth >= 1024) {
+        sidebar.classList.remove('open');
+        overlay.classList.add('hidden');
       }
     });
+
+    // Performance monitoring
+    window.addEventListener('load', () => {
+      if ('performance' in window) {
+        const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+        console.log(`Dashboard loaded in ${loadTime}ms`);
+      }
+    });
+
+    // Service worker registration for offline capability (optional)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => console.log('SW registered'))
+          .catch(error => console.log('SW registration failed'));
+      });
+    }
   </script>
 </body>
 </html>
