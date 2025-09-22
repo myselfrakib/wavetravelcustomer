@@ -112,6 +112,12 @@
     <label for="dropoff">Dropoff Location</label>
     <select id="dropoff"></select>
 
+    <label for="triptype">Trip Type</label>
+    <select id="triptype">
+      <option value="oneway">One Way</option>
+      <option value="roundtrip">Round Trip</option>
+    </select>
+
     <label for="car">Select Car</label>
     <select id="car">
       <option disabled selected>Loading cars...</option>
@@ -166,6 +172,7 @@
 
     const pickup = document.getElementById("pickup");
     const dropoff = document.getElementById("dropoff");
+    const triptype = document.getElementById("triptype");
     const car = document.getElementById("car");
     const date = document.getElementById("date");
     const hour = document.getElementById("hour");
@@ -286,10 +293,12 @@
         let cnt = 1, html = "";
         snap.forEach(ch => {
           const s = ch.val();
+          const tripTypeDisplay = s.triptype === 'roundtrip' ? 'Round Trip' : 'One Way';
           html += `
             <div class="slot-card">
               <p><strong>Sl No. ${cnt++}</strong></p>
               <p><strong>${escapeHtml(s.pickup)}</strong> ➝ <strong>${escapeHtml(s.dropoff)}</strong></p>
+              <p>Trip Type: ${escapeHtml(tripTypeDisplay)}</p>
               <p>Date: ${escapeHtml(s.date)}, Time: ${escapeHtml(fmt12(s.time))}</p>
               <p>Seats: ${escapeHtml(s.seats)}</p>
               <p>Car: ${escapeHtml(s.carBrand)} (${escapeHtml(s.carReg)})</p>
@@ -334,11 +343,12 @@
         const cid = car.value,
               pu = pickup.value,
               dr = dropoff.value,
+              tt = triptype.value,
               dt = date.value,
               h  = hour.value,
               mi = minute.value,
               ap = ampm.value;
-        if (!cid || !pu || !dr || !dt || !h || !mi || !ap) {
+        if (!cid || !pu || !dr || !tt || !dt || !h || !mi || !ap) {
           return alert("All fields are required");
         }
 
@@ -351,6 +361,7 @@
         const slotData = {
           pickup: pu,
           dropoff: dr,
+          triptype: tt,
           date: dt,
           time: t24,
           seats: seatCount,
