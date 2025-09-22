@@ -304,8 +304,8 @@
         };
         updates[`availableslots/${driverId}/${slotKey}`] = null;
 
-        // Execute and redirect immediately
-        db.ref().update(updates);
+        // Execute update and redirect
+        await db.ref().update(updates);
         localStorage.removeItem('selectedBooking');
         window.location.href = 'mybookings.html';
 
@@ -496,7 +496,7 @@
 
       // Direct payment without extra checks
       const rzpOptions = {
-        key: 'rzp_test_RIMi0wlC12kjhY',
+        key: 'rzp_live_RJxLTulsCPKQqD',
         amount: (booking.fare || 0) * 100,
         currency: 'INR',
         name: 'WaveTravel',
