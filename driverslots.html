@@ -223,7 +223,7 @@
 
     /**
      * Load locations and set defaults:
-     * - Pickup default to "Berhampore Mohona Bus Stand" if present.
+     * - Pickup default to "Berhampore" if present.
      * - Dropoff default to "Kolkata Airport" (case-insensitive) if present.
      * Works whether /locations is an array or object.
      */
@@ -247,7 +247,7 @@
             const name = l.name || String(l);
             const nameLower = String(name).trim().toLowerCase();
             opts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-            if (nameLower === "berhampore mohona bus stand") pickupDefaultFound = true;
+            if (nameLower === "Berhampore") pickupDefaultFound = true;
             if (nameLower === "kolkata airport") dropoffDefaultFound = true;
           }
         } else {
@@ -258,7 +258,7 @@
             const name = (typeof l === 'object' && l.name) ? l.name : String(l);
             const nameLower = String(name).trim().toLowerCase();
             opts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-            if (nameLower === "berhampore mohona bus stand") pickupDefaultFound = true;
+            if (nameLower === "Berhampore") pickupDefaultFound = true;
             if (nameLower === "kolkata airport") dropoffDefaultFound = true;
           }
         }
@@ -269,7 +269,7 @@
 
         // If defaults exist, set them (use try/catch to avoid select value errors)
         if (pickupDefaultFound) {
-          try { pickup.value = "Berhampore Mohona Bus Stand"; }
+          try { pickup.value = "Berhampore"; }
           catch (e) { /* ignore */ }
         }
         if (dropoffDefaultFound) {
