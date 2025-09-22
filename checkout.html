@@ -21,84 +21,33 @@
     }
     * { box-sizing: border-box; }
     html,body { height:100%; margin:0; font-family:'Poppins',sans-serif; background:var(--bg-grad); color: #0b1220; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
-    .page {
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      padding:16px;
-      padding-bottom:20px;
-    }
-    .wrap {
-      width:100%;
-      max-width:720px;
-    }
-
-    header.app-header {
-      display:flex;
-      align-items:center;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .app-title {
-      color: var(--light);
-      font-size:1.1rem;
-      font-weight:700;
-      letter-spacing:0.2px;
-    }
-    .back-btn {
-      background:rgba(255,255,255,0.12);
-      border:none; color: var(--light); padding:6px 8px; border-radius:8px; cursor:pointer;
-      display:inline-flex; align-items:center; gap:6px;
-      transition: background 0.2s ease;
-      font-size:0.9rem;
-    }
-    .back-btn:hover {
-      background:rgba(255,255,255,0.18);
-    }
-
-    .summary-card {
-      background: var(--card-bg);
-      border-radius:12px;
-      padding:14px;
-      box-shadow: 0 8px 24px rgba(2,6,23,0.06);
-      color: var(--dark);
-      overflow:hidden;
-      border: 1px solid rgba(2,6,23,0.04);
-    }
-
+    .page { min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:16px; padding-bottom:20px; }
+    .wrap { width:100%; max-width:720px; }
+    header.app-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .app-title { color: var(--light); font-size:1.1rem; font-weight:700; letter-spacing:0.2px; }
+    .back-btn { background:rgba(255,255,255,0.12); border:none; color: var(--light); padding:6px 8px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition: background 0.2s ease; font-size:0.9rem; }
+    .back-btn:hover { background:rgba(255,255,255,0.18); }
+    .summary-card { background: var(--card-bg); border-radius:12px; padding:14px; box-shadow: 0 8px 24px rgba(2,6,23,0.06); color: var(--dark); overflow:hidden; border: 1px solid rgba(2,6,23,0.04); }
     .info-row { display:flex; gap:10px; align-items:center; background: rgba(47,102,144,0.04); padding:10px; border-radius:8px; margin-bottom: 6px; transition: all 0.2s ease; }
     .info-row .icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, var(--sky), rgba(129,195,215,0.8)); color: var(--dark); font-size:1rem; flex-shrink:0; box-shadow: 0 2px 6px rgba(2,6,23,0.06); }
     .info-row .meta { display:flex; flex-direction:column; flex: 1; min-width: 0; }
     .meta .label { font-weight:700; color: var(--dark); font-size:0.85rem; }
     .meta .val { color: var(--muted); font-size:0.8rem; margin-top:1px; max-width:100%; word-break:break-word; }
-
     .details { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
     .detail-pill { background: rgba(47,102,144,0.04); padding:10px; border-radius:8px; display:flex; flex-direction:column; transition: all 0.2s ease; border: 1px solid rgba(47,102,144,0.08); }
     .detail-pill small { color: var(--muted); font-size:0.75rem; font-weight: 600; }
     .detail-pill strong { font-size:0.88rem; margin-top:4px; color: var(--dark); font-weight: 700; }
-
     .terms { margin-top:14px; display:flex; gap:10px; align-items:center; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; }
     .checkbox { width:20px; height:20px; border-radius:4px; border:2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition: all 0.2s ease; }
     .checkbox input { display:none; }
     .checkbox.checked { background: var(--primary); border-color: var(--primary); color:#fff; box-shadow: 0 3px 10px rgba(47,102,144,0.3); }
     .terms-label { font-size:0.85rem; color: var(--light); font-weight: 600; }
-    .terms-label a { color: var(--light); text-decoration: underline; font-weight: 700; }
-
     #payBtn { margin-top:16px; width:100%; padding:14px 12px; background: linear-gradient(90deg, var(--primary), var(--sky)); border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1rem; box-shadow: 0 6px 20px rgba(47,102,144,0.2); transition: all 0.2s ease; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
     #payBtn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow: 0 3px 8px rgba(47,102,144,0.1); }
-
     #center-toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.95); background: rgba(11,18,32,0.94); color: #fff; padding: 20px 28px; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.6); opacity: 0; pointer-events: none; transition: opacity .22s ease, transform .22s ease; z-index: 9999; font-weight: 700; min-width: 320px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 0.95rem; backdrop-filter: blur(10px); }
     #center-toast.show { opacity:1; transform: translate(-50%,-50%) scale(1); pointer-events:auto; }
     #center-toast .icon { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background: var(--success); color:#fff; font-size:14px; flex:0 0 32px; box-shadow: 0 3px 10px rgba(40,167,69,0.3); }
-
-    @media (max-width:720px){
-      #center-toast { min-width: calc(100% - 24px); padding:14px 16px; gap:8px; font-size:0.9rem; }
-      .wrap { padding:4px; }
-      .details { grid-template-columns: 1fr; }
-      .page { padding:12px; padding-bottom:16px; }
-    }
-
+    @media (max-width:720px){ #center-toast { min-width: calc(100% - 24px); padding:14px 16px; gap:8px; font-size:0.9rem; } .wrap { padding:4px; } .details { grid-template-columns: 1fr; } .page { padding:12px; padding-bottom:16px; } }
     .card-heading { font-size:0.9rem; color: var(--dark); font-weight:800; margin-bottom:6px; display: flex; align-items: center; gap: 6px; }
     .trip-type-badge { display: inline-flex; align-items: center; gap: 4px; background: linear-gradient(90deg, var(--sky), rgba(129,195,215,0.8)); color: var(--dark); padding: 4px 8px; border-radius: 16px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 2px 6px rgba(2,6,23,0.06); }
   </style>
@@ -111,9 +60,7 @@
         <div class="app-title">Confirm &amp; Pay</div>
       </header>
 
-      <div id="summary" class="summary-card" aria-live="polite">
-        Loading booking…
-      </div>
+      <div id="summary" class="summary-card" aria-live="polite">Loading booking…</div>
 
       <div class="terms">
         <label class="checkbox" id="termsBox" title="Agree to T&C">
@@ -163,10 +110,8 @@
     const termsBox  = document.getElementById('termsBox');
     const tickSvg   = document.getElementById('termsTick');
 
-    // booking object stored in localStorage by your flow
     const booking = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
-    // helper: show centered toast
     function showCenterToast(message, duration = 2200) {
       const toast = document.getElementById('center-toast');
       const text = document.getElementById('center-toast-text');
@@ -175,7 +120,6 @@
       setTimeout(() => toast.classList.remove('show'), duration);
     }
 
-    // checkbox UI sync
     function setCheckboxChecked(state) {
       if (state) {
         termsBox.classList.add('checked');
@@ -190,61 +134,94 @@
     termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
 
-    // robust slot removal helper (explicit remove operations)
-    async function removeSlotExplicitly(driverId, slotKey, slotNumber) {
-      try {
-        if (!driverId) {
-          console.warn('removeSlotExplicitly called without driverId');
-          return { removed: false, reason: 'no-driverId' };
-        }
-
-        // If slotKey provided — remove exact path
-        if (slotKey) {
-          const path = `availableslots/${driverId}/${slotKey}`;
-          console.log('Attempting to remove slot by key:', path);
-          await db.ref(path).remove();
-          console.log('Removed availableslot:', path);
-          return { removed: true, by: 'slotKey', key: slotKey };
-        }
-
-        // If no slotKey but slotNumber provided — search and remove matches
-        if (slotNumber !== undefined && slotNumber !== null) {
-          const slotsRef = db.ref(`availableslots/${driverId}`);
-          const snap = await slotsRef.orderByChild('slotNumber').equalTo(slotNumber).once('value');
-          if (!snap.exists()) {
-            console.warn('No available slots matched slotNumber for deletion', driverId, slotNumber);
-            return { removed: false, reason: 'no-match' };
+    // transaction helper that removes a slot by key (returns {committed, prev})
+    function removeSlotByKeyWithTransaction(driverId, key) {
+      return new Promise((resolve) => {
+        const ref = db.ref(`availableslots/${driverId}/${key}`);
+        let prev = null;
+        ref.transaction(current => {
+          prev = current;
+          // if slot missing or already booked, abort transaction by returning undefined (which means no change)
+          if (!current) return; // abort - nothing to remove
+          if (current.status === 'booked') return; // abort - already booked
+          // remove node by returning null
+          return null;
+        }, (error, committed, snapshot) => {
+          if (error) {
+            console.error('Transaction error for key', key, error);
+            resolve({ committed: false, error });
+          } else {
+            console.log('Transaction result for key', key, { committed, valAfter: snapshot ? snapshot.val() : null });
+            resolve({ committed, prev });
           }
-          const slots = snap.val();
-          const removedKeys = [];
-          const removePromises = Object.keys(slots).map(k => {
-            removedKeys.push(k);
-            return db.ref(`availableslots/${driverId}/${k}`).remove();
-          });
-          await Promise.all(removePromises);
-          console.log('Removed availableslot keys by slotNumber:', removedKeys);
-          return { removed: true, by: 'slotNumber', keys: removedKeys };
-        }
-
-        console.warn('No slotKey or slotNumber provided to removeSlotExplicitly');
-        return { removed: false, reason: 'no-key-or-number' };
-      } catch (err) {
-        console.error('removeSlotExplicitly error:', err);
-        return { removed: false, reason: 'error', error: err };
-      }
+        }, false);
+      });
     }
 
-    // main processing after successful Razorpay payment
+    // transaction helper that searches by slotNumber and attempts to remove one candidate
+    async function findAndRemoveSlotByNumber(driverId, slotNumber) {
+      if (!driverId) return { committed: false, reason: 'no-driver' };
+      const slotsRef = db.ref(`availableslots/${driverId}`);
+      const snap = await slotsRef.orderByChild('slotNumber').equalTo(slotNumber).once('value');
+      if (!snap.exists()) return { committed: false, reason: 'no-match' };
+      const items = snap.val();
+      const keys = Object.keys(items);
+      for (let k of keys) {
+        // attempt transaction on each key until one commits
+        const res = await removeSlotByKeyWithTransaction(driverId, k);
+        if (res.committed) return { committed: true, key: k, prev: res.prev };
+      }
+      return { committed: false, reason: 'all-aborted' };
+    }
+
+    // Main: after payment success, remove slot via transaction first, then write booking+wallet.
     async function processSuccessfulPayment(paymentId, bookingData, userData) {
       try {
         if (!bookingData || !bookingData.driverId) {
-          console.error('Missing bookingData or driverId; cannot proceed to save booking.');
           alert('Booking information incomplete. Contact support with Payment ID: ' + paymentId);
           return;
         }
 
         const driverId = bookingData.driverId;
-        // create booking entry and driverWallet entry atomically
+        let removedInfo = { committed: false, reason: 'not-attempted' };
+        let removedPrev = null;
+        let removedKey = null;
+
+        // 1) If slotKey present -> attempt transaction removal on that key
+        if (bookingData.slotKey) {
+          removedInfo = await removeSlotByKeyWithTransaction(driverId, bookingData.slotKey);
+          if (removedInfo.committed) {
+            removedPrev = removedInfo.prev;
+            removedKey = bookingData.slotKey;
+            console.log('Removed slot via provided slotKey:', bookingData.slotKey);
+          } else {
+            console.warn('Failed to remove slot by provided slotKey:', bookingData.slotKey, removedInfo);
+          }
+        }
+
+        // 2) If not removed and slotNumber present -> search and try to remove candidate
+        if (!removedInfo.committed && bookingData.slotNumber !== undefined && bookingData.slotNumber !== null) {
+          const found = await findAndRemoveSlotByNumber(driverId, bookingData.slotNumber);
+          if (found.committed) {
+            removedInfo = found;
+            removedPrev = found.prev;
+            removedKey = found.key;
+            console.log('Removed slot by slotNumber. key:', found.key);
+          } else {
+            console.warn('Could not remove by slotNumber:', bookingData.slotNumber, found);
+          }
+        }
+
+        // 3) If still not removed and bookingData.slotKey existed earlier, we will not proceed - notify user
+        if (!removedInfo.committed) {
+          // If the user provided a slotKey/slotNumber but we couldn't remove it, stop and inform user.
+          // This prevents booking being created while slot still available to others.
+          alert('Unable to secure this slot — it may already be booked. Please try another slot.');
+          payBtn.disabled = false;
+          return;
+        }
+
+        // 4) Write booking + driverWallet now that slot removal succeeded
         const bookingsRef = db.ref(`bookings/${driverId}`);
         const newBookingRef = bookingsRef.push();
         const bookingKey = newBookingRef.key;
@@ -271,71 +248,40 @@
         updates[`bookings/${driverId}/${bookingKey}`] = finalBookingData;
         updates[`driverWallet/${driverId}/${bookingKey}`] = walletEntry;
 
-        // First: write booking + wallet (do not attempt deletion here)
-        await db.ref().update(updates);
-        console.log('Booking and wallet saved atomically. bookingKey:', bookingKey);
-
-        // Second: explicitly remove the availableslot (separate remove operation ensures it actually deletes)
-        // Prefer slotKey if available, otherwise use slotNumber matching
-        let removeResult = { removed: false, reason: 'not-attempted' };
+        // attempt to write booking + wallet
         try {
-          removeResult = await removeSlotExplicitly(driverId, bookingData.slotKey, bookingData.slotNumber);
+          await db.ref().update(updates);
+          console.log('Booking + wallet saved. bookingKey:', bookingKey);
+          showCenterToast('Payment successful & booking confirmed!', 2000);
+          setTimeout(() => {
+            localStorage.removeItem('selectedBooking');
+            window.location = 'mybookings.html';
+          }, 2100);
         } catch (err) {
-          console.error('Error while trying to remove slot explicitly:', err);
-        }
-
-        // If removal failed and slotNumber present, attempt to fallback: search by slotNumber again and set status:'booked' as last resort
-        if (!removeResult.removed && bookingData.slotNumber !== undefined && bookingData.slotNumber !== null) {
+          console.error('Failed to save booking after removing slot. Attempting to restore slot. Error:', err);
+          // Try to restore the slot node using removedPrev (if we have it)
           try {
-            const slotsRef = db.ref(`availableslots/${driverId}`);
-            const snap = await slotsRef.orderByChild('slotNumber').equalTo(bookingData.slotNumber).once('value');
-            if (snap.exists()) {
-              const keys = Object.keys(snap.val());
-              // mark them as booked as fallback
-              const fallbackUpdate = {};
-              keys.forEach(k => {
-                fallbackUpdate[`availableslots/${driverId}/${k}/status`] = 'booked';
-              });
-              await db.ref().update(fallbackUpdate);
-              console.warn('Slot removal failed but fallback marked slot(s) as booked:', keys);
+            if (removedKey && removedPrev !== null && removedPrev !== undefined) {
+              await db.ref(`availableslots/${driverId}/${removedKey}`).set(removedPrev);
+              console.warn('Restored availableslot[' + removedKey + '] after failed booking write.');
             } else {
-              console.warn('Fallback: no slot found to mark as booked for slotNumber:', bookingData.slotNumber);
+              console.warn('No previous slot data available to restore.');
             }
-          } catch (err) {
-            console.error('Fallback marking error:', err);
+          } catch (restoreErr) {
+            console.error('Failed to restore slot after booking write failure:', restoreErr);
           }
+          alert('Booking failed after payment. We attempted to restore the slot. Contact support with Payment ID: ' + paymentId);
+          payBtn.disabled = false;
         }
-
-        showCenterToast('Payment successful & booking confirmed!', 2000);
-        // cleanup and redirect
-        setTimeout(() => {
-          localStorage.removeItem('selectedBooking');
-          window.location = 'mybookings.html';
-        }, 2100);
 
       } catch (err) {
-        console.error('Error saving booking:', err);
-        alert('Error saving booking. Please contact support with payment ID: ' + paymentId);
+        console.error('processSuccessfulPayment fatal error:', err);
+        alert('An unexpected error occurred. Contact support with Payment ID: ' + paymentId);
+        payBtn.disabled = false;
       }
     }
 
-    // small date/time formatters (unchanged)
-    function formatDate(d) {
-      if (!d || typeof d !== 'string') return d || '-';
-      const [y, m, dd] = d.split('-');
-      if (!dd) return d;
-      return `${dd}/${m}/${y}`;
-    }
-    function formatTime(t) {
-      if (!t || typeof t !== 'string') return t || '-';
-      let [h, mm] = t.split(':').map(Number);
-      if (isNaN(h)) return t;
-      const suffix = h >= 12 ? 'PM' : 'AM';
-      h = h % 12 || 12;
-      return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
-    }
-
-    // Render & auth flow
+    // render summary + auth flow (same UX)
     if (!booking) {
       summaryEl.innerHTML = '<div style="padding:16px;color:#6b7280;font-weight:700">Please select a trip first.</div>';
       payBtn.disabled = true;
@@ -357,26 +303,11 @@
             <div class="card-heading"><i class="fas fa-user"></i> Passenger Details</div>
             <div class="info-row" style="margin-bottom:10px">
               <div class="icon"><i class="fas fa-user"></i></div>
-              <div class="meta">
-                <div class="label">${userName || 'Guest'}</div>
-                <div class="val">${userPhone || 'No phone'}</div>
-              </div>
+              <div class="meta"><div class="label">${userName || 'Guest'}</div><div class="val">${userPhone || 'No phone'}</div></div>
             </div>
             <div class="card-heading"><i class="fas fa-route"></i> Trip Details</div>
-            <div class="info-row">
-              <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
-              <div class="meta">
-                <div class="label">Pickup Location</div>
-                <div class="val">${pickup}</div>
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="icon" style="background: linear-gradient(180deg,#ffdede,#fff7f7); color:var(--danger)"><i class="fas fa-map-pin"></i></div>
-              <div class="meta">
-                <div class="label">Dropoff Location</div>
-                <div class="val">${dropoff}</div>
-              </div>
-            </div>
+            <div class="info-row"><div class="icon"><i class="fas fa-map-marker-alt"></i></div><div class="meta"><div class="label">Pickup Location</div><div class="val">${pickup}</div></div></div>
+            <div class="info-row"><div class="icon" style="background: linear-gradient(180deg,#ffdede,#fff7f7); color:var(--danger)"><i class="fas fa-map-pin"></i></div><div class="meta"><div class="label">Dropoff Location</div><div class="val">${dropoff}</div></div></div>
             <div class="details" aria-hidden="false">
               <div class="detail-pill"><small>Trip Type</small><strong><span class="trip-type-badge"><i class="fas ${tripIcon}"></i> ${tripTypeDisplay}</span></strong></div>
               <div class="detail-pill"><small>Date</small><strong>${formatDate(date)}</strong></div>
@@ -397,7 +328,6 @@
         let dbUid = user.uid;
         let userData = null;
 
-        // fetch user profile (same logic as before)
         try {
           const snapUid = await db.ref(`users/${dbUid}`).once('value');
           if (snapUid.exists()) {
@@ -421,7 +351,7 @@
             }
           }
         } catch (err) {
-          console.error('Error while fetching user data:', err);
+          console.error('Error fetching user profile:', err);
         }
 
         if (!userData) {
@@ -437,15 +367,13 @@
 
         if (!bound) {
           bound = true;
-
           termsChk.addEventListener('change', () => { payBtn.disabled = !termsChk.checked; });
 
-          // Payment click handler
           payBtn.addEventListener('click', async () => {
             if (!termsChk.checked) return;
             payBtn.disabled = true;
 
-            // Basic availability check
+            // availability quick check before opening payment
             try {
               if (booking.slotKey) {
                 const slotRef = db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`);
@@ -455,8 +383,7 @@
                   payBtn.disabled = false;
                   return;
                 }
-                const slotData = snap.val();
-                if (slotData && slotData.status === 'booked') {
+                if (snap.val() && snap.val().status === 'booked') {
                   alert('This trip has already been booked. Please search for another one.');
                   payBtn.disabled = false;
                   return;
@@ -476,9 +403,9 @@
               return;
             }
 
-            // Razorpay flow (unchanged keys)
+            // Razorpay flow
             const rzpOptions = {
-              key: 'rzp_test_RIMi0wlC12kjhY',
+              key: 'rzp_live_RJxLTulsCPKQqD',
               amount: (booking.fare || 0) * 100,
               currency: 'INR',
               name: 'WaveTravel',
@@ -486,6 +413,7 @@
               prefill: { name: name, contact: phone, email: user.email || '' },
               theme: { color: '#2f6690' },
               handler: function(res) {
+                // On success -> remove slot via transaction(s) then create booking
                 processSuccessfulPayment(res.razorpay_payment_id, booking, userData)
                   .catch(err => {
                     console.error('Processing payment callback failed:', err);
@@ -511,6 +439,21 @@
           });
         }
       });
+    }
+
+    function formatDate(d) {
+      if (!d || typeof d !== 'string') return d || '-';
+      const [y, m, dd] = d.split('-');
+      if (!dd) return d;
+      return `${dd}/${m}/${y}`;
+    }
+    function formatTime(t) {
+      if (!t || typeof t !== 'string') return t || '-';
+      let [h, mm] = t.split(':').map(Number);
+      if (isNaN(h)) return t;
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
     }
   </script>
 </body>
