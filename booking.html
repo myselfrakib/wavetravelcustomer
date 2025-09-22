@@ -93,6 +93,7 @@
       box-shadow: 0 8px 18px rgba(2,6,23,0.12);
     }
     .search-btn:active { transform: translateY(1px); }
+    .search-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
     .slots { margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -185,8 +186,14 @@
       font-size:1.02rem; box-shadow: 0 8px 20px rgba(2,6,23,0.06);
       transition: transform .06s ease, box-shadow .1s ease;
       color:#fff;
+      position: relative;
     }
     .btn-action:active { transform: translateY(1px); }
+    .btn-action:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
 
     .btn-oneway { background: linear-gradient(90deg, var(--sky), var(--accent)); color:#fff; }
     .btn-roundtrip { background: linear-gradient(90deg, var(--accent), var(--primary)); color:#fff; }
@@ -197,6 +204,20 @@
 
     .btn-right { display:flex; align-items:center; gap:8px; min-width:fit-content; }
     .price-pill { background: rgba(255,255,255,0.14); padding:6px 10px; border-radius:10px; font-weight:900; color:#fff; }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
     .no-slots { 
       text-align: center; 
@@ -235,7 +256,6 @@
       display: flex; align-items: center; justify-content: center; gap: 8px;
     }
     .loading-msg i { animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     /* Toast Message Styles */
     .toast {
@@ -308,7 +328,9 @@
         <input type="date" id="date-oneway"/>
       </div>
 
-      <button class="search-btn" onclick="searchSlots('oneway')">Search Oneway Rides</button>
+      <button class="search-btn" id="search-btn-oneway" onclick="searchSlots('oneway')">
+        <span class="search-text">Search Oneway Rides</span>
+      </button>
 
       <div class="slots" id="slots-oneway"></div>
     </div>
@@ -330,7 +352,9 @@
         <input type="date" id="date-roundtrip"/>
       </div>
 
-      <button class="search-btn" onclick="searchSlots('roundtrip')">Search Roundtrip Rides</button>
+      <button class="search-btn" id="search-btn-roundtrip" onclick="searchSlots('roundtrip')">
+        <span class="search-text">Search Roundtrip Rides</span>
+      </button>
 
       <div class="slots" id="slots-roundtrip"></div>
     </div>
@@ -368,6 +392,7 @@
     const auth = firebase.auth();
 
     let currentTab = 'oneway';
+    let isSearching = false;
 
     // Toast message function
     function showToast(message) {
@@ -408,7 +433,7 @@
       const dropoff = document.getElementById(`dropoff-${currentTab}`);
       const date = document.getElementById(`date-${currentTab}`);
       
-      if (pickup.value && dropoff.value && date.value) {
+      if (pickup.value && dropoff.value && date.value && !isSearching) {
         searchSlots(currentTab);
       }
     }, 350);
@@ -420,6 +445,21 @@
         loadLocations();
       }
     });
+
+    function setSearchingState(tripType, searching) {
+      isSearching = searching;
+      const searchBtn = document.getElementById(`search-btn-${tripType}`);
+      const searchText = searchBtn.querySelector('.search-text');
+      
+      if (searching) {
+        searchBtn.disabled = true;
+        searchText.innerHTML = '<div class="spinner"></div> Searching...';
+      } else {
+        searchBtn.disabled = false;
+        const typeDisplay = tripType === 'oneway' ? 'Oneway' : 'Roundtrip';
+        searchText.innerHTML = `Search ${typeDisplay} Rides`;
+      }
+    }
 
     function loadLocations() {
       return db.ref('locations').once('value').then(snap => {
@@ -477,7 +517,7 @@
         
       }).catch(err => {
         console.error('Failed to load locations:', err);
-        alert('Failed to load locations. Please refresh the page.');
+        showToast('Failed to load locations. Please refresh the page.');
       });
     }
 
@@ -520,7 +560,7 @@
     function raiseRideRequest(tripType) {
       const user = auth.currentUser;
       if (!user) {
-        alert('Please login to raise a ride request');
+        showToast('Please login to raise a ride request');
         return;
       }
 
@@ -529,7 +569,7 @@
       const date = document.getElementById(`date-${tripType}`).value;
 
       if (!pickup || !dropoff || !date) {
-        alert('Please fill in all fields before raising a request');
+        showToast('Please fill in all fields before raising a request');
         return;
       }
 
@@ -563,34 +603,34 @@
         db.ref('riderequest').push(requestData)
           .then(() => {
             showToast('Your request has been received. Our team will contact you soon.');
-            
-            // Clear the form or redirect after success
-            setTimeout(() => {
-              // Optional: Redirect to dashboard or bookings page
-              // window.location.href = 'mybookings.html';
-            }, 2000);
           })
           .catch(err => {
             console.error('Error saving ride request:', err);
-            alert('Failed to submit request. Please try again.');
+            showToast('Failed to submit request. Please try again.');
           });
       }).catch(err => {
         console.error('Error fetching user data:', err);
-        alert('Failed to submit request. Please try again.');
+        showToast('Failed to submit request. Please try again.');
       });
     }
 
     function searchSlots(tripType) {
+      if (isSearching) return;
+
       const slotsDiv = document.getElementById(`slots-${tripType}`);
       const pickup = document.getElementById(`pickup-${tripType}`).value;
       const dropoff = document.getElementById(`dropoff-${tripType}`).value;
       const date = document.getElementById(`date-${tripType}`).value;
+      
+      // Set searching state
+      setSearchingState(tripType, true);
       
       // Show loading
       slotsDiv.innerHTML = '<div class="loading-msg"><i class="fas fa-spinner"></i>Searching for rides...</div>';
       
       if (!pickup || !dropoff || !date) {
         slotsDiv.innerHTML = '<div class="no-slots">Please select pickup, dropoff and date to search for rides.</div>';
+        setSearchingState(tripType, false);
         return;
       }
 
@@ -615,6 +655,8 @@
       // Fetch available slots
       db.ref('availableslots').once('value')
         .then(snap => {
+          setSearchingState(tripType, false);
+          
           if (!snap.exists()) {
             slotsDiv.innerHTML = `
               <div class="no-slots">
@@ -636,13 +678,13 @@
             
             if (driverSnap.exists()) {
               driverSnap.forEach(slotSnap => {
-                const slotId = slotSnap.key;
+                const slotKey = slotSnap.key;
                 const slotData = slotSnap.val();
                 
                 if (slotData && typeof slotData === 'object') {
                   const completeSlot = {
                     driverId: driverId,
-                    slotId: slotId,
+                    slotKey: slotKey, // Important: store the key for deletion
                     pickup: slotData.pickup || '',
                     dropoff: slotData.dropoff || '',
                     date: slotData.date || '',
@@ -708,6 +750,7 @@
         })
         .catch(err => {
           console.error('Failed to fetch availableslots:', err);
+          setSearchingState(tripType, false);
           slotsDiv.innerHTML = `
             <div class="no-slots">
               Failed to load rides. Please try again.
@@ -810,7 +853,7 @@
         // Store comprehensive slot data for booking
         card.setAttribute('data-slot', JSON.stringify({
           driverId: slot.driverId,
-          slotId: slot.slotId,
+          slotKey: slot.slotKey, // Critical: store the slot key for deletion
           pickup: slot.pickup,
           dropoff: slot.dropoff,
           date: slot.date,
@@ -834,7 +877,7 @@
     function bookTrip(slotIndex, tripType) {
       const user = auth.currentUser;
       if (!user) {
-        alert('Please login first');
+        showToast('Please login first');
         return;
       }
 
@@ -842,13 +885,13 @@
       const slotCard = slotsDiv.children[slotIndex];
       
       if (!slotCard) {
-        alert('Error: Selected slot not found');
+        showToast('Error: Selected slot not found');
         return;
       }
 
       const slotDataStr = slotCard.getAttribute('data-slot');
       if (!slotDataStr) {
-        alert('Error: Slot data not available');
+        showToast('Error: Slot data not available');
         return;
       }
 
@@ -857,18 +900,52 @@
         slotData = JSON.parse(slotDataStr);
       } catch (err) {
         console.error('Error parsing slot data:', err);
-        alert('Error: Invalid slot data');
+        showToast('Error: Invalid slot data');
         return;
       }
 
+      // Disable the booking button to prevent double clicks
+      const bookButton = slotCard.querySelector('.btn-action');
+      const originalText = bookButton.innerHTML;
+      bookButton.disabled = true;
+      bookButton.innerHTML = '<div class="spinner"></div> Processing...';
+
+      // Verify slot is still available before proceeding
+      if (slotData.driverId && slotData.slotKey) {
+        db.ref(`availableslots/${slotData.driverId}/${slotData.slotKey}`).once('value')
+          .then(snapshot => {
+            if (!snapshot.exists()) {
+              showToast('This slot is no longer available. Please search again.');
+              bookButton.disabled = false;
+              bookButton.innerHTML = originalText;
+              return;
+            }
+
+            // Proceed with booking if slot exists
+            proceedWithBooking(slotData, user);
+          })
+          .catch(err => {
+            console.error('Error checking slot availability:', err);
+            showToast('Error checking availability. Please try again.');
+            bookButton.disabled = false;
+            bookButton.innerHTML = originalText;
+          });
+      } else {
+        showToast('Error: Missing slot information');
+        bookButton.disabled = false;
+        bookButton.innerHTML = originalText;
+      }
+    }
+
+    function proceedWithBooking(slotData, user) {
       const bookingData = {
         driverId: slotData.driverId,
-        slotId: slotData.slotId,
+        slotKey: slotData.slotKey, // Critical: pass the slot key for deletion
         pickup: slotData.pickup,
         dropoff: slotData.dropoff,
         date: slotData.date,
         time: slotData.time,
-        tripType: slotData.tripType,
+        triptype: slotData.tripType, // Keep consistent with your DB structure
         fare: slotData.fare,
         customerId: user.uid,
         carBrand: slotData.carBrand,
@@ -890,7 +967,15 @@
         window.location.href = 'checkout.html';
       } catch (err) {
         console.error('Error storing booking data:', err);
-        alert('Error: Failed to prepare booking. Please try again.');
+        showToast('Error: Failed to prepare booking. Please try again.');
+        // Re-enable the button
+        setTimeout(() => {
+          const searchBtn = document.querySelector('.btn-action:disabled');
+          if (searchBtn) {
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = searchBtn.originalHTML || 'Book Now';
+          }
+        }, 1000);
       }
     }
 
@@ -907,6 +992,7 @@
     // Error handler for unhandled promise rejections
     window.addEventListener('unhandledrejection', function(event) {
       console.error('Unhandled promise rejection:', event.reason);
+      showToast('An unexpected error occurred. Please try again.');
     });
 
     // Initialize on page load
