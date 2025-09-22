@@ -336,11 +336,14 @@
 
     const booking   = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
 
-    // Process successful payment (Updated for trip-based booking with slot removal)
+    // Process successful payment (Updated for trip-based booking with atomic update)
     async function processSuccessfulPayment(paymentId, bookingData, userData) {
       try {
+        // Prepare final booking object
         const bookingsRef = db.ref(`bookings/${bookingData.driverId}`);
         const newBookingRef = bookingsRef.push();
+        const bookingKey = newBookingRef.key;
+
         const finalBookingData = {
           ...bookingData,
           userId: userData.uid,
@@ -351,25 +354,27 @@
           status: 'confirmed'
         };
 
-        await newBookingRef.set(finalBookingData);
-
-        // Update driver wallet
-        await db.ref(`driverWallet/${bookingData.driverId}/${newBookingRef.key}`).set({
-          amount: bookingData.fare * 0.6, // 60% to driver
+        // Prepare driver wallet entry
+        const walletEntry = {
+          amount: (bookingData.fare || 0) * 0.6, // 60% to driver
           status: 'unpaid',
+          bookingId: bookingKey,
           booking: finalBookingData,
           date: new Date().toISOString()
-        });
+        };
 
-        // Remove slot completely from availableslots after successful booking
+        // Build multi-path update object for atomicity:
+        const updates = {};
+        updates[`bookings/${bookingData.driverId}/${bookingKey}`] = finalBookingData;
+        updates[`driverWallet/${bookingData.driverId}/${bookingKey}`] = walletEntry;
+
+        // If there is a slotKey, remove it (set to null) from availableslots
         if (bookingData.slotKey) {
-          try {
-            await db.ref(`availableslots/${bookingData.driverId}/${bookingData.slotKey}`).remove();
-            console.log('Slot removed successfully from availableslots');
-          } catch (err) {
-            console.warn('Could not remove slot:', err);
-          }
+          updates[`availableslots/${bookingData.driverId}/${bookingData.slotKey}`] = null;
         }
+
+        // Apply atomic update
+        await db.ref().update(updates);
 
         showCenterToast('Payment successful & booking confirmed!', 2000);
         setTimeout(() => {
@@ -547,6 +552,9 @@
           payBtn.addEventListener('click', async () => {
             if (!termsChk.checked) return;
 
+            // Prevent double-click / double-init
+            payBtn.disabled = true;
+
             // Verify slot still exists (basic check)
             if (booking.slotKey) {
               try {
@@ -554,17 +562,20 @@
                 const snap = await slotRef.once('value');
                 if (!snap.exists()) {
                   alert('This trip is no longer available. Please search for another one.');
+                  payBtn.disabled = false;
                   return;
                 }
                 // Check if already booked
                 const slotData = snap.val();
-                if (slotData.status === 'booked') {
+                if (slotData && slotData.status === 'booked') {
                   alert('This trip has already been booked. Please search for another one.');
+                  payBtn.disabled = false;
                   return;
                 }
               } catch (e) {
                 console.error('Slot verification failed:', e);
                 alert('Failed to verify trip availability. Please try again.');
+                payBtn.disabled = false;
                 return;
               }
             }
@@ -572,7 +583,7 @@
             // Direct Razorpay payment
             const rzpOptions = {
               key: 'rzp_live_RJxLTulsCPKQqD',
-              amount: booking.fare * 100,
+              amount: (booking.fare || 0) * 100,
               currency: 'INR',
               name: 'WaveTravel',
               description: `${booking.tripType} Trip Booking`,
@@ -585,11 +596,18 @@
                 color: '#2f6690'
               },
               handler: function(res) {
-                processSuccessfulPayment(res.razorpay_payment_id, booking, userData);
+                // On success, finalize booking & remove slot atomically
+                processSuccessfulPayment(res.razorpay_payment_id, booking, userData)
+                  .catch(err => {
+                    console.error('Processing payment callback failed:', err);
+                    alert('There was an error processing your booking after payment. Contact support with Payment ID: ' + res.razorpay_payment_id);
+                  });
               },
               modal: {
                 ondismiss: function() {
                   console.log('Payment cancelled by user');
+                  // re-enable pay button so user can retry
+                  payBtn.disabled = false;
                 }
               }
             };
@@ -600,6 +618,7 @@
             } catch (error) {
               console.error('Razorpay initialization failed:', error);
               alert('Payment initialization failed. Please try again.');
+              payBtn.disabled = false;
             }
           });
         }
