@@ -26,6 +26,8 @@
     header.app-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
     .app-title { color: var(--light); font-size:1.1rem; font-weight:700; letter-spacing:0.2px; }
     .back-btn { background:rgba(255,255,255,0.12); border:none; color: var(--light); padding:6px 8px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition: background 0.2s ease; font-size:0.9rem; }
+    .back-btn:hover { background:rgba(255,255,255,0.2); }
+    
     .summary-card { background: var(--card-bg); border-radius:12px; padding:14px; box-shadow: 0 8px 24px rgba(2,6,23,0.06); color: var(--dark); overflow:hidden; border: 1px solid rgba(2,6,23,0.04); }
     .info-row { display:flex; gap:10px; align-items:center; background: rgba(47,102,144,0.04); padding:10px; border-radius:8px; margin-bottom: 6px; transition: all 0.2s ease; }
     .info-row .icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, var(--sky), rgba(129,195,215,0.8)); color: var(--dark); font-size:1rem; flex-shrink:0; box-shadow: 0 2px 6px rgba(2,6,23,0.06); }
@@ -33,27 +35,106 @@
     .meta .val { color: var(--muted); font-size:0.8rem; margin-top:1px; max-width:100%; word-break:break-word; }
     .details { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
     .detail-pill { background: rgba(47,102,144,0.04); padding:10px; border-radius:8px; display:flex; flex-direction:column; transition: all 0.2s ease; border: 1px solid rgba(47,102,144,0.08); }
+    .detail-pill small { font-size:0.75rem; color: var(--muted); font-weight:600; }
+    .detail-pill strong { font-size:0.9rem; color: var(--dark); font-weight:700; margin-top:2px; }
+
     .terms { margin-top:14px; display:flex; gap:10px; align-items:center; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; }
     .checkbox { width:20px; height:20px; border-radius:4px; border:2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition: all 0.2s ease; }
     .checkbox.checked { background: var(--primary); border-color: var(--primary); color:#fff; box-shadow: 0 3px 10px rgba(47,102,144,0.3); }
     .terms-label { font-size:0.85rem; color: var(--light); font-weight: 600; }
-    #payBtn { margin-top:16px; width:100%; padding:14px 12px; background: linear-gradient(90deg, var(--primary), var(--sky)); border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1rem; box-shadow: 0 6px 20px rgba(47,102,144,0.2); transition: all 0.2s ease; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    #payBtn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow: 0 3px 8px rgba(47,102,144,0.1); }
-    #center-toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.95); background: rgba(11,18,32,0.94); color: #fff; padding: 20px 28px; border-radius: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.6); opacity: 0; pointer-events: none; transition: opacity .22s ease, transform .22s ease; z-index: 9999; font-weight: 700; min-width: 320px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 0.95rem; backdrop-filter: blur(10px); }
-    #center-toast.show { opacity:1; transform: translate(-50%,-50%) scale(1); pointer-events:auto; }
+    .terms-label a { color: var(--light); text-decoration:underline; }
+
+    #payBtn { 
+      margin-top:16px; width:100%; padding:14px 12px; 
+      background: linear-gradient(90deg, var(--primary), var(--sky)); 
+      border: none; border-radius:10px; color:#fff; font-weight:800; font-size:1rem; 
+      box-shadow: 0 6px 20px rgba(47,102,144,0.2); 
+      transition: all 0.2s ease; cursor: pointer; 
+      display: flex; align-items: center; justify-content: center; gap: 6px; 
+      position: relative;
+    }
+    #payBtn:hover:not(:disabled) { 
+      transform: translateY(-2px); 
+      box-shadow: 0 8px 25px rgba(47,102,144,0.3); 
+    }
+    #payBtn:disabled { 
+      opacity:0.6; cursor:not-allowed; transform:none; 
+      box-shadow: 0 3px 8px rgba(47,102,144,0.1); 
+    }
+
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-msg {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 20px; font-weight: 700; color: var(--muted);
+    }
+    .loading-msg i { animation: spin 1s linear infinite; }
+
+    .error-msg {
+      background: rgba(255,77,79,0.1); color: var(--danger);
+      padding: 16px; border-radius: 8px; margin-top: 14px;
+      font-weight: 600; display: flex; align-items: center; gap: 8px;
+    }
+
+    #center-toast { 
+      position: fixed; left: 50%; top: 50%; 
+      transform: translate(-50%, -50%) scale(0.95); 
+      background: rgba(11,18,32,0.94); color: #fff; 
+      padding: 20px 28px; border-radius: 12px; 
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6); 
+      opacity: 0; pointer-events: none; 
+      transition: opacity .22s ease, transform .22s ease; 
+      z-index: 9999; font-weight: 700; min-width: 320px; 
+      text-align: center; display: flex; align-items: center; 
+      justify-content: center; gap: 12px; font-size: 0.95rem; 
+      backdrop-filter: blur(10px); 
+    }
+    #center-toast.show { 
+      opacity:1; transform: translate(-50%,-50%) scale(1); 
+      pointer-events:auto; 
+    }
+    .toast-success { background: linear-gradient(135deg, var(--success), #22c55e); }
+    .toast-error { background: linear-gradient(135deg, var(--danger), #ef4444); }
+    
+    .progress-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); z-index: 9998;
+      display: none; align-items: center; justify-content: center;
+    }
+    .progress-card {
+      background: white; padding: 30px; border-radius: 12px;
+      text-align: center; max-width: 400px; margin: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .progress-card h3 { margin-bottom: 16px; color: var(--dark); }
+    .progress-card p { color: var(--muted); margin-bottom: 20px; }
   </style>
 </head>
 <body>
   <div class="page">
     <div class="wrap">
-
       <header class="app-header">
-        <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
-        <div class="app-title">Confirm &amp; Pay</div>
+        <button class="back-btn" onclick="goBack()">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="app-title">Confirm & Pay</div>
       </header>
 
       <div id="summary" class="summary-card" aria-live="polite">
-        Loading booking…
+        <div class="loading-msg">
+          <i class="fas fa-spinner"></i>
+          Loading booking details...
+        </div>
       </div>
 
       <div class="terms">
@@ -63,20 +144,32 @@
             <path fill="currentColor" d="M9 16.2l-3.5-3.5 1.4-1.4L9 13.4l7.1-7.1 1.4 1.4z"></path>
           </svg>
         </label>
-        <div class="terms-label">I agree to the <a href="terms.html" style="color:var(--light);text-decoration:underline">Terms &amp; Conditions</a></div>
+        <div class="terms-label">
+          I agree to the 
+          <a href="terms.html" target="_blank">Terms & Conditions</a>
+        </div>
       </div>
 
       <button id="payBtn" disabled>
         <i class="fas fa-lock"></i>
-        Pay &amp; Book
+        <span id="payBtnText">Pay & Book</span>
       </button>
-
     </div>
   </div>
 
   <div id="center-toast" role="status" aria-live="polite">
-    <span class="icon" style="width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--success);color:#fff">✓</span>
+    <span class="icon" style="width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--success);color:#fff">
+      ✓
+    </span>
     <span id="center-toast-text">Success</span>
+  </div>
+
+  <div id="progress-overlay" class="progress-overlay">
+    <div class="progress-card">
+      <h3>Processing Payment</h3>
+      <p>Please wait while we confirm your booking...</p>
+      <div class="spinner" style="margin: 0 auto;"></div>
+    </div>
   </div>
 
   <!-- Firebase & Razorpay -->
@@ -86,7 +179,7 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <script>
-    // Firebase config (your project)
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
@@ -103,19 +196,50 @@
     // UI elements
     const summaryEl = document.getElementById('summary');
     const payBtn = document.getElementById('payBtn');
+    const payBtnText = document.getElementById('payBtnText');
     const termsChk = document.getElementById('termsChk');
     const termsBox = document.getElementById('termsBox');
     const termsTick = document.getElementById('termsTick');
+    const progressOverlay = document.getElementById('progress-overlay');
 
     // booking expected in localStorage (must include driverId and slotKey)
-    const booking = JSON.parse(localStorage.getItem('selectedBooking') || 'null');
+    let booking = null;
+    let currentUser = null;
+    let isProcessing = false;
 
-    function showCenterToast(message, duration = 2200) {
+    function goBack() {
+      if (isProcessing) {
+        showCenterToast('Please wait for the current process to complete', 2000, 'error');
+        return;
+      }
+      window.history.back();
+    }
+
+    function showCenterToast(message, duration = 2200, type = 'success') {
       const toast = document.getElementById('center-toast');
       const text = document.getElementById('center-toast-text');
+      const icon = toast.querySelector('.icon');
+      
       text.textContent = message;
+      
+      // Update toast styling based on type
+      toast.className = '';
+      if (type === 'error') {
+        toast.classList.add('toast-error');
+        icon.innerHTML = '✗';
+        icon.style.background = 'var(--danger)';
+      } else {
+        toast.classList.add('toast-success');
+        icon.innerHTML = '✓';
+        icon.style.background = 'var(--success)';
+      }
+      
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    function showProgress(show = true) {
+      progressOverlay.style.display = show ? 'flex' : 'none';
     }
 
     // checkbox UI sync
@@ -128,34 +252,68 @@
         termsTick.style.display = 'none';
       }
       termsChk.checked = !!state;
-      payBtn.disabled = !termsChk.checked;
+      updatePayButton();
     }
-    termsBox.addEventListener('click', () => setCheckboxChecked(!termsChk.checked));
+
+    function updatePayButton() {
+      const canPay = termsChk.checked && booking && booking.fare > 0 && !isProcessing;
+      payBtn.disabled = !canPay;
+      
+      if (isProcessing) {
+        payBtnText.innerHTML = '<div class="spinner"></div> Processing...';
+      } else if (!termsChk.checked) {
+        payBtnText.textContent = 'Accept Terms to Continue';
+      } else if (!booking || booking.fare <= 0) {
+        payBtnText.textContent = 'Contact for Booking';
+      } else {
+        payBtnText.innerHTML = '<i class="fas fa-lock"></i> Pay & Book';
+      }
+    }
+
+    // Event listeners for checkbox
+    termsBox.addEventListener('click', () => {
+      if (!isProcessing) {
+        setCheckboxChecked(!termsChk.checked);
+      }
+    });
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
 
-    // SIMPLE: atomic update that writes booking + wallet and deletes availableslot path
+    // Enhanced atomic booking process with proper slot deletion
     async function processSuccessfulPayment(paymentId, bookingData, userData) {
+      if (isProcessing) return;
+      isProcessing = true;
+      
+      showProgress(true);
+      
       try {
+        console.log('Starting payment processing...', { paymentId, bookingData });
+
         if (!bookingData || !bookingData.driverId) {
-          console.error('Missing bookingData or driverId:', bookingData);
-          alert('Booking info incomplete. Contact support with Payment ID: ' + paymentId);
-          return;
+          throw new Error('Missing booking data or driver ID');
         }
 
-        // must have slotKey to remove; simple approach expects this
         if (!bookingData.slotKey) {
-          console.error('Missing slotKey in bookingData — cannot remove slot with simple flow:', bookingData);
-          alert('Booking missing slot identifier. Contact support.');
-          return;
+          throw new Error('Missing slot key - cannot remove slot');
         }
 
         const driverId = bookingData.driverId;
+        const slotKey = bookingData.slotKey;
 
-        // create push key for booking
+        console.log('Processing booking for:', { driverId, slotKey });
+
+        // First verify the slot still exists
+        const slotCheckSnapshot = await db.ref(`availableslots/${driverId}/${slotKey}`).once('value');
+        if (!slotCheckSnapshot.exists()) {
+          throw new Error('This ride is no longer available. Please contact support if payment was deducted.');
+        }
+
+        // Create booking reference
         const newBookingRef = db.ref(`bookings/${driverId}`).push();
         const bookingKey = newBookingRef.key;
 
-        // final booking payload (keeps your original booking fields)
+        console.log('Generated booking key:', bookingKey);
+
+        // Prepare final booking data
         const finalBookingData = {
           ...bookingData,
           userId: userData.uid,
@@ -163,54 +321,84 @@
           userPhone: userData.phone,
           paymentId: paymentId,
           bookedAt: new Date().toISOString(),
-          status: 'confirmed'
+          status: 'confirmed',
+          bookingId: bookingKey
         };
 
-        // driver wallet entry (same as before)
+        // Driver wallet entry
         const walletEntry = {
-          amount: (bookingData.fare || 0) * 0.6,
+          amount: (bookingData.fare || 0) * 0.6, // 60% commission
           status: 'unpaid',
           bookingId: bookingKey,
           booking: finalBookingData,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          paymentId: paymentId
         };
 
-        // Build single multi-path update: write booking + wallet, and delete slot by setting to null
+        console.log('Preparing atomic update...', { 
+          bookingPath: `bookings/${driverId}/${bookingKey}`,
+          walletPath: `driverWallet/${driverId}/${bookingKey}`,
+          slotPath: `availableslots/${driverId}/${slotKey}`
+        });
+
+        // Build atomic update: write booking + wallet, delete slot
         const updates = {};
         updates[`bookings/${driverId}/${bookingKey}`] = finalBookingData;
         updates[`driverWallet/${driverId}/${bookingKey}`] = walletEntry;
-        updates[`availableslots/${driverId}/${bookingData.slotKey}`] = null; // deletion
+        updates[`availableslots/${driverId}/${slotKey}`] = null; // This deletes the slot
 
-        // Commit atomically
+        // Execute atomic update
         await db.ref().update(updates);
-        console.log('Atomic update successful. Booking saved and availableslot removed:', { driverId, slotKey: bookingData.slotKey, bookingKey });
+        
+        console.log('Atomic update successful! Booking saved and slot deleted:', {
+          driverId,
+          slotKey,
+          bookingKey,
+          paymentId
+        });
 
-        showCenterToast('Payment successful & booking confirmed!', 2000);
+        // Success handling
+        showProgress(false);
+        showCenterToast('Payment successful & booking confirmed!', 3000, 'success');
+        
+        // Clear localStorage and redirect
         setTimeout(() => {
           localStorage.removeItem('selectedBooking');
-          window.location = 'mybookings.html';
-        }, 2100);
+          window.location.href = 'mybookings.html';
+        }, 2000);
 
       } catch (err) {
-        console.error('Error in processSuccessfulPayment (atomic update):', err);
-        // If permission error or other, show helpful message
-        if (err && err.code) {
-          alert('Error saving booking. Firebase error code: ' + err.code + '. Check console for details.');
+        console.error('Error in processSuccessfulPayment:', err);
+        showProgress(false);
+        
+        let errorMessage = 'Booking failed after payment. ';
+        
+        if (err.message) {
+          errorMessage += err.message;
+        } else if (err.code) {
+          errorMessage += `Error: ${err.code}`;
         } else {
-          alert('Error saving booking. Check console for details.');
+          errorMessage += 'Please contact support.';
         }
-        // re-enable pay button so user can retry
-        payBtn.disabled = false;
+        
+        errorMessage += ` Payment ID: ${paymentId}`;
+        
+        showCenterToast(errorMessage, 5000, 'error');
+        
+        // Re-enable payment button for retry
+        isProcessing = false;
+        updatePayButton();
       }
     }
 
-    // format helpers (unchanged)
+    // format helpers
     function formatDate(d) {
       if (!d || typeof d !== 'string') return d || '-';
       const [y, m, dd] = d.split('-');
       if (!dd) return d;
       return `${dd}/${m}/${y}`;
     }
+
     function formatTime(t) {
       if (!t || typeof t !== 'string') return t || '-';
       let [h, mm] = t.split(':').map(Number);
@@ -220,192 +408,316 @@
       return `${h}:${(mm||0).toString().padStart(2,'0')} ${suffix}`;
     }
 
-    // Render & auth flow (keeps original UX)
-    if (!booking) {
-      summaryEl.innerHTML = '<div style="padding:16px;color:#6b7280;font-weight:700">Please select a trip first.</div>';
-      payBtn.disabled = true;
-    } else {
-      let bound = false;
-
-      function renderSummary(userName, userPhone) {
-        const pickup = booking.pickup || '—';
-        const dropoff = booking.dropoff || '—';
-        const date = booking.date || '—';
-        const time = booking.time || '—';
-        const tripType = booking.triptype || booking.tripType || 'oneway';
-        const fare = booking.fare || 0;
-        const tripTypeDisplay = tripType === 'oneway' ? 'Oneway' : 'Roundtrip';
-        const tripIcon = tripType === 'oneway' ? 'fa-arrow-right' : 'fa-exchange-alt';
-
+    function renderBookingSummary(userData) {
+      if (!booking) {
         summaryEl.innerHTML = `
-          <div role="region" aria-label="Booking summary">
-            <div style="font-weight:800;margin-bottom:6px"><i class="fas fa-user"></i> Passenger Details</div>
-            <div class="info-row" style="margin-bottom:10px">
-              <div class="icon"><i class="fas fa-user"></i></div>
-              <div class="meta">
-                <div class="label">${userName || 'Guest'}</div>
-                <div class="val">${userPhone || 'No phone'}</div>
-              </div>
-            </div>
-
-            <div style="font-weight:800;margin-bottom:6px"><i class="fas fa-route"></i> Trip Details</div>
-            <div class="info-row">
-              <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
-              <div class="meta">
-                <div class="label">Pickup Location</div>
-                <div class="val">${pickup}</div>
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="icon" style="background: linear-gradient(180deg,#ffdede,#fff7f7); color:var(--danger)"><i class="fas fa-map-pin"></i></div>
-              <div class="meta">
-                <div class="label">Dropoff Location</div>
-                <div class="val">${dropoff}</div>
-              </div>
-            </div>
-
-            <div class="details" aria-hidden="false">
-              <div class="detail-pill">
-                <small>Trip Type</small>
-                <strong>${tripTypeDisplay}</strong>
-              </div>
-              <div class="detail-pill">
-                <small>Date</small>
-                <strong>${formatDate(date)}</strong>
-              </div>
-              <div class="detail-pill">
-                <small>Time</small>
-                <strong>${formatTime(time)}</strong>
-              </div>
-              <div class="detail-pill">
-                <small>Total Fare</small>
-                <strong>₹${fare}</strong>
-              </div>
-            </div>
+          <div class="error-msg">
+            <i class="fas fa-exclamation-triangle"></i>
+            No booking data found. Please select a trip first.
           </div>
         `;
+        return;
       }
 
-      auth.onAuthStateChanged(async user => {
-        if (!user) {
-          alert('Please login first.');
-          window.location = 'index.html';
-          return;
-        }
+      const pickup = booking.pickup || '—';
+      const dropoff = booking.dropoff || '—';
+      const date = booking.date || '—';
+      const time = booking.time || '—';
+      const tripType = booking.triptype || booking.tripType || 'oneway';
+      const fare = booking.fare || 0;
+      const tripTypeDisplay = tripType === 'oneway' ? 'Oneway' : 'Roundtrip';
+      const carInfo = `${booking.carBrand || 'Car'}${booking.carReg ? ' (' + booking.carReg + ')' : ''}`;
 
-        let dbUid = user.uid;
-        let userData = null;
+      summaryEl.innerHTML = `
+        <div role="region" aria-label="Booking summary">
+          <div style="font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-user"></i> 
+            Passenger Details
+          </div>
+          
+          <div class="info-row" style="margin-bottom:12px">
+            <div class="icon"><i class="fas fa-user"></i></div>
+            <div class="meta">
+              <div class="label">${userData.name || 'Guest'}</div>
+              <div class="val">${userData.phone || 'No phone'}</div>
+            </div>
+          </div>
 
-        try {
-          const snapUid = await db.ref(`users/${dbUid}`).once('value');
-          if (snapUid.exists()) {
-            userData = snapUid.val();
-          } else {
-            if (user.phoneNumber) {
-              const phoneSnap = await db.ref("users").orderByChild("phone").equalTo(user.phoneNumber).once("value");
-              if (phoneSnap.exists()) {
-                const rec = phoneSnap.val();
-                dbUid = Object.keys(rec)[0];
-                userData = rec[dbUid];
-              }
-            }
-            if (!userData && user.email) {
-              const emailSnap = await db.ref("users").orderByChild("email").equalTo(user.email).once("value");
-              if (emailSnap.exists()) {
-                const rec = emailSnap.val();
-                dbUid = Object.keys(rec)[0];
-                userData = rec[dbUid];
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Error fetching user data:', err);
-        }
+          <div style="font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-route"></i> 
+            Trip Details
+          </div>
+          
+          <div class="info-row">
+            <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
+            <div class="meta">
+              <div class="label">Pickup Location</div>
+              <div class="val">${pickup}</div>
+            </div>
+          </div>
+          
+          <div class="info-row">
+            <div class="icon" style="background: linear-gradient(180deg,#ffdede,#fff7f7); color:var(--danger)">
+              <i class="fas fa-map-pin"></i>
+            </div>
+            <div class="meta">
+              <div class="label">Dropoff Location</div>
+              <div class="val">${dropoff}</div>
+            </div>
+          </div>
 
-        if (!userData) {
-          summaryEl.innerHTML = '<div style="padding:16px;color:#6b7280;font-weight:700">Profile not found. Cannot proceed.</div>';
+          <div class="info-row" style="margin-bottom:12px">
+            <div class="icon"><i class="fas fa-car"></i></div>
+            <div class="meta">
+              <div class="label">Vehicle</div>
+              <div class="val">${carInfo}</div>
+            </div>
+          </div>
+
+          <div class="details" aria-hidden="false">
+            <div class="detail-pill">
+              <small>Trip Type</small>
+              <strong>${tripTypeDisplay}</strong>
+            </div>
+            <div class="detail-pill">
+              <small>Date</small>
+              <strong>${formatDate(date)}</strong>
+            </div>
+            <div class="detail-pill">
+              <small>Time</small>
+              <strong>${formatTime(time)}</strong>
+            </div>
+            <div class="detail-pill">
+              <small>Total Fare</small>
+              <strong>₹${fare}</strong>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function showError(message) {
+      summaryEl.innerHTML = `
+        <div class="error-msg">
+          <i class="fas fa-exclamation-triangle"></i>
+          ${message}
+        </div>
+      `;
+    }
+
+    // Initialize and load booking data
+    function initializeBooking() {
+      try {
+        const bookingStr = localStorage.getItem('selectedBooking');
+        if (!bookingStr) {
+          showError('Please select a trip first.');
           payBtn.disabled = true;
           return;
         }
 
-        userData.uid = dbUid;
-        renderSummary(userData.name, userData.phone);
-        setCheckboxChecked(false);
+        booking = JSON.parse(bookingStr);
+        console.log('Loaded booking data:', booking);
 
-        if (!bound) {
-          bound = true;
+        if (!booking.driverId || !booking.slotKey) {
+          showError('Invalid booking data. Missing required information.');
+          payBtn.disabled = true;
+          return;
+        }
 
-          termsChk.addEventListener('change', () => { payBtn.disabled = !termsChk.checked; });
-
-          payBtn.addEventListener('click', async () => {
-            if (!termsChk.checked) return;
-
-            payBtn.disabled = true;
-
-            // Basic availability check (best effort)
-            try {
-              if (booking.driverId && booking.slotKey) {
-                const snap = await db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`).once('value');
-                if (!snap.exists()) {
-                  alert('This trip is no longer available. Please search for another one.');
-                  payBtn.disabled = false;
-                  return;
-                }
-              } else {
-                // If driverId/slotKey absent, we stop because simple flow needs slotKey
-                alert('Booking missing driverId or slotKey. Cannot proceed.');
-                payBtn.disabled = false;
-                return;
-              }
-            } catch (err) {
-              console.error('Availability check failed:', err);
-              alert('Failed to verify availability. Try again.');
-              payBtn.disabled = false;
+        // Verify slot is still available
+        db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`).once('value')
+          .then(snapshot => {
+            if (!snapshot.exists()) {
+              showError('This ride is no longer available. Please search for another one.');
+              payBtn.disabled = true;
               return;
             }
-
-            // Razorpay payment
-            const rzpOptions = {
-              key: 'rzp_live_RJxLTulsCPKQqD',
-              amount: (booking.fare || 0) * 100,
-              currency: 'INR',
-              name: 'WaveTravel',
-              description: `${(booking.triptype || booking.tripType || 'Trip')} Booking`,
-              prefill: {
-                name: userData.name || '',
-                contact: userData.phone || '',
-                email: user.email || ''
-              },
-              theme: { color: '#2f6690' },
-              handler: function(res) {
-                // On successful payment -> atomic update to save booking and delete slot
-                processSuccessfulPayment(res.razorpay_payment_id, booking, userData)
-                  .catch(err => {
-                    console.error('processSuccessfulPayment failed:', err);
-                    alert('There was an error processing your booking after payment. Contact support with Payment ID: ' + res.razorpay_payment_id);
-                    payBtn.disabled = false;
-                  });
-              },
-              modal: {
-                ondismiss: function() {
-                  console.log('Payment cancelled by user');
-                  payBtn.disabled = false;
-                }
-              }
-            };
-
-            try {
-              const rzp = new Razorpay(rzpOptions);
-              rzp.open();
-            } catch (error) {
-              console.error('Razorpay initialization failed:', error);
-              alert('Payment initialization failed. Please try again.');
-              payBtn.disabled = false;
-            }
+            
+            // Slot exists, proceed with loading user data
+            loadUserData();
+          })
+          .catch(err => {
+            console.error('Error checking slot availability:', err);
+            showError('Failed to verify ride availability. Please try again.');
+            payBtn.disabled = true;
           });
-        }
-      });
+
+      } catch (err) {
+        console.error('Error parsing booking data:', err);
+        showError('Invalid booking data. Please try again.');
+        payBtn.disabled = true;
+      }
     }
+
+    async function loadUserData() {
+      const user = auth.currentUser;
+      if (!user) {
+        showError('Please login first.');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+        return;
+      }
+
+      let dbUid = user.uid;
+      let userData = null;
+
+      try {
+        // Try to get user by UID first
+        const snapUid = await db.ref(`users/${dbUid}`).once('value');
+        if (snapUid.exists()) {
+          userData = snapUid.val();
+        } else {
+          // Fallback: search by phone or email
+          if (user.phoneNumber) {
+            const phoneSnap = await db.ref("users").orderByChild("phone").equalTo(user.phoneNumber).once("value");
+            if (phoneSnap.exists()) {
+              const rec = phoneSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
+          }
+          
+          if (!userData && user.email) {
+            const emailSnap = await db.ref("users").orderByChild("email").equalTo(user.email).once("value");
+            if (emailSnap.exists()) {
+              const rec = emailSnap.val();
+              dbUid = Object.keys(rec)[0];
+              userData = rec[dbUid];
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        showError('Failed to load user profile. Please try again.');
+        return;
+      }
+
+      if (!userData) {
+        showError('Profile not found. Please complete your profile first.');
+        setTimeout(() => {
+          window.location.href = 'profile.html';
+        }, 2000);
+        return;
+      }
+
+      // Store user data and render
+      userData.uid = dbUid;
+      currentUser = userData;
+      renderBookingSummary(userData);
+      
+      // Initialize checkbox and button states
+      setCheckboxChecked(false);
+      updatePayButton();
+    }
+
+    // Payment processing
+    function initializePayment() {
+      if (isProcessing || !booking || !currentUser || !termsChk.checked) {
+        return;
+      }
+
+      isProcessing = true;
+      updatePayButton();
+
+      // Double-check slot availability before payment
+      db.ref(`availableslots/${booking.driverId}/${booking.slotKey}`).once('value')
+        .then(snapshot => {
+          if (!snapshot.exists()) {
+            isProcessing = false;
+            updatePayButton();
+            showCenterToast('This ride is no longer available. Please search for another one.', 3000, 'error');
+            return;
+          }
+
+          // Proceed with Razorpay payment
+          const rzpOptions = {
+            key: 'rzp_live_RJxLTulsCPKQqD', // Your Razorpay key
+            amount: (booking.fare || 0) * 100, // Amount in paisa
+            currency: 'INR',
+            name: 'WaveTravel',
+            description: `${booking.triptype || booking.tripType || 'Trip'} Booking`,
+            prefill: {
+              name: currentUser.name || '',
+              contact: currentUser.phone || '',
+              email: auth.currentUser.email || ''
+            },
+            theme: { color: '#2f6690' },
+            handler: function(response) {
+              console.log('Payment successful:', response);
+              processSuccessfulPayment(response.razorpay_payment_id, booking, currentUser);
+            },
+            modal: {
+              ondismiss: function() {
+                console.log('Payment cancelled by user');
+                isProcessing = false;
+                updatePayButton();
+                showCenterToast('Payment was cancelled.', 2000, 'error');
+              }
+            }
+          };
+
+          try {
+            const rzp = new Razorpay(rzpOptions);
+            rzp.on('payment.failed', function(response) {
+              console.error('Payment failed:', response.error);
+              isProcessing = false;
+              updatePayButton();
+              showCenterToast(`Payment failed: ${response.error.description}`, 4000, 'error');
+            });
+            
+            rzp.open();
+          } catch (error) {
+            console.error('Razorpay initialization failed:', error);
+            isProcessing = false;
+            updatePayButton();
+            showCenterToast('Payment system failed to load. Please try again.', 3000, 'error');
+          }
+        })
+        .catch(err => {
+          console.error('Availability check failed:', err);
+          isProcessing = false;
+          updatePayButton();
+          showCenterToast('Failed to verify availability. Please try again.', 3000, 'error');
+        });
+    }
+
+    // Event listeners
+    payBtn.addEventListener('click', initializePayment);
+
+    // Auth state monitoring
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        showError('Please login first.');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+      } else {
+        initializeBooking();
+      }
+    });
+
+    // Error handling
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('Unhandled promise rejection:', event.reason);
+      if (isProcessing) {
+        showProgress(false);
+        isProcessing = false;
+        updatePayButton();
+        showCenterToast('An unexpected error occurred. Please try again.', 3000, 'error');
+      }
+    });
+
+    // Prevent accidental page refresh during processing
+    window.addEventListener('beforeunload', function(e) {
+      if (isProcessing) {
+        e.preventDefault();
+        e.returnValue = 'Payment is being processed. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    });
+
+    console.log('Checkout page initialized');
   </script>
 </body>
 </html>
