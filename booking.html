@@ -527,7 +527,7 @@
         debugLog('Error creating search record', err);
       }
 
-      // Fetch available slots with improved error handling
+      // Fetch available slots with comprehensive data extraction
       db.ref('availableslots').once('value')
         .then(snap => {
           debugLog('Raw availableslots data:', snap.val());
@@ -540,45 +540,104 @@
 
           const allSlots = [];
           
-          // Process each driver's slots
+          // Process each driver's slots with detailed extraction
           snap.forEach(driverSnap => {
             const driverId = driverSnap.key;
-            debugLog('Processing driver:', driverId);
+            debugLog(`Processing driver: ${driverId}`);
             
-            driverSnap.forEach(slotSnap => {
-              const slotKey = slotSnap.key;
-              const slotData = slotSnap.val();
-              
-              if (slotData && typeof slotData === 'object') {
-                allSlots.push({
-                  driverId: driverId,
-                  slotKey: slotKey,
-                  ...slotData
-                });
-              }
-            });
+            if (driverSnap.exists()) {
+              driverSnap.forEach(slotSnap => {
+                const slotId = slotSnap.key;
+                const slotData = slotSnap.val();
+                
+                debugLog(`Processing slot ${slotId} for driver ${driverId}:`, slotData);
+                
+                if (slotData && typeof slotData === 'object') {
+                  // Extract all available slot details
+                  const completeSlot = {
+                    driverId: driverId,
+                    slotId: slotId,
+                    // Core trip details
+                    pickup: slotData.pickup || '',
+                    dropoff: slotData.dropoff || '',
+                    date: slotData.date || '',
+                    time: slotData.time || '',
+                    triptype: slotData.triptype || '',
+                    
+                    // Vehicle details
+                    carBrand: slotData.carBrand || 'Unknown Car',
+                    carReg: slotData.carReg || '',
+                    seats: slotData.seats || '4',
+                    
+                    // Driver details
+                    driverName: slotData.driverName || 'Unknown Driver',
+                    driverNumber: slotData.driverNumber || '',
+                    
+                    // Additional fields that might exist
+                    status: slotData.status || 'available',
+                    fare: slotData.fare || null,
+                    distance: slotData.distance || null,
+                    duration: slotData.duration || null,
+                    notes: slotData.notes || '',
+                    
+                    // Store original data for reference
+                    originalData: slotData
+                  };
+                  
+                  allSlots.push(completeSlot);
+                  debugLog(`Added complete slot:`, completeSlot);
+                } else {
+                  debugLog(`Invalid slot data for ${slotId}:`, slotData);
+                }
+              });
+            } else {
+              debugLog(`No slots found for driver ${driverId}`);
+            }
           });
 
           debugLog('All slots processed:', allSlots);
           debugLog('Total slots found:', allSlots.length);
+          
+          // Display all available slots for debugging
+          if (debugMode) {
+            console.table(allSlots.map(slot => ({
+              Driver: slot.driverId.substring(0, 8) + '...',
+              SlotID: slot.slotId,
+              Route: `${slot.pickup} → ${slot.dropoff}`,
+              Date: slot.date,
+              Time: slot.time,
+              Type: slot.triptype,
+              Car: slot.carBrand,
+              Seats: slot.seats
+            })));
+          }
 
-          // Filter slots with more flexible matching
+          // Filter slots with comprehensive matching
           const matchedSlots = allSlots.filter(slot => {
-            const pickupMatch = slot.pickup && slot.pickup.toLowerCase().trim() === pickup.toLowerCase().trim();
-            const dropoffMatch = slot.dropoff && slot.dropoff.toLowerCase().trim() === dropoff.toLowerCase().trim();
+            // Normalize strings for comparison
+            const normalizeString = (str) => (str || '').toLowerCase().trim();
+            
+            const pickupMatch = normalizeString(slot.pickup) === normalizeString(pickup);
+            const dropoffMatch = normalizeString(slot.dropoff) === normalizeString(dropoff);
             const dateMatch = slot.date === date;
-            const tripTypeMatch = slot.triptype && slot.triptype.toLowerCase() === tripType.toLowerCase();
+            const tripTypeMatch = normalizeString(slot.triptype) === normalizeString(tripType);
+            
+            // Only filter out slots with status 'booked' or 'cancelled'
+            const statusFilter = !slot.status || 
+                                (slot.status !== 'booked' && slot.status !== 'cancelled');
 
             debugLog('Slot filter check:', {
-              slot: slot,
-              pickupMatch,
-              dropoffMatch, 
-              dateMatch,
-              tripTypeMatch,
-              searchCriteria: { pickup, dropoff, date, tripType }
+              slotId: slot.slotId,
+              driverId: slot.driverId.substring(0, 8) + '...',
+              pickup: { searched: pickup, found: slot.pickup, match: pickupMatch },
+              dropoff: { searched: dropoff, found: slot.dropoff, match: dropoffMatch },
+              date: { searched: date, found: slot.date, match: dateMatch },
+              tripType: { searched: tripType, found: slot.triptype, match: tripTypeMatch },
+              status: { current: slot.status, allowed: statusFilter },
+              overallMatch: pickupMatch && dropoffMatch && dateMatch && tripTypeMatch && statusFilter
             });
 
-            return pickupMatch && dropoffMatch && dateMatch && tripTypeMatch;
+            return pickupMatch && dropoffMatch && dateMatch && tripTypeMatch && statusFilter;
           });
 
           debugLog('Matched slots:', matchedSlots);
@@ -598,15 +657,26 @@
 
           if (matchedSlots.length === 0) {
             let debugInfo = '';
-            if (debugMode) {
+            if (debugMode || allSlots.length > 0) {
+              const availableRoutes = [...new Set(allSlots.map(s => `${s.pickup} → ${s.dropoff}`))];
+              const availableDates = [...new Set(allSlots.map(s => s.date))].sort();
+              const availableTypes = [...new Set(allSlots.map(s => s.triptype))];
+              
               debugInfo = `
                 <div class="debug-info">
-                  <strong>Debug Info:</strong><br>
-                  Total slots in DB: ${allSlots.length}<br>
-                  Search: ${pickup} → ${dropoff}, ${date}, ${tripType}<br>
-                  Available routes: ${[...new Set(allSlots.map(s => `${s.pickup} → ${s.dropoff}`))].join(', ')}<br>
-                  Available dates: ${[...new Set(allSlots.map(s => s.date))].join(', ')}<br>
-                  Available trip types: ${[...new Set(allSlots.map(s => s.triptype))].join(', ')}
+                  <strong>Available Options:</strong><br>
+                  <strong>Total Slots:</strong> ${allSlots.length}<br>
+                  <strong>Routes:</strong> ${availableRoutes.join(', ') || 'None'}<br>
+                  <strong>Dates:</strong> ${availableDates.join(', ') || 'None'}<br>
+                  <strong>Trip Types:</strong> ${availableTypes.join(', ') || 'None'}<br>
+                  <strong>Your Search:</strong> ${pickup} → ${dropoff}, ${date}, ${tripType}<br>
+                  ${allSlots.length > 0 ? 
+                    '<br><strong>Sample Available Slots:</strong><br>' + 
+                    allSlots.slice(0, 3).map(s => 
+                      `• ${s.pickup} → ${s.dropoff} (${s.date}, ${s.triptype}) - Driver: ${s.driverName || 'Unknown'}`
+                    ).join('<br>')
+                    : ''
+                  }
                 </div>
               `;
             }
@@ -641,10 +711,11 @@
       debugLog('Rendering slots:', slots);
 
       slots.forEach((slot, idx) => {
-        const fare = calculateFare(slot.pickup, slot.dropoff, tripType);
+        const fare = slot.fare || calculateFare(slot.pickup, slot.dropoff, tripType);
         const displayTime = formatTime24to12(slot.time);
         const displayDate = formatDateISOtoDMY(slot.date);
-        const carBrand = slot.carBrand || 'Car';
+        const carInfo = `${slot.carBrand}${slot.carReg ? ' (' + slot.carReg + ')' : ''}`;
+        const driverInfo = `${slot.driverName}${slot.driverNumber ? ' - ' + slot.driverNumber : ''}`;
 
         const card = document.createElement('div');
         card.className = 'slot-card';
@@ -672,8 +743,20 @@
                 </div>
 
                 <div class="car-row">
-                  <div class="car-name"><i class="fas fa-car" aria-hidden="true"></i><span>${escapeHtml(carBrand)}</span></div>
+                  <div class="car-name">
+                    <i class="fas fa-car" aria-hidden="true"></i>
+                    <span>${escapeHtml(carInfo)}</span>
+                  </div>
                 </div>
+                
+                ${slot.driverName ? `
+                <div class="car-row">
+                  <div class="car-name">
+                    <i class="fas fa-user-tie" aria-hidden="true"></i>
+                    <span>${escapeHtml(driverInfo)}</span>
+                  </div>
+                </div>
+                ` : ''}
               </div>
             </div>
 
@@ -682,6 +765,7 @@
                 <div class="pill trip-pill"><i class="fas ${tripIcon}"></i>${tripTypeDisplay}</div>
                 <div class="pill date-pill">${escapeHtml(displayDate)}</div>
                 <div class="pill time-pill">${escapeHtml(displayTime)}</div>
+                ${slot.seats ? `<div class="pill" style="background: linear-gradient(90deg,#fff2e6,#ffecd6); color: #d97706;"><i class="fas fa-users"></i>${slot.seats} seats</div>` : ''}
                 <div class="pill fare-pill">₹${fare}</div>
               </div>
             </div>
@@ -703,15 +787,16 @@
 
           <div class="slot-right" aria-hidden="true">
             <div class="fare-large">₹${fare}</div>
+            ${debugMode ? `<div style="font-size: 0.7rem; color: var(--muted); margin-top: 4px;">ID: ${slot.slotId.substring(0, 8)}...</div>` : ''}
           </div>
         `;
 
         slotsDiv.appendChild(card);
 
-        // Store slot data for booking
+        // Store comprehensive slot data for booking
         card.setAttribute('data-slot', JSON.stringify({
           driverId: slot.driverId,
-          slotKey: slot.slotKey,
+          slotId: slot.slotId,
           pickup: slot.pickup,
           dropoff: slot.dropoff,
           date: slot.date,
@@ -722,7 +807,13 @@
           carReg: slot.carReg || '',
           driverName: slot.driverName || '',
           driverNumber: slot.driverNumber || '',
-          seats: slot.seats || ''
+          seats: slot.seats || '',
+          status: slot.status || 'available',
+          distance: slot.distance || null,
+          duration: slot.duration || null,
+          notes: slot.notes || '',
+          // Include all original data
+          originalData: slot.originalData
         }));
       });
 
@@ -761,7 +852,7 @@
 
       const bookingData = {
         driverId: slotData.driverId,
-        slotKey: slotData.slotKey,
+        slotId: slotData.slotId, // Updated from slotKey to slotId
         pickup: slotData.pickup,
         dropoff: slotData.dropoff,
         date: slotData.date,
@@ -773,7 +864,15 @@
         carReg: slotData.carReg,
         driverName: slotData.driverName,
         driverNumber: slotData.driverNumber,
-        seats: slotData.seats
+        seats: slotData.seats,
+        status: slotData.status,
+        distance: slotData.distance,
+        duration: slotData.duration,
+        notes: slotData.notes,
+        // Timestamp for booking
+        bookingTimestamp: firebase.database.ServerValue.TIMESTAMP,
+        // Original slot data for reference
+        originalSlotData: slotData.originalData
       };
 
       debugLog('Booking data prepared:', bookingData);
