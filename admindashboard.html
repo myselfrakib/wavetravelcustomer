@@ -1,291 +1,616 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>EcoPark Admin Panel</title>
-  <!-- Inter Font & Bootstrap 5 -->
-  <link href="https://fonts.googleapis.com/css?family=Inter:400,600,800&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WaveTravel — Admin Dashboard (Improved)</title>
+
+  <!-- Normalize & DataTables CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css" />
+
+  <!-- Bootstrap CSS & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
   <style>
-    body { font-family: 'Inter',Arial,sans-serif; background:#f7fafc; }
-    .container {max-width: 1100px; margin: 36px auto 10px auto; background: #fff; border-radius:14px; box-shadow:0 8px 32px #064e3b17; padding: 32px;}
-    h2 { margin-top:0; font-weight:800;}
-    .auth-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;}
-    .admin-email { font-size: 15px; color: #059669; font-weight: 600; }
-    .searchbar {margin: 18px 0;}
-    .searchbar input[type="search"] {padding:8px 10px; border-radius:7px; border:1px solid #cbead6; font-size:15px; width:280px;}
-    .table-responsive { border-radius:12px; box-shadow:0 2px 8px #064e3b13; background:#f8fafc; }
-    table {width:100%; border-collapse:collapse; margin:0;}
-    thead th { position:sticky; top:0; background:#e6f9ee; color:#064e3b; z-index:2;}
-    th, td { padding: 10px 7px; text-align:left; font-size:15px; vertical-align:middle;}
-    tr:nth-child(even) { background: #f3fff7; }
-    tr:hover {padding:12px;}
-      .auth-row {flex-direction:column;gap:8px;}
-      .searchbar input[type="search"] {width:100%;}
-      table, thead, tbody, th, td, tr {display:block;}
-      thead {display:none;}
-      tr {margin-bottom:12px;}
-      td {border: none; position:relative; padding-left:45%; min-height:32px;}
-      td:before {position:absolute; left:8px; top:8px; width:40%; white-space:nowrap; font-weight:700; color:#aaa; }
-      td[data-label]:before {content: attr(data-label);}
+    :root{
+      --bg:#071124;
+      --card:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      --accent:#2bb673; /* bright accent */
+      --muted:#9fb3c8;
+      --glass: rgba(255,255,255,0.03);
     }
+
+    html,body{height:100%;}
+    body{font-family:Inter, system-ui, -apple-system, Arial, sans-serif; margin:0; color:#e7f0f6; background: linear-gradient(180deg, #071124 0%, #071733 100%);}
+    
+    /* Layout */
+    .topbar{position:sticky;top:0;z-index:1030;background:rgba(6,12,22,0.6);backdrop-filter: blur(6px);border-bottom:1px solid rgba(255,255,255,0.03);}
+    .brand { display:flex; gap:10px; align-items:center; color:#fff; font-weight:700; }
+    .brand img{height:36px; width:36px; object-fit:cover; border-radius:8px;}
+
+    .nav-actions{display:flex; gap:8px; align-items:center;}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04); color:#fff;}
+
+    .container-main{display:grid; grid-template-columns: 260px 1fr; gap:16px; padding:18px;}
+
+    /* Sidebar */
+    .sidebar{background:var(--card); padding:14px; border-radius:12px; height:calc(100vh - 116px); overflow:auto; box-shadow:0 8px 30px rgba(3,8,20,0.5);}
+    .sidebar .nav-link{color:var(--muted); font-weight:600; border-radius:8px;}
+    .sidebar .nav-link.active{background:rgba(255,255,255,0.03); color:#fff;}
+
+    /* Content area */
+    .panel{background:rgba(255,255,255,0.02); padding:14px; border-radius:12px; box-shadow:0 10px 30px rgba(3,8,20,0.45);}
+    h2{font-size:1.2rem; margin:0 0 12px 0; color:#fff;}
+
+    /* Cards and tables */
+    table.dataTable{background:transparent;color:#e7f0f6}
+    .dt-button, .dataTables_length select, .dataTables_filter input{color:#000 !important}
+
+    /* Driver wallets improvements */
+    #driver-wallets-container{display:grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap:12px;}
+    .driver-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; padding:12px; border:1px solid rgba(255,255,255,0.03);}
+    .driver-header{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+    .driver-meta strong{color:#fff}
+    .badge-paid{background:#2ecc71;color:#012106;padding:5px 8px;border-radius:10px;font-weight:700}
+    .badge-unpaid{background:#ff6b6b;color:#2a0202;padding:5px 8px;border-radius:10px;font-weight:700}
+
+    .image-gallery{display:flex; gap:8px; flex-wrap:wrap}
+    .image-thumbnail{width:88px;height:64px;object-fit:cover;border-radius:6px;border:2px solid transparent; cursor:pointer}
+
+    /* small helpers */
+    .small-muted{color:var(--muted); font-size:0.9rem}
+    .unpaid-badge{background:#ff6b6b;color:#fff;padding:6px 10px;border-radius:12px;font-weight:700}
+
+    /* responsive adjustments */
+    @media (max-width: 980px){
+      .container-main{grid-template-columns: 1fr; padding:12px}
+      .sidebar{height:auto}
+      #driver-wallets-container{grid-template-columns: 1fr}
+    }
+
+    /* subtle transitions */
+    .driver-card, .panel, .sidebar{transition:transform .18s ease, box-shadow .18s ease}
+    .driver-card:hover{transform:translateY(-4px)}
+
+    /* accessibility focus */
+    .nav-link:focus, .btn:focus{outline:2px solid rgba(43,182,115,0.2); outline-offset:2px}
+
+    /* skeleton loader */
+    .skeleton{background:linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.04) 37%, rgba(255,255,255,0.02) 63%); background-size:400% 100%; animation:skeleton 1.2s linear infinite}
+    @keyframes skeleton{0%{background-position:100% 0}100%{background-position:-100% 0}}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2><i class="bi bi-shield-lock-fill"></i> EcoPark Admin Panel</h2>
-    <div class="auth-row">
-      <span id="adminStatus" class="small">Authenticating...</span>
-      <div>
-        <span id="adminEmail" class="admin-email" style="display:none"></span>
-        <button class="btn btn-success btn-sm" id="signInBtn" style="display:none"><i class="bi bi-google"></i> Sign in with Google</button>
-        <button class="btn btn-danger btn-sm" id="signOutBtn" style="display:none"><i class="bi bi-box-arrow-right"></i> Sign Out</button>
-      </div>
-    </div>
-    <div id="adminContent" style="display:none">
-      <div class="searchbar">
-        <input type="search" placeholder="Search bookings (ID, name, phone...)" id="bookingSearch" aria-label="Filter bookings"/>
-      </div>
-      <div class="table-responsive">
-        <table class="table align-middle table-hover" id="bookingsTable">
-          <thead>
-            <tr>
-              <th>Booking ID</th>
-              <th>Type</th>
-              <th>Name</th>
-              <th>Mobile</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th style="min-width:110px;">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="bookingsBody"></tbody>
-        </table>
-      </div>
-      <div class="footer mt-4">
-        &copy; 2024 EcoPark Admin. Secure this panel and your Firestore rules!
-      </div>
-    </div>
-  </div>
 
-  <!-- Booking Details Modal -->
-  <div class="modal fade" id="bookingDetailsModal" tabindex="-1" aria-labelledby="bookingDetailsModalLabel" aria-modal="true" role="dialog">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content shadow">
-        <div class="modal-header">
-          <h5 class="modal-title" id="bookingDetailsModalLabel">
-            <i class="bi bi-info-circle-fill"></i>Booking Details
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+  <!-- Topbar -->
+  <nav class="topbar py-2 px-3 d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3">
+      <div class="brand">
+        <img src="https://wavetravel-3c4c4.web.app/logo192.png" alt="logo" onerror="this.style.display='none'">
+        <div>
+          <div style="font-weight:800">WaveTravel</div>
+          <small class="small-muted">Admin Dashboard</small>
         </div>
-        <div class="modal-body" id="bookingDetailsBody" style="background:#f8fafc;"></div>
-        <div class="modal-footer" style="background:#f8fafc;">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-            <i class="bi bi-x-lg"></i> Close
-          </button>
+      </div>
+      <div class="d-none d-md-flex ms-3">
+        <div class="input-group">
+          <span class="input-group-text bg-transparent border-0 text-muted"><i class="bi bi-search"></i></span>
+          <input id="globalSearch" class="form-control form-control-sm bg-transparent border-0 text-white" placeholder="Quick search (press /)" aria-label="Search" />
         </div>
       </div>
     </div>
+
+    <div class="nav-actions">
+      <button id="refreshAllBtn" class="btn btn-sm btn-ghost me-1" title="Refresh current tab"><i class="bi bi-arrow-clockwise"></i></button>
+      <div class="dropdown">
+        <button class="btn btn-sm btn-ghost dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-gear"></i></button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="#" onclick="openTab('users')">Open Users</a></li>
+          <li><a class="dropdown-item" href="#" onclick="openTab('driver-wallets')">Open Driver Wallets</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-main">
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Main navigation">
+      <nav class="nav flex-column">
+        <a class="nav-link active" href="#" onclick="openTab('users')"><i class="bi bi-people"></i> Users</a>
+        <a class="nav-link" href="#" onclick="openTab('drivers')"><i class="bi bi-person-badge"></i> Drivers</a>
+        <a class="nav-link" href="#" onclick="openTab('pending-cars')"><i class="bi bi-hourglass-split"></i> Pending Cars</a>
+        <a class="nav-link" href="#" onclick="openTab('approved-cars')"><i class="bi bi-check2-square"></i> Approved Cars</a>
+        <a class="nav-link" href="#" onclick="openTab('slots')"><i class="bi bi-calendar2-day"></i> Slots</a>
+        <a class="nav-link" href="#" onclick="openTab('bookings')"><i class="bi bi-journal-check"></i> Bookings</a>
+        <a class="nav-link" href="#" onclick="openTab('driver-wallets')"><i class="bi bi-wallet2"></i> Driver Wallets</a>
+        <a class="nav-link" href="#" onclick="openTab('pending-withdrawals')"><i class="bi bi-credit-card"></i> Pending Withdrawals</a>
+        <a class="nav-link" href="#" onclick="openTab('profile')"><i class="bi bi-person-circle"></i> Profile</a>
+        <div style="height:12px"></div>
+        <button class="btn btn-sm btn-outline-light w-100" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Sign out</button>
+      </nav>
+    </aside>
+
+    <!-- Main content area -->
+    <main>
+      <!-- USERS -->
+      <section id="users-tab" class="tab-pane panel" hidden>
+        <h2>Users</h2>
+        <div id="users-loading" class="loading skeleton" style="height:48px; border-radius:8px;"></div>
+        <div class="table-responsive mt-2">
+          <table id="users-table" class="display responsive nowrap table" style="width:100%;display:none">
+            <thead><tr>
+              <th>SL</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Created On</th><th>Action</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- DRIVERS -->
+      <section id="drivers-tab" class="tab-pane panel" hidden>
+        <h2>Drivers</h2>
+        <div id="drivers-loading" class="loading skeleton" style="height:48px; border-radius:8px;"></div>
+        <div class="table-responsive mt-2">
+          <table id="drivers-table" class="display responsive nowrap table" style="width:100%;display:none">
+            <thead><tr>
+              <th>SL</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>Vehicle Count</th><th>Action</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- PENDING CARS -->
+      <section id="pending-cars-tab" class="tab-pane panel" hidden>
+        <h2>Pending Cars</h2>
+        <div id="pending-loading" class="loading skeleton" style="height:48px; border-radius:8px;"></div>
+        <div class="table-responsive mt-2">
+          <table id="pending-table" class="display responsive nowrap table" style="width:100%;display:none">
+            <thead><tr>
+              <th>SL</th><th>Driver ID</th><th>Car ID</th><th>Brand</th><th>Reg No</th>
+              <th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Images</th><th>License</th><th>Submitted At</th><th>Actions</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- APPROVED CARS -->
+      <section id="approved-cars-tab" class="tab-pane panel" hidden>
+        <h2>Approved Cars</h2>
+        <div id="approved-loading" class="loading skeleton" style="height:48px; border-radius:8px;"></div>
+        <div class="table-responsive mt-2">
+          <table id="approved-table" class="display responsive nowrap table" style="width:100%;display:none">
+            <thead><tr>
+              <th>SL</th><th>Driver Name</th><th>Phone</th><th>Car ID</th>
+              <th>Brand</th><th>Reg No</th><th>Owner</th><th>Seats</th><th>Action</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SLOTS -->
+      <section id="slots-tab" class="tab-pane panel" hidden>
+        <h2>Slots</h2>
+        <div id="slots-loading" class="loading skeleton" style="height:48px; border-radius:8px;"></div>
+        <div class="table-responsive mt-2">
+          <table id="slots-table" class="display responsive nowrap table" style="width:100%;display:none">
+            <thead><tr>
+              <th>SL</th><th>Driver Name</th><th>Phone</th><th>Slot ID</th>
+              <th>Pickup</th><th>Dropoff</th><th>Date</th><th>Time</th><th>Seats</th><th>Action</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- BOOKINGS -->
+      <section id="bookings-tab" class="tab-pane panel" hidden>
+        <h2>Bookings</h2>
+        <div id="bookings-loading" class="loading skeleton" style="height:48px; border-radius:8px;"></div>
+        <div class="table-responsive mt-2">
+          <table id="bookings-table" class="display responsive nowrap table" style="width:100%;display:none">
+            <thead><tr>
+              <th>SL</th><th>Booking ID</th><th>Customer</th><th>Vehicle</th><th>Pickup</th>
+              <th>Dropoff</th><th>Duration</th><th>Fare</th><th>Status</th><th>Action</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- DRIVER WALLETS -->
+      <section id="driver-wallets-tab" class="tab-pane panel" hidden>
+        <h2>Driver Wallets</h2>
+
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <label for="walletStatusFilter" class="small-muted mb-0">Filter:</label>
+          <select id="walletStatusFilter" class="form-select form-select-sm w-auto" aria-label="Filter wallet entries by status">
+            <option value="processing" selected>Processing</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="paid">Paid</option>
+          </select>
+          <button id="walletFilterApplyBtn" class="btn btn-sm btn-outline-light">Apply</button>
+          <div class="ms-auto small-muted">Showing driver wallet entries (status evaluated from driverWallet node)</div>
+        </div>
+
+        <div id="wallets-loading" class="loading skeleton" style="height:64px; border-radius:8px;"></div>
+        <div id="driver-wallets-container" style="display:none;"></div>
+      </section>
+
+      <!-- PENDING WITHDRAWALS -->
+      <section id="pending-withdrawals-tab" class="tab-pane panel" hidden>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2>Pending Withdrawals</h2>
+          <div>
+            <button id="exportWithdrawalsBtn" class="btn btn-sm btn-outline-light">Export CSV (Grouped)</button>
+          </div>
+        </div>
+        <div id="withdrawals-loading" class="loading skeleton" style="height:48px; border-radius:8px;"></div>
+        <div id="withdrawals-container" style="display:none;"></div>
+      </section>
+
+      <!-- PROFILE -->
+      <section id="profile-tab" class="tab-pane panel" hidden>
+        <h2>My Profile</h2>
+        <div id="profile-loading" class="loading skeleton" style="height:48px; border-radius:8px;"></div>
+        <div class="table-responsive mt-2">
+          <table id="profile-table" class="display responsive nowrap table" style="width:100%;display:none">
+            <thead><tr><th>Field</th><th>Value</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Modals (image viewer, booking, QR) -->
+      <div class="modal fade" id="bookingDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Booking Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="bookingDetailsBody"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="imageViewerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="imageViewerTitle">Image Viewer</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body text-center" id="imageViewerBody"><img id="imageViewerImg" src="" alt="Image" style="max-width:100%;height:auto;border-radius:8px"></div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content text-center p-3" style="background:#071124;color:#ffd700;">
+            <h5>UPI Payment QR</h5>
+            <div id="qrCode" class="my-3"></div>
+            <div id="qrInfo" class="mb-2 small-muted"></div>
+            <div id="upiUriBox" class="mb-2 small-muted text-start" style="word-break:break-all;"></div>
+            <div class="d-flex gap-2 justify-content-center">
+              <button id="copyUpiUriBtn" class="btn btn-sm btn-outline-light">Copy Minimal UPI URI</button>
+              <button id="copyFullUpiUriBtn" class="btn btn-sm btn-outline-light">Copy Full UPI URI</button>
+              <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="toast-container" aria-live="polite" aria-atomic="true" style="position:fixed;right:18px;bottom:18px;z-index:1200"></div>
+
+    </main>
   </div>
 
-  <!-- Toast container -->
-  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
-
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script>
-    // --- CONFIG --- (Replace with your Firebase project config)
-    const firebaseConfig = {
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- Firebase modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getDatabase, ref, get, update, remove, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    // Firebase config (kept as provided)
+    const cfg = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
       projectId: "wavetravel-3c4c4",
       storageBucket: "wavetravel-3c4c4.appspot.com",
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
-    const allowedAdmins = ["your-admin-email@gmail.com"]; // <-- ADD YOUR ADMIN EMAIL HERE
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-
-    // --- UI Elements ---
-    const adminStatus = document.getElementById('adminStatus');
-    const adminEmail = document.getElementById('adminEmail');
-    const signInBtn = document.getElementById('signInBtn');
-    const signOutBtn = document.getElementById('signOutBtn');
-    const adminContent = document.getElementById('adminContent');
-    const bookingsBody = document.getElementById('bookingsBody');
-    const bookingSearch = document.getElementById('bookingSearch');
-    const toastContainer = document.getElementById('toastContainer');
-
-    // --- Auth Logic ---
-    signInBtn.onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider);
-    };
-    signOutBtn.onclick = () => auth.signOut();
-
-    auth.onAuthStateChanged(async user => {
-      if(user && allowedAdmins.includes(user.email)) {
-        adminStatus.textContent = "Signed in as admin";
-        adminEmail.style.display = '';
-        adminEmail.textContent = user.email;
-        signInBtn.style.display = 'none';
-        signOutBtn.style.display = '';
-        adminContent.style.display = '';
-        loadBookings();
-      } else if (user) {
-        adminStatus.innerHTML = `<span class="text-danger">You are not authorized. Contact admin.</span>`;
-        adminEmail.style.display = '';
-        adminEmail.textContent = user.email;
-        signInBtn.style.display = 'none';
-        signOutBtn.style.display = '';
-        adminContent.style.display = 'none';
-      } else {
-        adminStatus.textContent = "Please sign in as admin.";
-        adminEmail.style.display = 'none';
-        signInBtn.style.display = '';
-        signOutBtn.style.display = 'none';
-        adminContent.style.display = 'none';
-      }
-    });
-
-    // --- Firestore: Load bookings ---
-    let allBookings = [];
-    async function loadBookings() {
-      bookingsBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Loading...</td></tr>';
-      try {
-        const q = db.collection('bookings').orderBy('createdAt','desc').limit(200);
-        q.onSnapshot(snap=>{
-          allBookings = [];
-          bookingsBody.innerHTML = '';
-          snap.forEach(doc=>{
-            const b = doc.data();
-            allBookings.push(b);
-          });
-          renderBookings(allBookings);
+    // improved helpers and performance-minded DataTable init
+    const tables = {};
+    function initTable(id, noSortCols = []){
+      if(!tables[id]){
+        tables[id] = $(`#${id}`).DataTable({
+          responsive:true,
+          dom:'Bfrtip',
+          buttons:['copy','csv','excel','print'],
+          pageLength: 25,
+          lengthMenu: [10,25,50,100],
+          columnDefs: noSortCols.map(c=>({ orderable:false, targets:c })),
+          deferRender: true, // speed up large tables
+          language: {emptyTable: 'No records.'}
         });
-      } catch(e) {
-        bookingsBody.innerHTML = `<tr><td colspan="8" class="text-danger">Error loading bookings: ${e.message}</td></tr>`;
+      } else {
+        tables[id].clear(false);
       }
+      return tables[id];
     }
 
-    function statusBadge(b) {
-      if (b.status && typeof b.status === "string" && b.status.toLowerCase() === "paid") return '<span class="badge badge-status badge-paid">Paid</span>';
-      if (b.status && b.status.toLowerCase() === "processing") return '<span class="badge badge-status badge-processing">Processing</span>';
-      if (b.status && b.status.toLowerCase() === "unpaid") return '<span class="badge badge-status badge-unpaid">Unpaid</span>';
-      if (b.paymentId) return '<span class="badge badge-status badge-paid">Paid</span>';
-      return '<span class="badge badge-status badge-unpaid">Unpaid</span>';
+    window.logout = () => signOut(auth).then(() => location.href='adminlogin.html');
+
+    function showToast(message, type='info', timeout=3500){
+      const id = 't' + Date.now();
+      const toastHtml = `
+        <div id="${id}" class="toast align-items-center text-bg-${type} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>`;
+      const container = document.getElementById('toast-container');
+      container.insertAdjacentHTML('beforeend', toastHtml);
+      const toastEl = document.getElementById(id);
+      const bsToast = new bootstrap.Toast(toastEl, { delay: timeout });
+      bsToast.show();
+      toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
     }
 
-    function renderBookings(arr) {
-      bookingsBody.innerHTML = '';
-      if (!arr.length) {
-        bookingsBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No bookings found.</td></tr>';
-        return;
-      }
-      for(const b of arr) {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td data-label="Booking ID"><span class="fw-semibold">${escapeHtml(b.bookingId||"")}</span></td>
-          <td data-label="Type">${escapeHtml(b.type||'')}</td>
-          <td data-label="Name">${escapeHtml(b.name||b.customerName||'-')}</td>
-          <td data-label="Mobile">${escapeHtml(b.mobile||b.userPhone||'-')}</td>
-          <td data-label="Amount">₹${escapeHtml(String(b.amount||b.total||'0'))}</td>
-          <td data-label="Status">${statusBadge(b)}</td>
-          <td data-label="Date">${b.createdAt?new Date(b.createdAt).toLocaleString():'-'}</td>
-          <td data-label="Actions">
-            <button class="btn btn-sm btn-info action-btn" title="Details" onclick="showDetails('${b.bookingId}')"><i class="bi bi-eye"></i></button>
-            <button class="btn btn-sm btn-danger action-btn" title="Delete" onclick="deleteBooking('${b.bookingId}')"><i class="bi bi-trash"></i></button>
-          </td>
+    // image modal helper
+    window.showImage = function(imageUrl, title = 'Image'){
+      document.getElementById('imageViewerTitle').textContent = title;
+      document.getElementById('imageViewerImg').src = imageUrl;
+      new bootstrap.Modal(document.getElementById('imageViewerModal')).show();
+    };
+
+    function createImageGallery(images, type='car'){
+      if(!images || images.length===0) return '<span class="small-muted">No images</span>';
+      let html = '<div class="image-gallery">';
+      images.forEach((imageUrl, idx)=>{
+        const className = 'image-thumbnail';
+        const title = (type==='license')? 'Driver License' : `Car Image ${idx+1}`;
+        // lazy loading + alt
+        html += `<img loading="lazy" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" class="${className}" onclick="showImage('${escapeHtml(imageUrl)}','${escapeHtml(title)}')">`;
+      });
+      html += '</div>';
+      return html;
+    }
+
+    // small utilities
+    function escapeHtml(str){ if(str === null || str === undefined) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;'); }
+    function sanitizeId(id){ return String(id).replace(/[^a-z0-9\-_]/gi,'-'); }
+
+    // CRUD helpers - use centralized confirmation and error handling
+    async function safeRemove(path, successMsg, reloadFn){ if(!confirm('Confirm delete?')) return; try{ await remove(ref(db,path)); showToast(successMsg,'success'); if(typeof reloadFn === 'function') reloadFn(); } catch(e){ showToast('Error: '+e.message,'danger'); console.error(e); } }
+    window.deleteUser = uid => safeRemove(`users/${uid}`, 'User deleted', loadUsers);
+    window.deleteDriver = did => safeRemove(`driverdetails/${did}`, 'Driver deleted', loadDrivers);
+    window.deletePending = (did,cid) => safeRemove(`pendingcars/${did}/${cid}`, 'Pending car deleted', loadPending);
+    window.deleteApproved = (did,cid) => safeRemove(`approvedcars/${did}/${cid}`, 'Approved car deleted', loadApproved);
+    window.deleteSlot = (did,sid) => safeRemove(`availableslots/${did}/${sid}`, 'Slot deleted', loadSlots);
+    window.deleteBooking = bid => safeRemove(`bookings/${bid}`, 'Booking deleted', loadBookings);
+
+    // Approve car
+    window.approveCar = async (did,cid)=>{
+      if(!confirm('Approve this car?')) return;
+      try{ const snap = await get(ref(db, `pendingcars/${did}/${cid}`)); if(!snap.exists()){ showToast('Car not found','warning'); return; } const car = snap.val(); await set(ref(db, `approvedcars/${did}/${cid}`), car); await remove(ref(db, `pendingcars/${did}/${cid}`)); showToast('Car approved','success'); loadPending(); } catch(e){ showToast('Error: '+e.message,'danger'); }
+    };
+
+    // Wallet helpers (kept similar but optimized)
+    window.approveWalletEntry = async (driverId, bookingId) => {
+      if(!confirm(`Mark ${bookingId} paid?`)) return;
+      try{ await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { paidout: true, status: 'paid' }); await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'approveWalletEntry', driverId, bookingId, ts: Date.now() }); showToast('Marked paid','success'); loadWallets(); } catch(e){ showToast('Error: '+e.message,'danger'); }
+    };
+
+    window.rejectWalletEntry = async (driverId, bookingId, amount) => {
+      if(!confirm(`Reject entry ${bookingId}?`)) return;
+      try{ await update(ref(db,`driverWallet/${driverId}/${bookingId}`), { status: 'available', amount }); await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'rejectWalletEntry', driverId, bookingId, amount, ts: Date.now() }); showToast('Rejected','warning'); loadWallets(); } catch(e){ showToast('Error: '+e.message,'danger'); }
+    };
+
+    // small status detection used by wallet UI
+    function getEffectiveStatusFromWalletEntry(entry){ if(!entry) return 'unpaid'; if(entry.status) return String(entry.status).toLowerCase(); if(entry.paidout === true) return 'paid'; const flags = ['withdrawalRequested','withdrawal_requested','requested','pendingWithdrawal','withdrawRequested','withdraw_requested']; for(const f of flags) if(entry[f] === true) return 'processing'; if(entry.requestedAt || entry.requestedOn || entry.requestTimestamp) return 'processing'; return 'unpaid'; }
+
+    // Efficiently load wallets (batch read once, minimize DOM thrash)
+    async function loadWallets(){ document.getElementById('driver-wallets-container').style.display='none'; document.getElementById('wallets-loading').style.display='block'; const container = document.getElementById('driver-wallets-container'); container.innerHTML=''; const statusFilter = (document.getElementById('walletStatusFilter')?.value || 'processing').toLowerCase(); try{
+      const walletSnap = await get(ref(db,'driverWallet'));
+      if(!walletSnap.exists()){ container.textContent = 'No wallet entries found.'; document.getElementById('wallets-loading').style.display='none'; container.style.display='block'; return; }
+      const allDrivers = walletSnap.val();
+
+      // iterate and create fragments for better perf
+      const frag = document.createDocumentFragment();
+      for(const [driverId, entries] of Object.entries(allDrivers)){
+        const matching = {};
+        for(const [bookingId,e] of Object.entries(entries)){
+          const eff = getEffectiveStatusFromWalletEntry(e);
+          if(eff === statusFilter) matching[bookingId] = {entry:e, effective:eff};
+        }
+        if(Object.keys(matching).length === 0) continue;
+
+        // fetch driver details (small read)
+        let upi = null, driverName = null; try{ const dSnap = await get(ref(db, `driverdetails/${driverId}`)); if(dSnap.exists()){ const d = dSnap.val(); upi = (typeof d.upiId === 'string') ? d.upiId.trim() : (d.upiId||null); driverName = d.name || null; } } catch(e){ /* ignore */ }
+
+        // compute totals
+        let totalFiltered = 0; let totalProcessing = 0;
+        for(const [bid,obj] of Object.entries(matching)){ const amt = parseFloat(obj.entry.amount) || 0; totalFiltered += amt; if(obj.effective === 'processing') totalProcessing += amt; }
+
+        const card = document.createElement('div'); card.className = 'driver-card';
+        const sanitized = sanitizeId(driverId);
+        card.innerHTML = `
+          <div class="driver-header">
+            <div class="driver-info">
+              <div class="driver-meta"><strong>${driverName? escapeHtml(driverName) : escapeHtml(driverId)}</strong><div class="small-muted">${escapeHtml(driverId)}</div><div class="small-muted">UPI: <span id="upi-val-${sanitized}">${upi?escapeHtml(upi):'—'}</span></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="text-align:right"><h4 style="margin:0;color:var(--accent)">₹${totalFiltered.toFixed(2)}</h4><div class="small-muted">Total (${escapeHtml(statusFilter)})</div></div>
+              <div class="driver-actions" style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-sm btn-outline-light" id="copy-upi-${sanitized}" ${upi?'':'disabled'}><i class="bi bi-clipboard"></i> Copy UPI</button>
+                  <button class="btn btn-sm btn-primary" id="qr-total-${sanitized}" ${(!upi || totalProcessing<=0)?'disabled':''}><i class="bi bi-qr-code"></i> Show QR</button>
+                  <button class="btn btn-sm btn-success" id="mark-all-paid-${sanitized}"><i class="bi bi-cash-stack"></i> Mark All Paid</button>
+                </div>
+              </div>
+            </div>
+          </div>
         `;
-        bookingsBody.appendChild(row);
+
+        // build table of entries
+        const body = document.createElement('div'); body.className = 'driver-body mt-2';
+        const tbl = document.createElement('table'); tbl.className = 'table table-sm entries-table';
+        tbl.innerHTML = `<thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`;
+        const tbody = tbl.querySelector('tbody');
+        let i=1;
+        for(const [bookingId,obj] of Object.entries(matching)){
+          const entry = obj.entry; const effective = obj.effective; const amount = Number(entry.amount)||0; const fare = (entry.fare ?? (entry.booking?.fare)) ?? 'N/A'; const paidoutFlag = entry.paidout===true; const isPaid = paidoutFlag || (String(effective).toLowerCase() === 'paid');
+          const pickup = entry.booking?.pickup || entry.pickup || 'N/A'; const dropoff = entry.booking?.dropoff || entry.dropoff || 'N/A';
+
+          const tr = document.createElement('tr');
+          const actionsCell = document.createElement('td'); actionsCell.style.whiteSpace='nowrap';
+          const btnShow = document.createElement('button'); btnShow.className='btn btn-sm btn-info me-1'; btnShow.textContent='Show'; btnShow.onclick = ()=> showBookingModal(driverId, bookingId);
+          const btnQr = document.createElement('button'); btnQr.className = 'btn btn-sm btn-primary me-1'; btnQr.textContent = 'QR';
+          const allowQr = (effective === 'processing') && !isPaid && (Number(amount) > 0) && !!upi;
+          if(!upi) { btnQr.disabled=true; btnQr.title='UPI missing'; }
+          else if(!allowQr){ btnQr.disabled=true; btnQr.title='QR allowed only for processing entries'; }
+          else btnQr.onclick = ()=> showQrModal(driverId, amount, bookingId);
+          const btnPaid = document.createElement('button'); btnPaid.className='btn btn-sm btn-success'; btnPaid.textContent='Mark Paid'; btnPaid.onclick = ()=> markPaidEntry(driverId, bookingId);
+          actionsCell.appendChild(btnShow); actionsCell.appendChild(btnQr); actionsCell.appendChild(btnPaid);
+
+          tr.innerHTML = `<td>${i++}</td><td style="min-width:200px"><div><strong>${escapeHtml(bookingId)}</strong></div><small class="small-muted">${escapeHtml(pickup)} → ${escapeHtml(dropoff)}</small></td><td>₹${amount.toFixed(2)}</td><td>₹${escapeHtml(fare)}</td><td>${isPaid?'<span class="badge-paid">Paid</span>':`<span class="badge-unpaid">${escapeHtml(effective)}</span>`}</td>`;
+          tr.appendChild(actionsCell);
+          tbody.appendChild(tr);
+        }
+        body.appendChild(tbl);
+        card.appendChild(body);
+        frag.appendChild(card);
+
+        // after attach: wire up buttons (copy, qr total, mark all)
+        setTimeout(()=>{
+          const copyBtn = document.getElementById(`copy-upi-${sanitized}`);
+          if(copyBtn && upi) copyBtn.addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(upi); showToast('UPI copied','success'); }catch(e){ showToast('Copy failed','danger'); } });
+          const qrTotalBtn = document.getElementById(`qr-total-${sanitized}`);
+          if(qrTotalBtn && upi && !qrTotalBtn.disabled){ qrTotalBtn.addEventListener('click', ()=>{ showQrModal(driverId, totalProcessing, ''); }); }
+          const markAllBtn = document.getElementById(`mark-all-paid-${sanitized}`);
+          if(markAllBtn) markAllBtn.addEventListener('click', ()=> markAllPaidForDriver(driverId));
+        }, 30);
       }
+
+      container.appendChild(frag);
+    } catch(e){ showToast('Error loading wallets: '+ e.message,'danger'); console.error(e); } finally { document.getElementById('wallets-loading').style.display='none'; document.getElementById('driver-wallets-container').style.display='grid'; }
     }
 
-    // --- Search bookings ---
-    bookingSearch.addEventListener('input', function() {
-      const q = bookingSearch.value.trim().toLowerCase();
-      if (!q) return renderBookings(allBookings);
-      const filtered = allBookings.filter(b=> {
-        return (b.bookingId||'').toLowerCase().includes(q) ||
-               (b.name||'').toLowerCase().includes(q) ||
-               (b.mobile||'').toLowerCase().includes(q) ||
-               (b.customerName||'').toLowerCase().includes(q);
-      });
-      renderBookings(filtered);
-    });
+    // Booking modal builder
+    async function showBookingModal(driverId, bookingId){ try{ const snap = await get(ref(db, `driverWallet/${driverId}/${bookingId}`)); if(!snap.exists()){ document.getElementById('bookingDetailsBody').innerHTML = `<div class="alert alert-warning">No booking data found for ${escapeHtml(bookingId)}</div>`; new bootstrap.Modal(document.getElementById('bookingDetailsModal')).show(); return; } const entry = snap.val(); const b = entry.booking || entry.bookingdata || entry; const rows = [ ['Booking ID', bookingId], ['Driver ID', b.driverId || entry.driverId || driverId], ['Driver Name', b.driverName || entry.driverName || 'N/A'], ['User Name', b.userName || b.customerName || entry.userName || 'N/A'], ['User Phone', b.userPhone || entry.userPhone || 'N/A'], ['Pickup', b.pickup || 'N/A'], ['Dropoff', b.dropoff || 'N/A'], ['Date', b.date || entry.date || 'N/A'], ['Time', b.time || entry.time || 'N/A'], ['Booked At', b.bookedAt || entry.bookedAt || 'N/A'], ['Fare', b.fare || entry.fare || 'N/A'], ['Amount', entry.amount || 'N/A'], ['PaymentId', b.paymentId || entry.paymentId || 'N/A'], ['Status', entry.status || (entry.paidout ? 'paid' : ( entry.withdrawalRequested ? 'processing' : 'unpaid')) || 'N/A'] ]; let html = `<table class="table table-sm table-bordered">`; for(const [label,val] of rows){ html += `<tr><th style="width:30%">${escapeHtml(label)}</th><td>${(val !== undefined && val !== null) ? escapeHtml(String(val)) : 'N/A'}</td></tr>`; } html += `</table>`; document.getElementById('bookingDetailsBody').innerHTML = html; new bootstrap.Modal(document.getElementById('bookingDetailsModal')).show(); } catch(err){ document.getElementById('bookingDetailsBody').innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(err.message || err)}</div>`; new bootstrap.Modal(document.getElementById('bookingDetailsModal')).show(); } }
 
-    // --- Booking Details Modal ---
-    window.showDetails = async function(bookingId) {
-      const b = allBookings.find(x=>x.bookingId===bookingId);
-      if(!b) {
-        showToast('Booking not found','danger');
-        return;
-      }
-      const rows = [
-        ['Booking ID', b.bookingId],
-        ['Type', b.type ],
-        ['Name', b.name || b.customerName || '-' ],
-        ['Mobile', b.mobile || b.userPhone || '-' ],
-        ['Amount', '₹' + (b.amount || b.total || '0')],
-        ['Cottage', b.cottageTitle || '-' ],
-        ['Guests', b.numPersons || b.guests || '-' ],
-        ['Check-in', b.checkin || '-' ],
-        ['Check-out', b.checkout || '-' ],
-        ['Payment ID', b.paymentId || '-' ],
-        ['Status', (b.status|| (b.paymentId ? 'Paid' : 'Unpaid')) ],
-        ['Created At', b.createdAt ? new Date(b.createdAt).toLocaleString() : '-' ]
-      ];
-      let html = `<table class="table table-bordered table-striped align-middle">`;
-      for(const [k,v] of rows){
-        html += `<tr><th style="width:32%;background:#e6f9ee;">${escapeHtml(k)}</th><td>${escapeHtml(String(v))}</td></tr>`;
-      }
-      html += `</table>`;
-      document.getElementById('bookingDetailsBody').innerHTML = html;
-      new bootstrap.Modal(document.getElementById('bookingDetailsModal')).show();
-    };
-
-    // --- Delete Booking ---
-    window.deleteBooking = async function(bookingId) {
-      if(!confirm(`Delete booking ${bookingId}?`)) return;
-      try {
-        await db.collection('bookings').doc(bookingId).delete();
-        showToast('Booking deleted','success');
-      } catch(e) {
-        showToast('Error deleting booking: ' + e.message,'danger');
-      }
-    };
-
-    // --- Toast utility ---
-    function showToast(msg, type='info', timeout=2600) {
-      const icon = type==='success' ? 'check-circle-fill' : (type==='danger' ? 'exclamation-triangle-fill' : 'info-circle-fill');
-      const toast = document.createElement('div');
-      toast.className = `toast align-items-center text-bg-${type} border-0 mb-2 show`;
-      toast.setAttribute('role','alert');
-      toast.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body"><i class="bi bi-${icon} me-2"></i>${msg}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-      `;
-      toastContainer.appendChild(toast);
-      setTimeout(()=>toast.remove(), timeout);
+    // QR generation safety checks
+    async function showQrModal(driverId, amount, bookingId){ try{ const dSnap = await get(ref(db, `driverdetails/${driverId}`)); if(!dSnap.exists()){ showToast('Driver details not found','danger'); return; } const d = dSnap.val(); let upiIdRaw = d.upiId; if(typeof upiIdRaw === 'string') upiIdRaw = upiIdRaw.trim(); if(!upiIdRaw){ showToast('UPI ID not set for this driver.','warning'); return; }
+      if(bookingId){ const wSnap = await get(ref(db, `driverWallet/${driverId}/${bookingId}`)); if(wSnap.exists()){ const w = wSnap.val(); const st = (w.status ?? (w.paidout ? 'paid':'')) || ''; const paidoutFlag = w.paidout === true; if(paidoutFlag || String(st).toLowerCase() === 'paid'){ showToast('Cannot generate QR: entry already paid','warning'); return; } const eff = getEffectiveStatusFromWalletEntry(w); if(eff !== 'processing'){ showToast('QR allowed only for processing entries','warning'); return; } } } else { const wSnap = await get(ref(db, `driverWallet/${driverId}`)); if(wSnap.exists()){ const wallet = wSnap.val(); const anyProcessing = Object.values(wallet).some(e => getEffectiveStatusFromWalletEntry(e) === 'processing'); if(!anyProcessing){ showToast('No processing entries available for combined QR','warning'); return; } } }
+      const driverNameRaw = (d.name || driverId || 'Payee').trim(); const payeeName = driverNameRaw.split(/\s+/).map(s => s? (s[0].toUpperCase()+s.slice(1)) : '').join(' ');
+      const paEncoded = encodeURIComponent(upiIdRaw); const pnEncoded = encodeURIComponent(payeeName); const amountStr = Number(amount) ? Number(amount).toFixed(2) : '0.00'; const minimalUri = `upi://pay?pa=${paEncoded}&pn=${pnEncoded}&am=${encodeURIComponent(amountStr)}&cu=INR`; const tn = bookingId ? `Payment for ${bookingId}` : 'Withdrawal payment'; const tr = bookingId || `txn${Date.now()}`; const fullUri = `upi://pay?pa=${paEncoded}&pn=${pnEncoded}&am=${encodeURIComponent(amountStr)}&tn=${encodeURIComponent(tn)}&tr=${encodeURIComponent(tr)}&cu=INR`;
+      document.getElementById('qrCode').innerHTML = '';
+      new QRCode(document.getElementById('qrCode'), { text: minimalUri, width: 320, height: 320, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+      document.getElementById('qrInfo').innerHTML = `UPI: ${escapeHtml(upiIdRaw)} — ${escapeHtml(payeeName)} — Amount: ₹${amountStr}`;
+      document.getElementById('upiUriBox').innerHTML = `<strong>Minimal URI (used for QR):</strong><div style="margin-top:6px">${escapeHtml(minimalUri)}</div><hr style="border-color:rgba(255,255,255,0.06)"><strong>Full URI (fallback):</strong><div style="margin-top:6px">${escapeHtml(fullUri)}</div>`;
+      document.getElementById('copyUpiUriBtn').onclick = async ()=>{ try{ await navigator.clipboard.writeText(minimalUri); showToast('Minimal UPI URI copied','success'); }catch(e){ showToast('Copy failed','danger'); } };
+      document.getElementById('copyFullUpiUriBtn').onclick = async ()=>{ try{ await navigator.clipboard.writeText(fullUri); showToast('Full UPI URI copied','success'); }catch(e){ showToast('Copy failed','danger'); } };
+      new bootstrap.Modal(document.getElementById('qrModal')).show();
+    } catch(err){ showToast('Failed to generate QR: ' + (err.message || err),'danger'); }
     }
 
-    function escapeHtml(txt){
-      return String(txt).replace(/[&<>"'`=\/]/g, function (s) {
-        return ({
-          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#x60;', '=': '&#x3D;', '/': '&#x2F;'
-        })[s];
-      });
-    }
+    async function markPaidEntry(driverId, bookingId){ if(!confirm(`Mark ${bookingId} as paid?`)) return; try{ await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { paidout:true, status: 'paid' }); await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markPaidEntry', driverId, bookingId, ts: Date.now() }); showToast('Marked paid','success'); loadWallets(); } catch(err){ showToast('Failed to mark paid: ' + (err.message || err),'danger'); } }
+
+    async function markAllPaidForDriver(driverId){ if(!confirm(`Mark ALL 'processing' entries for ${driverId} as paid?`)) return; try{ const snap = await get(ref(db, `driverWallet/${driverId}`)); if(!snap.exists()){ showToast('No wallet entries for this driver','warning'); return; } const entriesObj = snap.val(); const updates = {}; const bookingIds = []; for(const [bookingId, entry] of Object.entries(entriesObj)){ const effective = getEffectiveStatusFromWalletEntry(entry); if(effective === 'processing'){ updates[`driverWallet/${driverId}/${bookingId}/paidout`] = true; updates[`driverWallet/${driverId}/${bookingId}/status`] = 'paid'; bookingIds.push(bookingId); } } if(Object.keys(updates).length === 0){ showToast('No processing entries to mark paid','info'); return; } await update(ref(db), updates); await set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'markAllPaidForDriver', driverId, bookingIds, ts: Date.now() }); showToast(`Marked ${bookingIds.length} booking(s) as paid for ${driverId}`,'success'); loadWallets(); } catch(err){ showToast('Failed to mark all paid: ' + (err.message || err),'danger'); } }
+
+    async function loadWithdrawals(){ document.getElementById('withdrawals-container').style.display='none'; document.getElementById('withdrawals-loading').style.display='block'; const container = document.getElementById('withdrawals-container'); container.innerHTML=''; try{ const snap = await get(ref(db,'pendingWithdrawals')); if(!snap.exists()){ container.textContent = 'No pending withdrawals found.'; document.getElementById('withdrawals-loading').style.display='none'; container.style.display='block'; return; } const byDriver = snap.val(); for(const [driverId, bookingsObj] of Object.entries(byDriver)){ let total = 0; for(const b of Object.values(bookingsObj)) total += Number(b.amount) || 0; let driverName=null, upi=null; try{ const dSnap = await get(ref(db, `driverdetails/${driverId}`)); if(dSnap.exists()){ const d = dSnap.val(); driverName=d.name||null; upi=(typeof d.upiId==='string')?d.upiId.trim():(d.upiId||null); } }catch(e){} const driverCard = document.createElement('div'); driverCard.className='driver-card mb-3'; driverCard.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div><h5 style="margin:0;color:var(--accent)">Driver: ${escapeHtml(driverId)} ${driverName?`— ${escapeHtml(driverName)}`:''}</h5><small class="small-muted">UPI: <span id="upi-${escapeHtml(driverId)}">${upi?escapeHtml(upi):'—'}</span></small></div>
+            <div style="text-align:right;"><h5 style="margin:0">Total: ₹${total.toFixed(2)}</h5><div style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-sm btn-primary" ${(!upi)?'disabled':''} data-driver="${escapeHtml(driverId)}" data-total="${total}"><i class="bi bi-qr-code"></i> Show QR (Total)</button><button class="btn btn-sm btn-success ms-1" data-action="markAllPaid" data-driver="${escapeHtml(driverId)}"><i class="bi bi-cash-stack"></i> Mark All Paid</button></div></div>
+          </div>
+          <hr style="border-color: rgba(255,255,255,0.06)">
+          <div id="withdrawals-list-${escapeHtml(driverId)}"></div>
+        `;
+        container.appendChild(driverCard);
+        const listEl = driverCard.querySelector(`#withdrawals-list-${escapeHtml(driverId)}`);
+        const tbl = document.createElement('table'); tbl.className='table table-sm table-striped'; tbl.innerHTML = `<thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody>`; listEl.appendChild(tbl); const tbody = tbl.querySelector('tbody'); let i=1; for(const [bookingId,data] of Object.entries(bookingsObj)){ const tr = document.createElement('tr'); const pickup = (data.booking && data.booking.pickup)? data.booking.pickup : (data.pickup || 'N/A'); const dropoff = (data.booking && data.booking.dropoff)? data.booking.dropoff : (data.dropoff || 'N/A'); const amount = Number(data.amount)? Number(data.amount).toFixed(2) : '0.00'; const fare = data.fare ?? 'N/A'; const status = data.status ?? 'pending'; const paidoutFlag = data.paidout === true; const isPaid = paidoutFlag || (String(status).toLowerCase() === 'paid' || String(status).toLowerCase() === 'approved'); const actionsWrapper = document.createElement('div'); actionsWrapper.style.display='flex'; actionsWrapper.style.gap='6px'; const btnShowBooking = document.createElement('button'); btnShowBooking.className='btn btn-sm btn-info'; btnShowBooking.textContent='Show'; btnShowBooking.onclick = ()=> showBookingModal(driverId, bookingId); const btnQrSingle = document.createElement('button'); btnQrSingle.className='btn btn-sm btn-primary'; btnQrSingle.textContent='Show QR'; if(!upi) { btnQrSingle.disabled=true; } else if(isPaid){ btnQrSingle.disabled=true; btnQrSingle.title='Already paid/approved'; } else { btnQrSingle.onclick = ()=> showQrModal(driverId, Number(amount)||0, bookingId); } const btnApprove = document.createElement('button'); btnApprove.className='btn btn-sm btn-success'; btnApprove.textContent='Approve'; btnApprove.onclick = ()=> approveWithdrawal(driverId, bookingId); const btnReject = document.createElement('button'); btnReject.className='btn btn-sm btn-danger'; btnReject.textContent='Reject'; btnReject.onclick = ()=> rejectWithdrawal(driverId, bookingId); actionsWrapper.appendChild(btnShowBooking); actionsWrapper.appendChild(btnQrSingle); actionsWrapper.appendChild(btnApprove); actionsWrapper.appendChild(btnReject); tr.innerHTML = `<td>${i++}</td><td style="min-width:180px"><div><strong>${escapeHtml(bookingId)}</strong></div><small>${escapeHtml(pickup)} → ${escapeHtml(dropoff)}</small></td><td>₹${amount}</td><td>₹${escapeHtml(fare)}</td><td>${isPaid?'<span class="badge-paid">Paid</span>':'<span class="badge-unpaid">Unpaid</span>'}</td><td></td>`; tr.querySelector('td:last-child').appendChild(actionsWrapper); tbody.appendChild(tr); }
+      }
+      // export handler
+      document.getElementById('exportWithdrawalsBtn').onclick = () => exportWithdrawalsGrouped(byDriver);
+      // delegate clicks for qr total and markAllPaid
+      container.querySelectorAll('[data-action="markAllPaid"]').forEach(btn=> btn.addEventListener('click', e=>{ const did = e.currentTarget.getAttribute('data-driver'); markAllPaidForDriver(did); }));
+      container.querySelectorAll('button[data-driver]').forEach(btn=> btn.addEventListener('click', e=>{ const did = e.currentTarget.getAttribute('data-driver'); const total = Number(e.currentTarget.getAttribute('data-total'))||0; showQrModal(did, total, ''); }));
+    } catch(e){ showToast('Error loading withdrawals: '+ e.message,'danger'); console.error(e); } finally { document.getElementById('withdrawals-loading').style.display='none'; document.getElementById('withdrawals-container').style.display='block'; } }
+
+    function exportWithdrawalsGrouped(dataByDriver){ try{ let rows = [['Driver ID','Driver Name','UPI','Booking ID','Amount','Fare','Status']]; for(const [driverId, bookingsObj] of Object.entries(dataByDriver)){ for(const [bookingId,data] of Object.entries(bookingsObj)){ const driverName = (data.driverName || ''); const upi = (data.upi || ''); rows.push([driverId, driverName, upi, bookingId, (Number(data.amount)||0).toFixed(2), (data.fare||''), (data.status||'')]); } } const csv = rows.map(r=> r.map(cell=> `\"${String(cell||'').replace(/\"/g,'\"\"')}"`).join(',')).join('\r\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `pending_withdrawals_grouped_${Date.now()}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); set(ref(db, `adminActions/${Date.now()}`), { adminUid: auth.currentUser?.uid||null, action: 'exportWithdrawalsGrouped', ts: Date.now() }); showToast('CSV exported','success'); } catch(err){ showToast('Export failed: ' + (err.message || err),'danger'); } }
+
+    // loadBookings (optimized for larger datasets)
+    async function loadBookings(){ document.getElementById('bookings-table').style.display='none'; document.getElementById('bookings-loading').style.display='block'; initTable('bookings-table',[9]); try{ const snap = await get(ref(db,'bookings')); if(!snap.exists()){ document.getElementById('bookings-loading').style.display='none'; document.getElementById('bookings-table').style.display='table'; return; } const data = snap.val(); const rows = []; let idx=1;
+      function processBookingRow(bid,b){ const customer = pickField(b, ['customerName','userName','customer','name','user','customer.name','user.name']) || ''; let vehicle = pickField(b, ['vehicle','car','vehicleInfo','carBrand','vehicle.brand','vehicle.model']) || ''; if(typeof vehicle === 'object') vehicle = (vehicle.brand ? vehicle.brand + (vehicle.reg ? ' ('+vehicle.reg+')' : '') : (vehicle.reg || JSON.stringify(vehicle))); const pickup = pickField(b, ['pickup','from','start','route.pickup','booking.pickup','pickupLocation']) || ''; const dropoff = pickField(b, ['dropoff','to','end','route.dropoff','booking.dropoff','dropoffLocation']) || ''; const duration = pickField(b, ['duration','tripDuration','timeTaken']) || ''; const fare = pickField(b, ['fare','amount','price','booking.fare']) || ''; const status = pickField(b, ['status','paymentStatus','state','bookingStatus']) || ''; rows.push([ idx++, bid, escapeHtml(safeDisplay(customer)), escapeHtml(safeDisplay(vehicle)), escapeHtml(safeDisplay(pickup)), escapeHtml(safeDisplay(dropoff)), escapeHtml(safeDisplay(duration)), escapeHtml(safeDisplay(fare)), escapeHtml(safeDisplay(status)), `<button class="btn btn-sm btn-danger" data-del-booking="${escapeHtml(bid)}">Delete</button>` ]); }
+      const values = Object.values(data); const looksFlat = values.some(v => v && (v.pickup || v.fare || v.customerName || v.userName || v.vehicle || v.booking)); if(looksFlat){ for(const [bid,b] of Object.entries(data)) processBookingRow(bid,b); } else { for(const [groupKey, groupVal] of Object.entries(data)){ if(groupVal && typeof groupVal === 'object'){ for(const [bid,b] of Object.entries(groupVal)) processBookingRow(bid,b); } else { processBookingRow(groupKey, groupVal); } } }
+      // add rows in batch
+      tables['bookings-table'].rows.add(rows).draw(false);
+      // delegate delete booking from table
+      $('#bookings-table tbody').off('click').on('click','button[data-del-booking]', function(){ const bid = $(this).data('del-booking'); if(confirm('Delete booking?')){ remove(ref(db,`bookings/${bid}`)).then(()=>{ showToast('Booking deleted','success'); loadBookings(); }).catch(e=> showToast('Error: '+e.message,'danger')); } });
+    } catch(err){ showToast('Failed to load bookings: ' + (err.message || err),'danger'); console.error(err); } finally{ document.getElementById('bookings-loading').style.display='none'; document.getElementById('bookings-table').style.display='table'; } }
+
+    // helper: safe stringify
+    function safeDisplay(val){ if(val === null || val === undefined) return ''; if(typeof val === 'object'){ try{ const s = JSON.stringify(val); return s.length > 120 ? s.slice(0,120) + '...' : s; }catch(e){ return String(val); } } return String(val); }
+    function pickField(obj, candidates){ for(const key of candidates){ if(key.includes('.')){ const parts = key.split('.'); let cur = obj; let ok=true; for(const p of parts){ if(cur && (p in cur)) cur = cur[p]; else { ok=false; break; } } if(ok && cur !== undefined && cur !== null) return cur; } else { if(obj && (key in obj) && obj[key] !== undefined && obj[key] !== null && obj[key] !== '') return obj[key]; } } return null; }
+
+    // loadUsers & loadDrivers & pending/approved/slots (optimized: batch rows)
+    async function loadUsers(){ document.getElementById('users-table').style.display='none'; document.getElementById('users-loading').style.display='block'; initTable('users-table',[7]); try{ const snap = await get(ref(db,'users')); const rows = []; let i=1; if(snap.exists()){ for(const [uid,u] of Object.entries(snap.val())){ rows.push([ i++, uid, escapeHtml(u.name||''), escapeHtml(u.email||''), escapeHtml(u.phone||''), escapeHtml(u.address||''), escapeHtml(u.createdOn||''), `<button class="btn btn-sm btn-danger" data-del-user="${escapeHtml(uid)}">Delete</button>` ]); } } if(rows.length) tables['users-table'].rows.add(rows).draw(false); // delegate delete
+      $('#users-table tbody').off('click').on('click','button[data-del-user]', function(){ const uid = $(this).data('del-user'); if(confirm('Delete user?')){ remove(ref(db,`users/${uid}`)).then(()=>{ showToast('User deleted','success'); loadUsers(); }).catch(e=> showToast('Error: '+e.message,'danger')); } });
+    } catch(e){ showToast('Error loading users: '+ e.message,'danger'); } finally{ document.getElementById('users-loading').style.display='none'; document.getElementById('users-table').style.display='table'; } }
+
+    async function loadDrivers(){ document.getElementById('drivers-table').style.display='none'; document.getElementById('drivers-loading').style.display='block'; initTable('drivers-table',[5]); try{ const snap = await get(ref(db,'driverdetails')); const rows=[]; let i=1; if(snap.exists()){ for(const [did,d] of Object.entries(snap.val())){ const vc = d.vehicles? Object.keys(d.vehicles).length : 0; rows.push([ i++, did, escapeHtml(d.name||''), escapeHtml(d.phone||''), vc, `<button class="btn btn-sm btn-danger" data-del-driver="${escapeHtml(did)}">Delete</button>` ]); } } if(rows.length) tables['drivers-table'].rows.add(rows).draw(false); $('#drivers-table tbody').off('click').on('click','button[data-del-driver]', function(){ const did = $(this).data('del-driver'); if(confirm('Delete driver?')){ remove(ref(db,`driverdetails/${did}`)).then(()=>{ showToast('Driver deleted','success'); loadDrivers(); }).catch(e=> showToast('Error: '+e.message,'danger')); } }); } catch(e){ showToast('Error loading drivers: '+ e.message,'danger'); } finally{ document.getElementById('drivers-loading').style.display='none'; document.getElementById('drivers-table').style.display='table'; } }
+
+    async function loadPending(){ document.getElementById('pending-table').style.display='none'; document.getElementById('pending-loading').style.display='block'; initTable('pending-table',[9,10,12]); try{ const snap = await get(ref(db,'pendingcars')); const rows = []; let i=1; if(snap.exists()){ for(const [did,cars] of Object.entries(snap.val())){ for(const [cid,c] of Object.entries(cars)){ const carImages = c.carImages || []; const imageGalleryHtml = createImageGallery(carImages,'car'); const licenseHtml = c.driverLicense? createImageGallery([c.driverLicense],'license') : '<span class="small-muted">No license</span>'; rows.push([ i++, did, cid, escapeHtml(c.carBrand||''), escapeHtml(c.carReg||''), escapeHtml(c.driverName||''), escapeHtml(c.driverNumber||''), escapeHtml(c.ownerName||''), escapeHtml(c.seats||''), imageGalleryHtml, licenseHtml, escapeHtml(c.submittedAt||''), `<button class="btn btn-sm btn-success" data-approve="${escapeHtml(did)}|${escapeHtml(cid)}">Approve</button> <button class="btn btn-sm btn-danger" data-del-pending="${escapeHtml(did)}|${escapeHtml(cid)}">Delete</button>` ]); } } } if(rows.length) tables['pending-table'].rows.add(rows).draw(false);
+      // delegate approve/delete
+      $('#pending-table tbody').off('click').on('click','button[data-approve]', function(){ const v = $(this).data('approve'); const [did,cid] = String(v).split('|'); if(confirm('Approve car?')){ (async ()=>{ try{ const s = await get(ref(db,`pendingcars/${did}/${cid}`)); if(!s.exists()){ showToast('Not found','warning'); return; } const car = s.val(); await set(ref(db,`approvedcars/${did}/${cid}`), car); await remove(ref(db,`pendingcars/${did}/${cid}`)); showToast('Car approved','success'); loadPending(); }catch(e){ showToast('Error: '+e.message,'danger'); } })(); } });
+      $('#pending-table tbody').off('click').on('click','button[data-del-pending]', function(){ const v = $(this).data('del-pending'); const [did,cid] = String(v).split('|'); if(confirm('Delete pending car?')){ remove(ref(db,`pendingcars/${did}/${cid}`)).then(()=>{ showToast('Deleted','success'); loadPending(); }).catch(e=> showToast('Error: '+e.message,'danger')); } });
+    } catch(e){ showToast('Error loading pending cars: '+ e.message,'danger'); console.error(e); } finally{ document.getElementById('pending-loading').style.display='none'; document.getElementById('pending-table').style.display='table'; } }
+
+    async function loadApproved(){ document.getElementById('approved-table').style.display='none'; document.getElementById('approved-loading').style.display='block'; initTable('approved-table',[8]); try{ const snap = await get(ref(db,'approvedcars')); const rows = []; let i=1; if(snap.exists()){ for(const [did,cars] of Object.entries(snap.val())){ for(const [cid,c] of Object.entries(cars)){ rows.push([ i++, escapeHtml(c.driverName||''), escapeHtml(c.driverNumber||''), cid, escapeHtml(c.carBrand||''), escapeHtml(c.carReg||''), escapeHtml(c.ownerName||''), escapeHtml(c.seats||''), `<button class="btn btn-sm btn-danger" data-del-approved="${escapeHtml(did)}|${escapeHtml(cid)}">Delete</button>` ]); } } } if(rows.length) tables['approved-table'].rows.add(rows).draw(false); $('#approved-table tbody').off('click').on('click','button[data-del-approved]', function(){ const v = $(this).data('del-approved'); const [did,cid] = String(v).split('|'); if(confirm('Delete approved car?')){ remove(ref(db,`approvedcars/${did}/${cid}`)).then(()=>{ showToast('Deleted','success'); loadApproved(); }).catch(e=> showToast('Error: '+e.message,'danger')); } }); } catch(e){ showToast('Error loading approved cars: '+ e.message,'danger'); } finally{ document.getElementById('approved-loading').style.display='none'; document.getElementById('approved-table').style.display='table'; } }
+
+    async function loadSlots(){ document.getElementById('slots-table').style.display='none'; document.getElementById('slots-loading').style.display='block'; initTable('slots-table',[9]); try{ const snap = await get(ref(db,'availableslots')); const rows=[]; let i=1; if(snap.exists()){ for(const [did,slots] of Object.entries(snap.val())){ const dSnap = await get(ref(db,`driverdetails/${did}`)); const d = dSnap.exists()? dSnap.val(): {}; for(const [sid,s] of Object.entries(slots)){ rows.push([ i++, escapeHtml(d.name||''), escapeHtml(d.phone||''), sid, escapeHtml(s.pickup||''), escapeHtml(s.dropoff||''), escapeHtml(s.date||''), escapeHtml(s.time||''), escapeHtml(s.seats||''), `<button class="btn btn-sm btn-danger" data-del-slot="${escapeHtml(did)}|${escapeHtml(sid)}">Delete</button>` ]); } } } if(rows.length) tables['slots-table'].rows.add(rows).draw(false); $('#slots-table tbody').off('click').on('click','button[data-del-slot]', function(){ const v = $(this).data('del-slot'); const [did,sid] = String(v).split('|'); if(confirm('Delete slot?')){ remove(ref(db,`availableslots/${did}/${sid}`)).then(()=>{ showToast('Deleted','success'); loadSlots(); }).catch(e=> showToast('Error: '+e.message,'danger')); } }); } catch(e){ showToast('Error loading slots: '+ e.message,'danger'); } finally{ document.getElementById('slots-loading').style.display='none'; document.getElementById('slots-table').style.display='table'; } }
+
+    async function loadProfile(){ document.getElementById('profile-table').style.display='none'; document.getElementById('profile-loading').style.display='block'; initTable('profile-table'); try{ const user = auth.currentUser; const profileData = { Name: user?.displayName || 'Admin', Email: user?.email || '', UID: user?.uid || '' }; const rows = []; for(const [k,v] of Object.entries(profileData)) rows.push([escapeHtml(k), escapeHtml(v)]); if(rows.length) tables['profile-table'].rows.add(rows).draw(false); } catch(e){ showToast('Error loading profile: '+e.message,'danger'); } finally{ document.getElementById('profile-loading').style.display='none'; document.getElementById('profile-table').style.display='table'; } }
+
+    // improved openTab
+    window.openTab = function(tab){ document.querySelectorAll('.tab-pane').forEach(p=> p.hidden=true); const el = document.getElementById(`${tab}-tab`); if(!el){ const first = document.querySelector('.tab-pane'); if(first){ first.hidden=false; loadUsers(); } return; } el.hidden=false; // mark active link
+      document.querySelectorAll('.sidebar .nav-link').forEach(a=> a.classList.remove('active'));
+      const link = Array.from(document.querySelectorAll('.sidebar .nav-link')).find(a=> a.getAttribute('onclick') && a.getAttribute('onclick').includes(`openTab('${tab}')`)); if(link) link.classList.add('active'); switch(tab){ case 'users': loadUsers(); break; case 'drivers': loadDrivers(); break; case 'pending-cars': loadPending(); break; case 'approved-cars': loadApproved(); break; case 'slots': loadSlots(); break; case 'bookings': loadBookings(); break; case 'driver-wallets': loadWallets(); break; case 'pending-withdrawals': loadWithdrawals(); break; case 'profile': loadProfile(); break; default: console.warn('Unknown tab',tab); break; } };
+
+    // keyboard shortcut for quick search
+    document.addEventListener('keydown', (e)=>{ if(e.key === '/') { const el = document.getElementById('globalSearch'); if(el){ e.preventDefault(); el.focus(); el.select(); } } });
+
+    // global search maps to DataTables search
+    document.getElementById('globalSearch').addEventListener('input', debounce(function(e){ const v = e.target.value; Object.values(tables).forEach(dt=> dt.search(v).draw()); }, 250));
+    document.getElementById('refreshAllBtn').addEventListener('click', ()=>{ const active = document.querySelector('.tab-pane:not([hidden])'); if(!active) return; const id = active.id.replace('-tab',''); openTab(id); showToast('Refreshed','info'); });
+
+    function debounce(fn, wait){ let t; return function(...args){ clearTimeout(t); t = setTimeout(()=> fn.apply(this, args), wait); }; }
+
+    // onAuth -> default tab
+    onAuthStateChanged(auth, user=>{ if(!user) { location.href='adminlogin.html'; return; } const showDefault = () => openTab('users'); if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showDefault, {once:true}); else showDefault(); // wallet filter listeners
+      const filterEl = document.getElementById('walletStatusFilter'); if(filterEl){ document.getElementById('walletFilterApplyBtn').addEventListener('click', ()=> loadWallets()); filterEl.addEventListener('change', ()=> loadWallets()); } });
+
   </script>
 </body>
 </html>
