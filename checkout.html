@@ -278,23 +278,16 @@
     });
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
 
-    // Streamlined atomic booking process - fast execution
+    // Ultra-fast payment processing - immediate redirect
     async function processSuccessfulPayment(paymentId, bookingData, userData) {
       try {
-        if (!bookingData || !bookingData.driverId || !bookingData.slotKey) {
-          alert('Booking info incomplete. Contact support with Payment ID: ' + paymentId);
-          return;
-        }
-
         const driverId = bookingData.driverId;
         const slotKey = bookingData.slotKey;
+        const bookingKey = db.ref(`bookings/${driverId}`).push().key;
 
-        // Create booking reference
-        const newBookingRef = db.ref(`bookings/${driverId}`).push();
-        const bookingKey = newBookingRef.key;
-
-        // Final booking data
-        const finalBookingData = {
+        // Build atomic update
+        const updates = {};
+        updates[`bookings/${driverId}/${bookingKey}`] = {
           ...bookingData,
           userId: userData.uid,
           userName: userData.name,
@@ -303,36 +296,21 @@
           bookedAt: new Date().toISOString(),
           status: 'confirmed'
         };
-
-        // Driver wallet entry
-        const walletEntry = {
+        updates[`driverWallet/${driverId}/${bookingKey}`] = {
           amount: (bookingData.fare || 0) * 0.6,
           status: 'unpaid',
           bookingId: bookingKey,
-          booking: finalBookingData,
           date: new Date().toISOString()
         };
+        updates[`availableslots/${driverId}/${slotKey}`] = null;
 
-        // Atomic update: save booking + wallet, delete slot
-        const updates = {};
-        updates[`bookings/${driverId}/${bookingKey}`] = finalBookingData;
-        updates[`driverWallet/${driverId}/${bookingKey}`] = walletEntry;
-        updates[`availableslots/${driverId}/${slotKey}`] = null; // Delete slot
-
-        // Execute instantly
-        await db.ref().update(updates);
-        
-        // Immediate success feedback and redirect
-        showCenterToast('Payment successful & booking confirmed!', 1500);
+        // Execute and redirect immediately
+        db.ref().update(updates);
         localStorage.removeItem('selectedBooking');
-        
-        setTimeout(() => {
-          window.location.href = 'mybookings.html';
-        }, 1000);
+        window.location.href = 'mybookings.html';
 
       } catch (err) {
-        console.error('Booking error:', err);
-        alert('Error saving booking. Contact support with Payment ID: ' + paymentId);
+        alert('Booking error. Contact support with Payment ID: ' + paymentId);
       }
     }
 
@@ -518,7 +496,7 @@
 
       // Direct payment without extra checks
       const rzpOptions = {
-        key: 'rzp_live_RJxLTulsCPKQqD',
+        key: 'rzp_test_RIMi0wlC12kjhY',
         amount: (booking.fare || 0) * 100,
         currency: 'INR',
         name: 'WaveTravel',
