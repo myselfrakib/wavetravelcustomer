@@ -223,7 +223,7 @@
 
     /**
      * Load locations and set defaults:
-     * - Pickup default to "Berhampore" if present.
+     * - Pickup default to "Berhampore" (with flexible matching for spaces/case)
      * - Dropoff default to "Kolkata Airport" (case-insensitive) if present.
      * Works whether /locations is an array or object.
      */
@@ -231,8 +231,9 @@
       onValue(ref(db, "locations"), snap => {
         const val = snap.val();
         let opts = "";
-        let pickupDefaultFound = false;
-        let dropoffDefaultFound = false;
+        let pickupDefaultOption = null;
+        let dropoffDefaultOption = null;
+        
         // If nothing, clear selects
         if (!val) {
           pickup.innerHTML = `<option disabled>No locations</option>`;
@@ -240,15 +241,15 @@
           return;
         }
 
+        // Collect all location names and build options
+        const locationNames = [];
+        
         // If array-like
         if (Array.isArray(val)) {
           for (const l of val) {
             if (!l) continue;
             const name = l.name || String(l);
-            const nameLower = String(name).trim().toLowerCase();
-            opts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-            if (nameLower === "Berhampore") pickupDefaultFound = true;
-            if (nameLower === "kolkata airport") dropoffDefaultFound = true;
+            locationNames.push(name);
           }
         } else {
           // object: iterate keys so structure like /locations/8 works
@@ -256,31 +257,55 @@
             const l = val[k];
             if (!l) continue;
             const name = (typeof l === 'object' && l.name) ? l.name : String(l);
-            const nameLower = String(name).trim().toLowerCase();
-            opts += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-            if (nameLower === "Berhampore") pickupDefaultFound = true;
-            if (nameLower === "kolkata airport") dropoffDefaultFound = true;
+            locationNames.push(name);
           }
         }
 
-        // assign built options to both pickup and dropoff
+        // Build options and find defaults
+        for (const name of locationNames) {
+          const cleanName = String(name).trim();
+          const nameLower = cleanName.toLowerCase();
+          
+          opts += `<option value="${escapeHtml(cleanName)}">${escapeHtml(cleanName)}</option>`;
+          
+          // Check for Berhampore (flexible matching - handles "Berhampore ", "berhampore", etc.)
+          if (nameLower === "berhampore" && !pickupDefaultOption) {
+            pickupDefaultOption = cleanName;
+          }
+          
+          // Check for Kolkata Airport
+          if (nameLower === "kolkata airport" && !dropoffDefaultOption) {
+            dropoffDefaultOption = cleanName;
+          }
+        }
+
+        // Assign built options to both pickup and dropoff
         pickup.innerHTML = opts;
         dropoff.innerHTML = opts;
 
-        // If defaults exist, set them (use try/catch to avoid select value errors)
-        if (pickupDefaultFound) {
-          try { pickup.value = "Berhampore"; }
-          catch (e) { /* ignore */ }
+        // Set defaults if found
+        if (pickupDefaultOption) {
+          try { 
+            pickup.value = pickupDefaultOption;
+            console.log(`Set pickup default to: "${pickupDefaultOption}"`);
+          } catch (e) { 
+            console.warn('Failed to set pickup default:', e);
+          }
         }
-        if (dropoffDefaultFound) {
+        
+        if (dropoffDefaultOption) {
           try {
-            // find exact option that matches case-insensitively and set it
-            const optsArr = Array.from(dropoff.options);
-            const match = optsArr.find(o => o.value.trim().toLowerCase() === "kolkata airport");
-            if (match) dropoff.value = match.value;
-            else dropoff.value = "Kolkata Airport";
-          } catch (e) { /* ignore */ }
+            dropoff.value = dropoffDefaultOption;
+            console.log(`Set dropoff default to: "${dropoffDefaultOption}"`);
+          } catch (e) {
+            console.warn('Failed to set dropoff default:', e);
+          }
         }
+        
+        // Debug: log all available locations
+        console.log('Available locations:', locationNames);
+        console.log('Pickup default found:', pickupDefaultOption);
+        console.log('Dropoff default found:', dropoffDefaultOption);
       }, err => {
         console.error("Failed to read locations:", err);
         pickup.innerHTML = `<option disabled>Error loading locations</option>`;
