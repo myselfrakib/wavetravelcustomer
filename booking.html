@@ -201,6 +201,19 @@
     .no-slots { text-align: center; padding: 1rem; background: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(2,6,23,0.06); font-weight:700; color:var(--dark); }
     .fallback-msg { background: #fff; padding: 12px; border-radius: 10px; box-shadow: 0 4px 12px rgba(2,6,23,0.06); font-weight:700; color:var(--dark); }
 
+    .loading-msg { 
+      text-align: center; padding: 1rem; background: #fff; border-radius: 10px; 
+      box-shadow: 0 4px 12px rgba(2,6,23,0.06); font-weight:700; color:var(--primary);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .loading-msg i { animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .debug-info {
+      background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px;
+      padding: 12px; margin: 10px 0; font-size: 0.85rem; color: #495057;
+    }
+
     .navbar {
       position: fixed; bottom: 0; left: 0; width: 100%;
       background: #fff; border-top: 1px solid rgba(0,0,0,0.06);
@@ -297,7 +310,15 @@
     const auth = firebase.auth();
 
     let currentTab = 'oneway';
-    const locationFareMap = {}; // Will store {name: {onewayfare: x, twowayfare: y}}
+    let locationFareMap = {}; // Will store {name: {onewayfare: x, twowayfare: y}}
+    let debugMode = false; // Set to true to enable debug logging
+
+    // Debug helper
+    function debugLog(...args) {
+      if (debugMode) {
+        console.log('[DEBUG]', ...args);
+      }
+    }
 
     // Debounce helper
     function debounce(fn, wait = 350) {
@@ -326,19 +347,24 @@
       const dropoffData = locationFareMap[dropoff];
       
       if (!pickupData || !dropoffData) {
-        console.warn('Missing fare data for:', pickup, dropoff);
-        return 0;
+        debugLog('Missing fare data for:', pickup, dropoff);
+        // Return a default fare if fare data is missing
+        return tripType === 'roundtrip' ? 1000 : 500;
       }
 
+      let fare = 0;
       if (tripType === 'oneway') {
         const pickupFare = Number(pickupData.onewayfare || 0);
         const dropoffFare = Number(dropoffData.onewayfare || 0);
-        return Math.abs(pickupFare - dropoffFare);
-      } else {
+        fare = Math.abs(pickupFare - dropoffFare);
+      } else if (tripType === 'roundtrip') {
         const pickupFare = Number(pickupData.twowayfare || 0);
         const dropoffFare = Number(dropoffData.twowayfare || 0);
-        return Math.abs(pickupFare - dropoffFare);
+        fare = Math.abs(pickupFare - dropoffFare);
       }
+      
+      // If calculated fare is 0, use a default
+      return fare > 0 ? fare : (tripType === 'roundtrip' ? 1000 : 500);
     }
 
     // Debounced auto-search wrapper
@@ -361,7 +387,10 @@
     });
 
     function loadLocations() {
+      debugLog('Loading locations...');
       return db.ref('locations').once('value').then(snap => {
+        debugLog('Locations snapshot received:', snap.val());
+        
         let puOpts = '<option value="">Select Pickup</option>';
         let doOpts = '<option value="">Select Dropoff</option>';
         
@@ -381,6 +410,8 @@
             doOpts += option;
           }
         });
+        
+        debugLog('Location fare map:', locationFareMap);
         
         // Update all dropdowns
         ['oneway', 'roundtrip'].forEach(tabType => {
@@ -411,14 +442,18 @@
         // Setup event listeners
         setupEventListeners();
 
-        // Auto-search for oneway tab
-        if (document.getElementById('pickup-oneway').value && 
-            document.getElementById('dropoff-oneway').value && 
-            document.getElementById('date-oneway').value) {
-          setTimeout(() => searchSlots('oneway'), 150);
-        }
+        // Auto-search for oneway tab with a slight delay
+        setTimeout(() => {
+          if (document.getElementById('pickup-oneway').value && 
+              document.getElementById('dropoff-oneway').value && 
+              document.getElementById('date-oneway').value) {
+            searchSlots('oneway');
+          }
+        }, 500);
+        
       }).catch(err => {
-        console.error('Failed to load locations', err);
+        console.error('Failed to load locations:', err);
+        alert('Failed to load locations. Please refresh the page.');
       });
     }
 
@@ -460,13 +495,17 @@
 
     function searchSlots(tripType) {
       const slotsDiv = document.getElementById(`slots-${tripType}`);
-      slotsDiv.innerHTML = '';
-      
       const pickup = document.getElementById(`pickup-${tripType}`).value;
       const dropoff = document.getElementById(`dropoff-${tripType}`).value;
       const date = document.getElementById(`date-${tripType}`).value;
       
+      debugLog('Search initiated:', { pickup, dropoff, date, tripType });
+      
+      // Show loading
+      slotsDiv.innerHTML = '<div class="loading-msg"><i class="fas fa-spinner"></i>Searching for rides...</div>';
+      
       if (!pickup || !dropoff || !date) {
+        slotsDiv.innerHTML = '<div class="no-slots">Please select pickup, dropoff and date to search for rides.</div>';
         return;
       }
 
@@ -483,54 +522,111 @@
           tripType: tripType,
           timestamp: firebase.database.ServerValue.TIMESTAMP
         };
-        searchRef.set(searchData).catch(err => console.warn('Failed to save search', err));
+        searchRef.set(searchData).catch(err => debugLog('Failed to save search', err));
       } catch (err) {
-        console.warn('Error creating search record', err);
+        debugLog('Error creating search record', err);
       }
 
-      db.ref('availableslots').once('value').then(snap => {
-        const all = [];
-        snap.forEach(driverSnap => {
-          driverSnap.forEach(slotSnap => {
-            all.push({
-              driverId: driverSnap.key,
-              slotKey: slotSnap.key,
-              ...slotSnap.val()
+      // Fetch available slots with improved error handling
+      db.ref('availableslots').once('value')
+        .then(snap => {
+          debugLog('Raw availableslots data:', snap.val());
+          
+          if (!snap.exists()) {
+            debugLog('No availableslots found in database');
+            slotsDiv.innerHTML = '<div class="no-slots">No rides available at the moment.</div>';
+            return;
+          }
+
+          const allSlots = [];
+          
+          // Process each driver's slots
+          snap.forEach(driverSnap => {
+            const driverId = driverSnap.key;
+            debugLog('Processing driver:', driverId);
+            
+            driverSnap.forEach(slotSnap => {
+              const slotKey = slotSnap.key;
+              const slotData = slotSnap.val();
+              
+              if (slotData && typeof slotData === 'object') {
+                allSlots.push({
+                  driverId: driverId,
+                  slotKey: slotKey,
+                  ...slotData
+                });
+              }
             });
           });
-        });
 
-        // Filter by exact match and trip type
-        const matched = all.filter(s => 
-          s.pickup === pickup && 
-          s.dropoff === dropoff && 
-          s.date === date && 
-          s.triptype === tripType
-        );
+          debugLog('All slots processed:', allSlots);
+          debugLog('Total slots found:', allSlots.length);
 
-        // Update search record
-        try {
-          if (searchRef) {
-            searchRef.update({ 
-              resultCount: matched.length, 
-              fallbackUsed: false 
-            }).catch(err => console.warn('Failed to update search record', err));
+          // Filter slots with more flexible matching
+          const matchedSlots = allSlots.filter(slot => {
+            const pickupMatch = slot.pickup && slot.pickup.toLowerCase().trim() === pickup.toLowerCase().trim();
+            const dropoffMatch = slot.dropoff && slot.dropoff.toLowerCase().trim() === dropoff.toLowerCase().trim();
+            const dateMatch = slot.date === date;
+            const tripTypeMatch = slot.triptype && slot.triptype.toLowerCase() === tripType.toLowerCase();
+
+            debugLog('Slot filter check:', {
+              slot: slot,
+              pickupMatch,
+              dropoffMatch, 
+              dateMatch,
+              tripTypeMatch,
+              searchCriteria: { pickup, dropoff, date, tripType }
+            });
+
+            return pickupMatch && dropoffMatch && dateMatch && tripTypeMatch;
+          });
+
+          debugLog('Matched slots:', matchedSlots);
+          debugLog('Matched slots count:', matchedSlots.length);
+
+          // Update search record
+          try {
+            if (searchRef) {
+              searchRef.update({ 
+                resultCount: matchedSlots.length, 
+                fallbackUsed: false 
+              }).catch(err => debugLog('Failed to update search record', err));
+            }
+          } catch (err) {
+            debugLog('Error updating search record', err);
           }
-        } catch (err) {
-          console.warn('Error updating search record', err);
-        }
 
-        if (!matched.length) {
-          slotsDiv.innerHTML = `<div class="no-slots">No ${tripType} rides found for this route.</div>`;
-        } else {
-          renderSlots(matched, tripType, slotsDiv);
-        }
-      }).catch(err => {
-        console.warn('Failed to fetch availableslots', err);
-        if (searchRef) {
-          searchRef.update({ fetchError: true }).catch(e => console.warn('Failed to update search error flag', e));
-        }
-      });
+          if (matchedSlots.length === 0) {
+            let debugInfo = '';
+            if (debugMode) {
+              debugInfo = `
+                <div class="debug-info">
+                  <strong>Debug Info:</strong><br>
+                  Total slots in DB: ${allSlots.length}<br>
+                  Search: ${pickup} → ${dropoff}, ${date}, ${tripType}<br>
+                  Available routes: ${[...new Set(allSlots.map(s => `${s.pickup} → ${s.dropoff}`))].join(', ')}<br>
+                  Available dates: ${[...new Set(allSlots.map(s => s.date))].join(', ')}<br>
+                  Available trip types: ${[...new Set(allSlots.map(s => s.triptype))].join(', ')}
+                </div>
+              `;
+            }
+            
+            slotsDiv.innerHTML = `
+              <div class="no-slots">No ${tripType} rides found for ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}.</div>
+              ${debugInfo}
+            `;
+          } else {
+            renderSlots(matchedSlots, tripType, slotsDiv);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch availableslots:', err);
+          slotsDiv.innerHTML = '<div class="fallback-msg">Failed to load rides. Please try again.</div>';
+          
+          if (searchRef) {
+            searchRef.update({ fetchError: true }).catch(e => debugLog('Failed to update search error flag', e));
+          }
+        });
     }
 
     function renderSlots(slots, tripType, slotsDiv) {
@@ -538,9 +634,11 @@
       const user = auth.currentUser;
       
       if (!user) {
-        alert('Please login first');
+        slotsDiv.innerHTML = '<div class="fallback-msg">Please login first to book rides.</div>';
         return;
       }
+
+      debugLog('Rendering slots:', slots);
 
       slots.forEach((slot, idx) => {
         const fare = calculateFare(slot.pickup, slot.dropoff, tripType);
@@ -623,9 +721,12 @@
           carBrand: slot.carBrand || '',
           carReg: slot.carReg || '',
           driverName: slot.driverName || '',
-          driverNumber: slot.driverNumber || ''
+          driverNumber: slot.driverNumber || '',
+          seats: slot.seats || ''
         }));
       });
+
+      debugLog('Slots rendered successfully:', slots.length);
     }
 
     function bookTrip(slotIndex, tripType) {
@@ -637,7 +738,26 @@
 
       const slotsDiv = document.getElementById(`slots-${tripType}`);
       const slotCard = slotsDiv.children[slotIndex];
-      const slotData = JSON.parse(slotCard.getAttribute('data-slot'));
+      
+      if (!slotCard) {
+        alert('Error: Selected slot not found');
+        return;
+      }
+
+      const slotDataStr = slotCard.getAttribute('data-slot');
+      if (!slotDataStr) {
+        alert('Error: Slot data not available');
+        return;
+      }
+
+      let slotData;
+      try {
+        slotData = JSON.parse(slotDataStr);
+      } catch (err) {
+        console.error('Error parsing slot data:', err);
+        alert('Error: Invalid slot data');
+        return;
+      }
 
       const bookingData = {
         driverId: slotData.driverId,
@@ -652,11 +772,20 @@
         carBrand: slotData.carBrand,
         carReg: slotData.carReg,
         driverName: slotData.driverName,
-        driverNumber: slotData.driverNumber
+        driverNumber: slotData.driverNumber,
+        seats: slotData.seats
       };
 
-      localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
-      window.location.href = 'checkout.html';
+      debugLog('Booking data prepared:', bookingData);
+
+      // Store in localStorage and redirect to checkout
+      try {
+        localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
+        window.location.href = 'checkout.html';
+      } catch (err) {
+        console.error('Error storing booking data:', err);
+        alert('Error: Failed to prepare booking. Please try again.');
+      }
     }
 
     function escapeHtml(str) {
@@ -668,7 +797,28 @@
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
     }
+
+    // Add keyboard shortcut to toggle debug mode (Ctrl+Shift+D)
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyD') {
+        debugMode = !debugMode;
+        console.log('Debug mode:', debugMode ? 'ON' : 'OFF');
+        if (debugMode) {
+          alert('Debug mode enabled. Check console for detailed logs.');
+        }
+      }
+    });
+
+    // Error handler for unhandled promise rejections
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('Unhandled promise rejection:', event.reason);
+      debugLog('Unhandled rejection details:', event);
+    });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      debugLog('Page loaded, initializing...');
+    });
   </script>
 </body>
 </html>
-
