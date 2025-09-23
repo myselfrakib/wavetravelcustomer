@@ -508,6 +508,9 @@
         <a class="nav-link" href="#" onclick="openTab('bookings')">
           <i class="bi bi-journal-check"></i> Bookings
         </a>
+        <a class="nav-link" href="#" onclick="openTab('ride-requests')">
+          <i class="bi bi-geo-alt"></i> Ride Requests
+        </a>
         <a class="nav-link" href="#" onclick="openTab('driver-wallets')">
           <i class="bi bi-wallet2"></i> Driver Wallets
         </a>
@@ -665,6 +668,34 @@
                 <th>Duration</th>
                 <th>Fare</th>
                 <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- RIDE REQUESTS TAB -->
+      <section id="ride-requests-tab" class="tab-pane panel" hidden>
+        <h2><i class="bi bi-geo-alt me-2 text-info"></i>Ride Requests</h2>
+        <div id="riderequest-loading" class="skeleton" style="height:60px;"></div>
+        <div class="table-responsive mt-3">
+          <table id="riderequest-table" class="display responsive nowrap table table-hover" style="width:100%;display:none">
+            <thead>
+              <tr>
+                <th>SL</th>
+                <th>Request ID</th>
+                <th>Customer</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Trip Type</th>
+                <th>Pickup</th>
+                <th>Dropoff</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Requested At</th>
+                <th>Notes</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -1316,6 +1347,49 @@
       } finally {
         document.getElementById('bookings-loading').style.display = 'none';
         document.getElementById('bookings-table').style.display = 'table';
+      }
+    }
+
+    async function loadRideRequests() {
+      document.getElementById('riderequest-table').style.display = 'none';
+      document.getElementById('riderequest-loading').style.display = 'block';
+      const table = initTable('riderequest-table', [12]);
+      try {
+        const snapshot = await get(ref(db, 'riderequest'));
+        const rows = [];
+        let serialNo = 1;
+        if (snapshot.exists()) {
+          const requests = snapshot.val();
+          for (const [requestId, req] of Object.entries(requests)) {
+            const requestedAt = req.requestedAt ? new Date(Number(req.requestedAt)).toLocaleString() : '';
+            rows.push([
+              serialNo++,
+              requestId,
+              escapeHtml(req.customerName || ''),
+              escapeHtml(req.customerEmail || ''),
+              escapeHtml(req.customerPhone || ''),
+              escapeHtml(req.tripType || ''),
+              escapeHtml(req.pickup || ''),
+              escapeHtml(req.dropoff || ''),
+              escapeHtml(req.date || ''),
+              escapeHtml(req.status || ''),
+              escapeHtml(requestedAt),
+              escapeHtml(req.notes || ''),
+              `<button class="btn btn-sm btn-danger" onclick="deleteRideRequest('${escapeHtml(requestId)}')">
+                <i class="bi bi-trash"></i> Delete
+               </button>`
+            ]);
+          }
+        }
+        if (rows.length > 0) {
+          table.rows.add(rows).draw();
+        }
+      } catch (error) {
+        showToast('Failed to load ride requests: ' + error.message, 'danger');
+        console.error('Load ride requests error:', error);
+      } finally {
+        document.getElementById('riderequest-loading').style.display = 'none';
+        document.getElementById('riderequest-table').style.display = 'table';
       }
     }
 
@@ -2030,6 +2104,7 @@
     window.deleteApprovedCar = (driverId, carId) => safeDelete(`approvedcars/${driverId}/${carId}`, 'Delete this approved car?', 'Approved car deleted', loadApprovedCars);
     window.deleteSlot = (driverId, slotId) => safeDelete(`availableslots/${driverId}/${slotId}`, 'Delete this slot?', 'Slot deleted', loadSlots);
     window.deleteBooking = (bookingId) => safeDelete(`bookings/${bookingId}`, 'Delete this booking?', 'Booking deleted', loadBookings);
+    window.deleteRideRequest = (requestId) => safeDelete(`riderequest/${requestId}`, 'Delete this ride request?', 'Ride request deleted', loadRideRequests);
 
     // Approve car function
     window.approveCar = async (driverId, carId) => {
@@ -2123,6 +2198,9 @@
           break;
         case 'bookings':
           loadBookings();
+          break;
+        case 'ride-requests':
+          loadRideRequests();
           break;
         case 'driver-wallets':
           loadWallets();
