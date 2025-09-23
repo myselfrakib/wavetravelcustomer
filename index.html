@@ -393,6 +393,15 @@
       overlay.style.display = 'none';
     }
 
+    // ----- Redirect to signup helper -----
+    function redirectToSignup(phoneNumber = '') {
+      showLoading('Redirecting to signup...');
+      setTimeout(() => {
+        const signupUrl = phoneNumber ? `signup.html?phone=${encodeURIComponent(phoneNumber)}` : 'signup.html';
+        location.href = signupUrl;
+      }, 1000);
+    }
+
     // ----- Local Storage Helpers -----
     function getUserSession() {
       try {
@@ -589,10 +598,14 @@
                 return;
               }
             } else {
-              showToast('Account not found. Please sign up first.', 'error');
+              showToast('Account not found. Redirecting to signup...', 'info');
               // Sign out the user since they don't have a valid account
               await auth.signOut();
               clearUserSession();
+              // Extract phone number without country code for signup
+              const phoneNumber = user.phoneNumber.replace('+91', '');
+              redirectToSignup(phoneNumber);
+              return;
             }
           } catch (err) {
             console.error('Auth state change error:', err);
@@ -669,9 +682,11 @@
       try {
         const userExists = await checkUserExists(fullPhone);
         if (!userExists) {
-          showToast('No user found. Please sign up first.', 'error');
+          showToast('No account found. Redirecting to signup...', 'info');
           sendBtn.textContent = 'Send OTP';
           sendBtn.disabled = false;
+          // Redirect to signup with phone number pre-filled
+          redirectToSignup(phone);
           return;
         }
 
@@ -752,13 +767,13 @@
           showToast('Login successful!', 'success');
           redirectByRole(roleInfo);
         } else {
-          showToast('Account not found. Please sign up first.', 'error');
+          showToast('Account not found. Redirecting to signup...', 'info');
           await auth.signOut();
           clearUserSession();
           hideLoading();
-          verifyBtn.textContent = 'Verify OTP';
-          verifyBtn.disabled = false;
-          otpInput.focus();
+          // Extract phone number without country code for signup
+          const phoneNumber = userPhone.replace('+91', '');
+          redirectToSignup(phoneNumber);
         }
       } catch (err) {
         console.error('OTP verification failed:', err);
