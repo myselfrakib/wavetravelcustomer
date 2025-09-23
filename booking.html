@@ -557,6 +557,20 @@
       return `${day}/${month}/${year}`;
     }
 
+    // Helper: open WhatsApp chat for a given number and message (auto-add +91 if missing)
+    function openWhatsAppWithMessage(phone, message) {
+      // Sanitize phone: remove non-digits
+      let digits = String(phone || '').replace(/\D/g,'');
+      if (!digits.startsWith('91')) {
+        // assume India if not present
+        digits = '91' + digits;
+      }
+      const encoded = encodeURIComponent(message);
+      const url = `https://wa.me/${digits}?text=${encoded}`;
+      // Open in same tab so mobile will switch to app; change to _blank if you prefer new tab
+      window.location.href = url;
+    }
+
     function raiseRideRequest(tripType) {
       const user = auth.currentUser;
       if (!user) {
@@ -602,15 +616,49 @@
         // Save to Firebase
         db.ref('riderequest').push(requestData)
           .then(() => {
-            showToast('Your request has been received. Our team will contact you soon.');
+            showToast('Your request has been received. Redirecting to WhatsApp...');
+
+            // Build WhatsApp message exactly as requested
+            const nameForMsg = requestData.customerName || (user.email || 'Customer');
+            const tripDetail = tripType;
+            const pickupLoc = pickup;
+            const dropoffLoc = dropoff;
+            const rideDate = formatDateISOtoDMY(date);
+
+            const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nfrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
+
+            // Redirect to WhatsApp number +91 7439654831
+            openWhatsAppWithMessage('7439654831', waMessage);
           })
           .catch(err => {
             console.error('Error saving ride request:', err);
-            showToast('Failed to submit request. Please try again.');
+            showToast('Failed to submit request to server. Redirecting to WhatsApp...');
+
+            // Even if DB save failed, still open WhatsApp so customer can contact
+            const nameForMsg = (user.displayName || user.email || 'Customer');
+            const tripDetail = tripType;
+            const pickupLoc = pickup;
+            const dropoffLoc = dropoff;
+            const rideDate = formatDateISOtoDMY(date);
+
+            const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nfrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
+
+            openWhatsAppWithMessage('7439654831', waMessage);
           });
       }).catch(err => {
         console.error('Error fetching user data:', err);
-        showToast('Failed to submit request. Please try again.');
+        showToast('Failed to submit request. Redirecting to WhatsApp...');
+
+        // Fallback: build message using available info and redirect anyway
+        const nameForMsg = (user.displayName || user.email || 'Customer');
+        const tripDetail = tripType;
+        const pickupLoc = pickup;
+        const dropoffLoc = dropoff;
+        const rideDate = formatDateISOtoDMY(date);
+
+        const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nfrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
+
+        openWhatsAppWithMessage('7439654831', waMessage);
       });
     }
 
