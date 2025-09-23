@@ -87,6 +87,13 @@
     .toast.error { border-left:4px solid #fb7185; }
     .toast.info { border-left:4px solid #60a5fa; }
 
+    /* Phone input highlight when pre-filled */
+    .phone-prefilled {
+      background: rgba(255, 255, 255, 0.12) !important;
+      border: 1px solid rgba(255, 110, 199, 0.4);
+      box-shadow: 0 0 0 2px rgba(255, 110, 199, 0.1);
+    }
+
     /* responsive */
     @media (max-width:420px){
       .otp-actions { flex-direction:column; }
@@ -101,7 +108,7 @@
 
     <input id="name" type="text" placeholder="Full Name" autocomplete="name" />
     <input id="email" type="email" placeholder="Email Address (optional)" autocomplete="email" />
-    <input id="phone" type="text" placeholder="Phone Number (10 digits)" inputmode="numeric" />
+    <input id="phone" type="text" placeholder="Phone Number (10 digits)" inputmode="numeric" maxlength="10" />
 
     <div id="sendSection">
       <button id="sendOtpBtn" class="primary" aria-live="polite">
@@ -177,6 +184,39 @@
   let countdownTimer = null;
   let remaining = 0;
 
+  // --- URL Parameter Reading Function ---
+  function getURLParameter(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+  }
+
+  // --- Phone Number Pre-fill Logic ---
+  function prefillPhoneFromURL() {
+    const phoneParam = getURLParameter('phone');
+    if (phoneParam) {
+      // Remove any non-digit characters and take first 10 digits
+      const cleanPhone = phoneParam.replace(/\D/g, '').slice(0, 10);
+      if (cleanPhone.length === 10) {
+        phoneInput.value = cleanPhone;
+        phoneInput.classList.add('phone-prefilled');
+        showToast('Phone number pre-filled from login', 'info', 2500);
+        
+        // Focus on name field since phone is already filled
+        nameInput.focus();
+        
+        // Remove the highlight after a few seconds
+        setTimeout(() => {
+          phoneInput.classList.remove('phone-prefilled');
+        }, 3000);
+      }
+    }
+  }
+
+  // --- Initialize on page load ---
+  window.addEventListener('DOMContentLoaded', () => {
+    prefillPhoneFromURL();
+  });
+
   // --- Toast helper (replace alert) ---
   function showToast(message, type = 'info', duration = 3800) {
     const t = document.createElement('div');
@@ -205,6 +245,16 @@
     emailSaveTimer = setTimeout(() => {
       try { localStorage.setItem('wavetravel_email', emailInput.value.trim()); } catch(e){}
     }, 500);
+  });
+
+  // --- Phone input validation and formatting ---
+  phoneInput.addEventListener('input', (e) => {
+    // Remove non-digit characters
+    e.target.value = e.target.value.replace(/\D/g, '');
+    // Remove prefilled styling when user starts typing
+    if (phoneInput.classList.contains('phone-prefilled')) {
+      phoneInput.classList.remove('phone-prefilled');
+    }
   });
 
   // --- Utility validators ---
@@ -299,9 +349,21 @@
     const email = emailInput.value.trim();
     const phone = phoneInput.value.trim();
 
-    if (!name) { showToast('Please enter your name.', 'error'); return false; }
-    if (!phone) { showToast('Please enter phone number.', 'error'); return false; }
-    if (!validPhone(phone)) { showToast('Enter a valid 10-digit phone number.', 'error'); return false; }
+    if (!name) { 
+      showToast('Please enter your name.', 'error'); 
+      nameInput.focus();
+      return false; 
+    }
+    if (!phone) { 
+      showToast('Please enter phone number.', 'error'); 
+      phoneInput.focus();
+      return false; 
+    }
+    if (!validPhone(phone)) { 
+      showToast('Enter a valid 10-digit phone number.', 'error'); 
+      phoneInput.focus();
+      return false; 
+    }
 
     const fullPhone = '+91' + phone;
 
@@ -310,6 +372,9 @@
         // Check if phone exists in users collection
         if (await phoneExists(fullPhone)) {
           showToast('Phone number already registered. Please login instead.', 'error');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 2000);
           return false;
         }
 
@@ -332,6 +397,9 @@
       // show otp UI
       sendSection.style.display = 'none';
       otpSection.style.display = 'block';
+
+      // Focus on OTP input
+      setTimeout(() => otpInput.focus(), 300);
 
       // start cooldown for resend
       startResendCountdown();
@@ -364,8 +432,15 @@
     const phone = phoneInput.value.trim();
     const fullPhone = '+91' + phone;
 
-    if (!code) { showToast('Please enter the OTP.', 'error'); return; }
-    if (!window.confirmationResult) { showToast('No OTP request found. Please request OTP again.', 'error'); return; }
+    if (!code) { 
+      showToast('Please enter the OTP.', 'error'); 
+      otpInput.focus();
+      return; 
+    }
+    if (!window.confirmationResult) { 
+      showToast('No OTP request found. Please request OTP again.', 'error'); 
+      return; 
+    }
 
     try {
       setVerifying(true);
@@ -387,11 +462,49 @@
       showToast('Account created and signed in successfully!', 'success');
 
       // redirect shortly after success
-      setTimeout(() => window.location.href = 'booking.html', 800);
+      setTimeout(() => {
+        window.location.href = `booking.html?uid=${encodeURIComponent(uid)}`;
+      }, 1500);
     } catch (error) {
       console.error('OTP verify error:', error);
       showToast('OTP verification failed: ' + (error.message || error), 'error');
       setVerifying(false);
+      otpInput.focus();
+    }
+  });
+
+  // Handle Enter key presses for better UX
+  nameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      if (phoneInput.value.trim()) {
+        sendOtpBtn.click();
+      } else {
+        phoneInput.focus();
+      }
+    }
+  });
+
+  phoneInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      sendOtpBtn.click();
+    }
+  });
+
+  otpInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      verifyOtpBtn.click();
+    }
+  });
+
+  // Auto-verify OTP when 6 digits are entered
+  otpInput.addEventListener('input', () => {
+    const code = otpInput.value.trim();
+    if (code.length === 6 && /^\d{6}$/.test(code)) {
+      setTimeout(() => {
+        if (!verifyOtpBtn.disabled) {
+          verifyOtpBtn.click();
+        }
+      }, 300);
     }
   });
 
