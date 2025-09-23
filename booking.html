@@ -495,10 +495,10 @@
           const pickupEl = document.getElementById(`pickup-${tabType}`);
           const dropoffEl = document.getElementById(`dropoff-${tabType}`);
           
-          Array.from(pickupEl.options).forEach(opt => {
+          Array.From(pickupEl.options).forEach(opt => {
             if (opt.text === defaultPickup) opt.selected = true;
           });
-          Array.from(dropoffEl.options).forEach(opt => {
+          Array.From(dropoffEl.options).forEach(opt => {
             if (opt.text === defaultDropoff) opt.selected = true;
           });
         });
@@ -610,7 +610,7 @@
           requestedAt: firebase.database.ServerValue.TIMESTAMP,
           
           // Additional info
-          notes: `Customer requested ${tripType} ride from ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
+          notes: `Customer requested ${tripType} ride From ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
         };
 
         // Save to Firebase
@@ -625,7 +625,7 @@
             const dropoffLoc = dropoff;
             const rideDate = formatDateISOtoDMY(date);
 
-            const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nfrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
+            const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nFrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
 
             // Redirect to WhatsApp number +91 7439654831
             openWhatsAppWithMessage('7439654831', waMessage);
@@ -641,7 +641,7 @@
             const dropoffLoc = dropoff;
             const rideDate = formatDateISOtoDMY(date);
 
-            const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nfrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
+            const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nFrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
 
             openWhatsAppWithMessage('7439654831', waMessage);
           });
@@ -656,7 +656,7 @@
         const dropoffLoc = dropoff;
         const rideDate = formatDateISOtoDMY(date);
 
-        const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nfrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
+        const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nFrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
 
         openWhatsAppWithMessage('7439654831', waMessage);
       });
@@ -1050,3 +1050,4 @@
   </script>
 </body>
 </html>
+
