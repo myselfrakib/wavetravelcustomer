@@ -391,6 +391,14 @@
     const db   = firebase.database();
     const auth = firebase.auth();
 
+    // Customize the emojis used in the WhatsApp message here
+    const customEmojis = {
+      greeting: "🙋‍♂️",   // after "Hi i'm"
+      car: "🚗",          // next to trip type line
+      location: "📍",     // next to from/to lines
+      date: "📅"          // next to date line
+    };
+
     let currentTab = 'oneway';
     let isSearching = false;
 
@@ -495,10 +503,10 @@
           const pickupEl = document.getElementById(`pickup-${tabType}`);
           const dropoffEl = document.getElementById(`dropoff-${tabType}`);
           
-          Array.From(pickupEl.options).forEach(opt => {
+          Array.from(pickupEl.options).forEach(opt => {
             if (opt.text === defaultPickup) opt.selected = true;
           });
-          Array.From(dropoffEl.options).forEach(opt => {
+          Array.from(dropoffEl.options).forEach(opt => {
             if (opt.text === defaultDropoff) opt.selected = true;
           });
         });
@@ -610,7 +618,7 @@
           requestedAt: firebase.database.ServerValue.TIMESTAMP,
           
           // Additional info
-          notes: `Customer requested ${tripType} ride From ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
+          notes: `Customer requested ${tripType} ride from ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
         };
 
         // Save to Firebase
@@ -618,14 +626,18 @@
           .then(() => {
             showToast('Your request has been received. Redirecting to WhatsApp...');
 
-            // Build WhatsApp message exactly as requested
+            // Build WhatsApp message with emojis (customizable via customEmojis)
             const nameForMsg = requestData.customerName || (user.email || 'Customer');
             const tripDetail = tripType;
             const pickupLoc = pickup;
             const dropoffLoc = dropoff;
             const rideDate = formatDateISOtoDMY(date);
 
-            const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nFrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
+            const waMessage = `Hi i'm ${nameForMsg} ${customEmojis.greeting}\n` +
+                              `I need a car for ${tripDetail} trip ${customEmojis.car}\n` +
+                              `from - ${pickupLoc} ${customEmojis.location}\n` +
+                              `to - ${dropoffLoc} ${customEmojis.location}\n` +
+                              `on - ${rideDate} ${customEmojis.date}`;
 
             // Redirect to WhatsApp number +91 7439654831
             openWhatsAppWithMessage('7439654831', waMessage);
@@ -641,7 +653,11 @@
             const dropoffLoc = dropoff;
             const rideDate = formatDateISOtoDMY(date);
 
-            const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nFrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
+            const waMessage = `Hi i'm ${nameForMsg} ${customEmojis.greeting}\n` +
+                              `I need a car for ${tripDetail} trip ${customEmojis.car}\n` +
+                              `from - ${pickupLoc} ${customEmojis.location}\n` +
+                              `to - ${dropoffLoc} ${customEmojis.location}\n` +
+                              `on - ${rideDate} ${customEmojis.date}`;
 
             openWhatsAppWithMessage('7439654831', waMessage);
           });
@@ -656,7 +672,11 @@
         const dropoffLoc = dropoff;
         const rideDate = formatDateISOtoDMY(date);
 
-        const waMessage = `Hi i'm ${nameForMsg}\nI need a car for ${tripDetail} trip \nFrom-${pickupLoc}\nto-${dropoffLoc}\non - ${rideDate} `;
+        const waMessage = `Hi i'm ${nameForMsg} ${customEmojis.greeting}\n` +
+                          `I need a car for ${tripDetail} trip ${customEmojis.car}\n` +
+                          `from - ${pickupLoc} ${customEmojis.location}\n` +
+                          `to - ${dropoffLoc} ${customEmojis.location}\n` +
+                          `on - ${rideDate} ${customEmojis.date}`;
 
         openWhatsAppWithMessage('7439654831', waMessage);
       });
@@ -1050,4 +1070,3 @@
   </script>
 </body>
 </html>
-
