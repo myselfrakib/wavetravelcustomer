@@ -621,9 +621,8 @@
           notes: `Customer requested ${tripType} ride from ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
         };
 
-        // Save to Firebase with new structure: /riderequests/uid/requestuid/
-        const requestRef = db.ref(`riderequests/${user.uid}`).push();
-        requestRef.set(requestData)
+        // Save to Firebase
+        db.ref('riderequest').push(requestData)
           .then(() => {
             showToast('Your request has been received. Redirecting to WhatsApp...');
 
@@ -666,7 +665,7 @@
         console.error('Error fetching user data:', err);
         showToast('Failed to submit request. Redirecting to WhatsApp...');
 
-       // Fallback: build message using available info and redirect anyway
+        // Fallback: build message using available info and redirect anyway
         const nameForMsg = (user.displayName || user.email || 'Customer');
         const tripDetail = tripType;
         const pickupLoc = pickup;
@@ -686,230 +685,388 @@
     function searchSlots(tripType) {
       if (isSearching) return;
 
+      const slotsDiv = document.getElementById(`slots-${tripType}`);
       const pickup = document.getElementById(`pickup-${tripType}`).value;
       const dropoff = document.getElementById(`dropoff-${tripType}`).value;
       const date = document.getElementById(`date-${tripType}`).value;
-
+      
+      // Set searching state
+      setSearchingState(tripType, true);
+      
+      // Show loading
+      slotsDiv.innerHTML = '<div class="loading-msg"><i class="fas fa-spinner"></i>Searching for rides...</div>';
+      
       if (!pickup || !dropoff || !date) {
-        document.getElementById(`slots-${tripType}`).innerHTML = '';
+        slotsDiv.innerHTML = '<div class="no-slots">Please select pickup, dropoff and date to search for rides.</div>';
+        setSearchingState(tripType, false);
         return;
       }
 
-      setSearchingState(tripType, true);
-
-      const slotsContainer = document.getElementById(`slots-${tripType}`);
-      slotsContainer.innerHTML = '<div class="loading-msg"><i class="fas fa-spinner"></i>Searching available rides...</div>';
-
-      // Simulate API delay
-      setTimeout(() => {
-        // Generate sample slots
-        const slots = generateSampleSlots(pickup, dropoff, date, tripType);
-        displaySlots(slots, tripType);
-        setSearchingState(tripType, false);
-      }, 1500);
-    }
-
-    function generateSampleSlots(pickup, dropoff, date, tripType) {
-      const slots = [];
-      const cars = [
-        { name: 'Swift Dzire', icon: 'fas fa-car', baseFare: 2500 },
-        { name: 'Toyota Innova', icon: 'fas fa-car-side', baseFare: 4000 },
-        { name: 'Mahindra Scorpio', icon: 'fas fa-truck', baseFare: 4500 },
-        { name: 'Tata Nexon', icon: 'fas fa-car', baseFare: 3000 },
-      ];
-
-      const times = ['06:00', '08:30', '11:00', '14:30', '17:00', '20:00'];
-      const multiplier = tripType === 'roundtrip' ? 1.8 : 1;
-
-      for (let i = 0; i < Math.min(cars.length, 4); i++) {
-        const car = cars[i];
-        const time = times[i];
-        const fare = Math.round(car.baseFare * multiplier);
-        
-        slots.push({
-          id: i + 1,
-          carName: car.name,
-          carIcon: car.icon,
-          time: time,
-          fare: fare,
+      // Save search to Firebase
+      let searchRef = null;
+      try {
+        const user = auth.currentUser;
+        searchRef = db.ref('searches').push();
+        const searchData = {
+          customerId: user ? user.uid : null,
           pickup: pickup,
           dropoff: dropoff,
           date: date,
-          tripType: tripType
-        });
+          tripType: tripType,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+        searchRef.set(searchData).catch(err => console.log('Failed to save search', err));
+      } catch (err) {
+        console.log('Error creating search record', err);
       }
 
-      return slots;
+      // Fetch available slots
+      db.ref('availableslots').once('value')
+        .then(snap => {
+          setSearchingState(tripType, false);
+          
+          if (!snap.exists()) {
+            slotsDiv.innerHTML = `
+              <div class="no-slots">
+                No ${tripType} rides found for ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}.
+                <br><br>
+                <button class="request-btn" onclick="raiseRideRequest('${tripType}')">
+                  <i class="fas fa-hand-paper"></i> Raise Ride Request
+                </button>
+              </div>
+            `;
+            return;
+          }
+
+          const allSlots = [];
+          
+          // Process each driver's slots
+          snap.forEach(driverSnap => {
+            const driverId = driverSnap.key;
+            
+            if (driverSnap.exists()) {
+              driverSnap.forEach(slotSnap => {
+                const slotKey = slotSnap.key;
+                const slotData = slotSnap.val();
+                
+                if (slotData && typeof slotData === 'object') {
+                  const completeSlot = {
+                    driverId: driverId,
+                    slotKey: slotKey, // Important: store the key for deletion
+                    pickup: slotData.pickup || '',
+                    dropoff: slotData.dropoff || '',
+                    date: slotData.date || '',
+                    time: slotData.time || '',
+                    triptype: slotData.triptype || '',
+                    carBrand: slotData.carBrand || 'Unknown Car',
+                    carReg: slotData.carReg || '',
+                    seats: slotData.seats || '4',
+                    driverName: slotData.driverName || 'Unknown Driver',
+                    driverNumber: slotData.driverNumber || '',
+                    status: slotData.status || 'available',
+                    fare: Number(slotData.fare) || 0,
+                    distance: slotData.distance || null,
+                    duration: slotData.duration || null,
+                    notes: slotData.notes || '',
+                    originalData: slotData
+                  };
+                  
+                  allSlots.push(completeSlot);
+                }
+              });
+            }
+          });
+
+          // Filter slots
+          const matchedSlots = allSlots.filter(slot => {
+            const normalizeString = (str) => (str || '').toLowerCase().trim();
+            
+            const pickupMatch = normalizeString(slot.pickup) === normalizeString(pickup);
+            const dropoffMatch = normalizeString(slot.dropoff) === normalizeString(dropoff);
+            const dateMatch = slot.date === date;
+            const tripTypeMatch = normalizeString(slot.triptype) === normalizeString(tripType);
+            const statusFilter = !slot.status || (slot.status !== 'booked' && slot.status !== 'cancelled');
+
+            return pickupMatch && dropoffMatch && dateMatch && tripTypeMatch && statusFilter;
+          });
+
+          // Update search record
+          try {
+            if (searchRef) {
+              searchRef.update({ 
+                resultCount: matchedSlots.length, 
+                fallbackUsed: false 
+              }).catch(err => console.log('Failed to update search record', err));
+            }
+          } catch (err) {
+            console.log('Error updating search record', err);
+          }
+
+          if (matchedSlots.length === 0) {
+            slotsDiv.innerHTML = `
+              <div class="no-slots">
+                No ${tripType} rides found for ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}.
+                <br><br>
+                <button class="request-btn" onclick="raiseRideRequest('${tripType}')">
+                  <i class="fas fa-hand-paper"></i> Raise Ride Request
+                </button>
+              </div>
+            `;
+          } else {
+            renderSlots(matchedSlots, tripType, slotsDiv);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch availableslots:', err);
+          setSearchingState(tripType, false);
+          slotsDiv.innerHTML = `
+            <div class="no-slots">
+              Failed to load rides. Please try again.
+              <br><br>
+              <button class="request-btn" onclick="raiseRideRequest('${tripType}')">
+                <i class="fas fa-hand-paper"></i> Raise Ride Request
+              </button>
+            </div>
+          `;
+          
+          if (searchRef) {
+            searchRef.update({ fetchError: true }).catch(e => console.log('Failed to update search error flag', e));
+          }
+        });
     }
 
-    function displaySlots(slots, tripType) {
-      const slotsContainer = document.getElementById(`slots-${tripType}`);
+    function renderSlots(slots, tripType, slotsDiv) {
+      slotsDiv.innerHTML = '';
+      const user = auth.currentUser;
       
-      if (slots.length === 0) {
-        slotsContainer.innerHTML = `
-          <div class="no-slots">
-            <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem; color: var(--muted);"></i>
-            <div>No rides available for the selected route and date.</div>
-            <button class="request-btn" onclick="raiseRideRequest('${tripType}')">
-              <i class="fas fa-plus"></i> Request a Ride
-            </button>
-          </div>
-        `;
+      if (!user) {
+        slotsDiv.innerHTML = '<div class="fallback-msg">Please login first to book rides.</div>';
         return;
       }
 
-      let html = '';
-      slots.forEach(slot => {
-        const formattedTime = formatTime24to12(slot.time);
-        const formattedDate = formatDateISOtoDMY(slot.date);
-        const actionBtnClass = tripType === 'oneway' ? 'btn-oneway' : 'btn-roundtrip';
-        const actionIcon = tripType === 'oneway' ? 'fas fa-arrow-right' : 'fas fa-exchange-alt';
-        const actionText = tripType === 'oneway' ? 'Book Oneway' : 'Book Roundtrip';
+      slots.forEach((slot, idx) => {
+        const fare = Number(slot.fare) || 0;
+        const displayTime = formatTime24to12(slot.time);
+        const displayDate = formatDateISOtoDMY(slot.date);
+        const carInfo = `${slot.carBrand}${slot.carReg ? ' (' + slot.carReg + ')' : ''}`;
 
-        html += `
-          <div class="slot-card">
-            <div class="slot-accent"></div>
-            
-            <div class="slot-main">
-              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                <div class="slot-number">${slot.id}</div>
+        const card = document.createElement('div');
+        card.className = 'slot-card';
+
+        const tripTypeDisplay = tripType === 'oneway' ? 'Oneway' : 'Roundtrip';
+        const tripTypeClass = tripType === 'oneway' ? 'btn-oneway' : 'btn-roundtrip';
+        const tripIcon = tripType === 'oneway' ? 'fa-arrow-right' : 'fa-exchange-alt';
+
+        const showFare = fare > 0;
+        
+        card.innerHTML = `
+          <div class="slot-accent" aria-hidden="true"></div>
+
+          <div class="slot-main">
+            <div style="display:flex;gap:12px;align-items:center;">
+              <div class="slot-number" aria-hidden="true">${idx + 1}</div>
+              <div style="flex:1;min-width:0;">
+                <div class="pickup-drop">
+                  <div class="pd-row">
+                    <div class="pd-label">Pickup</div>
+                    <div class="pd-value">${escapeHtml(slot.pickup)}</div>
+                  </div>
+                  <div class="pd-row">
+                    <div class="pd-label">Dropoff</div>
+                    <div class="pd-value">${escapeHtml(slot.dropoff)}</div>
+                  </div>
+                </div>
+
                 <div class="car-row">
                   <div class="car-name">
-                    <i class="${slot.carIcon}"></i>
-                    <span>${slot.carName}</span>
+                    <i class="fas fa-car" aria-hidden="true"></i>
+                    <span>${escapeHtml(carInfo)}</span>
                   </div>
-                </div>
-              </div>
-
-              <div class="pickup-drop">
-                <div class="pd-row">
-                  <div class="pd-label">From</div>
-                  <div class="pd-value">${slot.pickup}</div>
-                </div>
-                <div class="pd-row">
-                  <div class="pd-label">To</div>
-                  <div class="pd-value">${slot.dropoff}</div>
-                </div>
-              </div>
-
-              <div class="slot-mid">
-                <div class="slot-mid-left">
-                  <div class="pill trip-pill">
-                    <i class="${actionIcon}"></i>
-                    <span>${tripType.charAt(0).toUpperCase() + tripType.slice(1)}</span>
-                  </div>
-                  <div class="pill date-pill">
-                    <i class="fas fa-calendar"></i>
-                    <span>${formattedDate}</span>
-                  </div>
-                  <div class="pill time-pill">
-                    <i class="fas fa-clock"></i>
-                    <span>${formattedTime}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="slot-actions">
-                <div class="action-wrap">
-                  <button class="btn-action ${actionBtnClass}" onclick="bookSlot(${JSON.stringify(slot).replace(/"/g, '&quot;')})">
-                    <div class="btn-left">
-                      <i class="${actionIcon}"></i>
-                      <span>${actionText}</span>
-                    </div>
-                    <div class="btn-right">
-                      <div class="price-pill">₹${slot.fare}</div>
-                      <i class="fas fa-chevron-right"></i>
-                    </div>
-                  </button>
-                </div>
-                <div class="action-wrap">
-                  <button class="btn-action" style="background: linear-gradient(90deg, #f59e0b, #f97316);" onclick="raiseRideRequest('${tripType}')">
-                    <div class="btn-left">
-                      <i class="fas fa-phone"></i>
-                      <span>Request Ride</span>
-                    </div>
-                    <div class="btn-right">
-                      <i class="fas fa-external-link-alt"></i>
-                    </div>
-                  </button>
                 </div>
               </div>
             </div>
-            
-            <div class="slot-right">
-              <div class="fare-large">₹${slot.fare}</div>
+
+            <div class="slot-mid">
+              <div class="slot-mid-left">
+                <div class="pill trip-pill"><i class="fas ${tripIcon}"></i>${tripTypeDisplay}</div>
+                <div class="pill date-pill">${escapeHtml(displayDate)}</div>
+                <div class="pill time-pill">${escapeHtml(displayTime)}</div>
+                ${slot.seats ? `<div class="pill" style="background: linear-gradient(90deg,#fff2e6,#ffecd6); color: #d97706;"><i class="fas fa-users"></i>${slot.seats} seats</div>` : ''}
+                ${showFare ? `<div class="pill fare-pill">₹${fare}</div>` : ''}
+              </div>
+            </div>
+
+            <div class="slot-actions" role="group" aria-label="Booking actions">
+              <div class="action-wrap" style="grid-column: 1 / -1;">
+                <button class="btn-action ${tripTypeClass}" onclick="bookTrip(${idx}, '${tripType}')">
+                  <div class="btn-left">
+                    <i class="fas ${tripIcon}"></i>
+                    <span>Book ${tripTypeDisplay}</span>
+                  </div>
+                  <div class="btn-right">
+                    ${showFare ? `<span class="price-pill">₹${fare}</span>` : '<span class="price-pill">Contact</span>'}
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
-        `;
-      });
 
-      slotsContainer.innerHTML = html;
+          <div class="slot-right" aria-hidden="true">
+            <div class="fare-large">${showFare ? `₹${fare}` : 'Contact for fare'}</div>
+          </div>
+        `;
+
+        slotsDiv.appendChild(card);
+
+        // Store comprehensive slot data for booking
+        card.setAttribute('data-slot', JSON.stringify({
+          driverId: slot.driverId,
+          slotKey: slot.slotKey, // Critical: store the slot key for deletion
+          pickup: slot.pickup,
+          dropoff: slot.dropoff,
+          date: slot.date,
+          time: slot.time,
+          tripType: tripType,
+          fare: fare,
+          carBrand: slot.carBrand || '',
+          carReg: slot.carReg || '',
+          driverName: slot.driverName || '',
+          driverNumber: slot.driverNumber || '',
+          seats: slot.seats || '',
+          status: slot.status || 'available',
+          distance: slot.distance || null,
+          duration: slot.duration || null,
+          notes: slot.notes || '',
+          originalData: slot.originalData
+        }));
+      });
     }
 
-    function bookSlot(slot) {
+    function bookTrip(slotIndex, tripType) {
       const user = auth.currentUser;
       if (!user) {
-        showToast('Please login to book a ride');
+        showToast('Please login first');
         return;
       }
 
-      // Get user details for WhatsApp message
-      db.ref(`users/${user.uid}`).once('value').then(userSnap => {
-        const userData = userSnap.val() || {};
-        const userName = userData.name || userData.username || user.displayName || user.email || 'Customer';
-        
-        // Format the booking details for WhatsApp
-        const formattedTime = formatTime24to12(slot.time);
-        const formattedDate = formatDateISOtoDMY(slot.date);
-        
-        const waMessage = `Hi i'm ${userName} ${customEmojis.greeting}\n` +
-                          `I want to book ${slot.carName} ${customEmojis.car}\n` +
-                          `for ${slot.tripType} trip\n` +
-                          `from - ${slot.pickup} ${customEmojis.location}\n` +
-                          `to - ${slot.dropoff} ${customEmojis.location}\n` +
-                          `on - ${formattedDate} at ${formattedTime} ${customEmojis.date}\n` +
-                          `Fare: ₹${slot.fare}`;
+      const slotsDiv = document.getElementById(`slots-${tripType}`);
+      const slotCard = slotsDiv.children[slotIndex];
+      
+      if (!slotCard) {
+        showToast('Error: Selected slot not found');
+        return;
+      }
 
-        // Save booking attempt to Firebase (optional)
-        const bookingData = {
-          customerId: user.uid,
-          customerEmail: user.email,
-          customerName: userName,
-          ...slot,
-          bookingAttemptedAt: firebase.database.ServerValue.TIMESTAMP,
-          status: 'attempted'
-        };
+      const slotDataStr = slotCard.getAttribute('data-slot');
+      if (!slotDataStr) {
+        showToast('Error: Slot data not available');
+        return;
+      }
 
-        db.ref(`bookings/${user.uid}`).push(bookingData).then(() => {
-          showToast('Redirecting to WhatsApp to confirm booking...');
-          // Open WhatsApp
-          setTimeout(() => {
-            openWhatsAppWithMessage('7439654831', waMessage);
-          }, 1500);
-        }).catch(err => {
-          console.error('Booking save error:', err);
-          showToast('Redirecting to WhatsApp...');
-          setTimeout(() => {
-            openWhatsAppWithMessage('7439654831', waMessage);
-          }, 1500);
-        });
-      });
+      let slotData;
+      try {
+        slotData = JSON.parse(slotDataStr);
+      } catch (err) {
+        console.error('Error parsing slot data:', err);
+        showToast('Error: Invalid slot data');
+        return;
+      }
+
+      // Disable the booking button to prevent double clicks
+      const bookButton = slotCard.querySelector('.btn-action');
+      const originalText = bookButton.innerHTML;
+      bookButton.disabled = true;
+      bookButton.innerHTML = '<div class="spinner"></div> Processing...';
+
+      // Verify slot is still available before proceeding
+      if (slotData.driverId && slotData.slotKey) {
+        db.ref(`availableslots/${slotData.driverId}/${slotData.slotKey}`).once('value')
+          .then(snapshot => {
+            if (!snapshot.exists()) {
+              showToast('This slot is no longer available. Please search again.');
+              bookButton.disabled = false;
+              bookButton.innerHTML = originalText;
+              return;
+            }
+
+            // Proceed with booking if slot exists
+            proceedWithBooking(slotData, user);
+          })
+          .catch(err => {
+            console.error('Error checking slot availability:', err);
+            showToast('Error checking availability. Please try again.');
+            bookButton.disabled = false;
+            bookButton.innerHTML = originalText;
+          });
+      } else {
+        showToast('Error: Missing slot information');
+        bookButton.disabled = false;
+        bookButton.innerHTML = originalText;
+      }
     }
 
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+    function proceedWithBooking(slotData, user) {
+      const bookingData = {
+        driverId: slotData.driverId,
+        slotKey: slotData.slotKey, // Critical: pass the slot key for deletion
+        pickup: slotData.pickup,
+        dropoff: slotData.dropoff,
+        date: slotData.date,
+        time: slotData.time,
+        triptype: slotData.tripType, // Keep consistent with your DB structure
+        fare: slotData.fare,
+        customerId: user.uid,
+        carBrand: slotData.carBrand,
+        carReg: slotData.carReg,
+        driverName: slotData.driverName,
+        driverNumber: slotData.driverNumber,
+        seats: slotData.seats,
+        status: slotData.status,
+        distance: slotData.distance,
+        duration: slotData.duration,
+        notes: slotData.notes,
+        bookingTimestamp: firebase.database.ServerValue.TIMESTAMP,
+        originalSlotData: slotData.originalData
+      };
+
+      // Store in localStorage and redirect to checkout
+      try {
+        localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
+        window.location.href = 'checkout.html';
+      } catch (err) {
+        console.error('Error storing booking data:', err);
+        showToast('Error: Failed to prepare booking. Please try again.');
+        // Re-enable the button
+        setTimeout(() => {
+          const searchBtn = document.querySelector('.btn-action:disabled');
+          if (searchBtn) {
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = searchBtn.originalHTML || 'Book Now';
+          }
+        }, 1000);
+      }
     }
 
-    // Initialize the page
-    document.addEventListener('DOMContentLoaded', () => {
-      // Set minimum date to today
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('date-oneway').min = today;
-      document.getElementById('date-roundtrip').min = today;
+    function escapeHtml(str) {
+      if (!str && str !== 0) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Error handler for unhandled promise rejections
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('Unhandled promise rejection:', event.reason);
+      showToast('An unexpected error occurred. Please try again.');
+    });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Page loaded, initializing...');
     });
   </script>
-
 </body>
 </html>
