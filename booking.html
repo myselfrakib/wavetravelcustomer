@@ -621,8 +621,8 @@
           notes: `Customer requested ${tripType} ride from ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
         };
 
-        // Save to Firebase at /riderequestes (renamed as requested)
-        db.ref('riderequestes').push(requestData)
+        // Save to Firebase
+        db.ref('riderequest').push(requestData)
           .then(() => {
             showToast('Your request has been received. Redirecting to WhatsApp...');
 
@@ -702,58 +702,20 @@
         return;
       }
 
-      // Save search to Firebase under /searches/{uid}/{searchId}
+      // Save search to Firebase
       let searchRef = null;
       try {
         const user = auth.currentUser;
-        const pathUser = user ? user.uid : 'guest';
-        searchRef = db.ref(`searches/${pathUser}`).push();
-
-        // We want to include customerName and customerPhone. If logged in, try to fetch from /users/{uid}
-        if (user) {
-          db.ref(`users/${user.uid}`).once('value').then(userSnap => {
-            const ud = userSnap.val() || {};
-            const name = ud.name || ud.username || user.displayName || user.email || '';
-            const phone = ud.phone || ud.mobile || '';
-            const searchData = {
-              customerId: user.uid,
-              customerName: name,
-              customerPhone: phone,
-              pickup: pickup,
-              dropoff: dropoff,
-              date: date,
-              tripType: tripType,
-              timestamp: firebase.database.ServerValue.TIMESTAMP
-            };
-            searchRef.set(searchData).catch(err => console.log('Failed to save search', err));
-          }).catch(err => {
-            // fallback if user record read fails
-            const searchData = {
-              customerId: user.uid,
-              customerName: user.displayName || user.email || '',
-              customerPhone: '',
-              pickup: pickup,
-              dropoff: dropoff,
-              date: date,
-              tripType: tripType,
-              timestamp: firebase.database.ServerValue.TIMESTAMP
-            };
-            searchRef.set(searchData).catch(err2 => console.log('Failed to save search fallback', err2));
-          });
-        } else {
-          // Guest search
-          const searchData = {
-            customerId: null,
-            customerName: '',
-            customerPhone: '',
-            pickup: pickup,
-            dropoff: dropoff,
-            date: date,
-            tripType: tripType,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-          };
-          searchRef.set(searchData).catch(err => console.log('Failed to save guest search', err));
-        }
+        searchRef = db.ref('searches').push();
+        const searchData = {
+          customerId: user ? user.uid : null,
+          pickup: pickup,
+          dropoff: dropoff,
+          date: date,
+          tripType: tripType,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+        searchRef.set(searchData).catch(err => console.log('Failed to save search', err));
       } catch (err) {
         console.log('Error creating search record', err);
       }
@@ -773,8 +735,6 @@
                 </button>
               </div>
             `;
-            // Update search record with results = 0
-            try { if (searchRef) searchRef.update({ resultCount: 0, fallbackUsed: false }).catch(e=>console.log('search update err',e)); } catch(e){}
             return;
           }
 
