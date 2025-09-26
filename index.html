@@ -1,708 +1,828 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - BookMeal</title>
-    <!-- Firebase SDK v9+ Modular -->
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import {
-            getAuth,
-            signInWithEmailAndPassword,
-            createUserWithEmailAndPassword,
-            sendPasswordResetEmail,
-            onAuthStateChanged,
-            signOut
-        } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WaveTravel – OTP Login</title>
 
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAaR_-Y6wZasEIQpUaqGKAzITSDBQWFIb4",
-            authDomain: "wavetravel-hfrjw.firebaseapp.com",
-            databaseURL: "https://wavetravel-hfrjw-default-rtdb.firebaseio.com",
-            projectId: "wavetravel-hfrjw",
-            storageBucket: "wavetravel-hfrjw.firebasestorage.app",
-            messagingSenderId: "564304688779",
-            appId: "1:564304688779:web:47359dff3719a24d0bc68e"
-        };
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        // Make auth available globally
-        window.auth = auth;
-        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
-        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
-        window.sendPasswordResetEmail = sendPasswordResetEmail;
-        window.onAuthStateChanged = onAuthStateChanged;
-        window.signOut = signOut;
-    </script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+  <!-- Tailwind theme tweak (optional) -->
+  <script>
+    // Updated vibrant blue color palette
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary_blue: '#1e40af',
+            bright_blue: '#3b82f6',
+            light_blue: '#60a5fa',
+            sky_light: '#93c5fd',
+            ocean_blue: '#1d4ed8'
+          }
         }
+      }
+    }
+  </script>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+  <!-- Additional CSS for the spinner & the centered toast visuals (keeps your existing toast styles/animations) -->
+  <style>
+    /* Spinner (keeps visual behavior like before) */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
-        .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            position: relative;
-            overflow: hidden;
-        }
+    /* Centered Toast styles (copied / adapted from your original CSS to preserve behavior) */
+    .toast-container {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 99999;
+      pointer-events: none;
+      align-items: center;
+      width: auto;
+      max-width: 90%;
+      padding: 0 12px;
+      box-sizing: border-box;
+    }
+    .toast {
+      min-width: 260px;
+      max-width: 520px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+      transform: translateY(8px) scale(0.98);
+      opacity: 0;
+      transition: transform .28s cubic-bezier(.2,.9,.2,1), opacity .28s, filter .28s;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .toast.show { transform: translateY(0) scale(1); opacity: 1; }
+    .toast.info { background: linear-gradient(90deg,#3b82f6,#2563eb); }
+    .toast.success { background: linear-gradient(90deg,#10b981,#059669); }
+    .toast.error { background: linear-gradient(90deg,#ef4444,#dc2626); }
+    .toast .close-toast {
+      margin-left: 12px;
+      background: rgba(255,255,255,0.12);
+      border: none;
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .toast .icon {
+      width: 20px; height: 20px; flex: 0 0 20px; display:inline-block;
+      opacity: 0.95;
+      text-align:center;
+      line-height:20px;
+      font-weight:800;
+    }
 
-        .login-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-        }
+    /* Ensure the otp/verify/resend start hidden (we also hide via inline style but keep CSS fallback) */
+    #otp, #verifyBtn, #resendBtn { display: none; }
 
-        .logo {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+    /* Enhanced UI improvements */
+    .input-field {
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+    .input-field:focus {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+    .input-field:hover {
+      border-color: rgba(96, 165, 250, 0.4);
+    }
 
-        .logo h1 {
-            color: #333;
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+    .btn-primary {
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+    }
+    .btn-primary:active {
+      transform: translateY(0);
+    }
 
-        .logo p {
-            color: #666;
-            font-size: 1rem;
-        }
+    .btn-secondary {
+      transition: all 0.3s ease;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+    .btn-secondary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
 
-        .form-group {
-            margin-bottom: 25px;
-            position: relative;
-        }
+    .admin-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1e40af, #3b82f6);
+      border: 2px solid rgba(96, 165, 250, 0.4);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(22, 66, 91, 0.4);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+    .admin-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 8px 30px rgba(30, 64, 175, 0.5);
+      border-color: rgba(96, 165, 250, 0.7);
+    }
+    .admin-btn:active {
+      transform: translateY(-1px) scale(1.02);
+    }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
+    .card {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      box-shadow: 0 20px 40px rgba(30, 64, 175, 0.1);
+    }
 
-        .form-group input {
-            width: 100%;
-            padding: 15px 20px;
-            border: 2px solid #e1e5e9;
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
+    .gradient-text {
+      background: linear-gradient(135deg, #1e40af, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
 
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
+    /* OTP input styling */
+    .otp-input {
+      letter-spacing: 0.5em;
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
 
-        .form-group input:valid {
-            border-color: #28a745;
-        }
+    /* Subtle animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-        .password-toggle {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #666;
-            font-size: 1.2rem;
-            padding: 5px;
-        }
+    .fade-in-up {
+      animation: fadeInUp 0.5s ease-out;
+    }
 
-        .password-toggle:hover {
-            color: #333;
-        }
+    .pulse-border {
+      animation: pulse-border 2s infinite;
+    }
 
-        .login-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
+    @keyframes pulse-border {
+      0% { border-color: rgba(59, 130, 246, 0.3); }
+      50% { border-color: rgba(96, 165, 250, 0.7); }
+      100% { border-color: rgba(59, 130, 246, 0.3); }
+    }
 
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(59, 130, 246, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    }
 
-        .login-btn:active {
-            transform: translateY(0);
-        }
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
 
-        .login-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .admin-btn {
-            width: 100%;
-            padding: 12px;
-            background: white;
-            color: #333;
-            border: 2px solid #e1e5e9;
-            border-radius: 12px;
-            font-size: 0.98rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 12px;
-            transition: all 0.25s ease;
-        }
-
-        .admin-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 18px rgba(0,0,0,0.08);
-            border-color: #667eea;
-        }
-
-        .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #c33;
-            display: none;
-        }
-
-        .success-message {
-            background: #efe;
-            color: #28a745;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #28a745;
-            display: none;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .forgot-password {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .forgot-password a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-
-        .forgot-password a:hover {
-            text-decoration: underline;
-        }
-
-        .signup-link {
-            text-align: center;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #e9ecef;
-        }
-
-        .signup-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .signup-link a:hover {
-            text-decoration: underline;
-        }
-
-        .firebase-info {
-            background: #e3f2fd;
-            border: 1px solid #2196f3;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            font-size: 0.85rem;
-        }
-
-        .firebase-info h4 {
-            color: #1976d2;
-            margin-bottom: 8px;
-        }
-
-        .firebase-info p {
-            color: #1565c0;
-            margin: 4px 0;
-        }
-
-        .firebase-info .config-note {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 4px;
-            padding: 8px;
-            margin-top: 10px;
-            font-size: 0.8rem;
-            color: #856404;
-        }
-
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 30px 20px;
-                margin: 10px;
-            }
-
-            .logo h1 {
-                font-size: 2rem;
-            }
-        }
-    </style>
+    .loading-text {
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+    }
+  </style>
 </head>
-<body>
-    <div class="login-container">
-        <div class="logo">
-            <h1>🍽️ BookMeal</h1>
-            <p>Welcome back! Please sign in to continue</p>
-        </div>
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary_blue to-sky_light">
+  
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Checking login status...</div>
+  </div>
 
-        <div class="error-message" id="errorMessage"></div>
-        <div class="success-message" id="successMessage"></div>
+  <!-- Background decoration -->
+  <div class="absolute inset-0 overflow-hidden">
+    <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-[#93c5fd] to-transparent rounded-full opacity-20"></div>
+    <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-[#60a5fa] to-transparent rounded-full opacity-20"></div>
+  </div>
 
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    placeholder="Enter your email"
-                    autocomplete="email"
-                >
-            </div>
+  <div class="w-[90%] max-w-md relative z-10" id="loginForm">
+    <div class="card p-8 rounded-3xl shadow-2xl fade-in-up">
+      <!-- Logo added here -->
+      <img src="https://firebasestorage.googleapis.com/v0/b/wavetravel-3c4c4.firebasestorage.app/o/logo%20ss.png?alt=media&token=ab259e7a-1e22-41fe-be3e-0845c996670f"
+           alt="WaveTravel Logo"
+           class="mx-auto w-24 h-24 object-contain mb-4" />
 
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    required
-                    placeholder="Enter your password"
-                    autocomplete="current-password"
-                >
-                <button type="button" class="password-toggle" onclick="togglePassword()">👁️</button>
-            </div>
+      <h2 class="text-2xl font-bold gradient-text mb-2 leading-snug text-center">
+        WAVETRAVEL
+      </h2>
+      <p class="text-sm text-gray-600 opacity-90 text-center mb-8">One-Way Cab Login via OTP</p>
 
-            <button type="submit" class="login-btn" id="loginBtn">
-                Sign In
-            </button>
-        </form>
+      <!-- country code removed, phone input updated -->
+      <input type="tel" id="phone" maxlength="10" placeholder="Enter your phone number"
+        class="input-field w-full mb-4 p-4 rounded-xl bg-gray-50 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] border border-gray-200" />
 
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Signing you in...</p>
-        </div>
+      <!-- Send OTP -->
+      <button id="sendBtn"
+        class="btn-primary w-full py-4 rounded-xl font-semibold bg-gradient-to-r from-[#3b82f6] to-[#1e40af] text-white hover:opacity-95 transition-all duration-300">
+        Send OTP
+      </button>
 
-        <div class="forgot-password">
-            <a href="#" onclick="resetPassword()">Forgot your password?</a>
-        </div>
+      <!-- OTP and actions (start hidden — logic will reveal them) -->
+      <input type="text" id="otp" maxlength="6" placeholder="Enter 6-digit OTP"
+        class="otp-input input-field mt-4 mb-4 p-4 rounded-xl bg-gray-50 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] pulse-border border border-gray-200"
+        style="display:none;" />
 
-        <div class="signup-link">
-            <p>Don't have an account? <a href="#" onclick="goToSignup()">Sign up here</a></p>
-        </div>
+      <!-- VERIFY OTP button restored -->
+      <button id="verifyBtn" style="display:none;"
+        class="btn-primary w-full py-4 rounded-xl font-semibold bg-[#3b82f6] text-white hover:opacity-95 transition-all duration-300">
+        Verify OTP
+      </button>
 
-        <div class="firebase-info">
-            <h4>🔥 Firebase Authentication</h4>
-            <p><strong>Status:</strong> <span id="firebaseStatus">Initializing...</span></p>
-            <p><strong>Current User:</strong> <span id="currentUser">None</span></p>
-            <div class="config-note">
-                <strong>✅ Configured:</strong> Firebase is connected to your wavetravel-hfrjw project. Ready for authentication!
-            </div>
-        </div>
+      <button id="resendBtn" style="display:none;"
+        class="btn-secondary w-full mt-3 py-3 rounded-xl font-semibold bg-gray-100 text-[#3b82f6] hover:bg-gray-200 transition-all duration-300">
+        Resend OTP (30s)
+      </button>
 
-        <!-- Admin Login Button (placed at the bottom) -->
-        <button id="adminLoginBtn" class="admin-btn" onclick="goToAdminLogin()">
-            🔑 Admin Login
+      <!-- helper links -->
+      <div class="mt-8 text-sm text-gray-600 text-center">
+        <span class="opacity-80">Don't have an Account?</span><br/>
+        <a href="signup.html" class="font-semibold text-[#3b82f6] hover:underline transition-all duration-300 hover:text-[#1e40af]">SIGN UP</a>
+      </div>
+
+      <div class="mt-6">
+        <button onclick="location.href='driverlogin.html'"
+          class="btn-secondary w-full py-3 rounded-xl bg-gray-100 text-[#3b82f6] font-semibold hover:bg-gray-200 shadow-lg transition-all duration-300 border border-gray-200">
+          Driver Login
         </button>
+      </div>
     </div>
+  </div>
 
-    <script>
-        // Wait for Firebase to be loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Firebase functions are now available globally
-            const auth = window.auth;
-            const signInWithEmailAndPassword = window.signInWithEmailAndPassword;
-            const createUserWithEmailAndPassword = window.createUserWithEmailAndPassword;
-            const sendPasswordResetEmail = window.sendPasswordResetEmail;
-            const onAuthStateChanged = window.onAuthStateChanged;
-            const signOut = window.signOut;
+  <!-- Admin Button -->
+  <a href="adminlogin.html" class="admin-btn" title="Admin Login">
+    <span style="font-size: 12px; text-align: center;">A</span>
+  </a>
 
-            // Form elements
-            const loginForm = document.getElementById('loginForm');
-            const emailInput = document.getElementById('email');
-            const passwordInput = document.getElementById('password');
-            const loginBtn = document.getElementById('loginBtn');
-            const errorMessage = document.getElementById('errorMessage');
-            const successMessage = document.getElementById('successMessage');
-            const loading = document.getElementById('loading');
-            const firebaseStatus = document.getElementById('firebaseStatus');
-            const currentUserSpan = document.getElementById('currentUser');
+  <!-- Centered Toast container -->
+  <div id="toastRoot" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-            // Firebase Auth State Listener
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUserSpan.textContent = user.email;
-                    firebaseStatus.textContent = 'Connected';
-                    firebaseStatus.style.color = '#28a745';
+  <!-- reCAPTCHA container moved to bottom -->
+  <div id="recaptcha-container" style="position: fixed; bottom: 0; right: 0; z-index: 1000; transform: translateZ(0); -webkit-transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden; pointer-events: auto;"></div>
 
-                    // Auto-redirect if user is already logged in
-                    if (window.location.pathname.includes('login')) {
-                        showSuccess('Already logged in! Redirecting...');
-                        setTimeout(() => {
-                            window.location.href = 'bookmeal.html';
-                        }, 1500);
-                    }
-                } else {
-                    currentUserSpan.textContent = 'None';
-                    firebaseStatus.textContent = 'Not connected';
-                    firebaseStatus.style.color = '#dc3545';
-                }
-            });
+  <!-- Firebase SDKs (compat used as in your original) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
-            // Toggle password visibility
-            window.togglePassword = function() {
-                const passwordField = document.getElementById('password');
-                const toggleBtn = document.querySelector('.password-toggle');
+  <script>
+    // ----- Toast helper (centered) -----
+    function showToast(message, type = 'info', timeout = 3000) {
+      const root = document.getElementById('toastRoot');
+      if (!root) return console.warn('Toast root missing');
 
-                if (passwordField.type === 'password') {
-                    passwordField.type = 'text';
-                    toggleBtn.textContent = '🙈';
-                } else {
-                    passwordField.type = 'password';
-                    toggleBtn.textContent = '👁️';
-                }
-            }
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.setAttribute('role', 'status');
 
-            // Show error message
-            function showError(message) {
-                errorMessage.textContent = message;
-                errorMessage.style.display = 'block';
-                successMessage.style.display = 'none';
-            }
+      const icon = document.createElement('span');
+      icon.className = 'icon';
+      if (type === 'success') icon.textContent = '✓';
+      else if (type === 'error') icon.textContent = '!';
+      else icon.textContent = 'i';
+      toast.appendChild(icon);
 
-            // Show success message
-            function showSuccess(message) {
-                successMessage.textContent = message;
-                successMessage.style.display = 'block';
-                errorMessage.style.display = 'none';
-            }
+      const text = document.createElement('div');
+      text.style.flex = '1';
+      text.textContent = message;
+      toast.appendChild(text);
 
-            // Hide messages
-            function hideMessages() {
-                errorMessage.style.display = 'none';
-                successMessage.style.display = 'none';
-            }
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'close-toast';
+      closeBtn.setAttribute('aria-label', 'Dismiss');
+      closeBtn.textContent = '✕';
+      closeBtn.onclick = () => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 280);
+      };
+      toast.appendChild(closeBtn);
 
-            // Validate email format
-            function isValidEmail(email) {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                return emailRegex.test(email);
-            }
+      root.appendChild(toast);
 
-            // Validate password
-            function isValidPassword(password) {
-                return password.length >= 6;
-            }
+      // show animation on next frame
+      requestAnimationFrame(() => toast.classList.add('show'));
 
-            // Firebase Login
-            async function firebaseLogin(email, password) {
-                try {
-                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                    return { success: true, user: userCredential.user };
-                } catch (error) {
-                    let errorMessage = 'An error occurred during login.';
+      // auto dismiss
+      if (timeout > 0) {
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 280);
+        }, timeout);
+      }
+    }
 
-                    switch (error.code) {
-                        case 'auth/user-not-found':
-                            errorMessage = 'No account found with this email address.';
-                            break;
-                        case 'auth/wrong-password':
-                            errorMessage = 'Incorrect password. Please try again.';
-                            break;
-                        case 'auth/invalid-email':
-                            errorMessage = 'Invalid email address.';
-                            break;
-                        case 'auth/user-disabled':
-                            errorMessage = 'This account has been disabled.';
-                            break;
-                        case 'auth/too-many-requests':
-                            errorMessage = 'Too many failed attempts. Please try again later.';
-                            break;
-                        case 'auth/network-request-failed':
-                            errorMessage = 'Network error. Please check your connection.';
-                            break;
-                        default:
-                            errorMessage = error.message;
-                    }
+    // ----- Loading overlay helper -----
+    function showLoading(message = 'Loading...') {
+      const overlay = document.getElementById('loadingOverlay');
+      const text = overlay.querySelector('.loading-text');
+      text.textContent = message;
+      overlay.style.display = 'flex';
+    }
 
-                    return { success: false, error: errorMessage };
-                }
-            }
+    function hideLoading() {
+      const overlay = document.getElementById('loadingOverlay');
+      overlay.style.display = 'none';
+    }
 
-            // Firebase Sign Up
-            async function firebaseSignUp(email, password) {
-                try {
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    return { success: true, user: userCredential.user };
-                } catch (error) {
-                    let errorMessage = 'An error occurred during registration.';
+    // ----- Redirect to signup helper -----
+    function redirectToSignup(phoneNumber = '') {
+      showLoading('Redirecting to signup...');
+      setTimeout(() => {
+        const signupUrl = phoneNumber ? `signup.html?phone=${encodeURIComponent(phoneNumber)}` : 'signup.html';
+        location.href = signupUrl;
+      }, 1000);
+    }
 
-                    switch (error.code) {
-                        case 'auth/email-already-in-use':
-                            errorMessage = 'An account with this email already exists.';
-                            break;
-                        case 'auth/invalid-email':
-                            errorMessage = 'Invalid email address.';
-                            break;
-                        case 'auth/weak-password':
-                            errorMessage = 'Password should be at least 6 characters.';
-                            break;
-                        case 'auth/network-request-failed':
-                            errorMessage = 'Network error. Please check your connection.';
-                            break;
-                        default:
-                            errorMessage = error.message;
-                    }
+    // ----- Local Storage Helpers -----
+    function getUserSession() {
+      try {
+        const session = localStorage.getItem('userSession');
+        return session ? JSON.parse(session) : null;
+      } catch (e) {
+        console.warn('Failed to parse user session:', e);
+        return null;
+      }
+    }
 
-                    return { success: false, error: errorMessage };
-                }
-            }
+    function setUserSession(uid, role, phone, additionalData = {}) {
+      try {
+        const sessionData = {
+          uid,
+          role,
+          phone,
+          timestamp: Date.now(),
+          ...additionalData
+        };
+        localStorage.setItem('userSession', JSON.stringify(sessionData));
+        localStorage.setItem('userPhone', phone); // Keep backward compatibility
+      } catch (e) {
+        console.warn('Failed to save user session:', e);
+      }
+    }
 
-            // Firebase Password Reset
-            async function firebasePasswordReset(email) {
-                try {
-                    await sendPasswordResetEmail(auth, email);
-                    return { success: true };
-                } catch (error) {
-                    let errorMessage = 'An error occurred during password reset.';
-
-                    switch (error.code) {
-                        case 'auth/user-not-found':
-                            errorMessage = 'No account found with this email address.';
-                            break;
-                        case 'auth/invalid-email':
-                            errorMessage = 'Invalid email address.';
-                            break;
-                        case 'auth/network-request-failed':
-                            errorMessage = 'Network error. Please check your connection.';
-                            break;
-                        default:
-                            errorMessage = error.message;
-                    }
-
-                    return { success: false, error: errorMessage };
-                }
-            }
-
-            // Handle form submission
-            loginForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-
-                const email = emailInput.value.trim();
-                const password = passwordInput.value;
-
-                // Hide previous messages
-                hideMessages();
-
-                // Validate inputs
-                if (!email) {
-                    showError('Please enter your email address.');
-                    emailInput.focus();
-                    return;
-                }
-
-                if (!isValidEmail(email)) {
-                    showError('Please enter a valid email address.');
-                    emailInput.focus();
-                    return;
-                }
-
-                if (!password) {
-                    showError('Please enter your password.');
-                    passwordInput.focus();
-                    return;
-                }
-
-                if (!isValidPassword(password)) {
-                    showError('Password must be at least 6 characters long.');
-                    passwordInput.focus();
-                    return;
-                }
-
-                // Show loading state
-                loginBtn.disabled = true;
-                loginBtn.textContent = 'Signing In...';
-                loading.style.display = 'block';
-
-                try {
-                    const result = await firebaseLogin(email, password);
-
-                    if (result.success) {
-                        showSuccess('Login successful! Redirecting...');
-
-                        // Redirect to bookmeal.html after a short delay
-                        setTimeout(() => {
-                            window.location.href = 'bookmeal.html';
-                        }, 2000);
-                    } else {
-                        showError(result.error);
-                        loginBtn.disabled = false;
-                        loginBtn.textContent = 'Sign In';
-                        loading.style.display = 'none';
-                    }
-                } catch (error) {
-                    showError('An unexpected error occurred. Please try again.');
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'Sign In';
-                    loading.style.display = 'none';
-                }
-            });
-
-            // Signup function
-            window.goToSignup = async function() {
-                const email = prompt('Enter your email address:');
-                if (!email) return;
-
-                if (!isValidEmail(email)) {
-                    showError('Please enter a valid email address.');
-                    return;
-                }
-
-                const password = prompt('Enter your password (minimum 6 characters):');
-                if (!password) return;
-
-                if (!isValidPassword(password)) {
-                    showError('Password must be at least 6 characters long.');
-                    return;
-                }
-
-                hideMessages();
-                showSuccess('Creating your account...');
-
-                const result = await firebaseSignUp(email, password);
-
-                if (result.success) {
-                    showSuccess('Account created successfully! You are now logged in.');
-                    setTimeout(() => {
-                        window.location.href = 'bookmeal.html';
-                    }, 2000);
-                } else {
-                    showError(result.error);
-                }
-            }
-
-            // Password reset function
-            window.resetPassword = async function() {
-                const email = prompt('Enter your email address to reset password:');
-                if (!email) return;
-
-                if (!isValidEmail(email)) {
-                    showError('Please enter a valid email address.');
-                    return;
-                }
-
-                hideMessages();
-                showSuccess('Sending password reset email...');
-
-                const result = await firebasePasswordReset(email);
-
-                if (result.success) {
-                    showSuccess('Password reset email sent! Check your inbox and follow the instructions.');
-                } else {
-                    showError(result.error);
-                }
-            }
-
-            // Admin login redirect function
-            window.goToAdminLogin = function() {
-                // Redirect to adminlogin.html - update this target if your admin page has a different name/path
-                window.location.href = 'adminlogin.html';
-            }
-
-            // Add some interactive effects
-            emailInput.addEventListener('input', hideMessages);
-            passwordInput.addEventListener('input', hideMessages);
-
-            // Add enter key support
-            passwordInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    loginForm.dispatchEvent(new Event('submit'));
-                }
-            });
-
-            // Initialize Firebase status
-            firebaseStatus.textContent = 'Ready';
-            firebaseStatus.style.color = '#28a745';
+    function clearUserSession() {
+      try {
+        localStorage.removeItem('userSession');
+        localStorage.removeItem('userPhone');
+        // Clear any sessionStorage markers
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.startsWith('lastRoleFor:') || key.startsWith('lastDriverIdFor:')) {
+            sessionStorage.removeItem(key);
+          }
         });
-    </script>
+      } catch (e) {
+        console.warn('Failed to clear user session:', e);
+      }
+    }
+
+    // ----- User Role Detection -----
+    async function getUserRole(uid, phone) {
+      try {
+        // First check if it's a regular user/admin
+        const userSnap = await db.ref('users').orderByChild('phone').equalTo(phone).once('value');
+        if (userSnap.exists()) {
+          const userData = Object.values(userSnap.val())[0];
+          return {
+            role: userData.role === 'admin' ? 'admin' : 'customer',
+            data: userData,
+            uid: uid
+          };
+        }
+
+        // Check if it's a driver
+        const driverSnap = await db.ref('driverdetails').orderByChild('phone').equalTo(phone).once('value');
+        if (driverSnap.exists()) {
+          const driverId = Object.keys(driverSnap.val())[0];
+          const driverData = Object.values(driverSnap.val())[0];
+          return {
+            role: 'driver',
+            data: driverData,
+            uid: uid,
+            driverId: driverId
+          };
+        }
+
+        // Check sessionStorage for role markers (fallback)
+        const sessionRole = sessionStorage.getItem(`lastRoleFor:${uid}`);
+        if (sessionRole === 'driver') {
+          const driverId = sessionStorage.getItem(`lastDriverIdFor:${uid}`);
+          return {
+            role: 'driver',
+            uid: uid,
+            driverId: driverId
+          };
+        }
+
+        return null;
+      } catch (err) {
+        console.error('Error detecting user role:', err);
+        return null;
+      }
+    }
+
+    // ----- Auto redirect based on role -----
+    function redirectByRole(roleInfo) {
+      if (!roleInfo) return;
+
+      showLoading('Redirecting...');
+
+      setTimeout(() => {
+        switch (roleInfo.role) {
+          case 'admin':
+            showToast('Welcome back, Admin!', 'success');
+            setTimeout(() => location.href = 'admindashboard.html', 500);
+            break;
+          case 'customer':
+            showToast('Welcome back!', 'success');
+            setTimeout(() => location.href = `booking.html?uid=${encodeURIComponent(roleInfo.uid)}`, 500);
+            break;
+          case 'driver':
+            showToast('Welcome back, Driver!', 'success');
+            const driverParam = roleInfo.driverId ? `?driverId=${encodeURIComponent(roleInfo.driverId)}` : `?uid=${encodeURIComponent(roleInfo.uid)}`;
+            setTimeout(() => location.href = `driverslots.html${driverParam}`, 500);
+            break;
+          default:
+            hideLoading();
+            console.warn('Unknown role:', roleInfo.role);
+        }
+      }, 800);
+    }
+
+    // ----- Firebase config and app init -----
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
+      authDomain: "wavetravel-3c4c4.firebaseapp.com",
+      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
+      projectId: "wavetravel-3c4c4",
+      storageBucket: "wavetravel-3c4c4.appspot.com",
+      messagingSenderId: "298226098137",
+      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    let confirmationResult = null;
+    let resendTimer = null;
+    const sendBtn    = document.getElementById('sendBtn');
+    const verifyBtn  = document.getElementById('verifyBtn');
+    const phoneInput = document.getElementById('phone');
+    const otpInput   = document.getElementById('otp');
+    const resendBtn  = document.getElementById('resendBtn');
+
+    // Initialize reCAPTCHA
+    function initRecaptcha() {
+      try {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+          'recaptcha-container', { size: 'invisible' }
+        );
+        window.recaptchaVerifier.render();
+      } catch (err) {
+        console.warn('Recaptcha init error', err);
+      }
+    }
+
+    // ----- Main initialization -----
+    window.onload = () => {
+      initRecaptcha();
+
+      // Check for existing session first
+      const existingSession = getUserSession();
+      if (existingSession && existingSession.phone) {
+        showLoading('Checking previous session...');
+        
+        // Wait a bit for Firebase Auth to initialize
+        setTimeout(async () => {
+          const currentUser = auth.currentUser;
+          if (currentUser && currentUser.phoneNumber === existingSession.phone) {
+            // User is still authenticated with Firebase
+            const roleInfo = await getUserRole(currentUser.uid, existingSession.phone);
+            if (roleInfo) {
+              // Update session with fresh data
+              setUserSession(roleInfo.uid, roleInfo.role, existingSession.phone, {
+                driverId: roleInfo.driverId
+              });
+              redirectByRole(roleInfo);
+              return;
+            }
+          }
+          hideLoading();
+        }, 1000);
+      }
+
+      // Firebase auth state listener
+      auth.onAuthStateChanged(async (user) => {
+        if (user && user.phoneNumber) {
+          showLoading('Authenticating...');
+          
+          try {
+            const roleInfo = await getUserRole(user.uid, user.phoneNumber);
+            if (roleInfo) {
+              // Save session
+              setUserSession(roleInfo.uid, roleInfo.role, user.phoneNumber, {
+                driverId: roleInfo.driverId
+              });
+              
+              // Only redirect if we're not already in the middle of a login process
+              if (!document.getElementById('otp').style.display || document.getElementById('otp').style.display === 'none') {
+                redirectByRole(roleInfo);
+                return;
+              }
+            } else {
+              showToast('Account not found. Redirecting to signup...', 'info');
+              // Sign out the user since they don't have a valid account
+              await auth.signOut();
+              clearUserSession();
+              // Extract phone number without country code for signup
+              const phoneNumber = user.phoneNumber.replace('+91', '');
+              redirectToSignup(phoneNumber);
+              return;
+            }
+          } catch (err) {
+            console.error('Auth state change error:', err);
+            showToast('Authentication error. Please try again.', 'error');
+          }
+          
+          hideLoading();
+        } else if (user === null) {
+          // User is signed out, clear session
+          clearUserSession();
+          hideLoading();
+        }
+      });
+    };
+
+    // Auto-verify OTP when 6 digits are entered
+    otpInput.addEventListener('input', () => {
+      const otp = otpInput.value.trim();
+      if (otp.length === 6 && /^\d{6}$/.test(otp)) {
+        // Small delay to allow user to see the complete input
+        setTimeout(() => {
+          if (verifyBtn.style.display !== 'none' && !verifyBtn.disabled) {
+            verifyBtn.click();
+          }
+        }, 300);
+      }
+    });
+
+    function startResendCountdown() {
+      let time = 30;
+      resendBtn.disabled = true;
+      resendBtn.textContent = `Resend OTP (${time}s)`;
+      resendBtn.style.display = 'block';
+
+      resendTimer = setInterval(() => {
+        time--;
+        resendBtn.textContent = `Resend OTP (${time}s)`;
+        if (time <= 0) {
+          clearInterval(resendTimer);
+          resendBtn.textContent = 'Resend OTP';
+          resendBtn.disabled = false;
+        }
+      }, 1000);
+    }
+
+    async function checkUserExists(fullPhone) {
+      try {
+        // Check in users table
+        const userSnap = await db.ref('users').orderByChild('phone').equalTo(fullPhone).once('value');
+        if (userSnap.exists()) return true;
+
+        // Check in driverdetails table
+        const driverSnap = await db.ref('driverdetails').orderByChild('phone').equalTo(fullPhone).once('value');
+        return driverSnap.exists();
+      } catch (err) {
+        console.error('DB lookup error', err);
+        throw err;
+      }
+    }
+
+    // Event: Send OTP
+    sendBtn.addEventListener('click', async () => {
+      const phone = phoneInput.value.trim();
+      if (!/^\d{10}$/.test(phone)) {
+        showToast('Enter a valid 10-digit phone number.', 'error');
+        phoneInput.focus();
+        return;
+      }
+      const fullPhone = '+91' + phone;
+
+      sendBtn.innerHTML = 'Checking... <div class="spinner"></div>';
+      sendBtn.disabled = true;
+
+      try {
+        const userExists = await checkUserExists(fullPhone);
+        if (!userExists) {
+          showToast('No account found. Redirecting to signup...', 'info');
+          sendBtn.textContent = 'Send OTP';
+          sendBtn.disabled = false;
+          // Redirect to signup with phone number pre-filled
+          redirectToSignup(phone);
+          return;
+        }
+
+        // Send OTP
+        sendBtn.innerHTML = 'Sending... <div class="spinner"></div>';
+        // ensure recaptcha exists
+        if (!window.recaptchaVerifier) initRecaptcha();
+
+        confirmationResult = await auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier);
+        showToast('OTP sent successfully!', 'success');
+
+        // Add fade-in animation to OTP section
+        otpInput.style.display = 'block';
+        verifyBtn.style.display = 'block';
+        otpInput.classList.add('fade-in-up');
+        verifyBtn.classList.add('fade-in-up');
+        
+        sendBtn.style.display = 'none';
+        otpInput.focus();
+        startResendCountdown();
+      } catch (err) {
+        console.error('OTP send failed:', err);
+        const msg = err && err.message ? err.message : 'Failed to send OTP';
+        showToast('Failed to send OTP: ' + msg, 'error', 5000);
+        sendBtn.textContent = 'Send OTP';
+        sendBtn.disabled = false;
+        initRecaptcha();
+      }
+    });
+
+    // Resend flow: reveal send controls again so user can trigger a fresh send
+    resendBtn.addEventListener('click', () => {
+      sendBtn.style.display = 'block';
+      otpInput.style.display = 'none';
+      verifyBtn.style.display = 'none';
+      resendBtn.style.display = 'none';
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send OTP';
+      phoneInput.focus();
+    });
+
+    // Event: Verify OTP
+    verifyBtn.addEventListener('click', async () => {
+      const otp = otpInput.value.trim();
+      if (!/^\d{6}$/.test(otp)) {
+        showToast('Enter the 6-digit OTP.', 'error');
+        otpInput.focus();
+        return;
+      }
+
+      verifyBtn.innerHTML = 'Verifying... <div class="spinner"></div>';
+      verifyBtn.disabled = true;
+      
+      try {
+        const result = await confirmationResult.confirm(otp);
+        const user = result.user;
+        const userPhone = user.phoneNumber;
+
+        showLoading('Verifying account...');
+
+        const roleInfo = await getUserRole(user.uid, userPhone);
+        if (roleInfo) {
+          // Save session
+          setUserSession(roleInfo.uid, roleInfo.role, userPhone, {
+            driverId: roleInfo.driverId
+          });
+
+          // Set sessionStorage markers for drivers
+          if (roleInfo.role === 'driver' && roleInfo.driverId) {
+            try {
+              sessionStorage.setItem(`lastRoleFor:${user.uid}`, "driver");
+              sessionStorage.setItem(`lastDriverIdFor:${user.uid}`, roleInfo.driverId);
+            } catch (e) {
+              console.warn("Failed to set sessionStorage markers:", e);
+            }
+          }
+
+          showToast('Login successful!', 'success');
+          redirectByRole(roleInfo);
+        } else {
+          showToast('Account not found. Redirecting to signup...', 'info');
+          await auth.signOut();
+          clearUserSession();
+          hideLoading();
+          // Extract phone number without country code for signup
+          const phoneNumber = userPhone.replace('+91', '');
+          redirectToSignup(phoneNumber);
+        }
+      } catch (err) {
+        console.error('OTP verification failed:', err);
+        showToast('Incorrect or expired OTP.', 'error', 4500);
+        hideLoading();
+        verifyBtn.textContent = 'Verify OTP';
+        verifyBtn.disabled = false;
+        otpInput.focus();
+      }
+    });
+
+    // Enhanced phone input validation
+    phoneInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '');
+    });
+
+    // Handle Enter key for phone input
+    phoneInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendBtn.click();
+      }
+    });
+
+    // Handle Enter key for OTP input
+    otpInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        if (verifyBtn.style.display !== 'none' && !verifyBtn.disabled) {
+          verifyBtn.click();
+        }
+      }
+    });
+
+    // Logout function for testing (can be called from console)
+    window.logout = async () => {
+      try {
+        showLoading('Signing out...');
+        await auth.signOut();
+        clearUserSession();
+        showToast('Signed out successfully', 'success');
+        setTimeout(() => {
+          hideLoading();
+          location.reload();
+        }, 1000);
+      } catch (err) {
+        console.error('Logout error:', err);
+        showToast('Error signing out', 'error');
+        hideLoading();
+      }
+    };
+  </script>
 </body>
 </html>
