@@ -296,8 +296,12 @@
           bookedAt: new Date().toISOString(),
           status: 'confirmed'
         };
+        // Calculate commission based on trip type
+        const tripType = bookingData.triptype || bookingData.tripType || 'oneway';
+        const commissionRate = tripType === 'roundtrip' ? 0.8 : 0.7; // 80% for roundtrip, 70% for oneway
+        
         updates[`driverWallet/${driverId}/${bookingKey}`] = {
-          amount: (bookingData.fare || 0) * 0.6,
+          amount: (bookingData.fare || 0) * commissionRate,
           status: 'unpaid',
           bookingId: bookingKey,
           date: new Date().toISOString()
