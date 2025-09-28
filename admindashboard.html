@@ -59,7 +59,9 @@
     .badge-processing { background: linear-gradient(135deg, var(--warning) 0%, #f59e0b 100%); color: white; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
     .badge-verified { background: linear-gradient(135deg, var(--success) 0%, #10b981 100%); color: white; padding: 4px 8px; border-radius: 12px; font-weight: 600; font-size: 0.7rem; }
     .badge-unverified { background: linear-gradient(135deg, var(--danger) 0%, #ef4444 100%); color: white; padding: 4px 8px; border-radius: 12px; font-weight: 600; font-size: 0.7rem; }
-    .badge-pending { background: linear-gradient(135deg, var(--warning) 0%, #f59e0b 100%); color: white; padding: 4px 8px; border-radius: 12px; font-weight: 600; font-size: 0.7rem; }
+    .badge-pending { background: linear-gradient(135deg, var(--info) 0%, #06b6d4 100%); color: white; padding: 4px 8px; border-radius: 12px; font-weight: 600; font-size: 0.7rem; }
+    .badge-error { background: linear-gradient(135deg, var(--warning) 0%, #f59e0b 100%); color: white; padding: 4px 8px; border-radius: 12px; font-weight: 600; font-size: 0.7rem; }
+    .badge-disabled { background: linear-gradient(135deg, var(--muted) 0%, #94a3b8 100%); color: white; padding: 4px 8px; border-radius: 12px; font-weight: 600; font-size: 0.7rem; }
     
     .image-gallery { display: flex; gap: 8px; flex-wrap: wrap; }
     .image-thumbnail { width: 80px; height: 60px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); cursor: pointer; transition: all 0.2s; }
@@ -80,6 +82,12 @@
     .payment-verification-status.verified { background: #d1fae5; border: 1px solid #10b981; color: #065f46; }
     .payment-verification-status.unverified { background: #fee2e2; border: 1px solid #dc2626; color: #991b1b; }
     .payment-verification-status.loading { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; }
+    .payment-verification-status.error { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; }
+    
+    .backend-status { padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; margin: 10px 0; }
+    .backend-status.online { background: #d1fae5; border: 1px solid #10b981; color: #065f46; }
+    .backend-status.offline { background: #fee2e2; border: 1px solid #dc2626; color: #991b1b; }
+    .backend-status.checking { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; }
     
     @media (max-width: 1024px) { .container-main { grid-template-columns: 1fr; padding: 16px; } .sidebar { order: 2; height: auto; } .driver-wallets-container { grid-template-columns: 1fr; } }
   </style>
@@ -102,7 +110,10 @@
         </div>
       </div>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 align-items-center">
+      <div id="backendStatus" class="backend-status checking" style="display: none;">
+        <i class="bi bi-hourglass-split"></i> Checking backend...
+      </div>
       <button id="refreshAllBtn" class="btn btn-sm btn-ghost" title="Refresh current tab"><i class="bi bi-arrow-clockwise"></i></button>
       <button class="btn btn-sm btn-ghost" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
     </div>
@@ -237,6 +248,9 @@
               <option value="paid">Paid</option>
             </select>
             <button id="walletFilterApplyBtn" class="btn btn-sm btn-primary">Apply</button>
+            <button id="toggleVerificationBtn" class="btn btn-sm btn-outline-warning" title="Toggle payment verification">
+              <i class="bi bi-shield-check"></i> <span id="verificationStatus">Disabled</span>
+            </button>
           </div>
         </div>
         <div id="wallets-loading" class="skeleton" style="height:80px;"></div>
@@ -246,7 +260,12 @@
       <section id="pending-withdrawals-tab" class="tab-pane panel" hidden>
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h2><i class="bi bi-credit-card me-2 text-warning"></i>Pending Withdrawals</h2>
-          <button id="exportWithdrawalsBtn" class="btn btn-primary"><i class="bi bi-download me-2"></i>Export CSV</button>
+          <div class="d-flex gap-2">
+            <button id="toggleWithdrawalVerificationBtn" class="btn btn-outline-warning btn-sm" title="Toggle payment verification">
+              <i class="bi bi-shield-check"></i> <span id="withdrawalVerificationStatus">Disabled</span>
+            </button>
+            <button id="exportWithdrawalsBtn" class="btn btn-primary"><i class="bi bi-download me-2"></i>Export CSV</button>
+          </div>
         </div>
         <div id="withdrawals-loading" class="skeleton" style="height:60px;"></div>
         <div id="withdrawals-container" style="display:none;"></div>
@@ -325,6 +344,8 @@
 
     const tables = {};
     let currentUser = null;
+    let backendOnline = false;
+    let paymentVerificationEnabled = false;
 
     // Backend API URL - Update this to match your backend
     const BACKEND_URL = 'https://wavetravel-razorpay-backend.onrender.com';
@@ -347,12 +368,74 @@
       toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
     }
 
-    // Payment verification function
+    // Backend health check
+    async function checkBackendHealth() {
+      const statusElement = document.getElementById('backendStatus');
+      statusElement.style.display = 'block';
+      statusElement.className = 'backend-status checking';
+      statusElement.innerHTML = '<i class="bi bi-hourglass-split"></i> Checking backend...';
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(`${BACKEND_URL}/health`, {
+          method: 'GET',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          backendOnline = true;
+          statusElement.className = 'backend-status online';
+          statusElement.innerHTML = '<i class="bi bi-check-circle"></i> Backend Online';
+          setTimeout(() => { statusElement.style.display = 'none'; }, 3000);
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        backendOnline = false;
+        statusElement.className = 'backend-status offline';
+        statusElement.innerHTML = '<i class="bi bi-x-circle"></i> Backend Offline';
+        
+        if (error.name === 'AbortError') {
+          statusElement.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Backend Timeout';
+        } else if (error.message.includes('CORS')) {
+          statusElement.innerHTML = '<i class="bi bi-exclamation-triangle"></i> CORS Error';
+        }
+      }
+    }
+
+    // Enhanced payment verification function with better error handling
     async function verifyPayment(paymentId) {
+      if (!paymentVerificationEnabled || !backendOnline) {
+        return {
+          success: false,
+          verified: false,
+          error: paymentVerificationEnabled ? 'Backend offline' : 'Verification disabled'
+        };
+      }
+
       try {
         console.log('Verifying payment:', paymentId);
         
-        const response = await fetch(`${BACKEND_URL}/payment/${paymentId}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        
+        const response = await fetch(`${BACKEND_URL}/payment/${paymentId}`, {
+          method: 'GET',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         
         if (data.success && data.payment) {
@@ -364,7 +447,7 @@
             verified: payment.status === 'captured' || payment.status === 'authorized',
             payment: payment,
             status: payment.status,
-            amount: payment.amount / 100, // Convert from paise to rupees
+            amount: payment.amount / 100,
             method: payment.method,
             created_at: payment.created_at
           };
@@ -377,12 +460,92 @@
         }
       } catch (error) {
         console.error('Payment verification failed:', error);
-        return {
-          success: false,
-          verified: false,
-          error: 'Network error or payment service unavailable'
-        };
+        
+        if (error.name === 'AbortError') {
+          return {
+            success: false,
+            verified: false,
+            error: 'Verification timeout (backend may be cold starting)'
+          };
+        } else if (error.message.includes('CORS')) {
+          return {
+            success: false,
+            verified: false,
+            error: 'CORS configuration issue'
+          };
+        } else if (error.message.includes('Failed to fetch')) {
+          return {
+            success: false,
+            verified: false,
+            error: 'Network error (backend unavailable)'
+          };
+        } else {
+          return {
+            success: false,
+            verified: false,
+            error: 'Payment verification service unavailable'
+          };
+        }
       }
+    }
+
+    // Update payment status display with better error handling
+    function updatePaymentStatus(elementId, paymentId, delay = 0) {
+      setTimeout(async () => {
+        const statusElement = document.getElementById(elementId);
+        if (!statusElement) return;
+        
+        if (paymentId === 'N/A' || !paymentId) {
+          statusElement.className = 'badge-disabled';
+          statusElement.textContent = 'No Payment ID';
+          statusElement.title = 'No payment ID found for this entry';
+          return;
+        }
+        
+        if (!paymentVerificationEnabled) {
+          statusElement.className = 'badge-disabled';
+          statusElement.textContent = 'Verification Disabled';
+          statusElement.title = 'Payment verification is currently disabled';
+          return;
+        }
+        
+        if (!backendOnline) {
+          statusElement.className = 'badge-error';
+          statusElement.textContent = 'Backend Offline';
+          statusElement.title = 'Cannot verify - backend service is offline';
+          return;
+        }
+        
+        statusElement.className = 'badge-pending';
+        statusElement.textContent = 'Verifying...';
+        statusElement.title = 'Checking payment status...';
+        
+        try {
+          const result = await verifyPayment(paymentId);
+          
+          if (result.success && result.verified) {
+            statusElement.className = 'badge-verified';
+            statusElement.textContent = 'Verified';
+            statusElement.title = `Amount: ₹${result.amount}, Status: ${result.status}, Method: ${result.method || 'N/A'}`;
+          } else {
+            statusElement.className = 'badge-unverified';
+            if (result.error.includes('timeout')) {
+              statusElement.textContent = 'Timeout';
+            } else if (result.error.includes('CORS')) {
+              statusElement.textContent = 'CORS Error';
+            } else if (result.error.includes('Network')) {
+              statusElement.textContent = 'Network Error';
+            } else {
+              statusElement.textContent = 'Unverified';
+            }
+            statusElement.title = result.error || 'Payment verification failed';
+          }
+        } catch (error) {
+          statusElement.className = 'badge-error';
+          statusElement.textContent = 'Error';
+          statusElement.title = 'Verification error: ' + error.message;
+        }
+      }, delay);
     }
 
     function initTable(id, nonSortableCols = []) {
@@ -833,7 +996,6 @@
             const dropoff = entry.booking?.dropoff || entry.dropoff || 'N/A';
             const paymentId = entry.booking?.paymentId || entry.paymentId || 'N/A';
             
-            // DEBUG: Log the entry structure
             console.log('Entry for booking:', bookingId);
             console.log('Full entry object:', entry);
             console.log('entry.booking:', entry.booking);
@@ -841,7 +1003,6 @@
             console.log('entry.paymentId:', entry.paymentId);
             console.log('Final paymentId:', paymentId);
             
-            // If no payment ID found in wallet entry, try to fetch from bookings collection
             let actualPaymentId = paymentId;
             if (paymentId === 'N/A' && entry.bookingId) {
               console.log('Attempting to fetch payment ID from bookings collection for:', entry.bookingId);
@@ -871,45 +1032,14 @@
               <td>${isPaid ? '<span class="badge-paid">Paid</span>' : effectiveStatus === 'processing' ? '<span class="badge-processing">Processing</span>' : '<span class="badge-unpaid">Unpaid</span>'}</td>
               <td>
                 <div class="btn-group">
-                  <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${amount}, '${escapeHtml(bookingId)}')" ${(!upiId || isPaid || actualPaymentId === 'N/A') ? 'disabled' : ''}><i class="bi bi-qr-code"></i></button>
+                  <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${amount}, '${escapeHtml(bookingId)}')" ${(!upiId || isPaid) ? 'disabled' : ''}><i class="bi bi-qr-code"></i></button>
                   <button class="btn btn-sm btn-success" onclick="markPaidEntry('${escapeHtml(driverId)}', '${escapeHtml(bookingId)}')"><i class="bi bi-check"></i></button>
                 </div>
               </td>`;
             tbody.appendChild(row);
 
-            // Verify payment status if paymentId exists
-            if (actualPaymentId !== 'N/A') {
-              setTimeout(async () => {
-                const statusElement = document.getElementById(`payment-status-${sanitizeId(bookingId)}`);
-                if (statusElement) {
-                  try {
-                    const verificationResult = await verifyPayment(actualPaymentId);
-                    if (verificationResult.success && verificationResult.verified) {
-                      statusElement.className = 'badge-verified';
-                      statusElement.textContent = 'Verified';
-                      statusElement.title = `Amount: ₹${verificationResult.amount}, Status: ${verificationResult.status}`;
-                    } else {
-                      statusElement.className = 'badge-unverified';
-                      statusElement.textContent = 'Unverified';
-                      statusElement.title = verificationResult.error || 'Payment verification failed';
-                    }
-                  } catch (error) {
-                    statusElement.className = 'badge-unverified';
-                    statusElement.textContent = 'Error';
-                    statusElement.title = 'Payment verification error';
-                  }
-                }
-              }, 100 * entryIndex); // Stagger the API calls
-            } else {
-              setTimeout(() => {
-                const statusElement = document.getElementById(`payment-status-${sanitizeId(bookingId)}`);
-                if (statusElement) {
-                  statusElement.className = 'badge-unverified';
-                  statusElement.textContent = 'No Payment ID';
-                  statusElement.title = 'No payment ID found for this entry';
-                }
-              }, 100);
-            }
+            // Update payment status with staggered delays
+            updatePaymentStatus(`payment-status-${sanitizeId(bookingId)}`, actualPaymentId, 100 * entryIndex);
           }
           container.appendChild(driverCard);
           
@@ -1018,7 +1148,7 @@
                     <i class="bi bi-eye"></i>
                   </button>
                   <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${Number(amount) || 0}, '${escapeHtml(bookingId)}')"
-                          ${(!upiId || isPaid || paymentId === 'N/A') ? 'disabled' : ''}>
+                          ${(!upiId || isPaid) ? 'disabled' : ''}>
                     <i class="bi bi-qr-code"></i>
                   </button>
                   <button class="btn btn-sm btn-success" onclick="approveWithdrawal('${escapeHtml(driverId)}', '${escapeHtml(bookingId)}')">
@@ -1031,39 +1161,8 @@
               </td>`;
             tbody.appendChild(row);
 
-            // Verify payment status if paymentId exists
-            if (paymentId !== 'N/A') {
-              setTimeout(async () => {
-                const statusElement = document.getElementById(`withdrawal-payment-status-${sanitizeId(bookingId)}`);
-                if (statusElement) {
-                  try {
-                    const verificationResult = await verifyPayment(paymentId);
-                    if (verificationResult.success && verificationResult.verified) {
-                      statusElement.className = 'badge-verified';
-                      statusElement.textContent = 'Verified';
-                      statusElement.title = `Amount: ₹${verificationResult.amount}, Status: ${verificationResult.status}`;
-                    } else {
-                      statusElement.className = 'badge-unverified';
-                      statusElement.textContent = 'Unverified';
-                      statusElement.title = verificationResult.error || 'Payment verification failed';
-                    }
-                  } catch (error) {
-                    statusElement.className = 'badge-unverified';
-                    statusElement.textContent = 'Error';
-                    statusElement.title = 'Payment verification error';
-                  }
-                }
-              }, 100 * serialNo); // Stagger the API calls
-            } else {
-              setTimeout(() => {
-                const statusElement = document.getElementById(`withdrawal-payment-status-${sanitizeId(bookingId)}`);
-                if (statusElement) {
-                  statusElement.className = 'badge-unverified';
-                  statusElement.textContent = 'No Payment ID';
-                  statusElement.title = 'No payment ID found for this entry';
-                }
-              }, 100);
-            }
+            // Update payment status with staggered delays
+            updatePaymentStatus(`withdrawal-payment-status-${sanitizeId(bookingId)}`, paymentId, 100 * serialNo);
           }
           container.appendChild(driverCard);
         }
@@ -1177,7 +1276,6 @@
           await update(ref(db, `driverWallet/${driverId}`), updates);
         }
         
-        // Also remove from pending withdrawals
         await remove(ref(db, `pendingWithdrawals/${driverId}`));
         
         showToast('All entries marked as paid', 'success');
@@ -1235,21 +1333,19 @@
           return;
         }
 
-        // Show verification status
         const verificationStatus = document.getElementById('paymentVerificationStatus');
         verificationStatus.style.display = 'block';
         verificationStatus.className = 'payment-verification-status loading';
         verificationStatus.innerHTML = '<i class="bi bi-hourglass-split"></i> Verifying payment...';
 
-        // If there's a specific booking ID, verify the payment
-        if (bookingId) {
+        if (bookingId && paymentVerificationEnabled && backendOnline) {
           try {
             const walletSnapshot = await get(ref(db, `driverWallet/${driverId}/${bookingId}`));
             if (walletSnapshot.exists()) {
               const entry = walletSnapshot.val();
               const paymentId = entry.booking?.paymentId || entry.paymentId;
               
-              if (paymentId) {
+              if (paymentId && paymentId !== 'N/A') {
                 const verificationResult = await verifyPayment(paymentId);
                 
                 if (verificationResult.success && verificationResult.verified) {
@@ -1279,7 +1375,7 @@
               }
             }
           } catch (error) {
-            verificationStatus.className = 'payment-verification-status unverified';
+            verificationStatus.className = 'payment-verification-status error';
             verificationStatus.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Verification error: ${error.message}`;
             
             if (!confirm('Payment verification encountered an error. Are you sure you want to generate QR code for payout?')) {
@@ -1287,8 +1383,16 @@
             }
           }
         } else {
-          verificationStatus.className = 'payment-verification-status loading';
-          verificationStatus.innerHTML = '<i class="bi bi-info-circle"></i> Bulk payout - individual payment verification not performed';
+          if (!paymentVerificationEnabled) {
+            verificationStatus.className = 'payment-verification-status loading';
+            verificationStatus.innerHTML = '<i class="bi bi-info-circle"></i> Payment verification is disabled';
+          } else if (!backendOnline) {
+            verificationStatus.className = 'payment-verification-status error';
+            verificationStatus.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Backend service is offline - cannot verify payments';
+          } else {
+            verificationStatus.className = 'payment-verification-status loading';
+            verificationStatus.innerHTML = '<i class="bi bi-info-circle"></i> Bulk payout - individual payment verification not performed';
+          }
         }
 
         const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&am=${amount}&cu=INR&tn=${encodeURIComponent('WaveTravel Payment' + (bookingId ? ' - ' + bookingId : ''))}`;
@@ -1317,7 +1421,6 @@
           }
         };
         
-        // Handle mark as paid from QR modal
         document.getElementById('markPaidFromQrBtn').onclick = async () => {
           if (bookingId && confirm(`Mark this payment as completed for booking ${bookingId}?`)) {
             try {
@@ -1328,7 +1431,6 @@
               });
               showToast('Entry marked as paid', 'success');
               
-              // Close modal and refresh data
               bootstrap.Modal.getInstance(document.getElementById('qrModal')).hide();
               loadWallets();
               loadWithdrawals();
@@ -1344,7 +1446,6 @@
       }
     };
 
-    // Export functionality
     window.exportWithdrawals = async () => {
       try {
         const snapshot = await get(ref(db, 'pendingWithdrawals'));
@@ -1371,8 +1472,6 @@
           for (const [bookingId, data] of Object.entries(bookingsObj)) {
             const paymentId = data.booking?.paymentId || data.paymentId || 'N/A';
             let paymentStatus = 'Not Checked';
-            
-            // You could add payment verification here for CSV export if needed
             
             csvData.push([
               driverId,
@@ -1406,6 +1505,31 @@
       }
     };
 
+    // Toggle payment verification
+    window.togglePaymentVerification = () => {
+      paymentVerificationEnabled = !paymentVerificationEnabled;
+      const statusSpan = document.getElementById('verificationStatus');
+      const withdrawalStatusSpan = document.getElementById('withdrawalVerificationStatus');
+      
+      if (paymentVerificationEnabled) {
+        statusSpan.textContent = 'Enabled';
+        withdrawalStatusSpan.textContent = 'Enabled';
+        showToast('Payment verification enabled', 'success');
+      } else {
+        statusSpan.textContent = 'Disabled';
+        withdrawalStatusSpan.textContent = 'Disabled';
+        showToast('Payment verification disabled', 'warning');
+      }
+      
+      // Reload current tab to refresh verification statuses
+      const activeTab = document.querySelector('.nav-link.active');
+      if (activeTab) {
+        const tabName = activeTab.getAttribute('onclick')?.match(/openTab\('(.+?)'\)/)?.[1];
+        if (tabName === 'driver-wallets') loadWallets();
+        if (tabName === 'pending-withdrawals') loadWithdrawals();
+      }
+    };
+
     // Tab management
     window.openTab = (tabName) => {
       document.querySelectorAll('.tab-pane').forEach(tab => tab.hidden = true);
@@ -1435,13 +1559,15 @@
 
     // Event listeners
     document.addEventListener('DOMContentLoaded', () => {
+      // Check backend health on startup
+      checkBackendHealth();
+      
       // Global search functionality
       const globalSearch = document.getElementById('globalSearch');
       if (globalSearch) {
         globalSearch.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             const searchTerm = globalSearch.value.toLowerCase();
-            // Search across all visible tables
             Object.values(tables).forEach(table => {
               if (table && typeof table.search === 'function') {
                 table.search(searchTerm).draw();
@@ -1461,6 +1587,7 @@
 
       // Refresh button
       document.getElementById('refreshAllBtn')?.addEventListener('click', () => {
+        checkBackendHealth();
         const activeTab = document.querySelector('.nav-link.active');
         if (activeTab) {
           const tabName = activeTab.getAttribute('onclick')?.match(/openTab\('(.+?)'\)/)?.[1];
@@ -1472,6 +1599,10 @@
       document.getElementById('requestFilterBtn')?.addEventListener('click', loadRideRequests);
       document.getElementById('walletFilterApplyBtn')?.addEventListener('click', loadWallets);
       document.getElementById('exportWithdrawalsBtn')?.addEventListener('click', exportWithdrawals);
+
+      // Toggle verification buttons
+      document.getElementById('toggleVerificationBtn')?.addEventListener('click', togglePaymentVerification);
+      document.getElementById('toggleWithdrawalVerificationBtn')?.addEventListener('click', togglePaymentVerification);
     });
 
     // Authentication state listener
@@ -1498,6 +1629,7 @@
     window.loadWithdrawals = loadWithdrawals;
     window.loadProfile = loadProfile;
     window.verifyPayment = verifyPayment;
+    window.checkBackendHealth = checkBackendHealth;
 
   </script>
 </body>
