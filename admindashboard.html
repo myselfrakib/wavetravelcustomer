@@ -832,6 +832,14 @@
             const dropoff = entry.booking?.dropoff || entry.dropoff || 'N/A';
             const paymentId = entry.booking?.paymentId || entry.paymentId || 'N/A';
             
+            // DEBUG: Log the entry structure
+            console.log('Entry for booking:', bookingId);
+            console.log('Full entry object:', entry);
+            console.log('entry.booking:', entry.booking);
+            console.log('entry.booking?.paymentId:', entry.booking?.paymentId);
+            console.log('entry.paymentId:', entry.paymentId);
+            console.log('Final paymentId:', paymentId);
+            
             const row = document.createElement('tr');
             row.innerHTML = `
               <td>${entryIndex++}</td>
