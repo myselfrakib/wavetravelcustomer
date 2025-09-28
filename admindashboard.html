@@ -1318,6 +1318,65 @@
       }
     };
 
+    // Placeholder function for booking modal (referenced but not implemented)
+    window.showBookingModal = async (driverId, bookingId) => {
+      try {
+        const walletSnapshot = await get(ref(db, `driverWallet/${driverId}/${bookingId}`));
+        if (walletSnapshot.exists()) {
+          const entry = walletSnapshot.val();
+          const bookingData = entry.booking || {};
+          
+          const modalContent = `
+            <div class="modal-body">
+              <h6>Booking Details</h6>
+              <table class="table table-sm">
+                <tr><td><strong>Booking ID:</strong></td><td>${escapeHtml(bookingId)}</td></tr>
+                <tr><td><strong>Driver ID:</strong></td><td>${escapeHtml(driverId)}</td></tr>
+                <tr><td><strong>Customer:</strong></td><td>${escapeHtml(bookingData.customerName || 'N/A')}</td></tr>
+                <tr><td><strong>Pickup:</strong></td><td>${escapeHtml(bookingData.pickup || 'N/A')}</td></tr>
+                <tr><td><strong>Dropoff:</strong></td><td>${escapeHtml(bookingData.dropoff || 'N/A')}</td></tr>
+                <tr><td><strong>Fare:</strong></td><td>₹${escapeHtml(String(bookingData.fare || 'N/A'))}</td></tr>
+                <tr><td><strong>Amount:</strong></td><td>₹${escapeHtml(String(entry.amount || 'N/A'))}</td></tr>
+                <tr><td><strong>Payment ID:</strong></td><td style="font-family: monospace;">${escapeHtml(bookingData.paymentId || 'N/A')}</td></tr>
+                <tr><td><strong>Booking Date:</strong></td><td>${bookingData.bookedAt ? new Date(bookingData.bookedAt).toLocaleString() : 'N/A'}</td></tr>
+              </table>
+            </div>
+          `;
+          
+          // Create temporary modal
+          const tempModalId = 'bookingModal-' + Date.now();
+          document.body.insertAdjacentHTML('beforeend', `
+            <div class="modal fade" id="${tempModalId}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Booking Details - ${escapeHtml(bookingId)}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  ${modalContent}
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `);
+          
+          const modal = new bootstrap.Modal(document.getElementById(tempModalId));
+          modal.show();
+          
+          // Clean up modal after it's hidden
+          document.getElementById(tempModalId).addEventListener('hidden.bs.modal', () => {
+            document.getElementById(tempModalId).remove();
+          });
+        } else {
+          showToast('Booking details not found', 'danger');
+        }
+      } catch (error) {
+        showToast('Failed to load booking details: ' + error.message, 'danger');
+      }
+    };
+
     window.showQrModal = async (driverId, amount, bookingId) => {
       try {
         const driverSnapshot = await get(ref(db, `driverdetails/${driverId}`));
