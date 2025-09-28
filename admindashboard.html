@@ -841,6 +841,22 @@
             console.log('entry.paymentId:', entry.paymentId);
             console.log('Final paymentId:', paymentId);
             
+            // If no payment ID found in wallet entry, try to fetch from bookings collection
+            let actualPaymentId = paymentId;
+            if (paymentId === 'N/A' && entry.bookingId) {
+              console.log('Attempting to fetch payment ID from bookings collection for:', entry.bookingId);
+              try {
+                const bookingSnapshot = await get(ref(db, `bookings/${entry.bookingId}`));
+                if (bookingSnapshot.exists()) {
+                  const bookingData = bookingSnapshot.val();
+                  actualPaymentId = bookingData.paymentId || bookingData.payment_id || 'N/A';
+                  console.log('Found payment ID in bookings collection:', actualPaymentId);
+                }
+              } catch (error) {
+                console.log('Error fetching from bookings collection:', error);
+              }
+            }
+            
             const row = document.createElement('tr');
             row.innerHTML = `
               <td>${entryIndex++}</td>
@@ -850,24 +866,24 @@
               </td>
               <td>₹${amount.toFixed(2)}</td>
               <td>₹${escapeHtml(String(fare))}</td>
-              <td style="font-family: monospace; font-size: 0.8em;">${paymentId !== 'N/A' ? escapeHtml(paymentId) : '<span class="text-muted">N/A</span>'}</td>
+              <td style="font-family: monospace; font-size: 0.8em;">${actualPaymentId !== 'N/A' ? escapeHtml(actualPaymentId) : '<span class="text-muted">N/A</span>'}</td>
               <td><span class="badge-pending" id="payment-status-${sanitizeId(bookingId)}">Checking...</span></td>
               <td>${isPaid ? '<span class="badge-paid">Paid</span>' : effectiveStatus === 'processing' ? '<span class="badge-processing">Processing</span>' : '<span class="badge-unpaid">Unpaid</span>'}</td>
               <td>
                 <div class="btn-group">
-                  <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${amount}, '${escapeHtml(bookingId)}')" ${(!upiId || isPaid || paymentId === 'N/A') ? 'disabled' : ''}><i class="bi bi-qr-code"></i></button>
+                  <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${amount}, '${escapeHtml(bookingId)}')" ${(!upiId || isPaid || actualPaymentId === 'N/A') ? 'disabled' : ''}><i class="bi bi-qr-code"></i></button>
                   <button class="btn btn-sm btn-success" onclick="markPaidEntry('${escapeHtml(driverId)}', '${escapeHtml(bookingId)}')"><i class="bi bi-check"></i></button>
                 </div>
               </td>`;
             tbody.appendChild(row);
 
             // Verify payment status if paymentId exists
-            if (paymentId !== 'N/A') {
+            if (actualPaymentId !== 'N/A') {
               setTimeout(async () => {
                 const statusElement = document.getElementById(`payment-status-${sanitizeId(bookingId)}`);
                 if (statusElement) {
                   try {
-                    const verificationResult = await verifyPayment(paymentId);
+                    const verificationResult = await verifyPayment(actualPaymentId);
                     if (verificationResult.success && verificationResult.verified) {
                       statusElement.className = 'badge-verified';
                       statusElement.textContent = 'Verified';
