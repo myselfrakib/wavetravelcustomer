@@ -289,6 +289,7 @@
         <div id="qrInfo" class="mb-3 small-muted"></div>
         <div class="d-flex gap-2 justify-content-center">
           <button id="copyUpiUriBtn" class="btn btn-sm btn-outline-primary">Copy URI</button>
+          <button id="markPaidFromQrBtn" class="btn btn-sm btn-success">Mark as Paid</button>
           <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
@@ -854,7 +855,7 @@
               <td>${isPaid ? '<span class="badge-paid">Paid</span>' : effectiveStatus === 'processing' ? '<span class="badge-processing">Processing</span>' : '<span class="badge-unpaid">Unpaid</span>'}</td>
               <td>
                 <div class="btn-group">
-                  <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${amount}, '${escapeHtml(bookingId)}')" ${(!upiId || isPaid) ? 'disabled' : ''}><i class="bi bi-qr-code"></i></button>
+                  <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${amount}, '${escapeHtml(bookingId)}')" ${(!upiId || isPaid || paymentId === 'N/A') ? 'disabled' : ''}><i class="bi bi-qr-code"></i></button>
                   <button class="btn btn-sm btn-success" onclick="markPaidEntry('${escapeHtml(driverId)}', '${escapeHtml(bookingId)}')"><i class="bi bi-check"></i></button>
                 </div>
               </td>`;
@@ -1001,7 +1002,7 @@
                     <i class="bi bi-eye"></i>
                   </button>
                   <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${Number(amount) || 0}, '${escapeHtml(bookingId)}')"
-                          ${(!upiId || isPaid) ? 'disabled' : ''}>
+                          ${(!upiId || isPaid || paymentId === 'N/A') ? 'disabled' : ''}>
                     <i class="bi bi-qr-code"></i>
                   </button>
                   <button class="btn btn-sm btn-success" onclick="approveWithdrawal('${escapeHtml(driverId)}', '${escapeHtml(bookingId)}')">
@@ -1297,6 +1298,27 @@
             showToast('UPI URI copied to clipboard', 'success');
           } catch (error) {
             showToast('Failed to copy UPI URI', 'danger');
+          }
+        };
+        
+        // Handle mark as paid from QR modal
+        document.getElementById('markPaidFromQrBtn').onclick = async () => {
+          if (bookingId && confirm(`Mark this payment as completed for booking ${bookingId}?`)) {
+            try {
+              await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { 
+                paidout: true, 
+                status: 'paid',
+                paidAt: new Date().toISOString()
+              });
+              showToast('Entry marked as paid', 'success');
+              
+              // Close modal and refresh data
+              bootstrap.Modal.getInstance(document.getElementById('qrModal')).hide();
+              loadWallets();
+              loadWithdrawals();
+            } catch (error) {
+              showToast('Failed to mark as paid: ' + error.message, 'danger');
+            }
           }
         };
         
