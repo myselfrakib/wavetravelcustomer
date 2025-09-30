@@ -409,7 +409,7 @@
           </button>
 
           <!-- OTP Input Section (Initially Hidden) -->
-          <div id="otpSection" style="display: none;" class="mb-6 animate-slide-up">
+          <div class="mb-6">
             <label for="otp" class="block text-sm font-semibold text-on_surface mb-3">
               Verification Code
             </label>
@@ -417,6 +417,7 @@
                    id="otp" 
                    maxlength="6" 
                    placeholder="000000"
+                   style="display: none;"
                    class="otp-input input-field w-full p-4 rounded-2xl bg-white text-on_surface placeholder-gray-300 focus:outline-none" />
           </div>
 
@@ -661,7 +662,6 @@
     const phoneInput = document.getElementById('phone');
     const otpInput = document.getElementById('otp');
     const resendBtn = document.getElementById('resendBtn');
-    const otpSection = document.getElementById('otpSection');
 
     // Initialize reCAPTCHA
     function initRecaptcha() {
@@ -712,7 +712,7 @@
                 driverId: roleInfo.driverId
               });
               
-              if (!otpSection.style.display || otpSection.style.display === 'none') {
+              if (!document.getElementById('otp').style.display || document.getElementById('otp').style.display === 'none') {
                 redirectByRole(roleInfo);
                 return;
               }
@@ -815,7 +815,7 @@
         showToast('OTP sent successfully!', 'success');
 
         // Show OTP input section with animation
-        otpSection.style.display = 'block';
+        otpInput.style.display = 'block';
         verifyBtn.style.display = 'block';
         sendBtn.style.display = 'none';
         
@@ -839,7 +839,7 @@
     // Resend OTP Event Handler
     resendBtn.addEventListener('click', () => {
       sendBtn.style.display = 'block';
-      otpSection.style.display = 'none';
+      otpInput.style.display = 'none';
       verifyBtn.style.display = 'none';
       resendBtn.style.display = 'none';
       sendBtn.disabled = false;
