@@ -95,6 +95,55 @@
     .search-btn:active { transform: translateY(1px); }
     .search-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
+    /* Map Container */
+    .map-container {
+      margin: 16px 0;
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(2,6,23,0.08);
+      display: none;
+    }
+    .map-container.show {
+      display: block;
+    }
+    .map-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--light);
+    }
+    .map-title {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .map-info {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .map-info-item {
+      background: linear-gradient(90deg, #eaf6ff, #dbeffb);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    #map {
+      width: 100%;
+      height: 400px;
+      border-radius: 8px;
+      border: 2px solid var(--light);
+    }
+
     .slots { margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
 
     .slot-card {
@@ -291,6 +340,7 @@
       background: #fff; border-top: 1px solid rgba(0,0,0,0.06);
       display: flex; justify-content: space-around; padding: 0.6rem 0;
       box-shadow: 0 -6px 18px rgba(2,6,23,0.06);
+      z-index: 1000;
     }
     .navbar a { color: var(--primary); text-decoration: none; font-size: 0.78rem; text-align:center; }
     .navbar a i { font-size:1.3rem; display:block; margin-bottom:4px; }
@@ -332,6 +382,18 @@
         <span class="search-text">Search Oneway Rides</span>
       </button>
 
+      <!-- Map Container for Oneway -->
+      <div id="map-container-oneway" class="map-container">
+        <div class="map-header">
+          <div class="map-title">
+            <i class="fas fa-map-marked-alt"></i>
+            Route Preview
+          </div>
+        </div>
+        <div class="map-info" id="map-info-oneway"></div>
+        <div id="map-oneway"></div>
+      </div>
+
       <div class="slots" id="slots-oneway"></div>
     </div>
 
@@ -355,6 +417,18 @@
       <button class="search-btn" id="search-btn-roundtrip" onclick="searchSlots('roundtrip')">
         <span class="search-text">Search Roundtrip Rides</span>
       </button>
+
+      <!-- Map Container for Roundtrip -->
+      <div id="map-container-roundtrip" class="map-container">
+        <div class="map-header">
+          <div class="map-title">
+            <i class="fas fa-map-marked-alt"></i>
+            Route Preview
+          </div>
+        </div>
+        <div class="map-info" id="map-info-roundtrip"></div>
+        <div id="map-roundtrip"></div>
+      </div>
 
       <div class="slots" id="slots-roundtrip"></div>
     </div>
@@ -391,18 +465,25 @@
     const db   = firebase.database();
     const auth = firebase.auth();
 
-    // Customize the emojis used in the WhatsApp message here
+    // Google Maps variables
+    let mapOneway = null;
+    let mapRoundtrip = null;
+    let directionsServiceOneway = null;
+    let directionsRendererOneway = null;
+    let directionsServiceRoundtrip = null;
+    let directionsRendererRoundtrip = null;
+    let geocoder = null;
+
     const customEmojis = {
-      greeting: "🙋‍♂️",   // after "Hi i'm"
-      car: "🚗",          // next to trip type line
-      location: "📍",     // next to from/to lines
-      date: "📅"          // next to date line
+      greeting: "🙋‍♂️",
+      car: "🚗",
+      location: "📍",
+      date: "📅"
     };
 
     let currentTab = 'oneway';
     let isSearching = false;
 
-    // Toast message function
     function showToast(message) {
       const toast = document.getElementById('toast');
       const toastMessage = document.getElementById('toast-message');
@@ -414,7 +495,6 @@
       }, 4000);
     }
 
-    // Debounce helper
     function debounce(fn, wait = 350) {
       let t;
       return function(...args) {
@@ -426,16 +506,13 @@
     function switchTab(tabName) {
       currentTab = tabName;
       
-      // Update tab buttons
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       event.target.classList.add('active');
       
-      // Update tab content
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       document.getElementById(`${tabName}-tab`).classList.add('active');
     }
 
-    // Debounced auto-search wrapper
     const debounceSearch = debounce(() => {
       const pickup = document.getElementById(`pickup-${currentTab}`);
       const dropoff = document.getElementById(`dropoff-${currentTab}`);
@@ -485,13 +562,11 @@
           }
         });
         
-        // Update all dropdowns
         ['oneway', 'roundtrip'].forEach(tabType => {
           document.getElementById(`pickup-${tabType}`).innerHTML = puOpts;
           document.getElementById(`dropoff-${tabType}`).innerHTML = doOpts;
         });
 
-        // Set defaults
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('date-oneway').value = today;
         document.getElementById('date-roundtrip').value = today;
@@ -511,10 +586,8 @@
           });
         });
 
-        // Setup event listeners
         setupEventListeners();
 
-        // Auto-search for oneway tab with a slight delay
         setTimeout(() => {
           if (document.getElementById('pickup-oneway').value && 
               document.getElementById('dropoff-oneway').value && 
@@ -565,17 +638,13 @@
       return `${day}/${month}/${year}`;
     }
 
-    // Helper: open WhatsApp chat for a given number and message (auto-add +91 if missing)
     function openWhatsAppWithMessage(phone, message) {
-      // Sanitize phone: remove non-digits
       let digits = String(phone || '').replace(/\D/g,'');
       if (!digits.startsWith('91')) {
-        // assume India if not present
         digits = '91' + digits;
       }
       const encoded = encodeURIComponent(message);
       const url = `https://wa.me/${digits}?text=${encoded}`;
-      // Open in same tab so mobile will switch to app; change to _blank if you prefer new tab
       window.location.href = url;
     }
 
@@ -595,38 +664,27 @@
         return;
       }
 
-      // Get user details
       db.ref(`users/${user.uid}`).once('value').then(userSnap => {
         const userData = userSnap.val() || {};
         
-        // Prepare ride request data
         const requestData = {
-          // User details
           customerId: user.uid,
           customerEmail: user.email || userData.email || '',
           customerName: userData.name || userData.username || 'Not provided',
           customerPhone: userData.phone || userData.mobile || 'Not provided',
-          
-          // Ride details
           pickup: pickup,
           dropoff: dropoff,
           date: date,
           tripType: tripType,
-          
-          // Request metadata
           status: 'pending',
           requestedAt: firebase.database.ServerValue.TIMESTAMP,
-          
-          // Additional info
           notes: `Customer requested ${tripType} ride from ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
         };
 
-        // Save to Firebase
         db.ref('riderequest').push(requestData)
           .then(() => {
             showToast('Your request has been received. Redirecting to WhatsApp...');
 
-            // Build WhatsApp message with emojis (customizable via customEmojis)
             const nameForMsg = requestData.customerName || (user.email || 'Customer');
             const tripDetail = tripType;
             const pickupLoc = pickup;
@@ -639,14 +697,12 @@
                               `to - ${dropoffLoc} ${customEmojis.location}\n` +
                               `on - ${rideDate} ${customEmojis.date}`;
 
-            // Redirect to WhatsApp number +91 7439654831
             openWhatsAppWithMessage('7439654831', waMessage);
           })
           .catch(err => {
             console.error('Error saving ride request:', err);
             showToast('Failed to submit request to server. Redirecting to WhatsApp...');
 
-            // Even if DB save failed, still open WhatsApp so customer can contact
             const nameForMsg = (user.displayName || user.email || 'Customer');
             const tripDetail = tripType;
             const pickupLoc = pickup;
@@ -665,7 +721,6 @@
         console.error('Error fetching user data:', err);
         showToast('Failed to submit request. Redirecting to WhatsApp...');
 
-        // Fallback: build message using available info and redirect anyway
         const nameForMsg = (user.displayName || user.email || 'Customer');
         const tripDetail = tripType;
         const pickupLoc = pickup;
@@ -682,6 +737,112 @@
       });
     }
 
+    // Initialize Google Maps
+    function initMaps() {
+      if (typeof google === 'undefined') {
+        console.error('Google Maps not loaded');
+        return;
+      }
+
+      geocoder = new google.maps.Geocoder();
+      
+      // Initialize Oneway Map
+      mapOneway = new google.maps.Map(document.getElementById('map-oneway'), {
+        zoom: 8,
+        center: { lat: 22.5726, lng: 88.3639 }, // Kolkata center
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "off" }]
+          }
+        ]
+      });
+      directionsServiceOneway = new google.maps.DirectionsService();
+      directionsRendererOneway = new google.maps.DirectionsRenderer({
+        map: mapOneway,
+        suppressMarkers: false,
+        polylineOptions: {
+          strokeColor: '#2f6690',
+          strokeWeight: 5
+        }
+      });
+
+      // Initialize Roundtrip Map
+      mapRoundtrip = new google.maps.Map(document.getElementById('map-roundtrip'), {
+        zoom: 8,
+        center: { lat: 22.5726, lng: 88.3639 },
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "off" }]
+          }
+        ]
+      });
+      directionsServiceRoundtrip = new google.maps.DirectionsService();
+      directionsRendererRoundtrip = new google.maps.DirectionsRenderer({
+        map: mapRoundtrip,
+        suppressMarkers: false,
+        polylineOptions: {
+          strokeColor: '#3a7ca5',
+          strokeWeight: 5
+        }
+      });
+    }
+
+    // Show route on map
+    function showRouteOnMap(pickup, dropoff, tripType) {
+      if (!geocoder) {
+        console.error('Geocoder not initialized');
+        return;
+      }
+
+      const mapContainer = document.getElementById(`map-container-${tripType}`);
+      const mapInfoDiv = document.getElementById(`map-info-${tripType}`);
+      
+      mapContainer.classList.add('show');
+
+      const directionsService = tripType === 'oneway' ? directionsServiceOneway : directionsServiceRoundtrip;
+      const directionsRenderer = tripType === 'oneway' ? directionsRendererOneway : directionsRendererRoundtrip;
+
+      // Add ", West Bengal, India" to improve geocoding accuracy
+      const pickupQuery = `${pickup}, West Bengal, India`;
+      const dropoffQuery = `${dropoff}, West Bengal, India`;
+
+      const request = {
+        origin: pickupQuery,
+        destination: dropoffQuery,
+        travelMode: google.maps.TravelMode.DRIVING
+      };
+
+      directionsService.route(request, (result, status) => {
+        if (status === 'OK') {
+          directionsRenderer.setDirections(result);
+          
+          const route = result.routes[0].legs[0];
+          const distance = route.distance.text;
+          const duration = route.duration.text;
+
+          mapInfoDiv.innerHTML = `
+            <div class="map-info-item">
+              <i class="fas fa-route"></i> ${distance}
+            </div>
+            <div class="map-info-item">
+              <i class="fas fa-clock"></i> ${duration}
+            </div>
+          `;
+        } else {
+          console.error('Directions request failed:', status);
+          mapInfoDiv.innerHTML = `
+            <div class="map-info-item" style="background: linear-gradient(90deg, #fee, #fdd); color: #c00;">
+              <i class="fas fa-exclamation-triangle"></i> Unable to load route
+            </div>
+          `;
+        }
+      });
+    }
+
     function searchSlots(tripType) {
       if (isSearching) return;
 
@@ -690,19 +851,22 @@
       const dropoff = document.getElementById(`dropoff-${tripType}`).value;
       const date = document.getElementById(`date-${tripType}`).value;
       
-      // Set searching state
       setSearchingState(tripType, true);
       
-      // Show loading
       slotsDiv.innerHTML = '<div class="loading-msg"><i class="fas fa-spinner"></i>Searching for rides...</div>';
       
       if (!pickup || !dropoff || !date) {
         slotsDiv.innerHTML = '<div class="no-slots">Please select pickup, dropoff and date to search for rides.</div>';
         setSearchingState(tripType, false);
+        document.getElementById(`map-container-${tripType}`).classList.remove('show');
         return;
       }
 
-      // Save search to Firebase
+      // Show route on map
+      if (typeof google !== 'undefined' && geocoder) {
+        showRouteOnMap(pickup, dropoff, tripType);
+      }
+
       let searchRef = null;
       try {
         const user = auth.currentUser;
@@ -720,7 +884,6 @@
         console.log('Error creating search record', err);
       }
 
-      // Fetch available slots
       db.ref('availableslots').once('value')
         .then(snap => {
           setSearchingState(tripType, false);
@@ -740,7 +903,6 @@
 
           const allSlots = [];
           
-          // Process each driver's slots
           snap.forEach(driverSnap => {
             const driverId = driverSnap.key;
             
@@ -752,7 +914,7 @@
                 if (slotData && typeof slotData === 'object') {
                   const completeSlot = {
                     driverId: driverId,
-                    slotKey: slotKey, // Important: store the key for deletion
+                    slotKey: slotKey,
                     pickup: slotData.pickup || '',
                     dropoff: slotData.dropoff || '',
                     date: slotData.date || '',
@@ -777,7 +939,6 @@
             }
           });
 
-          // Filter slots
           const matchedSlots = allSlots.filter(slot => {
             const normalizeString = (str) => (str || '').toLowerCase().trim();
             
@@ -790,7 +951,6 @@
             return pickupMatch && dropoffMatch && dateMatch && tripTypeMatch && statusFilter;
           });
 
-          // Update search record
           try {
             if (searchRef) {
               searchRef.update({ 
@@ -918,10 +1078,9 @@
 
         slotsDiv.appendChild(card);
 
-        // Store comprehensive slot data for booking
         card.setAttribute('data-slot', JSON.stringify({
           driverId: slot.driverId,
-          slotKey: slot.slotKey, // Critical: store the slot key for deletion
+          slotKey: slot.slotKey,
           pickup: slot.pickup,
           dropoff: slot.dropoff,
           date: slot.date,
@@ -972,13 +1131,11 @@
         return;
       }
 
-      // Disable the booking button to prevent double clicks
       const bookButton = slotCard.querySelector('.btn-action');
       const originalText = bookButton.innerHTML;
       bookButton.disabled = true;
       bookButton.innerHTML = '<div class="spinner"></div> Processing...';
 
-      // Verify slot is still available before proceeding
       if (slotData.driverId && slotData.slotKey) {
         db.ref(`availableslots/${slotData.driverId}/${slotData.slotKey}`).once('value')
           .then(snapshot => {
@@ -989,7 +1146,6 @@
               return;
             }
 
-            // Proceed with booking if slot exists
             proceedWithBooking(slotData, user);
           })
           .catch(err => {
@@ -1008,12 +1164,12 @@
     function proceedWithBooking(slotData, user) {
       const bookingData = {
         driverId: slotData.driverId,
-        slotKey: slotData.slotKey, // Critical: pass the slot key for deletion
+        slotKey: slotData.slotKey,
         pickup: slotData.pickup,
         dropoff: slotData.dropoff,
         date: slotData.date,
         time: slotData.time,
-        triptype: slotData.tripType, // Keep consistent with your DB structure
+        triptype: slotData.tripType,
         fare: slotData.fare,
         customerId: user.uid,
         carBrand: slotData.carBrand,
@@ -1029,14 +1185,12 @@
         originalSlotData: slotData.originalData
       };
 
-      // Store in localStorage and redirect to checkout
       try {
         localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
         window.location.href = 'checkout.html';
       } catch (err) {
         console.error('Error storing booking data:', err);
         showToast('Error: Failed to prepare booking. Please try again.');
-        // Re-enable the button
         setTimeout(() => {
           const searchBtn = document.querySelector('.btn-action:disabled');
           if (searchBtn) {
@@ -1057,16 +1211,22 @@
         .replace(/'/g, '&#39;');
     }
 
-    // Error handler for unhandled promise rejections
     window.addEventListener('unhandledrejection', function(event) {
       console.error('Unhandled promise rejection:', event.reason);
       showToast('An unexpected error occurred. Please try again.');
     });
 
-    // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
       console.log('Page loaded, initializing...');
     });
+
+    // Load Google Maps API and initialize maps
+    window.initMapsCallback = function() {
+      initMaps();
+    };
   </script>
+
+  <!-- Load Google Maps JavaScript API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc&callback=initMapsCallback&libraries=places" async defer></script>
 </body>
 </html>
