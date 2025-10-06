@@ -16,6 +16,7 @@
       --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #d97706; --info: #0891b2;
       --light: #f8fafc; --dark: #1e293b; --muted: #64748b; --border: #e2e8f0;
       --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+      --whatsapp: #25D366;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; padding: 0; }
@@ -28,6 +29,8 @@
     .brand-subtitle { font-size: 0.875rem; color: var(--muted); font-weight: 400; }
     .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--dark); transition: all 0.2s; }
     .btn-ghost:hover { background: var(--light); border-color: var(--primary); color: var(--primary); }
+    .btn-whatsapp { background: var(--whatsapp) !important; border: none; color: white !important; }
+    .btn-whatsapp:hover { background: #128C7E !important; color: white !important; }
     
     .container-main { display: grid; grid-template-columns: 280px 1fr; gap: 24px; padding: 24px; min-height: calc(100vh - 80px); }
     .sidebar { background: white; padding: 20px; border-radius: 16px; height: fit-content; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
@@ -323,6 +326,42 @@
 
     function sanitizeId(id) { return String(id).replace(/[^a-z0-9\-_]/gi, '-'); }
 
+    // Convert date to DD/MM/YY format
+    function formatDateDDMMYY(dateInput) {
+      if (!dateInput) return '';
+      
+      let date;
+      if (dateInput instanceof Date) {
+        date = dateInput;
+      } else if (typeof dateInput === 'number') {
+        date = new Date(dateInput);
+      } else if (typeof dateInput === 'string') {
+        // Try parsing the date string
+        date = new Date(dateInput);
+      } else {
+        return String(dateInput);
+      }
+      
+      if (isNaN(date.getTime())) return String(dateInput);
+      
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = String(date.getFullYear()).slice(-2);
+      
+      return `${day}/${month}/${year}`;
+    }
+
+    // Generate WhatsApp message and redirect
+    window.sendWhatsAppMessage = function(pickup, dropoff, date, phone) {
+      const formattedDate = formatDateDDMMYY(date);
+      const message = `Hello! Your cab is available from ${pickup} to ${dropoff} on ${formattedDate}. Please contact us for booking details and confirmation. We look forward to serving you!`;
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = phone 
+        ? `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodedMessage}`
+        : `https://wa.me/?text=${encodedMessage}`;
+      window.open(whatsappUrl, '_blank');
+    };
+
     function showToast(message, type = 'info', timeout = 3500) {
       const toastId = 'toast-' + Date.now();
       const bgClass = type === 'success' ? 'text-bg-success' : type === 'danger' ? 'text-bg-danger' : type === 'warning' ? 'text-bg-warning' : 'text-bg-info';
@@ -429,9 +468,10 @@
         if (snapshot.exists()) {
           const users = snapshot.val();
           for (const [uid, user] of Object.entries(users)) {
+            const createdOn = formatDateDDMMYY(user.createdOn);
             rows.push([
               serialNo++, uid, escapeHtml(user.name || ''), escapeHtml(user.email || ''), 
-              escapeHtml(user.phone || ''), escapeHtml(user.address || ''), escapeHtml(user.createdOn || ''),
+              escapeHtml(user.phone || ''), escapeHtml(user.address || ''), escapeHtml(createdOn),
               `<button class="btn btn-sm btn-danger" onclick="deleteUser('${escapeHtml(uid)}')"><i class="bi bi-trash"></i> Delete</button>`
             ]);
           }
@@ -486,18 +526,30 @@
           for (const [searchId, search] of Object.entries(searches)) {
             const customerId = search.customerId || '';
             const customerName = customerId && users[customerId] ? users[customerId].name : customerId;
-            const timestamp = search.timestamp ? new Date(search.timestamp).toLocaleString() : '';
+            const customerPhone = customerId && users[customerId] ? users[customerId].phone : '';
+            const timestamp = search.timestamp ? formatDateDDMMYY(new Date(search.timestamp)) : '';
+            const searchDate = formatDateDDMMYY(search.date);
+            const pickup = search.pickup || '';
+            const dropoff = search.dropoff || '';
+            
             rows.push([
               serialNo++,
               escapeHtml(customerName || 'Unknown'),
-              escapeHtml(search.pickup || ''),
-              escapeHtml(search.dropoff || ''),
-              escapeHtml(search.date || ''),
+              escapeHtml(pickup),
+              escapeHtml(dropoff),
+              escapeHtml(searchDate),
               escapeHtml(search.seatsRequested || ''),
               escapeHtml(search.resultCount || 0),
               escapeHtml(timestamp),
               search.fallbackUsed ? 'Yes' : 'No',
-              `<button class="btn btn-sm btn-danger" onclick="deleteSearch('${escapeHtml(searchId)}')"><i class="bi bi-trash"></i> Delete</button>`
+              `<div class="btn-group">
+                <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsAppMessage('${escapeHtml(pickup)}', '${escapeHtml(dropoff)}', '${escapeHtml(search.date)}', '${escapeHtml(customerPhone)}')">
+                  <i class="bi bi-whatsapp"></i> WhatsApp
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteSearch('${escapeHtml(searchId)}')">
+                  <i class="bi bi-trash"></i> Delete
+                </button>
+              </div>`
             ]);
           }
         }
@@ -524,7 +576,8 @@
             const status = request.status || 'pending';
             if (statusFilter !== 'all' && status !== statusFilter) continue;
             
-            const requestedAt = request.requestedAt ? new Date(request.requestedAt).toLocaleString() : '';
+            const requestedAt = request.requestedAt ? formatDateDDMMYY(new Date(request.requestedAt)) : '';
+            const requestDate = formatDateDDMMYY(request.date);
             const statusBadge = status === 'approved' ? 'badge-paid' : status === 'rejected' ? 'badge-unpaid' : 'badge-processing';
             
             rows.push([
@@ -535,7 +588,7 @@
               escapeHtml(request.customerPhone || ''),
               escapeHtml(request.pickup || ''),
               escapeHtml(request.dropoff || ''),
-              escapeHtml(request.date || ''),
+              escapeHtml(requestDate),
               escapeHtml(request.tripType || ''),
               `<span class="${statusBadge}">${escapeHtml(status)}</span>`,
               escapeHtml((request.notes || '').substring(0, 100) + (request.notes?.length > 100 ? '...' : '')),
@@ -576,10 +629,11 @@
             for (const [carId, car] of Object.entries(cars)) {
               const imageGallery = createImageGallery(car.carImages || [], 'car');
               const licenseGallery = car.driverLicense ? createImageGallery([car.driverLicense], 'license') : '<span class="small-muted">No license</span>';
+              const submittedAt = formatDateDDMMYY(car.submittedAt);
               rows.push([
                 serialNo++, driverId, carId, escapeHtml(car.carBrand || ''), escapeHtml(car.carReg || ''),
                 escapeHtml(car.driverName || ''), escapeHtml(car.driverNumber || ''), escapeHtml(car.ownerName || ''),
-                escapeHtml(car.seats || ''), imageGallery, licenseGallery, escapeHtml(car.submittedAt || ''),
+                escapeHtml(car.seats || ''), imageGallery, licenseGallery, escapeHtml(submittedAt),
                 `<div class="btn-group">
                   <button class="btn btn-sm btn-success" onclick="approveCar('${escapeHtml(driverId)}', '${escapeHtml(carId)}')"><i class="bi bi-check"></i> Approve</button>
                   <button class="btn btn-sm btn-danger" onclick="deletePendingCar('${escapeHtml(driverId)}', '${escapeHtml(carId)}')"><i class="bi bi-trash"></i> Delete</button>
@@ -639,9 +693,10 @@
             const driverSnapshot = await get(ref(db, `driverdetails/${driverId}`));
             const driver = driverSnapshot.exists() ? driverSnapshot.val() : {};
             for (const [slotId, slot] of Object.entries(driverSlots)) {
+              const slotDate = formatDateDDMMYY(slot.date);
               rows.push([
                 serialNo++, escapeHtml(driver.name || ''), escapeHtml(driver.phone || ''), slotId,
-                escapeHtml(slot.pickup || ''), escapeHtml(slot.dropoff || ''), escapeHtml(slot.date || ''),
+                escapeHtml(slot.pickup || ''), escapeHtml(slot.dropoff || ''), escapeHtml(slotDate),
                 escapeHtml(slot.time || ''), escapeHtml(slot.seats || ''),
                 `<button class="btn btn-sm btn-danger" onclick="deleteSlot('${escapeHtml(driverId)}', '${escapeHtml(slotId)}')"><i class="bi bi-trash"></i> Delete</button>`
               ]);
@@ -865,7 +920,7 @@
               <div>
                 <h5 class="m-0 text-primary">Driver: ${escapeHtml(driverId)} ${driverName ? `— ${escapeHtml(driverName)}` : ''}</h5>
                 <small class="text-muted">UPI: ${upiId ? escapeHtml(upiId) : '—'}</small>
-              </div>
+                </div>
               <div class="text-end">
                 <h5 class="m-0">Total: ₹${totalAmount.toFixed(2)}</h5>
                 <div class="mt-2 d-flex gap-2 justify-content-end">
@@ -936,13 +991,15 @@
       
       try {
         if (currentUser) {
+          const lastSignIn = currentUser.metadata.lastSignInTime ? formatDateDDMMYY(new Date(currentUser.metadata.lastSignInTime)) : '';
+          const creationTime = currentUser.metadata.creationTime ? formatDateDDMMYY(new Date(currentUser.metadata.creationTime)) : '';
           const rows = [
             ['User ID', escapeHtml(currentUser.uid)],
             ['Email', escapeHtml(currentUser.email || '')],
             ['Display Name', escapeHtml(currentUser.displayName || '')],
             ['Email Verified', currentUser.emailVerified ? 'Yes' : 'No'],
-            ['Last Sign In', currentUser.metadata.lastSignInTime ? new Date(currentUser.metadata.lastSignInTime).toLocaleString() : ''],
-            ['Creation Time', currentUser.metadata.creationTime ? new Date(currentUser.metadata.creationTime).toLocaleString() : '']
+            ['Last Sign In', escapeHtml(lastSignIn)],
+            ['Creation Time', escapeHtml(creationTime)]
           ];
           table.rows.add(rows).draw();
         }
