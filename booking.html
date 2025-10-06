@@ -383,14 +383,18 @@
       </button>
 
       <!-- Map Container for Oneway -->
-      <div id="map-container-oneway" class="map-container">
+      <div id="map-container-oneway" class="map-container show">
         <div class="map-header">
           <div class="map-title">
             <i class="fas fa-map-marked-alt"></i>
             Route Preview
           </div>
         </div>
-        <div class="map-info" id="map-info-oneway"></div>
+        <div class="map-info" id="map-info-oneway">
+          <div class="map-info-item">
+            <i class="fas fa-spinner fa-spin"></i> Loading map...
+          </div>
+        </div>
         <div id="map-oneway"></div>
       </div>
 
