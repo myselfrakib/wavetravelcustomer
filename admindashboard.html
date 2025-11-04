@@ -41,7 +41,17 @@
     .panel { background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
     .panel h2 { font-size: 1.5rem; margin: 0 0 20px 0; color: var(--dark); font-weight: 600; }
     
-    .table-responsive { max-height: calc(100vh - 250px); overflow-y: auto; overflow-x: auto; }
+    .filter-section { background: var(--light); padding: 16px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border); }
+    .filter-section .filter-title { font-weight: 600; color: var(--dark); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .filter-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+    .filter-group label { font-size: 0.875rem; color: var(--muted); font-weight: 500; }
+    .stats-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .stat-card { background: white; padding: 16px; border-radius: 12px; border: 1px solid var(--border); flex: 1; min-width: 200px; }
+    .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 0.875rem; color: var(--muted); margin-top: 4px; }
+    
+    .table-responsive { max-height: calc(100vh - 450px); overflow-y: auto; overflow-x: auto; }
     .table-responsive::-webkit-scrollbar { width: 8px; height: 8px; }
     .table-responsive::-webkit-scrollbar-track { background: var(--light); border-radius: 4px; }
     .table-responsive::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; }
@@ -58,7 +68,7 @@
     .btn-info { background: linear-gradient(135deg, var(--info) 0%, #06b6d4 100%); border: none; box-shadow: var(--shadow); }
     .btn-warning { background: linear-gradient(135deg, var(--warning) 0%, #f59e0b 100%); border: none; box-shadow: var(--shadow); }
     
-    .driver-wallets-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; max-height: calc(100vh - 250px); overflow-y: auto; padding-right: 8px; }
+    .driver-wallets-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; max-height: calc(100vh - 350px); overflow-y: auto; padding-right: 8px; }
     .driver-wallets-container::-webkit-scrollbar { width: 8px; }
     .driver-wallets-container::-webkit-scrollbar-track { background: var(--light); border-radius: 4px; }
     .driver-wallets-container::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; }
@@ -91,7 +101,7 @@
     .dataTables_wrapper .dataTables_paginate { margin-top: 16px; }
     .dataTables_wrapper .dataTables_info { padding-top: 16px; }
     
-    #withdrawals-container { max-height: calc(100vh - 250px); overflow-y: auto; padding-right: 8px; }
+    #withdrawals-container { max-height: calc(100vh - 350px); overflow-y: auto; padding-right: 8px; }
     #withdrawals-container::-webkit-scrollbar { width: 8px; }
     #withdrawals-container::-webkit-scrollbar-track { background: var(--light); border-radius: 4px; }
     #withdrawals-container::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; }
@@ -101,6 +111,8 @@
       .container-main { grid-template-columns: 1fr; padding: 16px; } 
       .sidebar { order: 2; height: auto; position: relative; top: 0; } 
       .driver-wallets-container { grid-template-columns: 1fr; } 
+      .filter-controls { flex-direction: column; }
+      .filter-group { width: 100%; }
     }
   </style>
 </head>
@@ -149,66 +161,295 @@
 
     <main>
       <section id="users-tab" class="tab-pane panel" hidden>
-        <h2><i class="bi bi-people me-2 text-primary"></i>Users</h2>
+        <h2><i class="bi bi-people me-2 text-primary"></i>User Management</h2>
+        
+        <div class="filter-section">
+          <div class="filter-title"><i class="bi bi-funnel"></i> Filters</div>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label>Start Date</label>
+              <input type="date" id="usersStartDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>End Date</label>
+              <input type="date" id="usersEndDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>Quick Select</label>
+              <select id="usersQuickFilter" class="form-select">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month" selected>This Month</option>
+                <option value="year">This Year</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="usersFilterBtn" class="btn btn-primary"><i class="bi bi-filter"></i> Apply Filter</button>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="usersResetBtn" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-row" id="usersStats">
+          <div class="stat-card">
+            <div class="stat-value" id="usersTotalCount">0</div>
+            <div class="stat-label">Total Users</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="usersFilteredCount">0</div>
+            <div class="stat-label">Filtered Results</div>
+          </div>
+        </div>
+        
         <div id="users-loading" class="skeleton" style="height:60px;"></div>
         <div class="table-responsive mt-3">
           <table id="users-table" class="display responsive nowrap table table-hover" style="width:100%;display:none">
-            <thead><tr><th>SL</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Created On</th><th>Action</th></tr></thead>
+            <thead><tr><th>SL</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Registered On</th><th>Action</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
       </section>
 
       <section id="drivers-tab" class="tab-pane panel" hidden>
-        <h2><i class="bi bi-person-badge me-2 text-primary"></i>Drivers</h2>
+        <h2><i class="bi bi-person-badge me-2 text-primary"></i>Driver Management</h2>
+        
+        <div class="filter-section">
+          <div class="filter-title"><i class="bi bi-funnel"></i> Filters</div>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label>Vehicle Count</label>
+              <select id="driversVehicleFilter" class="form-select">
+                <option value="all">All</option>
+                <option value="0">No Vehicles</option>
+                <option value="1">1 Vehicle</option>
+                <option value="2+">2+ Vehicles</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="driversFilterBtn" class="btn btn-primary"><i class="bi bi-filter"></i> Apply Filter</button>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="driversResetBtn" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="driversTotalCount">0</div>
+            <div class="stat-label">Total Drivers</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="driversFilteredCount">0</div>
+            <div class="stat-label">Filtered Results</div>
+          </div>
+        </div>
+        
         <div id="drivers-loading" class="skeleton" style="height:60px;"></div>
         <div class="table-responsive mt-3">
           <table id="drivers-table" class="display responsive nowrap table table-hover" style="width:100%;display:none">
-            <thead><tr><th>SL</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>Vehicle Count</th><th>Action</th></tr></thead>
+            <thead><tr><th>SL</th><th>Driver ID</th><th>Driver Name</th><th>Phone Number</th><th>Vehicle Count</th><th>Action</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
       </section>
 
       <section id="searches-tab" class="tab-pane panel" hidden>
-        <h2><i class="bi bi-search me-2 text-info"></i>User Searches</h2>
+        <h2><i class="bi bi-search me-2 text-info"></i>User Search History</h2>
+        
+        <div class="filter-section">
+          <div class="filter-title"><i class="bi bi-funnel"></i> Filters</div>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label>Start Date</label>
+              <input type="date" id="searchesStartDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>End Date</label>
+              <input type="date" id="searchesEndDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>Quick Select</label>
+              <select id="searchesQuickFilter" class="form-select">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month" selected>This Month</option>
+                <option value="year">This Year</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Fallback Status</label>
+              <select id="searchesFallbackFilter" class="form-select">
+                <option value="all">All</option>
+                <option value="yes">Fallback Used</option>
+                <option value="no">No Fallback</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="searchesFilterBtn" class="btn btn-primary"><i class="bi bi-filter"></i> Apply Filter</button>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="searchesResetBtn" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="searchesTotalCount">0</div>
+            <div class="stat-label">Total Searches</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="searchesFilteredCount">0</div>
+            <div class="stat-label">Filtered Results</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="searchesAvgResults">0</div>
+            <div class="stat-label">Avg Results/Search</div>
+          </div>
+        </div>
+        
         <div id="searches-loading" class="skeleton" style="height:60px;"></div>
         <div class="table-responsive mt-3">
           <table id="searches-table" class="display responsive nowrap table table-hover" style="width:100%;display:none">
-            <thead><tr><th>SL</th><th>Customer Name</th><th>Pickup</th><th>Dropoff</th><th>Date</th><th>Seats</th><th>Result Count</th><th>Timestamp</th><th>Fallback Used</th><th>Action</th></tr></thead>
+            <thead><tr><th>SL</th><th>Customer Name</th><th>Pickup Location</th><th>Dropoff Location</th><th>Travel Date</th><th>Seats Required</th><th>Results Found</th><th>Searched On</th><th>Fallback Used</th><th>Action</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
       </section>
 
       <section id="ride-requests-tab" class="tab-pane panel" hidden>
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h2><i class="bi bi-car-front me-2 text-warning"></i>Ride Requests</h2>
-          <div class="d-flex gap-2">
-            <select id="requestStatusFilter" class="form-select form-select-sm">
-              <option value="all">All Status</option>
-              <option value="pending" selected>Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-            <button id="requestFilterBtn" class="btn btn-sm btn-primary">Apply</button>
+        <h2><i class="bi bi-car-front me-2 text-warning"></i>Ride Request Management</h2>
+        
+        <div class="filter-section">
+          <div class="filter-title"><i class="bi bi-funnel"></i> Filters</div>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label>Start Date</label>
+              <input type="date" id="requestsStartDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>End Date</label>
+              <input type="date" id="requestsEndDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>Quick Select</label>
+              <select id="requestsQuickFilter" class="form-select">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month" selected>This Month</option>
+                <option value="year">This Year</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Request Status</label>
+              <select id="requestStatusFilter" class="form-select">
+                <option value="all">All Status</option>
+                <option value="pending" selected>Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="requestFilterBtn" class="btn btn-primary"><i class="bi bi-filter"></i> Apply</button>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="requestsResetBtn" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Reset</button>
+            </div>
           </div>
         </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="requestsTotalCount">0</div>
+            <div class="stat-label">Total Requests</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value text-warning" id="requestsPendingCount">0</div>
+            <div class="stat-label">Pending</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value text-success" id="requestsApprovedCount">0</div>
+            <div class="stat-label">Approved</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value text-danger" id="requestsRejectedCount">0</div>
+            <div class="stat-label">Rejected</div>
+          </div>
+        </div>
+        
         <div id="requests-loading" class="skeleton" style="height:60px;"></div>
         <div class="table-responsive mt-3">
           <table id="requests-table" class="display responsive nowrap table table-hover" style="width:100%;display:none">
-            <thead><tr><th>SL</th><th>Request ID</th><th>Customer</th><th>Email</th><th>Phone</th><th>Pickup</th><th>Dropoff</th><th>Date</th><th>Trip Type</th><th>Status</th><th>Notes</th><th>Requested At</th><th>Actions</th></tr></thead>
+            <thead><tr><th>SL</th><th>Request ID</th><th>Customer Name</th><th>Email</th><th>Phone</th><th>Pickup Location</th><th>Dropoff Location</th><th>Travel Date</th><th>Trip Type</th><th>Status</th><th>Notes</th><th>Requested On</th><th>Actions</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
       </section>
 
       <section id="pending-cars-tab" class="tab-pane panel" hidden>
-        <h2><i class="bi bi-hourglass-split me-2 text-warning"></i>Pending Cars</h2>
+        <h2><i class="bi bi-hourglass-split me-2 text-warning"></i>Pending Car Approvals</h2>
+        
+        <div class="filter-section">
+          <div class="filter-title"><i class="bi bi-funnel"></i> Filters</div>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label>Start Date</label>
+              <input type="date" id="pendingStartDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>End Date</label>
+              <input type="date" id="pendingEndDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>Quick Select</label>
+              <select id="pendingQuickFilter" class="form-select">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month" selected>This Month</option>
+                <option value="year">This Year</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="pendingFilterBtn" class="btn btn-primary"><i class="bi bi-filter"></i> Apply</button>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="pendingResetBtn" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="pendingTotalCount">0</div>
+            <div class="stat-label">Total Pending</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="pendingFilteredCount">0</div>
+            <div class="stat-label">Filtered Results</div>
+          </div>
+        </div>
+        
         <div id="pending-loading" class="skeleton" style="height:60px;"></div>
         <div class="table-responsive mt-3">
           <table id="pending-table" class="display responsive nowrap table table-hover" style="width:100%;display:none">
-            <thead><tr><th>SL</th><th>Driver ID</th><th>Car ID</th><th>Brand</th><th>Reg No</th><th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Images</th><th>License</th><th>Submitted At</th><th>Actions</th></tr></thead>
+            <thead><tr><th>SL</th><th>Driver ID</th><th>Car ID</th><th>Car Brand</th><th>Registration No</th><th>Driver Name</th><th>Driver Number</th><th>Owner Name</th><th>Seats</th><th>Car Images</th><th>License</th><th>Submitted On</th><th>Actions</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -216,32 +457,171 @@
 
       <section id="approved-cars-tab" class="tab-pane panel" hidden>
         <h2><i class="bi bi-check2-square me-2 text-success"></i>Approved Cars</h2>
+        
+        <div class="filter-section">
+          <div class="filter-title"><i class="bi bi-funnel"></i> Filters</div>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label>Seats</label>
+              <select id="approvedSeatsFilter" class="form-select">
+                <option value="all">All Seats</option>
+                <option value="4">4 Seater</option>
+                <option value="5">5 Seater</option>
+                <option value="6">6 Seater</option>
+                <option value="7">7 Seater</option>
+                <option value="8+">8+ Seater</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="approvedFilterBtn" class="btn btn-primary"><i class="bi bi-filter"></i> Apply</button>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="approvedResetBtn" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="approvedTotalCount">0</div>
+            <div class="stat-label">Total Approved</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="approvedFilteredCount">0</div>
+            <div class="stat-label">Filtered Results</div>
+          </div>
+        </div>
+        
         <div id="approved-loading" class="skeleton" style="height:60px;"></div>
         <div class="table-responsive mt-3">
           <table id="approved-table" class="display responsive nowrap table table-hover" style="width:100%;display:none">
-            <thead><tr><th>SL</th><th>Driver Name</th><th>Phone</th><th>Car ID</th><th>Brand</th><th>Reg No</th><th>Owner</th><th>Seats</th><th>Action</th></tr></thead>
+            <thead><tr><th>SL</th><th>Driver Name</th><th>Phone Number</th><th>Car ID</th><th>Car Brand</th><th>Registration No</th><th>Owner Name</th><th>Seats</th><th>Action</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
       </section>
 
       <section id="slots-tab" class="tab-pane panel" hidden>
-        <h2><i class="bi bi-calendar2-day me-2 text-info"></i>Slots</h2>
+        <h2><i class="bi bi-calendar2-day me-2 text-info"></i>Available Slots</h2>
+        
+        <div class="filter-section">
+          <div class="filter-title"><i class="bi bi-funnel"></i> Filters</div>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label>Start Date</label>
+              <input type="date" id="slotsStartDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>End Date</label>
+              <input type="date" id="slotsEndDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>Quick Select</label>
+              <select id="slotsQuickFilter" class="form-select">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month" selected>This Month</option>
+                <option value="year">This Year</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="slotsFilterBtn" class="btn btn-primary"><i class="bi bi-filter"></i> Apply</button>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="slotsResetBtn" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="slotsTotalCount">0</div>
+            <div class="stat-label">Total Slots</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="slotsFilteredCount">0</div>
+            <div class="stat-label">Filtered Results</div>
+          </div>
+        </div>
+        
         <div id="slots-loading" class="skeleton" style="height:60px;"></div>
         <div class="table-responsive mt-3">
           <table id="slots-table" class="display responsive nowrap table table-hover" style="width:100%;display:none">
-            <thead><tr><th>SL</th><th>Driver Name</th><th>Phone</th><th>Slot ID</th><th>Pickup</th><th>Dropoff</th><th>Date</th><th>Time</th><th>Seats</th><th>Action</th></tr></thead>
+            <thead><tr><th>SL</th><th>Driver Name</th><th>Phone Number</th><th>Slot ID</th><th>Pickup Location</th><th>Dropoff Location</th><th>Travel Date</th><th>Time</th><th>Available Seats</th><th>Action</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
       </section>
 
       <section id="bookings-tab" class="tab-pane panel" hidden>
-        <h2><i class="bi bi-journal-check me-2 text-primary"></i>Bookings</h2>
+        <h2><i class="bi bi-journal-check me-2 text-primary"></i>Booking Management</h2>
+        
+        <div class="filter-section">
+          <div class="filter-title"><i class="bi bi-funnel"></i> Filters</div>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label>Start Date</label>
+              <input type="date" id="bookingsStartDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>End Date</label>
+              <input type="date" id="bookingsEndDate" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label>Quick Select</label>
+              <select id="bookingsQuickFilter" class="form-select">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month" selected>This Month</option>
+                <option value="year">This Year</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Status</label>
+              <select id="bookingsStatusFilter" class="form-select">
+                <option value="all">All Status</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="bookingsFilterBtn" class="btn btn-primary"><i class="bi bi-filter"></i> Apply</button>
+            </div>
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <button id="bookingsResetBtn" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="bookingsTotalCount">0</div>
+            <div class="stat-label">Total Bookings</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="bookingsFilteredCount">0</div>
+            <div class="stat-label">Filtered Results</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="bookingsTotalRevenue">₹0</div>
+            <div class="stat-label">Total Revenue</div>
+          </div>
+        </div>
+        
         <div id="bookings-loading" class="skeleton" style="height:60px;"></div>
         <div class="table-responsive mt-3">
           <table id="bookings-table" class="display responsive nowrap table table-hover" style="width:100%;display:none">
-            <thead><tr><th>SL</th><th>Booking ID</th><th>Customer</th><th>Vehicle</th><th>Pickup</th><th>Dropoff</th><th>Duration</th><th>Fare</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>SL</th><th>Booking ID</th><th>Customer Name</th><th>Vehicle Info</th><th>Pickup Location</th><th>Dropoff Location</th><th>Duration</th><th>Fare Amount</th><th>Payment Status</th><th>Action</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -249,7 +629,7 @@
 
       <section id="driver-wallets-tab" class="tab-pane panel" hidden>
         <div class="d-flex align-items-center justify-content-between mb-4">
-          <h2><i class="bi bi-wallet2 me-2 text-success"></i>Driver Wallets</h2>
+          <h2><i class="bi bi-wallet2 me-2 text-success"></i>Driver Wallet Management</h2>
           <div class="d-flex align-items-center gap-3">
             <select id="walletStatusFilter" class="form-select form-select-sm" style="width: auto;">
               <option value="processing" selected>Processing</option>
@@ -265,7 +645,7 @@
 
       <section id="pending-withdrawals-tab" class="tab-pane panel" hidden>
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <h2><i class="bi bi-credit-card me-2 text-warning"></i>Pending Withdrawals</h2>
+          <h2><i class="bi bi-credit-card me-2 text-warning"></i>Pending Withdrawal Requests</h2>
           <button id="exportWithdrawalsBtn" class="btn btn-primary"><i class="bi bi-download me-2"></i>Export CSV</button>
         </div>
         <div id="withdrawals-loading" class="skeleton" style="height:60px;"></div>
@@ -273,7 +653,7 @@
       </section>
 
       <section id="profile-tab" class="tab-pane panel" hidden>
-        <h2><i class="bi bi-person-circle me-2 text-info"></i>My Profile</h2>
+        <h2><i class="bi bi-person-circle me-2 text-info"></i>Admin Profile</h2>
         <div id="profile-loading" class="skeleton" style="height:60px;"></div>
         <div class="table-responsive mt-3">
           <table id="profile-table" class="display responsive nowrap table table-hover" style="width:100%;display:none">
@@ -343,6 +723,7 @@
 
     const tables = {};
     let currentUser = null;
+    let allData = {};
 
     function escapeHtml(unsafe) {
       if (!unsafe) return '';
@@ -368,6 +749,44 @@
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = String(date.getFullYear()).slice(-2);
       return `${day}/${month}/${year}`;
+    }
+
+    function getDateRange(quickFilter) {
+      const now = new Date();
+      let startDate, endDate = now;
+      
+      switch(quickFilter) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'week':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+          break;
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        case 'year':
+          startDate = new Date(now.getFullYear(), 0, 1);
+          break;
+        default:
+          return null;
+      }
+      
+      return { startDate, endDate };
+    }
+
+    function isDateInRange(dateValue, startDate, endDate) {
+      if (!dateValue) return false;
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return false;
+      
+      if (startDate && date < startDate) return false;
+      if (endDate) {
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (date > endOfDay) return false;
+      }
+      return true;
     }
 
     window.sendWhatsAppMessage = function(pickup, dropoff, date, phone) {
@@ -402,7 +821,7 @@
         columnDefs: nonSortableCols.map(col => ({ orderable: false, targets: col })),
         language: { emptyTable: 'No records found.', loadingRecords: 'Loading...', processing: 'Processing...' },
         order: [[0, 'asc']],
-        scrollY: 'calc(100vh - 350px)',
+        scrollY: 'calc(100vh - 450px)',
         scrollCollapse: true,
         deferRender: true
       });
@@ -487,25 +906,59 @@
       const table = initTable('users-table', [7]);
       try {
         const snapshot = await get(ref(db, 'users'));
-        const rows = [];
+        allData.users = [];
         let serialNo = 1;
         if (snapshot.exists()) {
           const users = snapshot.val();
           for (const [uid, user] of Object.entries(users)) {
-            const createdOn = formatDateDDMMYY(user.createdOn);
-            rows.push([
-              serialNo++, uid, escapeHtml(user.name || ''), escapeHtml(user.email || ''), 
-              escapeHtml(user.phone || ''), escapeHtml(user.address || ''), escapeHtml(createdOn),
-              `<button class="btn btn-sm btn-danger" onclick="deleteUser('${escapeHtml(uid)}')"><i class="bi bi-trash"></i> Delete</button>`
-            ]);
+            allData.users.push({ uid, ...user, serialNo: serialNo++ });
           }
         }
-        if (rows.length > 0) table.rows.add(rows).draw();
+        applyUsersFilter();
       } catch (error) { showToast('Failed to load users: ' + error.message, 'danger'); }
       finally {
         document.getElementById('users-loading').style.display = 'none';
         document.getElementById('users-table').style.display = 'table';
       }
+    }
+
+    function applyUsersFilter() {
+      const quickFilter = document.getElementById('usersQuickFilter').value;
+      const startDateInput = document.getElementById('usersStartDate').value;
+      const endDateInput = document.getElementById('usersEndDate').value;
+      
+      let startDate = startDateInput ? new Date(startDateInput) : null;
+      let endDate = endDateInput ? new Date(endDateInput) : null;
+      
+      if (quickFilter !== 'all') {
+        const range = getDateRange(quickFilter);
+        if (range) {
+          startDate = range.startDate;
+          endDate = range.endDate;
+        }
+      }
+      
+      const filtered = allData.users.filter(user => {
+        if (quickFilter === 'all' && !startDate && !endDate) return true;
+        return isDateInRange(user.createdOn, startDate, endDate);
+      });
+      
+      const table = tables['users-table'];
+      table.clear();
+      const rows = filtered.map(user => [
+        user.serialNo,
+        user.uid,
+        escapeHtml(user.name || ''),
+        escapeHtml(user.email || ''),
+        escapeHtml(user.phone || ''),
+        escapeHtml(user.address || ''),
+        formatDateDDMMYY(user.createdOn),
+        `<button class="btn btn-sm btn-danger" onclick="deleteUser('${escapeHtml(user.uid)}')"><i class="bi bi-trash"></i> Delete</button>`
+      ]);
+      if (rows.length > 0) table.rows.add(rows).draw();
+      
+      document.getElementById('usersTotalCount').textContent = allData.users.length;
+      document.getElementById('usersFilteredCount').textContent = filtered.length;
     }
 
     async function loadDrivers() {
@@ -514,24 +967,48 @@
       const table = initTable('drivers-table', [5]);
       try {
         const snapshot = await get(ref(db, 'driverdetails'));
-        const rows = [];
+        allData.drivers = [];
         let serialNo = 1;
         if (snapshot.exists()) {
           const drivers = snapshot.val();
           for (const [driverId, driver] of Object.entries(drivers)) {
             const vehicleCount = driver.vehicles ? Object.keys(driver.vehicles).length : 0;
-            rows.push([
-              serialNo++, driverId, escapeHtml(driver.name || ''), escapeHtml(driver.phone || ''), vehicleCount,
-              `<button class="btn btn-sm btn-danger" onclick="deleteDriver('${escapeHtml(driverId)}')"><i class="bi bi-trash"></i> Delete</button>`
-            ]);
+            allData.drivers.push({ driverId, ...driver, vehicleCount, serialNo: serialNo++ });
           }
         }
-        if (rows.length > 0) table.rows.add(rows).draw();
+        applyDriversFilter();
       } catch (error) { showToast('Failed to load drivers: ' + error.message, 'danger'); }
       finally {
         document.getElementById('drivers-loading').style.display = 'none';
         document.getElementById('drivers-table').style.display = 'table';
       }
+    }
+
+    function applyDriversFilter() {
+      const vehicleFilter = document.getElementById('driversVehicleFilter').value;
+      
+      const filtered = allData.drivers.filter(driver => {
+        if (vehicleFilter === 'all') return true;
+        if (vehicleFilter === '0') return driver.vehicleCount === 0;
+        if (vehicleFilter === '1') return driver.vehicleCount === 1;
+        if (vehicleFilter === '2+') return driver.vehicleCount >= 2;
+        return true;
+      });
+      
+      const table = tables['drivers-table'];
+      table.clear();
+      const rows = filtered.map(driver => [
+        driver.serialNo,
+        driver.driverId,
+        escapeHtml(driver.name || ''),
+        escapeHtml(driver.phone || ''),
+        driver.vehicleCount,
+        `<button class="btn btn-sm btn-danger" onclick="deleteDriver('${escapeHtml(driver.driverId)}')"><i class="bi bi-trash"></i> Delete</button>`
+      ]);
+      if (rows.length > 0) table.rows.add(rows).draw();
+      
+      document.getElementById('driversTotalCount').textContent = allData.drivers.length;
+      document.getElementById('driversFilteredCount').textContent = filtered.length;
     }
 
     async function loadSearches() {
@@ -543,7 +1020,7 @@
         const usersSnapshot = await get(ref(db, 'users'));
         const users = usersSnapshot.exists() ? usersSnapshot.val() : {};
         
-        const rows = [];
+        allData.searches = [];
         let serialNo = 1;
         if (searchesSnapshot.exists()) {
           const searches = searchesSnapshot.val();
@@ -551,33 +1028,10 @@
             const customerId = search.customerId || '';
             const customerName = customerId && users[customerId] ? users[customerId].name : customerId;
             const customerPhone = customerId && users[customerId] ? users[customerId].phone : '';
-            const timestamp = search.timestamp ? formatDateDDMMYY(new Date(search.timestamp)) : '';
-            const searchDate = formatDateDDMMYY(search.date);
-            const pickup = search.pickup || '';
-            const dropoff = search.dropoff || '';
-            
-            rows.push([
-              serialNo++,
-              escapeHtml(customerName || 'Unknown'),
-              escapeHtml(pickup),
-              escapeHtml(dropoff),
-              escapeHtml(searchDate),
-              escapeHtml(search.seatsRequested || ''),
-              escapeHtml(search.resultCount || 0),
-              escapeHtml(timestamp),
-              search.fallbackUsed ? 'Yes' : 'No',
-              `<div class="btn-group">
-                <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsAppMessage('${escapeHtml(pickup)}', '${escapeHtml(dropoff)}', '${escapeHtml(search.date)}', '${escapeHtml(customerPhone)}')">
-                  <i class="bi bi-whatsapp"></i> WhatsApp
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteSearch('${escapeHtml(searchId)}')">
-                  <i class="bi bi-trash"></i> Delete
-                </button>
-              </div>`
-            ]);
+            allData.searches.push({ searchId, ...search, customerName, customerPhone, serialNo: serialNo++ });
           }
         }
-        if (rows.length > 0) table.rows.add(rows).draw();
+        applySearchesFilter();
       } catch (error) { showToast('Failed to load searches: ' + error.message, 'danger'); }
       finally {
         document.getElementById('searches-loading').style.display = 'none';
@@ -585,58 +1039,157 @@
       }
     }
 
+    function applySearchesFilter() {
+      const quickFilter = document.getElementById('searchesQuickFilter').value;
+      const startDateInput = document.getElementById('searchesStartDate').value;
+      const endDateInput = document.getElementById('searchesEndDate').value;
+      const fallbackFilter = document.getElementById('searchesFallbackFilter').value;
+      
+      let startDate = startDateInput ? new Date(startDateInput) : null;
+      let endDate = endDateInput ? new Date(endDateInput) : null;
+      
+      if (quickFilter !== 'all') {
+        const range = getDateRange(quickFilter);
+        if (range) {
+          startDate = range.startDate;
+          endDate = range.endDate;
+        }
+      }
+      
+      const filtered = allData.searches.filter(search => {
+        const dateMatch = (quickFilter === 'all' && !startDate && !endDate) || isDateInRange(search.timestamp, startDate, endDate);
+        const fallbackMatch = fallbackFilter === 'all' || 
+          (fallbackFilter === 'yes' && search.fallbackUsed) ||
+          (fallbackFilter === 'no' && !search.fallbackUsed);
+        return dateMatch && fallbackMatch;
+      });
+      
+      const table = tables['searches-table'];
+      table.clear();
+      const rows = filtered.map(search => {
+        const timestamp = search.timestamp ? formatDateDDMMYY(new Date(search.timestamp)) : '';
+        const searchDate = formatDateDDMMYY(search.date);
+        const pickup = search.pickup || '';
+        const dropoff = search.dropoff || '';
+        
+        return [
+          search.serialNo,
+          escapeHtml(search.customerName || 'Unknown'),
+          escapeHtml(pickup),
+          escapeHtml(dropoff),
+          escapeHtml(searchDate),
+          escapeHtml(search.seatsRequested || ''),
+          escapeHtml(search.resultCount || 0),
+          escapeHtml(timestamp),
+          search.fallbackUsed ? 'Yes' : 'No',
+          `<div class="btn-group">
+            <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsAppMessage('${escapeHtml(pickup)}', '${escapeHtml(dropoff)}', '${escapeHtml(search.date)}', '${escapeHtml(search.customerPhone)}')">
+              <i class="bi bi-whatsapp"></i> WhatsApp
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="deleteSearch('${escapeHtml(search.searchId)}')">
+              <i class="bi bi-trash"></i> Delete
+            </button>
+          </div>`
+        ];
+      });
+      if (rows.length > 0) table.rows.add(rows).draw();
+      
+      const avgResults = filtered.length > 0 ? (filtered.reduce((sum, s) => sum + (s.resultCount || 0), 0) / filtered.length).toFixed(1) : 0;
+      document.getElementById('searchesTotalCount').textContent = allData.searches.length;
+      document.getElementById('searchesFilteredCount').textContent = filtered.length;
+      document.getElementById('searchesAvgResults').textContent = avgResults;
+    }
+
     async function loadRideRequests() {
       document.getElementById('requests-table').style.display = 'none';
       document.getElementById('requests-loading').style.display = 'block';
       const table = initTable('requests-table', [12]);
-      const statusFilter = document.getElementById('requestStatusFilter')?.value || 'pending';
       try {
         const snapshot = await get(ref(db, 'riderequest'));
-        const rows = [];
+        allData.requests = [];
         let serialNo = 1;
         if (snapshot.exists()) {
           const requests = snapshot.val();
           for (const [requestId, request] of Object.entries(requests)) {
-            const status = request.status || 'pending';
-            if (statusFilter !== 'all' && status !== statusFilter) continue;
-            
-            const requestedAt = request.requestedAt ? formatDateDDMMYY(new Date(request.requestedAt)) : '';
-            const requestDate = formatDateDDMMYY(request.date);
-            const statusBadge = status === 'approved' ? 'badge-paid' : status === 'rejected' ? 'badge-unpaid' : 'badge-processing';
-            
-            rows.push([
-              serialNo++,
-              requestId,
-              escapeHtml(request.customerName || ''),
-              escapeHtml(request.customerEmail || ''),
-              escapeHtml(request.customerPhone || ''),
-              escapeHtml(request.pickup || ''),
-              escapeHtml(request.dropoff || ''),
-              escapeHtml(requestDate),
-              escapeHtml(request.tripType || ''),
-              `<span class="${statusBadge}">${escapeHtml(status)}</span>`,
-              escapeHtml((request.notes || '').substring(0, 100) + (request.notes?.length > 100 ? '...' : '')),
-              escapeHtml(requestedAt),
-              `<div class="btn-group">
-                <button class="btn btn-sm btn-success" onclick="approveRideRequest('${escapeHtml(requestId)}')" ${status !== 'pending' ? 'disabled' : ''}>
-                  <i class="bi bi-check"></i> Approve
-                </button>
-                <button class="btn btn-sm btn-warning" onclick="rejectRideRequest('${escapeHtml(requestId)}')" ${status !== 'pending' ? 'disabled' : ''}>
-                  <i class="bi bi-x"></i> Reject
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteRideRequest('${escapeHtml(requestId)}')">
-                  <i class="bi bi-trash"></i> Delete
-                </button>
-              </div>`
-            ]);
+            allData.requests.push({ requestId, ...request, serialNo: serialNo++ });
           }
         }
-        if (rows.length > 0) table.rows.add(rows).draw();
+        applyRequestsFilter();
       } catch (error) { showToast('Failed to load ride requests: ' + error.message, 'danger'); }
       finally {
         document.getElementById('requests-loading').style.display = 'none';
         document.getElementById('requests-table').style.display = 'table';
       }
+    }
+
+    function applyRequestsFilter() {
+      const quickFilter = document.getElementById('requestsQuickFilter').value;
+      const startDateInput = document.getElementById('requestsStartDate').value;
+      const endDateInput = document.getElementById('requestsEndDate').value;
+      const statusFilter = document.getElementById('requestStatusFilter')?.value || 'pending';
+      
+      let startDate = startDateInput ? new Date(startDateInput) : null;
+      let endDate = endDateInput ? new Date(endDateInput) : null;
+      
+      if (quickFilter !== 'all') {
+        const range = getDateRange(quickFilter);
+        if (range) {
+          startDate = range.startDate;
+          endDate = range.endDate;
+        }
+      }
+      
+      const filtered = allData.requests.filter(request => {
+        const status = request.status || 'pending';
+        const statusMatch = statusFilter === 'all' || status === statusFilter;
+        const dateMatch = (quickFilter === 'all' && !startDate && !endDate) || isDateInRange(request.requestedAt, startDate, endDate);
+        return statusMatch && dateMatch;
+      });
+      
+      const table = tables['requests-table'];
+      table.clear();
+      const rows = filtered.map(request => {
+        const status = request.status || 'pending';
+        const requestedAt = request.requestedAt ? formatDateDDMMYY(new Date(request.requestedAt)) : '';
+        const requestDate = formatDateDDMMYY(request.date);
+        const statusBadge = status === 'approved' ? 'badge-paid' : status === 'rejected' ? 'badge-unpaid' : 'badge-processing';
+        
+        return [
+          request.serialNo,
+          request.requestId,
+          escapeHtml(request.customerName || ''),
+          escapeHtml(request.customerEmail || ''),
+          escapeHtml(request.customerPhone || ''),
+          escapeHtml(request.pickup || ''),
+          escapeHtml(request.dropoff || ''),
+          escapeHtml(requestDate),
+          escapeHtml(request.tripType || ''),
+          `<span class="${statusBadge}">${escapeHtml(status)}</span>`,
+          escapeHtml((request.notes || '').substring(0, 100) + (request.notes?.length > 100 ? '...' : '')),
+          escapeHtml(requestedAt),
+          `<div class="btn-group">
+            <button class="btn btn-sm btn-success" onclick="approveRideRequest('${escapeHtml(request.requestId)}')" ${status !== 'pending' ? 'disabled' : ''}>
+              <i class="bi bi-check"></i> Approve
+            </button>
+            <button class="btn btn-sm btn-warning" onclick="rejectRideRequest('${escapeHtml(request.requestId)}')" ${status !== 'pending' ? 'disabled' : ''}>
+              <i class="bi bi-x"></i> Reject
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="deleteRideRequest('${escapeHtml(request.requestId)}')">
+              <i class="bi bi-trash"></i> Delete
+            </button>
+          </div>`
+        ];
+      });
+      if (rows.length > 0) table.rows.add(rows).draw();
+      
+      const pendingCount = allData.requests.filter(r => (r.status || 'pending') === 'pending').length;
+      const approvedCount = allData.requests.filter(r => r.status === 'approved').length;
+      const rejectedCount = allData.requests.filter(r => r.status === 'rejected').length;
+      
+      document.getElementById('requestsTotalCount').textContent = allData.requests.length;
+      document.getElementById('requestsPendingCount').textContent = pendingCount;
+      document.getElementById('requestsApprovedCount').textContent = approvedCount;
+      document.getElementById('requestsRejectedCount').textContent = rejectedCount;
     }
 
     async function loadPendingCars() {
@@ -645,33 +1198,75 @@
       const table = initTable('pending-table', [9, 10, 12]);
       try {
         const snapshot = await get(ref(db, 'pendingcars'));
-        const rows = [];
+        allData.pendingCars = [];
         let serialNo = 1;
         if (snapshot.exists()) {
           const pendingCars = snapshot.val();
           for (const [driverId, cars] of Object.entries(pendingCars)) {
             for (const [carId, car] of Object.entries(cars)) {
-              const imageGallery = createImageGallery(car.carImages || [], 'car');
-              const licenseGallery = car.driverLicense ? createImageGallery([car.driverLicense], 'license') : '<span class="small-muted">No license</span>';
-              const submittedAt = formatDateDDMMYY(car.submittedAt);
-              rows.push([
-                serialNo++, driverId, carId, escapeHtml(car.carBrand || ''), escapeHtml(car.carReg || ''),
-                escapeHtml(car.driverName || ''), escapeHtml(car.driverNumber || ''), escapeHtml(car.ownerName || ''),
-                escapeHtml(car.seats || ''), imageGallery, licenseGallery, escapeHtml(submittedAt),
-                `<div class="btn-group">
-                  <button class="btn btn-sm btn-success" onclick="approveCar('${escapeHtml(driverId)}', '${escapeHtml(carId)}')"><i class="bi bi-check"></i> Approve</button>
-                  <button class="btn btn-sm btn-danger" onclick="deletePendingCar('${escapeHtml(driverId)}', '${escapeHtml(carId)}')"><i class="bi bi-trash"></i> Delete</button>
-                </div>`
-              ]);
+              allData.pendingCars.push({ driverId, carId, ...car, serialNo: serialNo++ });
             }
           }
         }
-        if (rows.length > 0) table.rows.add(rows).draw();
+        applyPendingCarsFilter();
       } catch (error) { showToast('Failed to load pending cars: ' + error.message, 'danger'); }
       finally {
         document.getElementById('pending-loading').style.display = 'none';
         document.getElementById('pending-table').style.display = 'table';
       }
+    }
+
+    function applyPendingCarsFilter() {
+      const quickFilter = document.getElementById('pendingQuickFilter').value;
+      const startDateInput = document.getElementById('pendingStartDate').value;
+      const endDateInput = document.getElementById('pendingEndDate').value;
+      
+      let startDate = startDateInput ? new Date(startDateInput) : null;
+      let endDate = endDateInput ? new Date(endDateInput) : null;
+      
+      if (quickFilter !== 'all') {
+        const range = getDateRange(quickFilter);
+        if (range) {
+          startDate = range.startDate;
+          endDate = range.endDate;
+        }
+      }
+      
+      const filtered = allData.pendingCars.filter(car => {
+        if (quickFilter === 'all' && !startDate && !endDate) return true;
+        return isDateInRange(car.submittedAt, startDate, endDate);
+      });
+      
+      const table = tables['pending-table'];
+      table.clear();
+      const rows = filtered.map(car => {
+        const imageGallery = createImageGallery(car.carImages || [], 'car');
+        const licenseGallery = car.driverLicense ? createImageGallery([car.driverLicense], 'license') : '<span class="small-muted">No license</span>';
+        const submittedAt = formatDateDDMMYY(car.submittedAt);
+        
+        return [
+          car.serialNo,
+          car.driverId,
+          car.carId,
+          escapeHtml(car.carBrand || ''),
+          escapeHtml(car.carReg || ''),
+          escapeHtml(car.driverName || ''),
+          escapeHtml(car.driverNumber || ''),
+          escapeHtml(car.ownerName || ''),
+          escapeHtml(car.seats || ''),
+          imageGallery,
+          licenseGallery,
+          escapeHtml(submittedAt),
+          `<div class="btn-group">
+            <button class="btn btn-sm btn-success" onclick="approveCar('${escapeHtml(car.driverId)}', '${escapeHtml(car.carId)}')"><i class="bi bi-check"></i> Approve</button>
+            <button class="btn btn-sm btn-danger" onclick="deletePendingCar('${escapeHtml(car.driverId)}', '${escapeHtml(car.carId)}')"><i class="bi bi-trash"></i> Delete</button>
+          </div>`
+        ];
+      });
+      if (rows.length > 0) table.rows.add(rows).draw();
+      
+      document.getElementById('pendingTotalCount').textContent = allData.pendingCars.length;
+      document.getElementById('pendingFilteredCount').textContent = filtered.length;
     }
 
     async function loadApprovedCars() {
@@ -680,27 +1275,51 @@
       const table = initTable('approved-table', [8]);
       try {
         const snapshot = await get(ref(db, 'approvedcars'));
-        const rows = [];
+        allData.approvedCars = [];
         let serialNo = 1;
         if (snapshot.exists()) {
           const approvedCars = snapshot.val();
           for (const [driverId, cars] of Object.entries(approvedCars)) {
             for (const [carId, car] of Object.entries(cars)) {
-              rows.push([
-                serialNo++, escapeHtml(car.driverName || ''), escapeHtml(car.driverNumber || ''), carId,
-                escapeHtml(car.carBrand || ''), escapeHtml(car.carReg || ''), escapeHtml(car.ownerName || ''),
-                escapeHtml(car.seats || ''),
-                `<button class="btn btn-sm btn-danger" onclick="deleteApprovedCar('${escapeHtml(driverId)}', '${escapeHtml(carId)}')"><i class="bi bi-trash"></i> Delete</button>`
-              ]);
+              allData.approvedCars.push({ driverId, carId, ...car, serialNo: serialNo++ });
             }
           }
         }
-        if (rows.length > 0) table.rows.add(rows).draw();
+        applyApprovedCarsFilter();
       } catch (error) { showToast('Failed to load approved cars: ' + error.message, 'danger'); }
       finally {
         document.getElementById('approved-loading').style.display = 'none';
         document.getElementById('approved-table').style.display = 'table';
       }
+    }
+
+    function applyApprovedCarsFilter() {
+      const seatsFilter = document.getElementById('approvedSeatsFilter').value;
+      
+      const filtered = allData.approvedCars.filter(car => {
+        if (seatsFilter === 'all') return true;
+        const seats = parseInt(car.seats) || 0;
+        if (seatsFilter === '8+') return seats >= 8;
+        return seats === parseInt(seatsFilter);
+      });
+      
+      const table = tables['approved-table'];
+      table.clear();
+      const rows = filtered.map(car => [
+        car.serialNo,
+        escapeHtml(car.driverName || ''),
+        escapeHtml(car.driverNumber || ''),
+        car.carId,
+        escapeHtml(car.carBrand || ''),
+        escapeHtml(car.carReg || ''),
+        escapeHtml(car.ownerName || ''),
+        escapeHtml(car.seats || ''),
+        `<button class="btn btn-sm btn-danger" onclick="deleteApprovedCar('${escapeHtml(car.driverId)}', '${escapeHtml(car.carId)}')"><i class="bi bi-trash"></i> Delete</button>`
+      ]);
+      if (rows.length > 0) table.rows.add(rows).draw();
+      
+      document.getElementById('approvedTotalCount').textContent = allData.approvedCars.length;
+      document.getElementById('approvedFilteredCount').textContent = filtered.length;
     }
 
     async function loadSlots() {
@@ -709,7 +1328,7 @@
       const table = initTable('slots-table', [9]);
       try {
         const snapshot = await get(ref(db, 'availableslots'));
-        const rows = [];
+        allData.slots = [];
         let serialNo = 1;
         if (snapshot.exists()) {
           const slots = snapshot.val();
@@ -717,22 +1336,60 @@
             const driverSnapshot = await get(ref(db, `driverdetails/${driverId}`));
             const driver = driverSnapshot.exists() ? driverSnapshot.val() : {};
             for (const [slotId, slot] of Object.entries(driverSlots)) {
-              const slotDate = formatDateDDMMYY(slot.date);
-              rows.push([
-                serialNo++, escapeHtml(driver.name || ''), escapeHtml(driver.phone || ''), slotId,
-                escapeHtml(slot.pickup || ''), escapeHtml(slot.dropoff || ''), escapeHtml(slotDate),
-                escapeHtml(slot.time || ''), escapeHtml(slot.seats || ''),
-                `<button class="btn btn-sm btn-danger" onclick="deleteSlot('${escapeHtml(driverId)}', '${escapeHtml(slotId)}')"><i class="bi bi-trash"></i> Delete</button>`
-              ]);
+              allData.slots.push({ driverId, slotId, ...slot, driverName: driver.name || '', driverPhone: driver.phone || '', serialNo: serialNo++ });
             }
           }
         }
-        if (rows.length > 0) table.rows.add(rows).draw();
+        applySlotsFilter();
       } catch (error) { showToast('Failed to load slots: ' + error.message, 'danger'); }
       finally {
         document.getElementById('slots-loading').style.display = 'none';
         document.getElementById('slots-table').style.display = 'table';
       }
+    }
+
+    function applySlotsFilter() {
+      const quickFilter = document.getElementById('slotsQuickFilter').value;
+      const startDateInput = document.getElementById('slotsStartDate').value;
+      const endDateInput = document.getElementById('slotsEndDate').value;
+      
+      let startDate = startDateInput ? new Date(startDateInput) : null;
+      let endDate = endDateInput ? new Date(endDateInput) : null;
+      
+      if (quickFilter !== 'all') {
+        const range = getDateRange(quickFilter);
+        if (range) {
+          startDate = range.startDate;
+          endDate = range.endDate;
+        }
+      }
+      
+      const filtered = allData.slots.filter(slot => {
+        if (quickFilter === 'all' && !startDate && !endDate) return true;
+        return isDateInRange(slot.date, startDate, endDate);
+      });
+      
+      const table = tables['slots-table'];
+      table.clear();
+      const rows = filtered.map(slot => {
+        const slotDate = formatDateDDMMYY(slot.date);
+        return [
+          slot.serialNo,
+          escapeHtml(slot.driverName),
+          escapeHtml(slot.driverPhone),
+          slot.slotId,
+          escapeHtml(slot.pickup || ''),
+          escapeHtml(slot.dropoff || ''),
+          escapeHtml(slotDate),
+          escapeHtml(slot.time || ''),
+          escapeHtml(slot.seats || ''),
+          `<button class="btn btn-sm btn-danger" onclick="deleteSlot('${escapeHtml(slot.driverId)}', '${escapeHtml(slot.slotId)}')"><i class="bi bi-trash"></i> Delete</button>`
+        ];
+      });
+      if (rows.length > 0) table.rows.add(rows).draw();
+      
+      document.getElementById('slotsTotalCount').textContent = allData.slots.length;
+      document.getElementById('slotsFilteredCount').textContent = filtered.length;
     }
 
     async function loadBookings() {
@@ -741,7 +1398,7 @@
       const table = initTable('bookings-table', [9]);
       try {
         const snapshot = await get(ref(db, 'bookings'));
-        const rows = [];
+        allData.bookings = [];
         let serialNo = 1;
         if (snapshot.exists()) {
           const bookings = snapshot.val();
@@ -754,14 +1411,14 @@
             const pickup = pickField(booking, ['pickup', 'from', 'start']) || '';
             const dropoff = pickField(booking, ['dropoff', 'to', 'end']) || '';
             const duration = pickField(booking, ['duration', 'tripDuration']) || '';
-            const fare = pickField(booking, ['fare', 'amount', 'price']) || '';
+            const fare = pickField(booking, ['fare', 'amount', 'price']) || 0;
             const status = pickField(booking, ['status', 'paymentStatus', 'state']) || '';
-            rows.push([
-              serialNo++, bookingId, escapeHtml(safeDisplay(customer)), escapeHtml(safeDisplay(vehicle)),
-              escapeHtml(safeDisplay(pickup)), escapeHtml(safeDisplay(dropoff)), escapeHtml(safeDisplay(duration)),
-              escapeHtml(safeDisplay(fare)), escapeHtml(safeDisplay(status)),
-              `<button class="btn btn-sm btn-danger" onclick="deleteBooking('${escapeHtml(bookingId)}')"><i class="bi bi-trash"></i> Delete</button>`
-            ]);
+            const bookingDate = pickField(booking, ['bookingDate', 'createdAt', 'timestamp', 'date']) || null;
+            
+            allData.bookings.push({
+              bookingId, customer, vehicle, pickup, dropoff, duration, fare: parseFloat(fare) || 0,
+              status, bookingDate, serialNo: serialNo++
+            });
           }
           const values = Object.values(bookings);
           const isFlat = values.some(v => v && (v.pickup || v.fare || v.customerName));
@@ -775,12 +1432,57 @@
             }
           }
         }
-        if (rows.length > 0) table.rows.add(rows).draw();
+        applyBookingsFilter();
       } catch (error) { showToast('Failed to load bookings: ' + error.message, 'danger'); }
       finally {
         document.getElementById('bookings-loading').style.display = 'none';
         document.getElementById('bookings-table').style.display = 'table';
       }
+    }
+
+    function applyBookingsFilter() {
+      const quickFilter = document.getElementById('bookingsQuickFilter').value;
+      const startDateInput = document.getElementById('bookingsStartDate').value;
+      const endDateInput = document.getElementById('bookingsEndDate').value;
+      const statusFilter = document.getElementById('bookingsStatusFilter').value;
+      
+      let startDate = startDateInput ? new Date(startDateInput) : null;
+      let endDate = endDateInput ? new Date(endDateInput) : null;
+      
+      if (quickFilter !== 'all') {
+        const range = getDateRange(quickFilter);
+        if (range) {
+          startDate = range.startDate;
+          endDate = range.endDate;
+        }
+      }
+      
+      const filtered = allData.bookings.filter(booking => {
+        const dateMatch = (quickFilter === 'all' && !startDate && !endDate) || isDateInRange(booking.bookingDate, startDate, endDate);
+        const statusMatch = statusFilter === 'all' || String(booking.status).toLowerCase().includes(statusFilter.toLowerCase());
+        return dateMatch && statusMatch;
+      });
+      
+      const table = tables['bookings-table'];
+      table.clear();
+      const rows = filtered.map(booking => [
+        booking.serialNo,
+        booking.bookingId,
+        escapeHtml(safeDisplay(booking.customer)),
+        escapeHtml(safeDisplay(booking.vehicle)),
+        escapeHtml(safeDisplay(booking.pickup)),
+        escapeHtml(safeDisplay(booking.dropoff)),
+        escapeHtml(safeDisplay(booking.duration)),
+        escapeHtml(safeDisplay(booking.fare)),
+        escapeHtml(safeDisplay(booking.status)),
+        `<button class="btn btn-sm btn-danger" onclick="deleteBooking('${escapeHtml(booking.bookingId)}')"><i class="bi bi-trash"></i> Delete</button>`
+      ]);
+      if (rows.length > 0) table.rows.add(rows).draw();
+      
+      const totalRevenue = filtered.reduce((sum, b) => sum + (b.fare || 0), 0);
+      document.getElementById('bookingsTotalCount').textContent = allData.bookings.length;
+      document.getElementById('bookingsFilteredCount').textContent = filtered.length;
+      document.getElementById('bookingsTotalRevenue').textContent = `₹${totalRevenue.toFixed(2)}`;
     }
 
     async function loadWallets() {
@@ -849,7 +1551,7 @@
             </div>
             <div class="mt-3">
               <table class="table table-sm table-hover">
-                <thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead>
+                <thead><tr><th>SL</th><th>Booking ID</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody id="entries-${sanitizedId}"></tbody>
               </table>
             </div>`;
@@ -895,14 +1597,30 @@
               });
             }
             const qrTotalBtn = document.getElementById(`qr-total-${sanitizedId}`);
-            if (qrTotalBtn && upiId && !qrTotalBtn.disabled) {
-              qrTotalBtn.addEventListener('click', () => showQrModal(driverId, totalProcessing, ''));
+            if (qrTotalBtn && upiId && totalProcessing > 0) {
+              qrTotalBtn.addEventListener('click', () => showQrModal(driverId, totalProcessing, 'Total Processing Amount'));
             }
-            const markAllBtn = document.getElementById(`mark-all-paid-${sanitizedId}`);
-            if (markAllBtn) {
-              markAllBtn.addEventListener('click', () => markAllPaidForDriver(driverId));
+            const markAllPaidBtn = document.getElementById(`mark-all-paid-${sanitizedId}`);
+            if (markAllPaidBtn) {
+              markAllPaidBtn.addEventListener('click', async () => {
+                if (!confirm(`Mark all ${Object.keys(matchingEntries).length} entries as paid for ${driverName || driverId}?`)) return;
+                try {
+                  const updates = {};
+                  for (const bookingId of Object.keys(matchingEntries)) {
+                    updates[`driverWallet/${driverId}/${bookingId}/paidout`] = true;
+                    updates[`driverWallet/${driverId}/${bookingId}/paidAt`] = Date.now();
+                    updates[`driverWallet/${driverId}/${bookingId}/status`] = 'paid';
+                  }
+                  await update(ref(db), updates);
+                  showToast(`Marked ${Object.keys(matchingEntries).length} entries as paid`, 'success');
+                  loadWallets();
+                } catch (error) { showToast('Failed to mark entries as paid: ' + error.message, 'danger'); }
+              });
             }
-          }, 100);
+          }, 0);
+        }
+        if (container.innerHTML === '') {
+          container.innerHTML = '<div class="text-center p-4"><p class="text-muted">No matching wallet entries found.</p></div>';
         }
       } catch (error) { showToast('Failed to load wallets: ' + error.message, 'danger'); }
       finally {
@@ -911,444 +1629,337 @@
       }
     }
 
-    async function loadWithdrawals() {
+    window.showQrModal = async function(driverId, amount, label) {
+      try {
+        const driverSnapshot = await get(ref(db, `driverdetails/${driverId}`));
+        if (!driverSnapshot.exists()) { showToast('Driver not found', 'danger'); return; }
+        const driver = driverSnapshot.val();
+        const upiId = typeof driver.upiId === 'string' ? driver.upiId.trim() : (driver.upiId || null);
+        if (!upiId) { showToast('No UPI ID found for this driver', 'danger'); return; }
+        
+        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(driver.name || 'Driver')}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent('WaveTravel Payment')}`;
+        const qrContainer = document.getElementById('qrCode');
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, { text: upiUri, width: 200, height: 200 });
+        document.getElementById('qrInfo').innerHTML = `
+          <strong>${escapeHtml(label)}</strong><br>
+          Amount: ₹${amount.toFixed(2)}<br>
+          UPI: ${escapeHtml(upiId)}`;
+        document.getElementById('copyUpiUriBtn').onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(upiUri);
+            showToast('UPI URI copied to clipboard', 'success');
+          } catch (error) { showToast('Failed to copy UPI URI', 'danger'); }
+        };
+        new bootstrap.Modal(document.getElementById('qrModal')).show();
+      } catch (error) { showToast('Failed to generate QR: ' + error.message, 'danger'); }
+    };
+
+    window.markPaidEntry = async function(driverId, bookingId) {
+      if (!confirm(`Mark this entry as paid?`)) return;
+      try {
+        await update(ref(db, `driverWallet/${driverId}/${bookingId}`), {
+          paidout: true, paidAt: Date.now(), status: 'paid'
+        });
+        showToast('Entry marked as paid', 'success');
+        loadWallets();
+      } catch (error) { showToast('Failed to mark as paid: ' + error.message, 'danger'); }
+    };
+
+    async function loadPendingWithdrawals() {
       document.getElementById('withdrawals-container').style.display = 'none';
       document.getElementById('withdrawals-loading').style.display = 'block';
       const container = document.getElementById('withdrawals-container');
       container.innerHTML = '';
       try {
-        const snapshot = await get(ref(db, 'pendingWithdrawals'));
+        const snapshot = await get(ref(db, 'driverWallet'));
         if (!snapshot.exists()) {
           container.innerHTML = '<div class="text-center p-4"><p class="text-muted">No pending withdrawals found.</p></div>';
           return;
         }
-        const withdrawalsByDriver = snapshot.val();
-        for (const [driverId, bookingsObj] of Object.entries(withdrawalsByDriver)) {
-          let totalAmount = 0;
-          for (const booking of Object.values(bookingsObj)) totalAmount += Number(booking.amount) || 0;
-          
-          let driverName = null, upiId = null;
-          try {
-            const driverSnapshot = await get(ref(db, `driverdetails/${driverId}`));
-            if (driverSnapshot.exists()) {
-              const driver = driverSnapshot.val();
-              driverName = driver.name || null;
-              upiId = typeof driver.upiId === 'string' ? driver.upiId.trim() : (driver.upiId || null);
+        const allDriverWallets = snapshot.val();
+        const pendingWithdrawals = [];
+        for (const [driverId, entries] of Object.entries(allDriverWallets)) {
+          for (const [bookingId, entry] of Object.entries(entries)) {
+            const effectiveStatus = getEffectiveStatusFromWalletEntry(entry);
+            if (effectiveStatus === 'processing') {
+              let driverName = null, upiId = null;
+              try {
+                const driverSnapshot = await get(ref(db, `driverdetails/${driverId}`));
+                if (driverSnapshot.exists()) {
+                  const driver = driverSnapshot.val();
+                  driverName = driver.name || null;
+                  upiId = typeof driver.upiId === 'string' ? driver.upiId.trim() : (driver.upiId || null);
+                }
+              } catch (e) {}
+              pendingWithdrawals.push({ driverId, bookingId, entry, driverName, upiId });
             }
-          } catch (e) {}
+          }
+        }
+        if (pendingWithdrawals.length === 0) {
+          container.innerHTML = '<div class="text-center p-4"><p class="text-muted">No pending withdrawals found.</p></div>';
+          return;
+        }
+        pendingWithdrawals.forEach((withdrawal, index) => {
+          const { driverId, bookingId, entry, driverName, upiId } = withdrawal;
+          const amount = Number(entry.amount) || 0;
+          const fare = entry.fare ?? entry.booking?.fare ?? 'N/A';
+          const pickup = entry.booking?.pickup || entry.pickup || 'N/A';
+          const dropoff = entry.booking?.dropoff || entry.dropoff || 'N/A';
+          const sanitizedDriverId = sanitizeId(driverId);
+          const sanitizedBookingId = sanitizeId(bookingId);
           
-          const driverCard = document.createElement('div');
-          driverCard.className = 'driver-card mb-4';
-          driverCard.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center mb-3">
+          const card = document.createElement('div');
+          card.className = 'driver-card mb-3';
+          card.innerHTML = `
+            <div class="driver-header">
               <div>
-                <h5 class="m-0 text-primary">Driver: ${escapeHtml(driverId)} ${driverName ? `— ${escapeHtml(driverName)}` : ''}</h5>
-                <small class="text-muted">UPI: ${upiId ? escapeHtml(upiId) : '—'}</small>
-                </div>
+                <strong>${driverName ? escapeHtml(driverName) : escapeHtml(driverId)}</strong>
+                <div class="small-muted">Driver ID: ${escapeHtml(driverId)}</div>
+                <div class="small-muted">Booking ID: ${escapeHtml(bookingId)}</div>
+                <div class="small-muted">Route: ${escapeHtml(pickup)} → ${escapeHtml(dropoff)}</div>
+                <div class="small-muted">UPI: ${upiId ? escapeHtml(upiId) : '—'}</div>
+              </div>
               <div class="text-end">
-                <h5 class="m-0">Total: ₹${totalAmount.toFixed(2)}</h5>
-                <div class="mt-2 d-flex gap-2 justify-content-end">
-                  <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${totalAmount}, '')" ${!upiId ? 'disabled' : ''}><i class="bi bi-qr-code"></i> Show QR</button>
-                  <button class="btn btn-sm btn-success" onclick="markAllPaidForDriver('${escapeHtml(driverId)}')"><i class="bi bi-cash-stack"></i> Mark All Paid</button>
+                <h4 class="m-0 text-warning">₹${amount.toFixed(2)}</h4>
+                <div class="small-muted">Fare: ₹${escapeHtml(String(fare))}</div>
+                <div class="mt-2 d-flex gap-2">
+                  <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${amount}, '${escapeHtml(bookingId)}')" ${!upiId ? 'disabled' : ''}><i class="bi bi-qr-code"></i> Show QR</button>
+                  <button class="btn btn-sm btn-success" onclick="approveWithdrawal('${escapeHtml(driverId)}', '${escapeHtml(bookingId)}')"><i class="bi bi-check"></i> Approve</button>
+                  <button class="btn btn-sm btn-danger" onclick="rejectWithdrawal('${escapeHtml(driverId)}', '${escapeHtml(bookingId)}')"><i class="bi bi-x"></i> Reject</button>
                 </div>
               </div>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm table-hover">
-                <thead><tr><th>SL</th><th>Booking</th><th>Amount</th><th>Fare</th><th>Status</th><th>Actions</th></tr></thead>
-                <tbody></tbody>
-              </table>
             </div>`;
-          
-          const tbody = driverCard.querySelector('tbody');
-          let serialNo = 1;
-          for (const [bookingId, data] of Object.entries(bookingsObj)) {
-            const pickup = data.booking?.pickup || data.pickup || 'N/A';
-            const dropoff = data.booking?.dropoff || data.dropoff || 'N/A';
-            const amount = Number(data.amount) ? Number(data.amount).toFixed(2) : '0.00';
-            const fare = data.fare ?? 'N/A';
-            const status = data.status ?? 'pending';
-            const isPaid = data.paidout === true || ['paid', 'approved'].includes(String(status).toLowerCase());
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${serialNo++}</td>
-              <td style="min-width: 180px;">
-                <div><strong>${escapeHtml(bookingId)}</strong></div>
-                <small class="text-muted">${escapeHtml(pickup)} → ${escapeHtml(dropoff)}</small>
-              </td>
-              <td>₹${amount}</td>
-              <td>₹${escapeHtml(String(fare))}</td>
-              <td>${isPaid ? '<span class="badge-paid">Paid</span>' : '<span class="badge-unpaid">Unpaid</span>'}</td>
-              <td>
-                <div class="btn-group">
-                  <button class="btn btn-sm btn-info" onclick="showBookingModal('${escapeHtml(driverId)}', '${escapeHtml(bookingId)}')">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button class="btn btn-sm btn-primary" onclick="showQrModal('${escapeHtml(driverId)}', ${Number(amount) || 0}, '${escapeHtml(bookingId)}')"
-                          ${(!upiId || isPaid) ? 'disabled' : ''}>
-                    <i class="bi bi-qr-code"></i>
-                  </button>
-                  <button class="btn btn-sm btn-success" onclick="approveWithdrawal('${escapeHtml(driverId)}', '${escapeHtml(bookingId)}')">
-                    <i class="bi bi-check"></i> Approve
-                  </button>
-                  <button class="btn btn-sm btn-danger" onclick="rejectWithdrawal('${escapeHtml(driverId)}', '${escapeHtml(bookingId)}')">
-                    <i class="bi bi-x"></i> Reject
-                  </button>
-                </div>
-              </td>`;
-            tbody.appendChild(row);
-          }
-          container.appendChild(driverCard);
-        }
-      } catch (error) {
-        showToast('Failed to load withdrawals: ' + error.message, 'danger');
-      } finally {
+          container.appendChild(card);
+        });
+      } catch (error) { showToast('Failed to load pending withdrawals: ' + error.message, 'danger'); }
+      finally {
         document.getElementById('withdrawals-loading').style.display = 'none';
         document.getElementById('withdrawals-container').style.display = 'block';
       }
     }
 
+    window.approveWithdrawal = async function(driverId, bookingId) {
+      if (!confirm('Approve this withdrawal and mark as paid?')) return;
+      try {
+        await update(ref(db, `driverWallet/${driverId}/${bookingId}`), {
+          paidout: true, paidAt: Date.now(), status: 'paid'
+        });
+        showToast('Withdrawal approved and marked as paid', 'success');
+        loadPendingWithdrawals();
+      } catch (error) { showToast('Failed to approve withdrawal: ' + error.message, 'danger'); }
+    };
+
+    window.rejectWithdrawal = async function(driverId, bookingId) {
+      if (!confirm('Reject this withdrawal request?')) return;
+      try {
+        const updates = {};
+        updates[`driverWallet/${driverId}/${bookingId}/withdrawalRequested`] = false;
+        updates[`driverWallet/${driverId}/${bookingId}/status`] = 'unpaid';
+        updates[`driverWallet/${driverId}/${bookingId}/rejectedAt`] = Date.now();
+        await update(ref(db), updates);
+        showToast('Withdrawal request rejected', 'success');
+        loadPendingWithdrawals();
+      } catch (error) { showToast('Failed to reject withdrawal: ' + error.message, 'danger'); }
+    };
+
+    document.getElementById('exportWithdrawalsBtn')?.addEventListener('click', async () => {
+      try {
+        const snapshot = await get(ref(db, 'driverWallet'));
+        if (!snapshot.exists()) { showToast('No data to export', 'warning'); return; }
+        const allDriverWallets = snapshot.val();
+        const rows = [['Driver ID', 'Driver Name', 'UPI ID', 'Booking ID', 'Amount', 'Fare', 'Pickup', 'Dropoff', 'Status']];
+        for (const [driverId, entries] of Object.entries(allDriverWallets)) {
+          for (const [bookingId, entry] of Object.entries(entries)) {
+            const effectiveStatus = getEffectiveStatusFromWalletEntry(entry);
+            if (effectiveStatus === 'processing') {
+              let driverName = '', upiId = '';
+              try {
+                const driverSnapshot = await get(ref(db, `driverdetails/${driverId}`));
+                if (driverSnapshot.exists()) {
+                  const driver = driverSnapshot.val();
+                  driverName = driver.name || '';
+                  upiId = typeof driver.upiId === 'string' ? driver.upiId.trim() : (driver.upiId || '');
+                }
+              } catch (e) {}
+              const amount = Number(entry.amount) || 0;
+              const fare = entry.fare ?? entry.booking?.fare ?? 'N/A';
+              const pickup = entry.booking?.pickup || entry.pickup || 'N/A';
+              const dropoff = entry.booking?.dropoff || entry.dropoff || 'N/A';
+              rows.push([driverId, driverName, upiId, bookingId, amount.toFixed(2), String(fare), pickup, dropoff, effectiveStatus]);
+            }
+          }
+        }
+        const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pending-withdrawals-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('CSV exported successfully', 'success');
+      } catch (error) { showToast('Failed to export CSV: ' + error.message, 'danger'); }
+    });
+
     async function loadProfile() {
       document.getElementById('profile-table').style.display = 'none';
       document.getElementById('profile-loading').style.display = 'block';
-      const table = initTable('profile-table');
-      
+      const table = initTable('profile-table', []);
       try {
-        if (currentUser) {
-          const lastSignIn = currentUser.metadata.lastSignInTime ? formatDateDDMMYY(new Date(currentUser.metadata.lastSignInTime)) : '';
-          const creationTime = currentUser.metadata.creationTime ? formatDateDDMMYY(new Date(currentUser.metadata.creationTime)) : '';
-          const rows = [
-            ['User ID', escapeHtml(currentUser.uid)],
-            ['Email', escapeHtml(currentUser.email || '')],
-            ['Display Name', escapeHtml(currentUser.displayName || '')],
-            ['Email Verified', currentUser.emailVerified ? 'Yes' : 'No'],
-            ['Last Sign In', escapeHtml(lastSignIn)],
-            ['Creation Time', escapeHtml(creationTime)]
-          ];
-          table.rows.add(rows).draw();
-        }
-      } catch (error) {
-        showToast('Failed to load profile: ' + error.message, 'danger');
-      } finally {
+        if (!currentUser) { showToast('No user logged in', 'danger'); return; }
+        table.clear();
+        const rows = [
+          ['Email', escapeHtml(currentUser.email || '')],
+          ['UID', escapeHtml(currentUser.uid || '')],
+          ['Email Verified', currentUser.emailVerified ? 'Yes' : 'No'],
+          ['Last Sign In', currentUser.metadata?.lastSignInTime ? new Date(currentUser.metadata.lastSignInTime).toLocaleString() : 'N/A']
+        ];
+        table.rows.add(rows).draw();
+      } catch (error) { showToast('Failed to load profile: ' + error.message, 'danger'); }
+      finally {
         document.getElementById('profile-loading').style.display = 'none';
         document.getElementById('profile-table').style.display = 'table';
       }
     }
 
-    // Action functions
-    window.deleteUser = (uid) => safeDelete(`users/${uid}`, 'Are you sure you want to delete this user?', 'User deleted successfully', loadUsers);
-    window.deleteDriver = (driverId) => safeDelete(`driverdetails/${driverId}`, 'Are you sure you want to delete this driver?', 'Driver deleted successfully', loadDrivers);
-    window.deleteSearch = (searchId) => safeDelete(`searches/${searchId}`, 'Are you sure you want to delete this search?', 'Search deleted successfully', loadSearches);
-    window.deleteBooking = (bookingId) => safeDelete(`bookings/${bookingId}`, 'Are you sure you want to delete this booking?', 'Booking deleted successfully', loadBookings);
-    window.deleteSlot = (driverId, slotId) => safeDelete(`availableslots/${driverId}/${slotId}`, 'Are you sure you want to delete this slot?', 'Slot deleted successfully', loadSlots);
-    window.deletePendingCar = (driverId, carId) => safeDelete(`pendingcars/${driverId}/${carId}`, 'Are you sure you want to delete this pending car?', 'Pending car deleted successfully', loadPendingCars);
-    window.deleteApprovedCar = (driverId, carId) => safeDelete(`approvedcars/${driverId}/${carId}`, 'Are you sure you want to delete this approved car?', 'Approved car deleted successfully', loadApprovedCars);
-    window.deleteRideRequest = (requestId) => safeDelete(`riderequest/${requestId}`, 'Are you sure you want to delete this ride request?', 'Ride request deleted successfully', loadRideRequests);
+    window.deleteUser = (uid) => safeDelete(`users/${uid}`, 'Delete this user?', 'User deleted successfully', loadUsers);
+    window.deleteDriver = (driverId) => safeDelete(`driverdetails/${driverId}`, 'Delete this driver?', 'Driver deleted successfully', loadDrivers);
+    window.deleteSearch = (searchId) => safeDelete(`searches/${searchId}`, 'Delete this search?', 'Search deleted successfully', loadSearches);
+    window.deleteRideRequest = (requestId) => safeDelete(`riderequest/${requestId}`, 'Delete this ride request?', 'Ride request deleted successfully', loadRideRequests);
+    window.deletePendingCar = (driverId, carId) => safeDelete(`pendingcars/${driverId}/${carId}`, 'Delete this pending car?', 'Pending car deleted successfully', loadPendingCars);
+    window.deleteApprovedCar = (driverId, carId) => safeDelete(`approvedcars/${driverId}/${carId}`, 'Delete this approved car?', 'Approved car deleted successfully', loadApprovedCars);
+    window.deleteSlot = (driverId, slotId) => safeDelete(`availableslots/${driverId}/${slotId}`, 'Delete this slot?', 'Slot deleted successfully', loadSlots);
+    window.deleteBooking = (bookingId) => safeDelete(`bookings/${bookingId}`, 'Delete this booking?', 'Booking deleted successfully', loadBookings);
 
-    window.approveRideRequest = async (requestId) => {
+    window.approveCar = async function(driverId, carId) {
+      if (!confirm('Approve this car?')) return;
       try {
-        await update(ref(db, `riderequest/${requestId}`), { status: 'approved', approvedAt: new Date().toISOString() });
-        showToast('Ride request approved successfully', 'success');
-        loadRideRequests();
-      } catch (error) {
-        showToast('Failed to approve ride request: ' + error.message, 'danger');
-      }
-    };
-
-    window.rejectRideRequest = async (requestId) => {
-      try {
-        await update(ref(db, `riderequest/${requestId}`), { status: 'rejected', rejectedAt: new Date().toISOString() });
-        showToast('Ride request rejected successfully', 'success');
-        loadRideRequests();
-      } catch (error) {
-        showToast('Failed to reject ride request: ' + error.message, 'danger');
-      }
-    };
-
-    window.approveCar = async (driverId, carId) => {
-      try {
-        const pendingCarSnapshot = await get(ref(db, `pendingcars/${driverId}/${carId}`));
-        if (!pendingCarSnapshot.exists()) {
-          showToast('Pending car not found', 'danger');
-          return;
-        }
-        const carData = pendingCarSnapshot.val();
-        await set(ref(db, `approvedcars/${driverId}/${carId}`), { ...carData, approvedAt: new Date().toISOString() });
+        const snapshot = await get(ref(db, `pendingcars/${driverId}/${carId}`));
+        if (!snapshot.exists()) { showToast('Car not found', 'danger'); return; }
+        const car = snapshot.val();
+        await set(ref(db, `approvedcars/${driverId}/${carId}`), car);
+        await set(ref(db, `driverdetails/${driverId}/vehicles/${carId}`), car);
         await remove(ref(db, `pendingcars/${driverId}/${carId}`));
         showToast('Car approved successfully', 'success');
         loadPendingCars();
-        loadApprovedCars();
-      } catch (error) {
-        showToast('Failed to approve car: ' + error.message, 'danger');
-      }
+      } catch (error) { showToast('Failed to approve car: ' + error.message, 'danger'); }
     };
 
-    window.markPaidEntry = async (driverId, bookingId) => {
+    window.approveRideRequest = async function(requestId) {
+      if (!confirm('Approve this ride request?')) return;
       try {
-        await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { 
-          paidout: true, 
-          status: 'paid',
-          paidAt: new Date().toISOString()
-        });
-        showToast('Entry marked as paid', 'success');
-        loadWallets();
-      } catch (error) {
-        showToast('Failed to mark as paid: ' + error.message, 'danger');
-      }
+        await update(ref(db, `riderequest/${requestId}`), { status: 'approved', approvedAt: Date.now() });
+        showToast('Ride request approved', 'success');
+        loadRideRequests();
+      } catch (error) { showToast('Failed to approve ride request: ' + error.message, 'danger'); }
     };
 
-    window.markAllPaidForDriver = async (driverId) => {
-      if (!confirm(`Are you sure you want to mark all entries as paid for driver ${driverId}?`)) return;
+    window.rejectRideRequest = async function(requestId) {
+      if (!confirm('Reject this ride request?')) return;
       try {
-        const walletSnapshot = await get(ref(db, `driverWallet/${driverId}`));
-        if (walletSnapshot.exists()) {
-          const entries = walletSnapshot.val();
-          const updates = {};
-          for (const bookingId of Object.keys(entries)) {
-            updates[`${bookingId}/paidout`] = true;
-            updates[`${bookingId}/status`] = 'paid';
-            updates[`${bookingId}/paidAt`] = new Date().toISOString();
-          }
-          await update(ref(db, `driverWallet/${driverId}`), updates);
-        }
-        
-        await remove(ref(db, `pendingWithdrawals/${driverId}`));
-        
-        showToast('All entries marked as paid', 'success');
-        loadWallets();
-        loadWithdrawals();
-      } catch (error) {
-        showToast('Failed to mark all as paid: ' + error.message, 'danger');
-      }
+        await update(ref(db, `riderequest/${requestId}`), { status: 'rejected', rejectedAt: Date.now() });
+        showToast('Ride request rejected', 'success');
+        loadRideRequests();
+      } catch (error) { showToast('Failed to reject ride request: ' + error.message, 'danger'); }
     };
 
-    window.approveWithdrawal = async (driverId, bookingId) => {
-      try {
-        await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { 
-          paidout: true, 
-          status: 'paid',
-          paidAt: new Date().toISOString()
-        });
-        await remove(ref(db, `pendingWithdrawals/${driverId}/${bookingId}`));
-        showToast('Withdrawal approved', 'success');
-        loadWithdrawals();
-        loadWallets();
-      } catch (error) {
-        showToast('Failed to approve withdrawal: ' + error.message, 'danger');
-      }
-    };
-
-    window.rejectWithdrawal = async (driverId, bookingId) => {
-      if (!confirm('Are you sure you want to reject this withdrawal request?')) return;
-      try {
-        await remove(ref(db, `pendingWithdrawals/${driverId}/${bookingId}`));
-        await update(ref(db, `driverWallet/${driverId}/${bookingId}`), { 
-          status: 'rejected',
-          rejectedAt: new Date().toISOString()
-        });
-        showToast('Withdrawal rejected', 'success');
-        loadWithdrawals();
-      } catch (error) {
-        showToast('Failed to reject withdrawal: ' + error.message, 'danger');
-      }
-    };
-
-    window.showBookingModal = async (driverId, bookingId) => {
-      try {
-        const bookingSnapshot = await get(ref(db, `bookings/${bookingId}`));
-        if (bookingSnapshot.exists()) {
-          const booking = bookingSnapshot.val();
-          alert(JSON.stringify(booking, null, 2));
-        } else {
-          showToast('Booking not found', 'danger');
-        }
-      } catch (error) {
-        showToast('Failed to load booking details: ' + error.message, 'danger');
-      }
-    };
-
-    window.showQrModal = async (driverId, amount, bookingId) => {
-      try {
-        const driverSnapshot = await get(ref(db, `driverdetails/${driverId}`));
-        if (!driverSnapshot.exists()) {
-          showToast('Driver not found', 'danger');
-          return;
-        }
-        
-        const driver = driverSnapshot.val();
-        const upiId = driver.upiId;
-        if (!upiId) {
-          showToast('Driver UPI ID not found', 'danger');
-          return;
-        }
-
-        const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&am=${amount}&cu=INR&tn=${encodeURIComponent('WaveTravel Payment' + (bookingId ? ' - ' + bookingId : ''))}`;
-        
-        document.getElementById('qrCode').innerHTML = '';
-        new QRCode(document.getElementById('qrCode'), {
-          text: upiUri,
-          width: 200,
-          height: 200,
-          colorDark: '#000000',
-          colorLight: '#ffffff'
-        });
-        
-        document.getElementById('qrInfo').innerHTML = `
-          <strong>Driver:</strong> ${escapeHtml(driver.name || driverId)}<br>
-          <strong>UPI ID:</strong> ${escapeHtml(upiId)}<br>
-          <strong>Amount:</strong> ₹${amount.toFixed(2)}${bookingId ? `<br><strong>Booking:</strong> ${escapeHtml(bookingId)}` : ''}
-        `;
-        
-        document.getElementById('copyUpiUriBtn').onclick = async () => {
-          try {
-            await navigator.clipboard.writeText(upiUri);
-            showToast('UPI URI copied to clipboard', 'success');
-          } catch (error) {
-            showToast('Failed to copy UPI URI', 'danger');
-          }
-        };
-        
-        new bootstrap.Modal(document.getElementById('qrModal')).show();
-      } catch (error) {
-        showToast('Failed to generate QR code: ' + error.message, 'danger');
-      }
-    };
-
-    window.exportWithdrawals = async () => {
-      try {
-        const snapshot = await get(ref(db, 'pendingWithdrawals'));
-        if (!snapshot.exists()) {
-          showToast('No data to export', 'info');
-          return;
-        }
-        
-        const withdrawals = snapshot.val();
-        const csvData = [];
-        csvData.push(['Driver ID', 'Driver Name', 'UPI ID', 'Booking ID', 'Amount', 'Pickup', 'Dropoff', 'Status']);
-        
-        for (const [driverId, bookingsObj] of Object.entries(withdrawals)) {
-          let driverName = '', upiId = '';
-          try {
-            const driverSnapshot = await get(ref(db, `driverdetails/${driverId}`));
-            if (driverSnapshot.exists()) {
-              const driver = driverSnapshot.val();
-              driverName = driver.name || '';
-              upiId = driver.upiId || '';
-            }
-          } catch (e) {}
-          
-          for (const [bookingId, data] of Object.entries(bookingsObj)) {
-            csvData.push([
-              driverId,
-              driverName,
-              upiId,
-              bookingId,
-              data.amount || 0,
-              data.booking?.pickup || data.pickup || '',
-              data.booking?.dropoff || data.dropoff || '',
-              data.status || 'pending'
-            ]);
-          }
-        }
-        
-        const csvContent = csvData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `pending_withdrawals_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        showToast('CSV exported successfully', 'success');
-      } catch (error) {
-        showToast('Failed to export CSV: ' + error.message, 'danger');
-      }
-    };
-
-    window.openTab = (tabName) => {
-      document.querySelectorAll('.tab-pane').forEach(tab => tab.hidden = true);
-      document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    window.openTab = function(tabName) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.hidden = true);
+      document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+      document.querySelector(`a[onclick="openTab('${tabName}')"]`)?.classList.add('active');
+      const tabElement = document.getElementById(`${tabName}-tab`);
+      if (tabElement) tabElement.hidden = false;
       
-      const targetTab = document.getElementById(`${tabName}-tab`);
-      if (targetTab) {
-        targetTab.hidden = false;
-        document.querySelector(`[onclick="openTab('${tabName}')"]`)?.classList.add('active');
-        
-        switch (tabName) {
-          case 'users': loadUsers(); break;
-          case 'drivers': loadDrivers(); break;
-          case 'searches': loadSearches(); break;
-          case 'ride-requests': loadRideRequests(); break;
-          case 'pending-cars': loadPendingCars(); break;
-          case 'approved-cars': loadApprovedCars(); break;
-          case 'slots': loadSlots(); break;
-          case 'bookings': loadBookings(); break;
-          case 'driver-wallets': loadWallets(); break;
-          case 'pending-withdrawals': loadWithdrawals(); break;
-          case 'profile': loadProfile(); break;
-        }
-      }
+      const loaders = {
+        'users': loadUsers, 'drivers': loadDrivers, 'searches': loadSearches,
+        'ride-requests': loadRideRequests, 'pending-cars': loadPendingCars,
+        'approved-cars': loadApprovedCars, 'slots': loadSlots, 'bookings': loadBookings,
+        'driver-wallets': loadWallets, 'pending-withdrawals': loadPendingWithdrawals, 'profile': loadProfile
+      };
+      if (loaders[tabName]) loaders[tabName]();
     };
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const globalSearch = document.getElementById('globalSearch');
-      if (globalSearch) {
-        globalSearch.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            const searchTerm = globalSearch.value.toLowerCase();
-            Object.values(tables).forEach(table => {
-              if (table && typeof table.search === 'function') {
-                table.search(searchTerm).draw();
-              }
-            });
-          }
-        });
-        
-        document.addEventListener('keydown', (e) => {
-          if (e.key === '/' && !e.ctrlKey && !e.altKey && e.target.tagName !== 'INPUT') {
-            e.preventDefault();
-            globalSearch.focus();
-          }
-        });
-      }
-
-      document.getElementById('refreshAllBtn')?.addEventListener('click', () => {
-        const activeTab = document.querySelector('.nav-link.active');
-        if (activeTab) {
-          const tabName = activeTab.getAttribute('onclick')?.match(/openTab\('(.+?)'\)/)?.[1];
-          if (tabName) openTab(tabName);
-        }
-      });
-
-      document.getElementById('requestFilterBtn')?.addEventListener('click', loadRideRequests);
-      document.getElementById('walletFilterApplyBtn')?.addEventListener('click', loadWallets);
-      document.getElementById('exportWithdrawalsBtn')?.addEventListener('click', exportWithdrawals);
+    document.getElementById('refreshAllBtn')?.addEventListener('click', () => {
+      const activeTab = document.querySelector('.nav-link.active')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+      if (activeTab) openTab(activeTab);
     });
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUser = user;
-        openTab('users');
-      } else {
-        window.location.href = 'adminlogin.html';
-      }
+    // Filter event listeners
+    document.getElementById('usersFilterBtn')?.addEventListener('click', applyUsersFilter);
+    document.getElementById('usersResetBtn')?.addEventListener('click', () => {
+      document.getElementById('usersStartDate').value = '';
+      document.getElementById('usersEndDate').value = '';
+      document.getElementById('usersQuickFilter').value = 'month';
+      applyUsersFilter();
+    });
+    
+    document.getElementById('driversFilterBtn')?.addEventListener('click', applyDriversFilter);
+    document.getElementById('driversResetBtn')?.addEventListener('click', () => {
+      document.getElementById('driversVehicleFilter').value = 'all';
+      applyDriversFilter();
+    });
+    
+    document.getElementById('searchesFilterBtn')?.addEventListener('click', applySearchesFilter);
+    document.getElementById('searchesResetBtn')?.addEventListener('click', () => {
+      document.getElementById('searchesStartDate').value = '';
+      document.getElementById('searchesEndDate').value = '';
+      document.getElementById('searchesQuickFilter').value = 'month';
+      document.getElementById('searchesFallbackFilter').value = 'all';
+      applySearchesFilter();
+    });
+    
+    document.getElementById('requestFilterBtn')?.addEventListener('click', applyRequestsFilter);
+    document.getElementById('requestsResetBtn')?.addEventListener('click', () => {
+      document.getElementById('requestsStartDate').value = '';
+      document.getElementById('requestsEndDate').value = '';
+      document.getElementById('requestsQuickFilter').value = 'month';
+      document.getElementById('requestStatusFilter').value = 'pending';
+      applyRequestsFilter();
+    });
+    
+    document.getElementById('pendingFilterBtn')?.addEventListener('click', applyPendingCarsFilter);
+    document.getElementById('pendingResetBtn')?.addEventListener('click', () => {
+      document.getElementById('pendingStartDate').value = '';
+      document.getElementById('pendingEndDate').value = '';
+      document.getElementById('pendingQuickFilter').value = 'month';
+      applyPendingCarsFilter();
+    });
+    
+    document.getElementById('approvedFilterBtn')?.addEventListener('click', applyApprovedCarsFilter);
+    document.getElementById('approvedResetBtn')?.addEventListener('click', () => {
+      document.getElementById('approvedSeatsFilter').value = 'all';
+      applyApprovedCarsFilter();
+    });
+    
+    document.getElementById('slotsFilterBtn')?.addEventListener('click', applySlotsFilter);
+    document.getElementById('slotsResetBtn')?.addEventListener('click', () => {
+      document.getElementById('slotsStartDate').value = '';
+      document.getElementById('slotsEndDate').value = '';
+      document.getElementById('slotsQuickFilter').value = 'month';
+      applySlotsFilter();
+    });
+    
+    document.getElementById('bookingsFilterBtn')?.addEventListener('click', applyBookingsFilter);
+    document.getElementById('bookingsResetBtn')?.addEventListener('click', () => {
+      document.getElementById('bookingsStartDate').value = '';
+      document.getElementById('bookingsEndDate').value = '';
+      document.getElementById('bookingsQuickFilter').value = 'month';
+      document.getElementById('bookingsStatusFilter').value = 'all';
+      applyBookingsFilter();
+    });
+    
+    document.getElementById('walletFilterApplyBtn')?.addEventListener('click', loadWallets);
+
+    onAuthStateChanged(auth, user => {
+      if (!user) { window.location.href = 'adminlogin.html'; return; }
+      currentUser = user;
+      openTab('users');
     });
 
-    window.loadUsers = loadUsers;
-    window.loadDrivers = loadDrivers;
-    window.loadSearches = loadSearches;
-    window.loadRideRequests = loadRideRequests;
-    window.loadPendingCars = loadPendingCars;
-    window.loadApprovedCars = loadApprovedCars;
-    window.loadSlots = loadSlots;
-    window.loadBookings = loadBookings;
-    window.loadWallets = loadWallets;
-    window.loadWithdrawals = loadWithdrawals;
-    window.loadProfile = loadProfile;
-
+    document.getElementById('globalSearch')?.addEventListener('keyup', function(e) {
+      if (e.key === '/') { this.focus(); e.preventDefault(); }
+    });
   </script>
 </body>
 </html>
