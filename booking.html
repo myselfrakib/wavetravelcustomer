@@ -402,6 +402,7 @@
     let currentTab = 'oneway';
     let isSearching = false;
     let currentUserData = null; // Store fetched user data
+    let isInitialLoad = true; // Flag to prevent saving first auto-search
 
     // Toast message function
     function showToast(message) {
@@ -711,26 +712,34 @@
       }
 
       // ENHANCED: Save search to Firebase with user name from users database
+      // Skip saving if this is the initial auto-search
       let searchRef = null;
-      try {
-        const user = auth.currentUser;
-        searchRef = db.ref('searches').push();
-        
-        const searchData = {
-          customerId: user ? user.uid : null,
-          customerEmail: user ? user.email : null,
-          customerName: currentUserData ? currentUserData.name : null, // NEW: Add user name
-          customerPhone: currentUserData ? currentUserData.phone : null, // NEW: Add user phone
-          pickup: pickup,
-          dropoff: dropoff,
-          date: date,
-          tripType: tripType,
-          timestamp: firebase.database.ServerValue.TIMESTAMP
-        };
-        
-        searchRef.set(searchData).catch(err => console.log('Failed to save search', err));
-      } catch (err) {
-        console.log('Error creating search record', err);
+      if (!isInitialLoad) {
+        try {
+          const user = auth.currentUser;
+          searchRef = db.ref('searches').push();
+          
+          const searchData = {
+            customerId: user ? user.uid : null,
+            customerEmail: user ? user.email : null,
+            customerName: currentUserData ? currentUserData.name : null, // NEW: Add user name
+            customerPhone: currentUserData ? currentUserData.phone : null, // NEW: Add user phone
+            pickup: pickup,
+            dropoff: dropoff,
+            date: date,
+            tripType: tripType,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+          };
+          
+          searchRef.set(searchData).catch(err => console.log('Failed to save search', err));
+        } catch (err) {
+          console.log('Error creating search record', err);
+        }
+      }
+      
+      // Mark that initial load is complete
+      if (isInitialLoad) {
+        isInitialLoad = false;
       }
 
       // Fetch available slots
