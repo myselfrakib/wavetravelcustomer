@@ -278,16 +278,17 @@
     });
     termsChk.addEventListener('change', () => setCheckboxChecked(termsChk.checked));
 
-    // Ultra-fast payment processing - immediate redirect
+    // FIXED: Individual writes instead of atomic root-level update
     async function processSuccessfulPayment(paymentId, bookingData, userData) {
       try {
+        showProgress(true);
+        
         const driverId = bookingData.driverId;
         const slotKey = bookingData.slotKey;
         const bookingKey = db.ref(`bookings/${driverId}`).push().key;
 
-        // Build atomic update
-        const updates = {};
-        updates[`bookings/${driverId}/${bookingKey}`] = {
+        // Prepare booking details
+        const bookingDetails = {
           ...bookingData,
           userId: userData.uid,
           userName: userData.name,
@@ -296,25 +297,36 @@
           bookedAt: new Date().toISOString(),
           status: 'confirmed'
         };
+
         // Calculate commission based on trip type
         const tripType = bookingData.triptype || bookingData.tripType || 'oneway';
         const commissionRate = tripType === 'roundtrip' ? 0.8 : 0.7; // 80% for roundtrip, 70% for oneway
         
-        updates[`driverWallet/${driverId}/${bookingKey}`] = {
+        const walletEntry = {
           amount: (bookingData.fare || 0) * commissionRate,
           status: 'unpaid',
           bookingId: bookingKey,
           date: new Date().toISOString()
         };
-        updates[`availableslots/${driverId}/${slotKey}`] = null;
 
-        // Execute update and redirect
-        await db.ref().update(updates);
+        // Write to each path individually (fixes permission denied error)
+        await db.ref(`bookings/${driverId}/${bookingKey}`).set(bookingDetails);
+        await db.ref(`driverWallet/${driverId}/${bookingKey}`).set(walletEntry);
+        await db.ref(`availableslots/${driverId}/${slotKey}`).remove();
+
+        // Success - clean up and redirect
         localStorage.removeItem('selectedBooking');
-        window.location.href = 'mybookings.html';
+        showProgress(false);
+        showCenterToast('Booking confirmed successfully!', 1500, 'success');
+        
+        setTimeout(() => {
+          window.location.href = 'mybookings.html';
+        }, 1500);
 
       } catch (err) {
-        alert('Booking error. Contact support with Payment ID: ' + paymentId);
+        console.error('Booking error:', err);
+        showProgress(false);
+        showCenterToast('Booking failed. Contact support with Payment ID: ' + paymentId, 4000, 'error');
       }
     }
 
@@ -353,7 +365,7 @@
       const tripType = booking.triptype || booking.tripType || 'oneway';
       const fare = booking.fare || 0;
       const tripTypeDisplay = tripType === 'oneway' ? 'Oneway' : 'Roundtrip';
-      const carInfo = `${booking.carBrand || 'Car'}${booking.carReg ? ' (' + booking.carReg + ')' : ''}`;
+      const carInfo = booking.carBrand || 'Car'; // Removed car registration number
 
       summaryEl.innerHTML = `
         <div role="region" aria-label="Booking summary">
