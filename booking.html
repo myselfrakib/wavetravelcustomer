@@ -391,7 +391,6 @@
     const db   = firebase.database();
     const auth = firebase.auth();
 
-    // Customize the emojis used in the WhatsApp message here
     const customEmojis = {
       greeting: "🙋‍♂️",
       car: "🚗",
@@ -401,10 +400,9 @@
 
     let currentTab = 'oneway';
     let isSearching = false;
-    let currentUserData = null; // Store fetched user data
-    let isInitialLoad = true; // Flag to prevent saving first auto-search
+    let currentUserData = null;
+    let isInitialLoad = true;
 
-    // Toast message function
     function showToast(message) {
       const toast = document.getElementById('toast');
       const toastMessage = document.getElementById('toast-message');
@@ -416,7 +414,6 @@
       }, 4000);
     }
 
-    // Debounce helper
     function debounce(fn, wait = 350) {
       let t;
       return function(...args) {
@@ -428,16 +425,13 @@
     function switchTab(tabName) {
       currentTab = tabName;
       
-      // Update tab buttons
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       event.target.classList.add('active');
       
-      // Update tab content
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       document.getElementById(`${tabName}-tab`).classList.add('active');
     }
 
-    // Debounced auto-search wrapper
     const debounceSearch = debounce(() => {
       const pickup = document.getElementById(`pickup-${currentTab}`);
       const dropoff = document.getElementById(`dropoff-${currentTab}`);
@@ -452,14 +446,12 @@
       if (!user) {
         window.location.href = 'index.html';
       } else {
-        // Fetch user data once when authenticated
         fetchUserData(user.uid).then(() => {
           loadLocations();
         });
       }
     });
 
-    // NEW: Fetch user data from Firebase
     function fetchUserData(userId) {
       return db.ref(`users/${userId}`).once('value')
         .then(snapshot => {
@@ -508,13 +500,11 @@
           }
         });
         
-        // Update all dropdowns
         ['oneway', 'roundtrip'].forEach(tabType => {
           document.getElementById(`pickup-${tabType}`).innerHTML = puOpts;
           document.getElementById(`dropoff-${tabType}`).innerHTML = doOpts;
         });
 
-        // Set defaults
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('date-oneway').value = today;
         document.getElementById('date-roundtrip').value = today;
@@ -534,10 +524,8 @@
           });
         });
 
-        // Setup event listeners
         setupEventListeners();
 
-        // Auto-search for oneway tab with a slight delay
         setTimeout(() => {
           if (document.getElementById('pickup-oneway').value && 
               document.getElementById('dropoff-oneway').value && 
@@ -588,7 +576,6 @@
       return `${day}/${month}/${year}`;
     }
 
-    // Helper: open WhatsApp chat for a given number and message (auto-add +91 if missing)
     function openWhatsAppWithMessage(phone, message) {
       let digits = String(phone || '').replace(/\D/g,'');
       if (!digits.startsWith('91')) {
@@ -615,11 +602,9 @@
         return;
       }
 
-      // Get user details
       db.ref(`users/${user.uid}`).once('value').then(userSnap => {
         const userData = userSnap.val() || {};
         
-        // Prepare ride request data
         const requestData = {
           customerId: user.uid,
           customerEmail: user.email || userData.email || '',
@@ -634,7 +619,6 @@
           notes: `Customer requested ${tripType} ride from ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
         };
 
-        // Save to Firebase
         db.ref('riderequest').push(requestData)
           .then(() => {
             showToast('Your request has been received. Redirecting to WhatsApp...');
@@ -699,10 +683,8 @@
       const dropoff = document.getElementById(`dropoff-${tripType}`).value;
       const date = document.getElementById(`date-${tripType}`).value;
       
-      // Set searching state
       setSearchingState(tripType, true);
       
-      // Show loading
       slotsDiv.innerHTML = '<div class="loading-msg"><i class="fas fa-spinner"></i>Searching for rides...</div>';
       
       if (!pickup || !dropoff || !date) {
@@ -711,8 +693,6 @@
         return;
       }
 
-      // ENHANCED: Save search to Firebase with user name from users database
-      // Skip saving if this is the initial auto-search
       let searchRef = null;
       if (!isInitialLoad) {
         try {
@@ -722,8 +702,8 @@
           const searchData = {
             customerId: user ? user.uid : null,
             customerEmail: user ? user.email : null,
-            customerName: currentUserData ? currentUserData.name : null, // NEW: Add user name
-            customerPhone: currentUserData ? currentUserData.phone : null, // NEW: Add user phone
+            customerName: currentUserData ? currentUserData.name : null,
+            customerPhone: currentUserData ? currentUserData.phone : null,
             pickup: pickup,
             dropoff: dropoff,
             date: date,
@@ -737,12 +717,10 @@
         }
       }
       
-      // Mark that initial load is complete
       if (isInitialLoad) {
         isInitialLoad = false;
       }
 
-      // Fetch available slots
       db.ref('availableslots').once('value')
         .then(snap => {
           setSearchingState(tripType, false);
@@ -762,7 +740,6 @@
 
           const allSlots = [];
           
-          // Process each driver's slots
           snap.forEach(driverSnap => {
             const driverId = driverSnap.key;
             
@@ -799,7 +776,6 @@
             }
           });
 
-          // Filter slots
           const matchedSlots = allSlots.filter(slot => {
             const normalizeString = (str) => (str || '').toLowerCase().trim();
             
@@ -812,7 +788,6 @@
             return pickupMatch && dropoffMatch && dateMatch && tripTypeMatch && statusFilter;
           });
 
-          // Update search record
           try {
             if (searchRef) {
               searchRef.update({ 
@@ -870,7 +845,7 @@
         const fare = Number(slot.fare) || 0;
         const displayTime = formatTime24to12(slot.time);
         const displayDate = formatDateISOtoDMY(slot.date);
-        const carInfo = `${slot.carBrand}${slot.carReg ? ' (' + slot.carReg + ')' : ''}`;
+        const carInfo = slot.carBrand;
 
         const card = document.createElement('div');
         card.className = 'slot-card';
@@ -940,7 +915,6 @@
 
         slotsDiv.appendChild(card);
 
-        // Store comprehensive slot data for booking
         card.setAttribute('data-slot', JSON.stringify({
           driverId: slot.driverId,
           slotKey: slot.slotKey,
@@ -994,13 +968,11 @@
         return;
       }
 
-      // Disable the booking button to prevent double clicks
       const bookButton = slotCard.querySelector('.btn-action');
       const originalText = bookButton.innerHTML;
       bookButton.disabled = true;
       bookButton.innerHTML = '<div class="spinner"></div> Processing...';
 
-      // Verify slot is still available before proceeding
       if (slotData.driverId && slotData.slotKey) {
         db.ref(`availableslots/${slotData.driverId}/${slotData.slotKey}`).once('value')
           .then(snapshot => {
@@ -1011,7 +983,6 @@
               return;
             }
 
-            // Proceed with booking if slot exists
             proceedWithBooking(slotData, user);
           })
           .catch(err => {
@@ -1051,14 +1022,12 @@
         originalSlotData: slotData.originalData
       };
 
-      // Store in localStorage and redirect to checkout
       try {
         localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
         window.location.href = 'checkout.html';
       } catch (err) {
         console.error('Error storing booking data:', err);
         showToast('Error: Failed to prepare booking. Please try again.');
-        // Re-enable the button
         setTimeout(() => {
           const searchBtn = document.querySelector('.btn-action:disabled');
           if (searchBtn) {
@@ -1079,13 +1048,11 @@
         .replace(/'/g, '&#39;');
     }
 
-    // Error handler for unhandled promise rejections
     window.addEventListener('unhandledrejection', function(event) {
       console.error('Unhandled promise rejection:', event.reason);
       showToast('An unexpected error occurred. Please try again.');
     });
 
-    // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
       console.log('Page loaded, initializing...');
     });
