@@ -393,14 +393,15 @@
 
     // Customize the emojis used in the WhatsApp message here
     const customEmojis = {
-      greeting: "🙋‍♂️",   // after "Hi i'm"
-      car: "🚗",          // next to trip type line
-      location: "📍",     // next to from/to lines
-      date: "📅"          // next to date line
+      greeting: "🙋‍♂️",
+      car: "🚗",
+      location: "📍",
+      date: "📅"
     };
 
     let currentTab = 'oneway';
     let isSearching = false;
+    let currentUserData = null; // Store fetched user data
 
     // Toast message function
     function showToast(message) {
@@ -450,9 +451,30 @@
       if (!user) {
         window.location.href = 'index.html';
       } else {
-        loadLocations();
+        // Fetch user data once when authenticated
+        fetchUserData(user.uid).then(() => {
+          loadLocations();
+        });
       }
     });
+
+    // NEW: Fetch user data from Firebase
+    function fetchUserData(userId) {
+      return db.ref(`users/${userId}`).once('value')
+        .then(snapshot => {
+          if (snapshot.exists()) {
+            currentUserData = snapshot.val();
+            console.log('User data fetched:', currentUserData);
+          } else {
+            console.warn('No user data found for userId:', userId);
+            currentUserData = null;
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching user data:', err);
+          currentUserData = null;
+        });
+    }
 
     function setSearchingState(tripType, searching) {
       isSearching = searching;
@@ -567,15 +589,12 @@
 
     // Helper: open WhatsApp chat for a given number and message (auto-add +91 if missing)
     function openWhatsAppWithMessage(phone, message) {
-      // Sanitize phone: remove non-digits
       let digits = String(phone || '').replace(/\D/g,'');
       if (!digits.startsWith('91')) {
-        // assume India if not present
         digits = '91' + digits;
       }
       const encoded = encodeURIComponent(message);
       const url = `https://wa.me/${digits}?text=${encoded}`;
-      // Open in same tab so mobile will switch to app; change to _blank if you prefer new tab
       window.location.href = url;
     }
 
@@ -601,23 +620,16 @@
         
         // Prepare ride request data
         const requestData = {
-          // User details
           customerId: user.uid,
           customerEmail: user.email || userData.email || '',
           customerName: userData.name || userData.username || 'Not provided',
           customerPhone: userData.phone || userData.mobile || 'Not provided',
-          
-          // Ride details
           pickup: pickup,
           dropoff: dropoff,
           date: date,
           tripType: tripType,
-          
-          // Request metadata
           status: 'pending',
           requestedAt: firebase.database.ServerValue.TIMESTAMP,
-          
-          // Additional info
           notes: `Customer requested ${tripType} ride from ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
         };
 
@@ -626,7 +638,6 @@
           .then(() => {
             showToast('Your request has been received. Redirecting to WhatsApp...');
 
-            // Build WhatsApp message with emojis (customizable via customEmojis)
             const nameForMsg = requestData.customerName || (user.email || 'Customer');
             const tripDetail = tripType;
             const pickupLoc = pickup;
@@ -639,14 +650,12 @@
                               `to - ${dropoffLoc} ${customEmojis.location}\n` +
                               `on - ${rideDate} ${customEmojis.date}`;
 
-            // Redirect to WhatsApp number +91 7439654831
             openWhatsAppWithMessage('7439654831', waMessage);
           })
           .catch(err => {
             console.error('Error saving ride request:', err);
             showToast('Failed to submit request to server. Redirecting to WhatsApp...');
 
-            // Even if DB save failed, still open WhatsApp so customer can contact
             const nameForMsg = (user.displayName || user.email || 'Customer');
             const tripDetail = tripType;
             const pickupLoc = pickup;
@@ -665,7 +674,6 @@
         console.error('Error fetching user data:', err);
         showToast('Failed to submit request. Redirecting to WhatsApp...');
 
-        // Fallback: build message using available info and redirect anyway
         const nameForMsg = (user.displayName || user.email || 'Customer');
         const tripDetail = tripType;
         const pickupLoc = pickup;
@@ -702,19 +710,24 @@
         return;
       }
 
-      // Save search to Firebase
+      // ENHANCED: Save search to Firebase with user name from users database
       let searchRef = null;
       try {
         const user = auth.currentUser;
         searchRef = db.ref('searches').push();
+        
         const searchData = {
           customerId: user ? user.uid : null,
+          customerEmail: user ? user.email : null,
+          customerName: currentUserData ? currentUserData.name : null, // NEW: Add user name
+          customerPhone: currentUserData ? currentUserData.phone : null, // NEW: Add user phone
           pickup: pickup,
           dropoff: dropoff,
           date: date,
           tripType: tripType,
           timestamp: firebase.database.ServerValue.TIMESTAMP
         };
+        
         searchRef.set(searchData).catch(err => console.log('Failed to save search', err));
       } catch (err) {
         console.log('Error creating search record', err);
@@ -752,7 +765,7 @@
                 if (slotData && typeof slotData === 'object') {
                   const completeSlot = {
                     driverId: driverId,
-                    slotKey: slotKey, // Important: store the key for deletion
+                    slotKey: slotKey,
                     pickup: slotData.pickup || '',
                     dropoff: slotData.dropoff || '',
                     date: slotData.date || '',
@@ -921,7 +934,7 @@
         // Store comprehensive slot data for booking
         card.setAttribute('data-slot', JSON.stringify({
           driverId: slot.driverId,
-          slotKey: slot.slotKey, // Critical: store the slot key for deletion
+          slotKey: slot.slotKey,
           pickup: slot.pickup,
           dropoff: slot.dropoff,
           date: slot.date,
@@ -1008,12 +1021,12 @@
     function proceedWithBooking(slotData, user) {
       const bookingData = {
         driverId: slotData.driverId,
-        slotKey: slotData.slotKey, // Critical: pass the slot key for deletion
+        slotKey: slotData.slotKey,
         pickup: slotData.pickup,
         dropoff: slotData.dropoff,
         date: slotData.date,
         time: slotData.time,
-        triptype: slotData.tripType, // Keep consistent with your DB structure
+        triptype: slotData.tripType,
         fare: slotData.fare,
         customerId: user.uid,
         carBrand: slotData.carBrand,
