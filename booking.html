@@ -280,6 +280,9 @@
       transform: translate(-50%, -50%) scale(1);
       opacity: 1;
     }
+    .toast.error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
     .toast i {
       font-size: 1.5rem;
       display: block;
@@ -403,10 +406,21 @@
     let currentUserData = null;
     let isInitialLoad = true;
 
-    function showToast(message) {
+    function showToast(message, isError = false) {
       const toast = document.getElementById('toast');
       const toastMessage = document.getElementById('toast-message');
+      const toastIcon = toast.querySelector('i');
+      
       toastMessage.textContent = message;
+      
+      if (isError) {
+        toast.classList.add('error');
+        toastIcon.className = 'fas fa-exclamation-circle';
+      } else {
+        toast.classList.remove('error');
+        toastIcon.className = 'fas fa-check-circle';
+      }
+      
       toast.classList.add('show');
       
       setTimeout(() => {
@@ -536,7 +550,7 @@
         
       }).catch(err => {
         console.error('Failed to load locations:', err);
-        showToast('Failed to load locations. Please refresh the page.');
+        showToast('Failed to load locations. Please refresh the page.', true);
       });
     }
 
@@ -586,10 +600,54 @@
       window.location.href = url;
     }
 
+    // Function to check if trip date/time is in the past
+    function isTripDateTimeInPast(tripDate, tripTime) {
+      try {
+        // Validate inputs
+        if (!tripDate || !tripTime) {
+          console.warn('Invalid date or time provided');
+          return false;
+        }
+
+        // Parse trip date and time
+        const dateParts = tripDate.split('-');
+        const timeParts = tripTime.split(':');
+        
+        if (dateParts.length !== 3 || timeParts.length !== 2) {
+          console.warn('Invalid date or time format');
+          return false;
+        }
+
+        const year = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10);
+        const day = parseInt(dateParts[2], 10);
+        const hours = parseInt(timeParts[0], 10);
+        const minutes = parseInt(timeParts[1], 10);
+        
+        // Validate parsed values
+        if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hours) || isNaN(minutes)) {
+          console.warn('Invalid date or time values');
+          return false;
+        }
+        
+        // Create trip datetime (month is 0-indexed in JavaScript Date)
+        const tripDateTime = new Date(year, month - 1, day, hours, minutes);
+        
+        // Get current datetime
+        const now = new Date();
+        
+        // Compare - return true if trip is in the past
+        return tripDateTime < now;
+      } catch (err) {
+        console.error('Error checking trip date/time:', err);
+        return false; // If there's an error, allow the booking to proceed
+      }
+    }
+
     function raiseRideRequest(tripType) {
       const user = auth.currentUser;
       if (!user) {
-        showToast('Please login to raise a ride request');
+        showToast('Please login to raise a ride request', true);
         return;
       }
 
@@ -598,7 +656,7 @@
       const date = document.getElementById(`date-${tripType}`).value;
 
       if (!pickup || !dropoff || !date) {
-        showToast('Please fill in all fields before raising a request');
+        showToast('Please fill in all fields before raising a request', true);
         return;
       }
 
@@ -635,11 +693,13 @@
                               `to - ${dropoffLoc} ${customEmojis.location}\n` +
                               `on - ${rideDate} ${customEmojis.date}`;
 
-            openWhatsAppWithMessage('7439654831', waMessage);
+            setTimeout(() => {
+              openWhatsAppWithMessage('7439654831', waMessage);
+            }, 1500);
           })
           .catch(err => {
             console.error('Error saving ride request:', err);
-            showToast('Failed to submit request to server. Redirecting to WhatsApp...');
+            showToast('Failed to submit request to server. Redirecting to WhatsApp...', true);
 
             const nameForMsg = (user.displayName || user.email || 'Customer');
             const tripDetail = tripType;
@@ -653,11 +713,13 @@
                               `to - ${dropoffLoc} ${customEmojis.location}\n` +
                               `on - ${rideDate} ${customEmojis.date}`;
 
-            openWhatsAppWithMessage('7439654831', waMessage);
+            setTimeout(() => {
+              openWhatsAppWithMessage('7439654831', waMessage);
+            }, 1500);
           });
       }).catch(err => {
         console.error('Error fetching user data:', err);
-        showToast('Failed to submit request. Redirecting to WhatsApp...');
+        showToast('Failed to submit request. Redirecting to WhatsApp...', true);
 
         const nameForMsg = (user.displayName || user.email || 'Customer');
         const tripDetail = tripType;
@@ -671,7 +733,9 @@
                           `to - ${dropoffLoc} ${customEmojis.location}\n` +
                           `on - ${rideDate} ${customEmojis.date}`;
 
-        openWhatsAppWithMessage('7439654831', waMessage);
+        setTimeout(() => {
+          openWhatsAppWithMessage('7439654831', waMessage);
+        }, 1500);
       });
     }
 
@@ -941,7 +1005,7 @@
     function bookTrip(slotIndex, tripType) {
       const user = auth.currentUser;
       if (!user) {
-        showToast('Please login first');
+        showToast('Please login first', true);
         return;
       }
 
@@ -949,13 +1013,13 @@
       const slotCard = slotsDiv.children[slotIndex];
       
       if (!slotCard) {
-        showToast('Error: Selected slot not found');
+        showToast('Error: Selected slot not found', true);
         return;
       }
 
       const slotDataStr = slotCard.getAttribute('data-slot');
       if (!slotDataStr) {
-        showToast('Error: Slot data not available');
+        showToast('Error: Slot data not available', true);
         return;
       }
 
@@ -964,7 +1028,13 @@
         slotData = JSON.parse(slotDataStr);
       } catch (err) {
         console.error('Error parsing slot data:', err);
-        showToast('Error: Invalid slot data');
+        showToast('Error: Invalid slot data', true);
+        return;
+      }
+
+      // Check if trip date/time is in the past
+      if (isTripDateTimeInPast(slotData.date, slotData.time)) {
+        showToast('Cannot book this ride - the trip date and time has already passed', true);
         return;
       }
 
@@ -977,7 +1047,7 @@
         db.ref(`availableslots/${slotData.driverId}/${slotData.slotKey}`).once('value')
           .then(snapshot => {
             if (!snapshot.exists()) {
-              showToast('This slot is no longer available. Please search again.');
+              showToast('This slot is no longer available. Please search again.', true);
               bookButton.disabled = false;
               bookButton.innerHTML = originalText;
               return;
@@ -987,12 +1057,12 @@
           })
           .catch(err => {
             console.error('Error checking slot availability:', err);
-            showToast('Error checking availability. Please try again.');
+            showToast('Error checking availability. Please try again.', true);
             bookButton.disabled = false;
             bookButton.innerHTML = originalText;
           });
       } else {
-        showToast('Error: Missing slot information');
+        showToast('Error: Missing slot information', true);
         bookButton.disabled = false;
         bookButton.innerHTML = originalText;
       }
@@ -1027,7 +1097,7 @@
         window.location.href = 'checkout.html';
       } catch (err) {
         console.error('Error storing booking data:', err);
-        showToast('Error: Failed to prepare booking. Please try again.');
+        showToast('Error: Failed to prepare booking. Please try again.', true);
         setTimeout(() => {
           const searchBtn = document.querySelector('.btn-action:disabled');
           if (searchBtn) {
@@ -1050,7 +1120,7 @@
 
     window.addEventListener('unhandledrejection', function(event) {
       console.error('Unhandled promise rejection:', event.reason);
-      showToast('An unexpected error occurred. Please try again.');
+      showToast('An unexpected error occurred. Please try again.', true);
     });
 
     document.addEventListener('DOMContentLoaded', function() {
