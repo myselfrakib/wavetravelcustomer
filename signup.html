@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://www.google.com https://www.gstatic.com">
   <title>WaveTravel - Sign Up (OTP)</title>
   <style>
     :root { --accent:#ff6ec4; --primary:#1e40af; --secondary:#0ea5e9; }
@@ -107,7 +108,6 @@
     <h3>Create Account (Phone OTP)</h3>
 
     <input id="name" type="text" placeholder="Full Name" autocomplete="name" />
-    <input id="email" type="email" placeholder="Email Address (optional)" autocomplete="email" />
     <input id="phone" type="text" placeholder="Phone Number (10 digits)" inputmode="numeric" maxlength="10" />
 
     <div id="sendSection">
@@ -160,7 +160,6 @@
 
   // UI refs
   const nameInput = document.getElementById('name');
-  const emailInput = document.getElementById('email');
   const phoneInput = document.getElementById('phone');
   const sendOtpBtn = document.getElementById('sendOtpBtn');
   const sendBtnText = document.getElementById('sendBtnText');
@@ -232,21 +231,6 @@
     }, duration);
   }
 
-  // --- Prefill email from previous session ---
-  try {
-    const savedEmail = localStorage.getItem('wavetravel_email');
-    if (savedEmail) emailInput.value = savedEmail;
-  } catch(e){ /* ignore */ }
-
-  // Save email as user types (debounced)
-  let emailSaveTimer = null;
-  emailInput.addEventListener('input', () => {
-    clearTimeout(emailSaveTimer);
-    emailSaveTimer = setTimeout(() => {
-      try { localStorage.setItem('wavetravel_email', emailInput.value.trim()); } catch(e){}
-    }, 500);
-  });
-
   // --- Phone input validation and formatting ---
   phoneInput.addEventListener('input', (e) => {
     // Remove non-digit characters
@@ -272,7 +256,7 @@
     }
   }
 
-  // NEW: Check if phone exists in driverdetails collection
+  // Check if phone exists in driverdetails collection
   async function phoneExistsInDrivers(fullPhone) {
     try {
       const snapshot = await db.ref('driverdetails').orderByChild('phone').equalTo(fullPhone).once('value');
@@ -346,7 +330,6 @@
   // Send OTP flow (initial and resend)
   async function sendOtpFlow(isResend = false) {
     const name = nameInput.value.trim();
-    const email = emailInput.value.trim();
     const phone = phoneInput.value.trim();
 
     if (!name) { 
@@ -378,7 +361,7 @@
           return false;
         }
 
-        // NEW: Check if phone exists in driverdetails collection
+        // Check if phone exists in driverdetails collection
         if (await phoneExistsInDrivers(fullPhone)) {
           showToast('Driver account is found with this number, Please login or use different mobile number', 'error');
           return false;
@@ -428,7 +411,6 @@
   verifyOtpBtn.addEventListener('click', async () => {
     const code = otpInput.value.trim();
     const name = nameInput.value.trim();
-    const email = emailInput.value.trim();
     const phone = phoneInput.value.trim();
     const fullPhone = '+91' + phone;
 
@@ -448,16 +430,13 @@
       const user = result.user;
       const uid = user.uid;
 
-      // Save user data in Realtime Database
+      // Save user data in Realtime Database (without email)
       await db.ref('users/' + uid).set({
         name: name,
-        email: email || '',
         phone: fullPhone,
-        role: 'customer'
+        role: 'customer',
+        createdAt: Date.now()
       });
-
-      // persist email locally
-      try { localStorage.setItem('wavetravel_email', email || ''); } catch(e){}
 
       showToast('Account created and signed in successfully!', 'success');
 
