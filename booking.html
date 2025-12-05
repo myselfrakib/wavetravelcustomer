@@ -341,33 +341,7 @@
       z-index: 1;
     }
     
-    .swap-btn {
-      position: absolute;
-      right: -14px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: white;
-      border: 2px solid #e2e8f0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      z-index: 10;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      color: #64748b;
-      font-size: 0.8rem;
-    }
-    
-    .swap-btn:hover {
-      background: #10b981;
-      border-color: #10b981;
-      color: white;
-      transform: translateY(-50%) rotate(180deg);
-    }
+
     
     /* Date Time Section */
     .datetime-section {
@@ -754,15 +728,12 @@
             <div class="connecting-line"></div>
           </div>
           
-          <div class="input-group" style="position: relative;">
+          <div class="input-group">
             <div class="input-wrapper">
               <div class="location-dot dropoff"></div>
               <input type="text" class="input-field" id="dropoff" placeholder="Where to?" autocomplete="off"/>
               <button class="action-btn" id="map-dropoff-btn" onclick="selectFromMap('dropoff')" title="Choose from map">
                 <i class="fas fa-map-marked-alt"></i>
-              </button>
-              <button class="swap-btn" onclick="swapLocations()" title="Swap locations">
-                <i class="fas fa-exchange-alt"></i>
               </button>
             </div>
             <div class="suggestions-list" id="dropoff-suggestions"></div>
@@ -1264,19 +1235,6 @@
       
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-crosshairs"></i>';
-    }
-
-    function swapLocations() {
-      const pickup = document.getElementById('pickup').value;
-      const dropoff = document.getElementById('dropoff').value;
-      document.getElementById('pickup').value = dropoff;
-      document.getElementById('dropoff').value = pickup;
-      
-      const tempPickup = {...bookingData.pickup};
-      bookingData.pickup = {...bookingData.dropoff};
-      bookingData.dropoff = tempPickup;
-      
-      calculateRoute();
     }
 
     function selectCar(element) {
