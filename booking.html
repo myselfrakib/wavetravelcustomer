@@ -641,19 +641,8 @@
     }
 
     // Check auth state and redirect if not signed in
-    if (auth) {
-      auth.onAuthStateChanged((user) => {
-        if (user) {
-          currentUser = user;
-          document.getElementById('login-overlay').classList.add('hidden');
-          console.log('User signed in:', user.email);
-        } else {
-          currentUser = null;
-          // Redirect to index.html if not signed in
-          window.location.href = 'index.html';
-        }
-      });
-    }
+  
+    
 
     // Booking data
     let bookingData = {
@@ -895,3 +884,4 @@
   </script>
 </body>
 </html>
+
