@@ -11,45 +11,200 @@
     
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      background: #f5f5f5;
       min-height: 100vh;
       color: #1e293b;
-      padding: 20px;
+      overflow-x: hidden;
     }
     
     .container {
       max-width: 500px;
       margin: 0 auto;
+      position: relative;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     
     /* Header */
     .header {
-      text-align: center;
-      margin-bottom: 32px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 16px 20px;
       color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     
     .header h1 {
-      font-size: 1.8rem;
+      font-size: 1.3rem;
       font-weight: 700;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      margin-bottom: 4px;
     }
     
     .header p {
-      color: #94a3b8;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
+      opacity: 0.9;
     }
     
-    /* Main Card */
-    .booking-card {
+    /* Map Container */
+    .map-container {
+      position: relative;
+      width: 100%;
+      flex: 1;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+    
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .map-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+    
+    .map-overlay.hidden {
+      display: none;
+    }
+    
+    /* Bottom Sheet */
+    .bottom-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
       background: white;
-      border-radius: 24px;
-      padding: 28px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      border-radius: 24px 24px 0 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+      transition: transform 0.3s ease;
+      max-height: 75vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(0);
+    }
+    
+    .bottom-sheet.collapsed {
+      transform: translateY(calc(100% - 80px));
+    }
+    
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      background: #cbd5e1;
+      border-radius: 2px;
+      margin: 12px auto 8px;
+      cursor: pointer;
+    }
+    
+    .sheet-content {
+      padding: 0 20px 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    
+    .sheet-preview {
+      padding: 12px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .preview-info {
+      flex: 1;
+    }
+    
+    .preview-route {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+    
+    .preview-details {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+    
+    .expand-icon {
+      font-size: 1.2rem;
+      color: #64748b;
+      transition: transform 0.3s ease;
+    }
+    
+    .bottom-sheet.collapsed .expand-icon {
+      transform: rotate(180deg);
+    }
+    
+    /* Autocomplete Suggestions */
+    .suggestions-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      margin-top: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+    }
+    
+    .suggestions-list.show {
+      display: block;
+    }
+    
+    .suggestion-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+    
+    .suggestion-item:hover {
+      background: #f8fafc;
+    }
+    
+    .suggestion-icon {
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    
+    .suggestion-text {
+      flex: 1;
+    }
+    
+    .suggestion-main {
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 0.9rem;
+    }
+    
+    .suggestion-secondary {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 2px;
     }
     
     /* Trip Type Toggle */
@@ -58,20 +213,19 @@
       background: #f1f5f9;
       border-radius: 12px;
       padding: 4px;
-      margin-bottom: 28px;
+      margin-bottom: 20px;
     }
     
     .toggle-option {
       flex: 1;
-      padding: 12px;
+      padding: 10px;
       text-align: center;
       border-radius: 10px;
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       cursor: pointer;
       transition: all 0.3s ease;
       color: #64748b;
-      position: relative;
     }
     
     .toggle-option:hover {
@@ -88,33 +242,14 @@
       margin-right: 6px;
     }
     
-    /* Info Badge */
-    .info-badge {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.85rem;
-      color: #1e40af;
-    }
-    
-    .info-badge i {
-      font-size: 1.2rem;
-      color: #3b82f6;
-    }
-    
     /* Location Inputs */
     .location-section {
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
     
     .input-group {
       position: relative;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
     
     .input-wrapper {
@@ -125,8 +260,8 @@
     }
     
     .location-dot {
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       flex-shrink: 0;
       position: relative;
@@ -135,20 +270,20 @@
     
     .location-dot.pickup {
       background: #10b981;
-      box-shadow: 0 0 0 4px rgba(16,185,129,0.2);
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.2);
     }
     
     .location-dot.dropoff {
       background: #ef4444;
-      box-shadow: 0 0 0 4px rgba(239,68,68,0.2);
+      box-shadow: 0 0 0 3px rgba(239,68,68,0.2);
     }
     
     .input-field {
       flex: 1;
-      padding: 16px 20px;
+      padding: 14px 16px;
       border: 2px solid #e2e8f0;
-      border-radius: 14px;
-      font-size: 0.95rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
       font-family: 'Inter', sans-serif;
       font-weight: 500;
       transition: all 0.2s ease;
@@ -158,7 +293,7 @@
     .input-field:focus {
       outline: none;
       border-color: #10b981;
-      box-shadow: 0 0 0 4px rgba(16,185,129,0.1);
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
     }
     
     .input-field::placeholder {
@@ -166,8 +301,8 @@
     }
     
     .action-btn {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       border-radius: 10px;
       background: #f1f5f9;
       border: none;
@@ -193,21 +328,21 @@
     
     .connecting-line {
       position: absolute;
-      left: 5px;
-      top: 28px;
+      left: 4px;
+      top: 24px;
       width: 2px;
-      height: 32px;
+      height: 28px;
       background: linear-gradient(to bottom, rgba(16,185,129,0.3), rgba(239,68,68,0.3));
       z-index: 1;
     }
     
     .swap-btn {
       position: absolute;
-      right: -16px;
+      right: -14px;
       top: 50%;
       transform: translateY(-50%);
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       background: white;
       border: 2px solid #e2e8f0;
@@ -219,6 +354,7 @@
       z-index: 10;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       color: #64748b;
+      font-size: 0.8rem;
     }
     
     .swap-btn:hover {
@@ -230,43 +366,43 @@
     
     /* Date Time Section */
     .datetime-section {
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
     
     .datetime-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 10px;
     }
     
     .datetime-field label {
       display: block;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 600;
       color: #64748b;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     
     .datetime-field input {
       width: 100%;
-      padding: 14px 16px;
+      padding: 12px 14px;
       border: 2px solid #e2e8f0;
-      border-radius: 12px;
+      border-radius: 10px;
       font-family: 'Inter', sans-serif;
       font-weight: 500;
       transition: all 0.2s ease;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
     
     .datetime-field input:focus {
       outline: none;
       border-color: #10b981;
-      box-shadow: 0 0 0 4px rgba(16,185,129,0.1);
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
     }
     
     .return-section {
-      margin-top: 16px;
-      padding-top: 16px;
+      margin-top: 12px;
+      padding-top: 12px;
       border-top: 2px dashed #e2e8f0;
     }
     
@@ -274,19 +410,19 @@
     .car-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 24px;
+      gap: 10px;
+      margin-bottom: 20px;
     }
     
     .car-option {
       border: 2px solid #e2e8f0;
-      border-radius: 16px;
-      padding: 16px;
+      border-radius: 14px;
+      padding: 14px;
       cursor: pointer;
       transition: all 0.2s ease;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
     
     .car-option:hover {
@@ -301,7 +437,7 @@
     }
     
     .car-icon {
-      font-size: 2.5rem;
+      font-size: 2.2rem;
       flex-shrink: 0;
     }
     
@@ -311,17 +447,17 @@
     
     .car-name {
       font-weight: 700;
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       color: #1e293b;
       margin-bottom: 4px;
     }
     
     .car-features {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: #64748b;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
     
     .car-features span {
@@ -333,10 +469,10 @@
     /* Buttons */
     .btn {
       width: 100%;
-      padding: 18px;
+      padding: 16px;
       border: none;
       border-radius: 14px;
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 700;
       font-family: 'Inter', sans-serif;
       cursor: pointer;
@@ -373,8 +509,8 @@
       border: 3px solid rgba(255,255,255,0.3);
       border-top: 3px solid white;
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       animation: spin 0.8s linear infinite;
     }
     
@@ -386,19 +522,20 @@
     /* Toast */
     .toast {
       position: fixed;
-      bottom: 80px;
+      top: 20px;
       left: 50%;
-      transform: translateX(-50%) translateY(100px);
+      transform: translateX(-50%) translateY(-100px);
       background: #1e293b;
       color: white;
-      padding: 16px 24px;
+      padding: 14px 20px;
       border-radius: 12px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-      z-index: 1000;
+      z-index: 3000;
       font-weight: 500;
       opacity: 0;
       transition: all 0.3s ease;
       max-width: 90%;
+      font-size: 0.9rem;
     }
     
     .toast.show {
@@ -419,67 +556,44 @@
       display: none;
     }
     
-    /* Login Required Overlay */
-    .login-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-      padding: 20px;
+    /* Route Info Card */
+    .route-info-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      display: none;
+      border: 1px solid #a7f3d0;
     }
     
-    .login-modal {
-      background: white;
-      border-radius: 20px;
-      padding: 32px;
-      max-width: 400px;
-      width: 100%;
+    .route-info-card.show {
+      display: block;
+    }
+    
+    .route-stats {
+      display: flex;
+      justify-content: space-around;
       text-align: center;
     }
     
-    .login-modal h2 {
-      color: #1e293b;
-      margin-bottom: 12px;
-      font-size: 1.5rem;
+    .route-stat {
+      flex: 1;
     }
     
-    .login-modal p {
+    .route-stat-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #059669;
+      display: block;
+    }
+    
+    .route-stat-label {
+      font-size: 0.75rem;
       color: #64748b;
-      margin-bottom: 24px;
-    }
-    
-    .login-input {
-      width: 100%;
-      padding: 14px 16px;
-      border: 2px solid #e2e8f0;
-      border-radius: 12px;
-      font-family: 'Inter', sans-serif;
-      font-weight: 500;
-      margin-bottom: 12px;
-      font-size: 0.95rem;
-    }
-    
-    .login-input:focus {
-      outline: none;
-      border-color: #10b981;
-      box-shadow: 0 0 0 4px rgba(16,185,129,0.1);
+      margin-top: 2px;
     }
     
     @media (max-width: 480px) {
-      body {
-        padding: 12px;
-      }
-      
-      .booking-card {
-        padding: 20px;
-      }
-      
       .datetime-grid {
         grid-template-columns: 1fr;
       }
@@ -488,115 +602,147 @@
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <div class="header">
       <h1>🌊 WaveTravel</h1>
       <p>Book Your EV Ride</p>
     </div>
 
-    <div class="booking-card">
-      <!-- Trip Type Toggle -->
-      <div class="trip-toggle">
-        <div class="toggle-option active" data-type="oneway" onclick="setTripType('oneway')">
-          <i class="fas fa-arrow-right"></i> One Way
-        </div>
-        <div class="toggle-option" data-type="roundtrip" onclick="setTripType('roundtrip')">
-          <i class="fas fa-exchange-alt"></i> Round Trip
-        </div>
+    <!-- Map Container -->
+    <div class="map-container">
+      <div id="map"></div>
+      <div class="map-overlay" id="map-overlay">
+        <div>📍 Enter destination to see route</div>
       </div>
+    </div>
 
-      <!-- Info -->
-      <div class="info-badge">
-        <i class="fas fa-leaf"></i>
-        <div>
-          Eco-friendly electric vehicles
+    <!-- Bottom Sheet -->
+    <div class="bottom-sheet" id="bottom-sheet">
+      <div class="sheet-handle" onclick="toggleSheet()"></div>
+      
+      <div class="sheet-preview" onclick="toggleSheet()">
+        <div class="preview-info">
+          <div class="preview-route" id="preview-route">Where to?</div>
+          <div class="preview-details" id="preview-details">Enter your destination</div>
         </div>
+        <i class="fas fa-chevron-down expand-icon"></i>
       </div>
+      
+      <div class="sheet-content">
+        <!-- Trip Type Toggle -->
+        <div class="trip-toggle">
+          <div class="toggle-option active" data-type="oneway" onclick="setTripType('oneway')">
+            <i class="fas fa-arrow-right"></i> One Way
+          </div>
+          <div class="toggle-option" data-type="roundtrip" onclick="setTripType('roundtrip')">
+            <i class="fas fa-exchange-alt"></i> Round Trip
+          </div>
+        </div>
 
-      <!-- Location Selection -->
-      <div class="location-section">
-        <div class="input-group">
-          <div class="input-wrapper">
-            <div class="location-dot pickup"></div>
-            <input type="text" class="input-field" id="pickup" placeholder="Pickup location" value="Kolkata"/>
-            <button class="action-btn" id="detect-btn" onclick="detectLocation()" title="Use current location">
-              <i class="fas fa-crosshairs"></i>
-            </button>
-          </div>
-          <div class="connecting-line"></div>
-        </div>
-        
-        <div class="input-group" style="position: relative;">
-          <div class="input-wrapper">
-            <div class="location-dot dropoff"></div>
-            <input type="text" class="input-field" id="dropoff" placeholder="Drop location"/>
-            <button class="swap-btn" onclick="swapLocations()" title="Swap locations">
-              <i class="fas fa-exchange-alt"></i>
-            </button>
+        <!-- Route Info Card -->
+        <div class="route-info-card" id="route-info-card">
+          <div class="route-stats">
+            <div class="route-stat">
+              <span class="route-stat-value" id="distance-display">--</span>
+              <span class="route-stat-label">Distance</span>
+            </div>
+            <div class="route-stat">
+              <span class="route-stat-value" id="duration-display">--</span>
+              <span class="route-stat-label">Duration</span>
+            </div>
+            <div class="route-stat">
+              <span class="route-stat-value" id="fare-display">--</span>
+              <span class="route-stat-label">Est. Fare</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Date & Time -->
-      <div class="datetime-section">
-        <div class="datetime-grid">
-          <div class="datetime-field">
-            <label>Pickup Date</label>
-            <input type="date" id="pickup-date"/>
+        <!-- Location Selection -->
+        <div class="location-section">
+          <div class="input-group">
+            <div class="input-wrapper">
+              <div class="location-dot pickup"></div>
+              <input type="text" class="input-field" id="pickup" placeholder="Pickup location" value="Kolkata" autocomplete="off"/>
+              <button class="action-btn" id="detect-btn" onclick="detectLocation()" title="Use current location">
+                <i class="fas fa-crosshairs"></i>
+              </button>
+            </div>
+            <div class="suggestions-list" id="pickup-suggestions"></div>
+            <div class="connecting-line"></div>
           </div>
-          <div class="datetime-field">
-            <label>Pickup Time</label>
-            <input type="time" id="pickup-time" value="09:00"/>
+          
+          <div class="input-group" style="position: relative;">
+            <div class="input-wrapper">
+              <div class="location-dot dropoff"></div>
+              <input type="text" class="input-field" id="dropoff" placeholder="Where to?" autocomplete="off"/>
+              <button class="swap-btn" onclick="swapLocations()" title="Swap locations">
+                <i class="fas fa-exchange-alt"></i>
+              </button>
+            </div>
+            <div class="suggestions-list" id="dropoff-suggestions"></div>
           </div>
         </div>
-        
-        <div class="return-section hidden" id="return-section">
+
+        <!-- Date & Time -->
+        <div class="datetime-section">
           <div class="datetime-grid">
             <div class="datetime-field">
-              <label>Return Date</label>
-              <input type="date" id="return-date"/>
+              <label>Pickup Date</label>
+              <input type="date" id="pickup-date"/>
             </div>
             <div class="datetime-field">
-              <label>Return Time</label>
-              <input type="time" id="return-time" value="18:00"/>
+              <label>Pickup Time</label>
+              <input type="time" id="pickup-time" value="09:00"/>
+            </div>
+          </div>
+          
+          <div class="return-section hidden" id="return-section">
+            <div class="datetime-grid">
+              <div class="datetime-field">
+                <label>Return Date</label>
+                <input type="date" id="return-date"/>
+              </div>
+              <div class="datetime-field">
+                <label>Return Time</label>
+                <input type="time" id="return-time" value="18:00"/>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Car Selection -->
-      <div class="car-list" id="car-list">
-        <div class="car-option selected" data-car="sedan" data-seats="4" onclick="selectCar(this)">
-          <div class="car-icon">🚗</div>
-          <div class="car-details">
-            <div class="car-name">Sedan</div>
-            <div class="car-features">
-              <span><i class="fas fa-users"></i> 4 seats</span>
-              <span><i class="fas fa-suitcase"></i> 2 bags</span>
+        <!-- Car Selection -->
+        <div class="car-list" id="car-list">
+          <div class="car-option selected" data-car="sedan" data-seats="4" onclick="selectCar(this)">
+            <div class="car-icon">🚗</div>
+            <div class="car-details">
+              <div class="car-name">Sedan</div>
+              <div class="car-features">
+                <span><i class="fas fa-users"></i> 4 seats</span>
+                <span><i class="fas fa-suitcase"></i> 2 bags</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="car-option" data-car="suv" data-seats="6" onclick="selectCar(this)">
+            <div class="car-icon">🚙</div>
+            <div class="car-details">
+              <div class="car-name">SUV</div>
+              <div class="car-features">
+                <span><i class="fas fa-users"></i> 6 seats</span>
+                <span><i class="fas fa-suitcase"></i> 4 bags</span>
+              </div>
             </div>
           </div>
         </div>
-        
-        <div class="car-option" data-car="suv" data-seats="6" onclick="selectCar(this)">
-          <div class="car-icon">🚙</div>
-          <div class="car-details">
-            <div class="car-name">SUV</div>
-            <div class="car-features">
-              <span><i class="fas fa-users"></i> 6 seats</span>
-              <span><i class="fas fa-suitcase"></i> 4 bags</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Book Button -->
-      <button class="btn btn-primary" id="book-btn" onclick="bookRide()">
-        <i class="fas fa-check-circle"></i>
-        Book Your Ride
-      </button>
+        <!-- Book Button -->
+        <button class="btn btn-primary" id="book-btn" onclick="bookRide()">
+          <i class="fas fa-check-circle"></i>
+          Book Your Ride
+        </button>
+      </div>
     </div>
   </div>
-
-
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
@@ -605,6 +751,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- Google Maps API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc&libraries=places"></script>
 
   <script>
     // Firebase Configuration
@@ -636,15 +785,204 @@
       auth.onAuthStateChanged((user) => {
         if (user) {
           currentUser = user;
-          document.getElementById('login-overlay').classList.add('hidden');
           console.log('User signed in:', user.email);
         } else {
           currentUser = null;
-          // Redirect to index.html if not signed in
           window.location.href = 'index.html';
         }
       });
     }
+
+    // Google Maps
+    let map, directionsService, directionsRenderer;
+    let pickupMarker, dropoffMarker;
+    let autocompleteService, placesService;
+    let sessionToken;
+
+    // Initialize Map
+    function initMap() {
+      const kolkata = { lat: 22.5726, lng: 88.3639 };
+      
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: kolkata,
+        zoom: 12,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "off" }]
+          }
+        ]
+      });
+
+      directionsService = new google.maps.DirectionsService();
+      directionsRenderer = new google.maps.DirectionsRenderer({
+        map: map,
+        suppressMarkers: false,
+        polylineOptions: {
+          strokeColor: '#10b981',
+          strokeWeight: 4
+        }
+      });
+
+      autocompleteService = new google.maps.places.AutocompleteService();
+      placesService = new google.maps.places.PlacesService(map);
+      sessionToken = new google.maps.places.AutocompleteSessionToken();
+
+      // Setup input listeners
+      setupAutocomplete('pickup', 'pickup-suggestions');
+      setupAutocomplete('dropoff', 'dropoff-suggestions');
+    }
+
+    function setupAutocomplete(inputId, suggestionsId) {
+      const input = document.getElementById(inputId);
+      const suggestionsList = document.getElementById(suggestionsId);
+      let debounceTimer;
+
+      input.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        const query = e.target.value.trim();
+
+        if (query.length < 2) {
+          suggestionsList.classList.remove('show');
+          return;
+        }
+
+        debounceTimer = setTimeout(() => {
+          autocompleteService.getPlacePredictions(
+            {
+              input: query,
+              componentRestrictions: { country: 'in' },
+              sessionToken: sessionToken
+            },
+            (predictions, status) => {
+              if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+                displaySuggestions(predictions, suggestionsList, inputId);
+              } else {
+                suggestionsList.classList.remove('show');
+              }
+            }
+          );
+        }, 300);
+      });
+
+      // Close suggestions when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest(`#${inputId}`) && !e.target.closest(`#${suggestionsId}`)) {
+          suggestionsList.classList.remove('show');
+        }
+      });
+    }
+
+    function displaySuggestions(predictions, suggestionsList, inputId) {
+      suggestionsList.innerHTML = '';
+      
+      predictions.forEach(prediction => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.innerHTML = `
+          <i class="fas fa-map-marker-alt suggestion-icon"></i>
+          <div class="suggestion-text">
+            <div class="suggestion-main">${prediction.structured_formatting.main_text}</div>
+            <div class="suggestion-secondary">${prediction.structured_formatting.secondary_text || ''}</div>
+          </div>
+        `;
+        
+        item.addEventListener('click', () => {
+          selectPlace(prediction.place_id, inputId);
+          suggestionsList.classList.remove('show');
+        });
+        
+        suggestionsList.appendChild(item);
+      });
+      
+      suggestionsList.classList.add('show');
+    }
+
+    function selectPlace(placeId, inputId) {
+      placesService.getDetails(
+        {
+          placeId: placeId,
+          fields: ['formatted_address', 'geometry', 'name'],
+          sessionToken: sessionToken
+        },
+        (place, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            const input = document.getElementById(inputId);
+            const displayName = place.name || place.formatted_address;
+            input.value = displayName;
+
+            if (inputId === 'pickup') {
+              bookingData.pickup.lat = place.geometry.location.lat();
+              bookingData.pickup.lng = place.geometry.location.lng();
+              bookingData.pickup.address = place.formatted_address;
+            } else {
+              bookingData.dropoff.lat = place.geometry.location.lat();
+              bookingData.dropoff.lng = place.geometry.location.lng();
+              bookingData.dropoff.address = place.formatted_address;
+            }
+
+            // Regenerate session token
+            sessionToken = new google.maps.places.AutocompleteSessionToken();
+            
+            calculateRoute();
+          }
+        }
+      );
+    }
+
+    function calculateRoute() {
+      if (!bookingData.pickup.lat || !bookingData.dropoff.lat) return;
+
+      const origin = new google.maps.LatLng(bookingData.pickup.lat, bookingData.pickup.lng);
+      const destination = new google.maps.LatLng(bookingData.dropoff.lat, bookingData.dropoff.lng);
+
+      directionsService.route(
+        {
+          origin: origin,
+          destination: destination,
+          travelMode: google.maps.TravelMode.DRIVING
+        },
+        (result, status) => {
+          if (status === 'OK') {
+            directionsRenderer.setDirections(result);
+            
+            const route = result.routes[0].legs[0];
+            const distanceKm = (route.distance.value / 1000).toFixed(0);
+            const durationHrs = (route.duration.value / 3600).toFixed(1);
+            
+            // Calculate fare
+            const rate = bookingData.tripType === 'oneway' ? 13 : 9;
+            const multiplier = bookingData.tripType === 'roundtrip' ? 2 : 1;
+            const baseFare = distanceKm * rate * multiplier;
+            const fareEstimate = bookingData.selectedCar === 'suv' ? Math.round(baseFare * 1.4) : baseFare;
+            
+            // Update UI
+            document.getElementById('map-overlay').classList.add('hidden');
+            document.getElementById('route-info-card').classList.add('show');
+            document.getElementById('distance-display').textContent = distanceKm + ' km';
+            document.getElementById('duration-display').textContent = durationHrs + ' hrs';
+            document.getElementById('fare-display').textContent = '₹' + fareEstimate;
+            
+            const pickupName = bookingData.pickup.address.split(',')[0];
+            const dropoffName = bookingData.dropoff.address.split(',')[0];
+            
+            document.getElementById('preview-route').textContent = pickupName + ' → ' + dropoffName;
+            document.getElementById('preview-details').textContent = 
+              distanceKm + ' km • ' + durationHrs + ' hrs • ₹' + fareEstimate;
+            
+            bookingData.distance = parseFloat(distanceKm);
+            bookingData.duration = parseFloat(durationHrs);
+            bookingData.fareEstimate = fareEstimate;
+          }
+        }
+      );
+    }
+
+    // Initialize on load
+    window.addEventListener('load', initMap);
 
     // Booking data
     let bookingData = {
@@ -655,17 +993,10 @@
       pickupTime: '09:00',
       returnDate: '',
       returnTime: '18:00',
-      selectedCar: 'sedan'
-    };
-
-    // Popular routes with coordinates
-    const routes = {
-      'Digha': { distance: 185, duration: 4, lat: 21.6417, lng: 87.1871 },
-      'Siliguri': { distance: 580, duration: 11, lat: 26.7271, lng: 88.3953 },
-      'Puri': { distance: 500, duration: 9, lat: 19.8135, lng: 85.8312 },
-      'Darjeeling': { distance: 630, duration: 13, lat: 27.0410, lng: 88.2663 },
-      'Mandarmani': { distance: 170, duration: 3.5, lat: 21.6588, lng: 87.7497 },
-      'Durgapur': { distance: 160, duration: 3, lat: 23.5204, lng: 87.3119 }
+      selectedCar: 'sedan',
+      distance: 0,
+      duration: 0,
+      fareEstimate: 0
     };
 
     // Set minimum date to today
@@ -674,16 +1005,19 @@
     document.getElementById('pickup-date').min = today;
     document.getElementById('return-date').min = today;
 
+    function toggleSheet() {
+      const sheet = document.getElementById('bottom-sheet');
+      sheet.classList.toggle('collapsed');
+    }
+
     function setTripType(type) {
       bookingData.tripType = type;
       
-      // Update toggle UI
       document.querySelectorAll('.toggle-option').forEach(opt => {
         opt.classList.remove('active');
       });
       document.querySelector(`[data-type="${type}"]`).classList.add('active');
       
-      // Show/hide return fields
       const returnSection = document.getElementById('return-section');
       if (type === 'roundtrip') {
         returnSection.classList.remove('hidden');
@@ -696,6 +1030,8 @@
       } else {
         returnSection.classList.add('hidden');
       }
+      
+      calculateRoute();
     }
 
     async function detectLocation() {
@@ -712,9 +1048,19 @@
           bookingData.pickup.lat = position.coords.latitude;
           bookingData.pickup.lng = position.coords.longitude;
           
-          // In production, use reverse geocoding API to get address
-          document.getElementById('pickup').value = `Location (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`;
-          showToast('✓ Location detected!', 'success');
+          // Reverse geocode
+          const geocoder = new google.maps.Geocoder();
+          const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
+          
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+              const placeName = results[0].address_components[0]?.long_name || 'Current Location';
+              bookingData.pickup.address = results[0].formatted_address;
+              document.getElementById('pickup').value = placeName;
+              showToast('✓ Location detected!', 'success');
+              calculateRoute();
+            }
+          });
         } catch (error) {
           showToast('Could not detect location', 'error');
         }
@@ -735,6 +1081,8 @@
       const tempPickup = {...bookingData.pickup};
       bookingData.pickup = {...bookingData.dropoff};
       bookingData.dropoff = tempPickup;
+      
+      calculateRoute();
     }
 
     function selectCar(element) {
@@ -743,6 +1091,7 @@
       });
       element.classList.add('selected');
       bookingData.selectedCar = element.dataset.car;
+      calculateRoute();
     }
 
     async function bookRide() {
@@ -780,34 +1129,14 @@
       }
 
       if (!db) {
-        showToast('Firebase not configured - demo mode only', 'error');
+        showToast('Firebase not configured', 'error');
         return;
       }
 
-      // Update dropoff coordinates if it's a known route
-      bookingData.dropoff.address = dropoff;
-      for (const [city, data] of Object.entries(routes)) {
-        if (dropoff.toLowerCase().includes(city.toLowerCase())) {
-          bookingData.dropoff.lat = data.lat;
-          bookingData.dropoff.lng = data.lng;
-          break;
-        }
+      if (!bookingData.dropoff.lat) {
+        showToast('Please select a valid destination', 'error');
+        return;
       }
-
-      // Calculate fare estimate
-      let distance = 0;
-      for (const [city, data] of Object.entries(routes)) {
-        if (dropoff.toLowerCase().includes(city.toLowerCase())) {
-          distance = data.distance;
-          break;
-        }
-      }
-      if (distance === 0) distance = 200; // Default
-
-      const rate = bookingData.tripType === 'oneway' ? 13 : 9;
-      const multiplier = bookingData.tripType === 'roundtrip' ? 2 : 1;
-      const baseFare = distance * rate * multiplier;
-      const fareEstimate = bookingData.selectedCar === 'suv' ? Math.round(baseFare * 1.4) : baseFare;
 
       // Create pickup timestamp
       const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
@@ -827,7 +1156,7 @@
           tripType: bookingData.tripType,
           pickupTimestamp: pickupTimestamp,
           vehicleType: bookingData.selectedCar,
-          fareEstimate: fareEstimate,
+          fareEstimate: bookingData.fareEstimate,
           status: 'searching',
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           assignedDriverId: null
@@ -873,15 +1202,6 @@
         returnDateInput.value = pickupDate.toISOString().split('T')[0];
         returnDateInput.min = e.target.value;
       }
-    });
-
-    // Update booking data on input changes
-    document.getElementById('pickup').addEventListener('input', (e) => {
-      bookingData.pickup.address = e.target.value;
-    });
-
-    document.getElementById('dropoff').addEventListener('input', (e) => {
-      bookingData.dropoff.address = e.target.value;
     });
   </script>
 </body>
