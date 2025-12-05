@@ -3,103 +3,315 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Book a Ride - WaveTravel</title>
+  <title>Outstation Booking - WaveTravel</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
     :root {
       --primary: #2f6690;
-      --accent:  #3a7ca5;
-      --light:   #d9dcd6;
-      --dark:    #16425b;
-      --sky:     #81c3d7;
-      --muted:   #6da5d0;
-      --card-radius: 14px;
-      --card-padding: 14px;
+      --accent: #3a7ca5;
+      --light: #d9dcd6;
+      --dark: #16425b;
+      --sky: #81c3d7;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html,body { height:100%; }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to right, var(--accent), var(--dark));
-      display: flex; flex-direction: column; min-height: 100vh;
+      background: linear-gradient(135deg, var(--accent), var(--dark));
+      min-height: 100vh;
       color: var(--dark);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      -webkit-text-size-adjust:100%;
+      padding-bottom: 80px;
     }
+    
     .container {
-      flex: 1; max-width: 720px; width: 100%;
-      margin: 0 auto; padding: 18px; padding-bottom: 120px;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px;
     }
-    h1 {
-      font-size: 1.5rem; text-align: center; margin-bottom: 20px;
-      color: var(--light);
-    }
-
-    /* Map Container */
-    .map-container {
-      width: 100%;
-      height: 300px;
-      border-radius: 16px;
-      overflow: hidden;
-      margin-bottom: 20px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-      position: relative;
-    }
-
-    #map {
-      width: 100%;
-      height: 100%;
-    }
-
-    .map-overlay {
-      position: absolute;
-      top: 16px;
-      left: 16px;
+    
+    /* Header */
+    .header {
       background: white;
-      padding: 12px 16px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      font-weight: 600;
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .header h1 {
+      font-size: 1.5rem;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+    
+    .header p {
+      color: #6b7280;
       font-size: 0.9rem;
+    }
+    
+    /* Screen Container */
+    .screen {
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .screen.active {
+      display: block;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    /* Card */
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
       color: var(--dark);
-      z-index: 10;
+      margin-bottom: 20px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
     }
-
-    .map-overlay i {
+    
+    .card-title i {
       color: var(--primary);
+      font-size: 1.4rem;
     }
-
-    /* Location Search Card */
-    .search-card {
-      background: white;
+    
+    /* Trip Type Selection */
+    .trip-types {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    
+    .trip-type-card {
+      background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+      border: 3px solid transparent;
       border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-      margin-bottom: 24px;
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
-
-    .location-inputs {
+    
+    .trip-type-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, var(--primary), var(--sky));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .trip-type-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    
+    .trip-type-card.selected {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, var(--primary), var(--sky));
+    }
+    
+    .trip-type-card.selected::before {
+      opacity: 1;
+    }
+    
+    .trip-type-card i {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      color: var(--primary);
+      position: relative;
+      z-index: 1;
+      transition: color 0.3s ease;
+    }
+    
+    .trip-type-card.selected i {
+      color: white;
+    }
+    
+    .trip-type-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: var(--dark);
+      position: relative;
+      z-index: 1;
+      transition: color 0.3s ease;
+    }
+    
+    .trip-type-card.selected h3 {
+      color: white;
+    }
+    
+    .trip-type-card p {
+      font-size: 0.85rem;
+      color: #6b7280;
+      position: relative;
+      z-index: 1;
+      transition: color 0.3s ease;
+    }
+    
+    .trip-type-card.selected p {
+      color: rgba(255,255,255,0.9);
+    }
+    
+    .check-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 32px;
+      height: 32px;
+      background: var(--success);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1rem;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.3s ease;
+      z-index: 2;
+    }
+    
+    .trip-type-card.selected .check-badge {
+      opacity: 1;
+      transform: scale(1);
+    }
+    
+    /* Popular Routes */
+    .popular-routes {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      position: relative;
     }
-
-    .location-input-wrapper {
-      position: relative;
+    
+    .route-chip {
+      background: linear-gradient(90deg, rgba(129,195,215,0.15), rgba(58,124,165,0.15));
+      border: 2px solid transparent;
+      border-radius: 12px;
+      padding: 16px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
-
-    .detect-location-btn {
-      width: 40px;
-      height: 40px;
+    
+    .route-chip:hover {
+      border-color: var(--primary);
+      background: white;
+      box-shadow: 0 4px 12px rgba(47,102,144,0.15);
+    }
+    
+    .route-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .route-info i {
+      color: var(--primary);
+      font-size: 1.2rem;
+    }
+    
+    .route-text {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .route-text strong {
+      color: var(--dark);
+      font-size: 0.95rem;
+    }
+    
+    .route-text span {
+      color: #6b7280;
+      font-size: 0.8rem;
+    }
+    
+    /* Location Input */
+    .location-input-group {
+      position: relative;
+      margin-bottom: 16px;
+    }
+    
+    .location-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+    }
+    
+    .location-icon {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+    
+    .location-icon.pickup {
+      background: rgba(16,185,129,0.1);
+      color: var(--success);
+    }
+    
+    .location-icon.dropoff {
+      background: rgba(239,68,68,0.1);
+      color: var(--danger);
+    }
+    
+    .input-field {
+      flex: 1;
+      padding: 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      background: #f9fafb;
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+      box-shadow: 0 0 0 4px rgba(47,102,144,0.1);
+    }
+    
+    .detect-btn {
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: white;
       border: 2px solid #e5e7eb;
@@ -110,161 +322,23 @@
       transition: all 0.2s ease;
       flex-shrink: 0;
     }
-
-    .detect-location-btn:hover {
-      background: #10b981;
-      border-color: #10b981;
+    
+    .detect-btn:hover {
+      background: var(--success);
+      border-color: var(--success);
       color: white;
     }
-
-    .detect-location-btn.detecting {
-      background: #10b981;
-      border-color: #10b981;
-      color: white;
-    }
-
-    .detect-location-btn.detecting i {
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.2); opacity: 0.7; }
-    }
-
-    .location-icon {
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .location-icon i {
-      font-size: 1.2rem;
-    }
-
-    .pickup-icon { color: #10b981; }
-    .dropoff-icon { color: #ef4444; }
-
+    
     .connecting-line {
       position: absolute;
-      left: 19px;
-      top: 40px;
-      bottom: 40px;
+      left: 22px;
+      top: 60px;
+      bottom: -44px;
       width: 2px;
-      background: linear-gradient(to bottom, #10b981, #ef4444);
-      z-index: 0;
+      background: linear-gradient(to bottom, var(--success), var(--danger));
     }
-
-    .location-input {
-      flex: 1;
-      padding: 14px 16px;
-      border: 2px solid #e5e7eb;
-      border-radius: 12px;
-      font-size: 1rem;
-      font-family: 'Poppins', sans-serif;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      background: #f9fafb;
-    }
-
-    .location-input:focus {
-      outline: none;
-      border-color: var(--primary);
-      background: white;
-      box-shadow: 0 0 0 4px rgba(47, 102, 144, 0.1);
-    }
-
-    .location-input::placeholder {
-      color: #9ca3af;
-      font-weight: 400;
-    }
-
-    .suggestions-dropdown {
-      position: absolute;
-      top: 100%;
-      left: 48px;
-      right: 48px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-      margin-top: 4px;
-      max-height: 300px;
-      overflow-y: auto;
-      z-index: 1000;
-      display: none;
-    }
-
-    .suggestions-dropdown.show {
-      display: block;
-    }
-
-    .suggestion-item {
-      padding: 14px 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      transition: background 0.15s ease;
-      border-bottom: 1px solid #f3f4f6;
-    }
-
-    .suggestion-item:last-child {
-      border-bottom: none;
-    }
-
-    .suggestion-item:hover {
-      background: #f9fafb;
-    }
-
-    .suggestion-item i {
-      color: #6b7280;
-      width: 20px;
-      margin-top: 2px;
-      flex-shrink: 0;
-    }
-
-    .suggestion-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-
-    .suggestion-text {
-      font-size: 0.95rem;
-      color: #1f2937;
-      font-weight: 500;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .suggestion-secondary {
-      font-size: 0.8rem;
-      color: #6b7280;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .current-location-item {
-      background: #f0fdf4;
-    }
-
-    .current-location-item i {
-      color: #10b981;
-    }
-
-    .current-location-item .suggestion-text {
-      color: #10b981;
-      font-weight: 600;
-    }
-
-    .swap-button {
+    
+    .swap-btn {
       position: absolute;
       right: -12px;
       top: 50%;
@@ -278,265 +352,371 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.3s ease;
       z-index: 10;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
-
-    .swap-button:hover {
+    
+    .swap-btn:hover {
       background: var(--primary);
       border-color: var(--primary);
       color: white;
       transform: translateY(-50%) rotate(180deg);
     }
-
-    .swap-button i {
-      font-size: 1.1rem;
-      color: inherit;
-    }
-
-    /* Date Selection */
-    .date-wrapper {
-      margin-top: 16px;
-      display: flex;
+    
+    /* Date Time Inputs */
+    .datetime-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 12px;
-      align-items: center;
+      margin-bottom: 16px;
     }
-
-    .date-icon {
-      width: 40px;
-      height: 40px;
+    
+    .datetime-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .datetime-field label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--dark);
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 8px;
+    }
+    
+    .datetime-field label i {
       color: var(--primary);
     }
-
-    .date-input {
-      flex: 1;
-      padding: 14px 16px;
+    
+    .datetime-field input {
+      padding: 14px;
       border: 2px solid #e5e7eb;
       border-radius: 12px;
-      font-size: 1rem;
       font-family: 'Poppins', sans-serif;
       font-weight: 500;
       background: #f9fafb;
       transition: all 0.2s ease;
     }
-
-    .date-input:focus {
+    
+    .datetime-field input:focus {
       outline: none;
       border-color: var(--primary);
       background: white;
-      box-shadow: 0 0 0 4px rgba(47, 102, 144, 0.1);
-    }
-
-    /* Tab Navigation */
-    .tab-nav {
-      display: flex;
-      background: rgba(255,255,255,0.1);
-      border-radius: 12px;
-      padding: 4px;
-      margin-bottom: 20px;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 12px 16px;
-      background: transparent;
-      border: none;
-      border-radius: 8px;
-      color: var(--light);
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    .tab-btn.active {
-      background: linear-gradient(90deg, var(--primary), var(--sky));
-      color: white;
-      box-shadow: 0 4px 12px rgba(47,102,144,0.3);
-    }
-    .tab-btn:hover:not(.active) {
-      background: rgba(255,255,255,0.1);
-    }
-
-    .search-btn {
-      display: block; width: 100%; padding: 16px;
-      margin-top: 16px;
-      background: linear-gradient(90deg, var(--primary), var(--sky));
-      color: #fff; font-size: 1.1rem; font-weight: 700;
-      border: none; border-radius: 12px; cursor: pointer;
-      transition: transform .08s ease, box-shadow .12s ease;
-      box-shadow: 0 8px 24px rgba(47,102,144,0.3);
-    }
-    .search-btn:hover {
-      box-shadow: 0 12px 32px rgba(47,102,144,0.4);
-    }
-    .search-btn:active { transform: translateY(1px); }
-    .search-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-
-    .slots { margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
-
-    .slot-card {
-      display: grid;
-      grid-template-columns: 8px 1fr auto;
-      gap: 12px;
-      align-items: start;
-      background: linear-gradient(180deg, #ffffff 0%, var(--light) 100%);
-      border-radius: var(--card-radius);
-      padding: var(--card-padding);
-      box-shadow: 0 12px 30px rgba(2,6,23,0.08);
-      border: 1px solid rgba(2,6,23,0.04);
-      overflow: hidden;
-      transition: transform .12s ease, box-shadow .12s ease;
-    }
-    .slot-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(2,6,23,0.10); }
-
-    .slot-accent { width: 8px; height: 100%;
-      background: linear-gradient(180deg, var(--primary), var(--accent));
-      border-radius: 6px;
-    }
-
-    .slot-main { display:flex; flex-direction:column; gap:10px; min-width:0; }
-
-    .slot-number {
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:34px;
-      height:34px;
-      border-radius:10px;
-      background: linear-gradient(90deg, var(--sky), rgba(129,195,215,0.9));
-      color: var(--dark);
-      font-weight:800;
-      font-size:0.95rem;
-      box-shadow: 0 6px 14px rgba(2,6,23,0.06);
-    }
-
-    .pickup-drop { display:flex; flex-direction:column; gap:6px; }
-    .pd-row { display:flex; gap:8px; align-items:center; }
-    .pd-label { font-size:0.78rem; color:rgba(22,66,91,0.75); font-weight:800; text-transform:uppercase; letter-spacing:0.6px; width:74px; flex-shrink:0; }
-    .pd-value { font-weight:800; color:var(--dark); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
-    .car-row {
-      display:flex; gap:8px; align-items:center; margin-top:4px;
-    }
-    .car-name { font-weight:700; color:var(--primary); font-size:0.95rem; display:flex; gap:8px; align-items:center; }
-    .car-name i { color:var(--primary); font-size:1.05rem; background: rgba(47,102,144,0.06); padding:6px; border-radius:8px; }
-
-    .slot-mid {
-      display:flex; gap:12px; align-items:center; flex-wrap:wrap;
-      justify-content:space-between;
-    }
-    .slot-mid-left { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .pill {
-      border-radius:999px; padding:6px 8px; font-weight:700; font-size:0.85rem; color:var(--dark);
-      display:inline-flex; gap:8px; align-items:center; box-shadow: 0 3px 8px rgba(2,6,23,0.04);
-    }
-    .trip-pill { background: linear-gradient(90deg,#e6f7fb,#cfeff6); color: var(--dark); }
-    .date-pill { background: linear-gradient(90deg,#eaf6ff,#dbeffb); color: var(--primary); }
-    .time-pill { background: linear-gradient(90deg,#eefafc,#dff4f8); color:#0b5966; }
-    .fare-pill { background: linear-gradient(90deg,#f7fbff,#e8f2fb); color:var(--primary); font-weight:800; }
-
-    .slot-right {
-      display:flex; flex-direction:column; align-items:flex-end; gap:8px; margin-left:8px;
-      justify-self:end;
-    }
-    .fare-large { font-weight:900; font-size:1.18rem; color:var(--dark); background:linear-gradient(90deg,rgba(0,0,0,0.02),transparent); padding:6px 10px; border-radius:10px; }
-
-    .slot-actions {
-      display:grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap:10px;
-      margin-top:8px;
-      align-items:center;
-    }
-    @media (max-width:520px) {
-      .slot-card { grid-template-columns: 6px 1fr; grid-template-rows: auto auto auto; }
-      .slot-right { justify-self:start; flex-direction:row; gap:8px; }
-      .fare-large { font-size:1.02rem; }
-      .slot-actions { grid-template-columns: 1fr; }
-      .pd-label { width:64px; }
-    }
-
-    .action-wrap { display:flex; width:100%; }
-    .btn-action {
-      display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;
-      padding: 14px 16px; border-radius: 12px; border: none; cursor: pointer; font-weight:800;
-      font-size:1.02rem; box-shadow: 0 8px 20px rgba(2,6,23,0.06);
-      transition: transform .06s ease, box-shadow .1s ease;
-      color:#fff;
-      position: relative;
-    }
-    .btn-action:active { transform: translateY(1px); }
-    .btn-action:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .btn-oneway { background: linear-gradient(90deg, var(--sky), var(--accent)); color:#fff; }
-    .btn-roundtrip { background: linear-gradient(90deg, var(--accent), var(--primary)); color:#fff; }
-
-    .btn-left { display:flex; align-items:center; gap:12px; min-width:0; overflow:hidden; }
-    .btn-left i { width:34px; text-align:center; font-size:1.15rem; }
-    .btn-left span { white-space:nowrap; text-overflow:ellipsis; overflow:hidden; display:inline-block; max-width:160px; }
-
-    .btn-right { display:flex; align-items:center; gap:8px; min-width:fit-content; }
-    .price-pill { background: rgba(255,255,255,0.14); padding:6px 10px; border-radius:10px; font-weight:900; color:#fff; }
-
-    .spinner {
-      width: 20px;
-      height: 20px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top: 2px solid #fff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .no-slots { 
-      text-align: center; 
-      padding: 2rem 1rem; 
-      background: #fff; 
-      border-radius: 10px; 
-      box-shadow: 0 4px 12px rgba(2,6,23,0.06); 
-      font-weight:700; 
-      color:var(--dark); 
+      box-shadow: 0 0 0 4px rgba(47,102,144,0.1);
     }
     
-    .request-btn {
-      background: linear-gradient(90deg, #f59e0b, #f97316);
-      color: white;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 10px;
+    /* Summary Card */
+    .summary-card {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 2px solid var(--sky);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(47,102,144,0.1);
+    }
+    
+    .summary-row:last-child {
+      border-bottom: none;
+    }
+    
+    .summary-label {
+      font-size: 0.9rem;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .summary-value {
       font-weight: 700;
-      font-size: 1rem;
+      color: var(--dark);
+      text-align: right;
+    }
+    
+    .change-btn {
+      background: none;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
       cursor: pointer;
-      margin-top: 16px;
-      transition: transform 0.1s ease, box-shadow 0.2s ease;
-      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+      transition: all 0.2s ease;
     }
-    .request-btn:hover {
+    
+    .change-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+    
+    /* Car Selection */
+    .car-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .car-card {
+      background: white;
+      border: 3px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    .car-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 8px 24px rgba(47,102,144,0.15);
+    }
+    
+    .car-card.selected {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, rgba(129,195,215,0.1), rgba(58,124,165,0.1));
+    }
+    
+    .car-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+    
+    .car-info h3 {
+      font-size: 1.2rem;
+      color: var(--dark);
+      margin-bottom: 4px;
+    }
+    
+    .car-info p {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+    
+    .car-image {
+      font-size: 3rem;
+    }
+    
+    .car-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .feature-badge {
+      background: #f3f4f6;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .car-pricing {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 16px;
+      border-top: 2px solid #e5e7eb;
+    }
+    
+    .price {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    
+    .price-info {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+    
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-family: 'Poppins', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(90deg, var(--primary), var(--sky));
+      color: white;
+      box-shadow: 0 8px 24px rgba(47,102,144,0.3);
+    }
+    
+    .btn-primary:hover {
+      box-shadow: 0 12px 32px rgba(47,102,144,0.4);
       transform: translateY(-2px);
-      box-shadow: 0 12px 28px rgba(245, 158, 11, 0.4);
     }
-    .request-btn:active {
+    
+    .btn-primary:active {
       transform: translateY(0);
     }
-
-    .loading-msg { 
-      text-align: center; padding: 1rem; background: #fff; border-radius: 10px; 
-      box-shadow: 0 4px 12px rgba(2,6,23,0.06); font-weight:700; color:var(--primary);
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+    
+    .btn-secondary {
+      background: white;
+      color: var(--primary);
+      border: 2px solid var(--primary);
     }
-    .loading-msg i { animation: spin 1s linear infinite; }
-
+    
+    .btn-secondary:hover {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    /* Navigation */
+    .nav-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    
+    /* Progress Indicator */
+    .progress-bar {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .progress-steps {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+    }
+    
+    .progress-steps::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: #e5e7eb;
+      z-index: 0;
+    }
+    
+    .progress-fill {
+      position: absolute;
+      top: 20px;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--sky));
+      transition: width 0.3s ease;
+      z-index: 1;
+    }
+    
+    .progress-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .step-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #9ca3af;
+      transition: all 0.3s ease;
+    }
+    
+    .progress-step.active .step-circle {
+      background: linear-gradient(135deg, var(--primary), var(--sky));
+      color: white;
+    }
+    
+    .progress-step.completed .step-circle {
+      background: var(--success);
+      color: white;
+    }
+    
+    .step-label {
+      font-size: 0.7rem;
+      color: #9ca3af;
+      font-weight: 600;
+    }
+    
+    .progress-step.active .step-label,
+    .progress-step.completed .step-label {
+      color: var(--dark);
+    }
+    
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 12px;
+      display: flex;
+      justify-content: space-around;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+      z-index: 100;
+    }
+    
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      color: #9ca3af;
+      font-size: 0.75rem;
+      transition: color 0.2s ease;
+    }
+    
+    .nav-item i {
+      font-size: 1.3rem;
+    }
+    
+    .nav-item.active {
+      color: var(--primary);
+    }
+    
+    /* Toast */
     .toast {
       position: fixed;
       top: 50%;
@@ -545,1159 +725,211 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       padding: 20px 30px;
-      border-radius: 12px;
+      border-radius: 16px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       z-index: 10000;
       font-weight: 600;
-      font-size: 1.05rem;
       text-align: center;
-      max-width: 400px;
       opacity: 0;
       transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     }
+    
     .toast.show {
       transform: translate(-50%, -50%) scale(1);
       opacity: 1;
     }
+    
     .toast.error {
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     }
+    
     .toast i {
-      font-size: 1.5rem;
+      font-size: 2rem;
       display: block;
       margin-bottom: 10px;
     }
-
-    .navbar {
-      position: fixed; bottom: 0; left: 0; width: 100%;
-      background: #fff; border-top: 1px solid rgba(0,0,0,0.06);
-      display: flex; justify-content: space-around; padding: 0.6rem 0;
-      box-shadow: 0 -6px 18px rgba(2,6,23,0.06);
-      z-index: 100;
+    
+    @media (max-width: 480px) {
+      .container {
+        padding: 12px;
+      }
+      
+      .datetime-grid {
+        grid-template-columns: 1fr;
+      }
     }
-    .navbar a { color: var(--primary); text-decoration: none; font-size: 0.78rem; text-align:center; }
-    .navbar a i { font-size:1.3rem; display:block; margin-bottom:4px; }
   </style>
 </head>
 <body>
-
   <div class="container">
-    <h1>Book Your Ride</h1>
-
-    <!-- Tab Navigation -->
-    <div class="tab-nav">
-      <button class="tab-btn active" onclick="switchTab('oneway')">
-        <i class="fas fa-arrow-right"></i> Oneway
-      </button>
-      <button class="tab-btn" onclick="switchTab('roundtrip')">
-        <i class="fas fa-exchange-alt"></i> Roundtrip
-      </button>
-    </div>
-
-    <!-- Map Container -->
-    <div class="map-container">
-      <div id="map"></div>
-      <div class="map-overlay">
-        <i class="fas fa-route"></i>
-        <span>Route Preview</span>
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+      <div class="progress-steps">
+        <div class="progress-fill" id="progress-fill" style="width: 20%"></div>
+        <div class="progress-step active" data-step="1">
+          <div class="step-circle">1</div>
+          <div class="step-label">Trip Type</div>
+        </div>
+        <div class="progress-step" data-step="2">
+          <div class="step-circle">2</div>
+          <div class="step-label">Route</div>
+        </div>
+        <div class="progress-step" data-step="3">
+          <div class="step-circle">3</div>
+          <div class="step-label">Date</div>
+        </div>
+        <div class="progress-step" data-step="4">
+          <div class="step-circle">4</div>
+          <div class="step-label">Car</div>
+        </div>
+        <div class="progress-step" data-step="5">
+          <div class="step-circle">5</div>
+          <div class="step-label">Confirm</div>
+        </div>
       </div>
     </div>
 
-    <!-- Search Card -->
-    <div class="search-card">
-      <div class="location-inputs">
-        <div class="connecting-line"></div>
-        
-        <!-- Pickup Location -->
-        <div class="location-input-wrapper">
-          <div class="location-icon pickup-icon">
-            <i class="fas fa-circle"></i>
-          </div>
-          <input 
-            type="text" 
-            id="pickup-input" 
-            class="location-input" 
-            placeholder="Detecting your location..."
-            autocomplete="off"
-          />
-          <button class="detect-location-btn" onclick="detectCurrentLocation()" title="Use my current location">
-            <i class="fas fa-crosshairs"></i>
-          </button>
-          <div id="pickup-suggestions" class="suggestions-dropdown"></div>
+    <!-- Screen 1: Trip Type Selection -->
+    <div class="screen active" id="screen-1">
+      <div class="card">
+        <div class="card-title">
+          <i class="fas fa-route"></i>
+          Select Your Trip Type
         </div>
-
-        <!-- Dropoff Location -->
-        <div class="location-input-wrapper">
-          <div class="location-icon dropoff-icon">
-            <i class="fas fa-map-marker-alt"></i>
+        <div class="trip-types">
+          <div class="trip-type-card" onclick="selectTripType('oneway')">
+            <div class="check-badge"><i class="fas fa-check"></i></div>
+            <i class="fas fa-arrow-right"></i>
+            <h3>Oneway</h3>
+            <p>Pay for one-way only</p>
           </div>
-          <input 
-            type="text" 
-            id="dropoff-input" 
-            class="location-input" 
-            placeholder="Enter dropoff location"
-            autocomplete="off"
-          />
-          <div id="dropoff-suggestions" class="suggestions-dropdown"></div>
-          
-          <!-- Swap Button -->
-          <button class="swap-button" onclick="swapLocations()">
+          <div class="trip-type-card" onclick="selectTripType('roundtrip')">
+            <div class="check-badge"><i class="fas fa-check"></i></div>
             <i class="fas fa-exchange-alt"></i>
-          </button>
+            <h3>Roundtrip</h3>
+            <p>Round journey package</p>
+          </div>
         </div>
       </div>
-
-      <!-- Date Input -->
-      <div class="date-wrapper">
-        <div class="date-icon">
-          <i class="fas fa-calendar-alt"></i>
+      
+      <div class="card">
+        <div class="card-title">
+          <i class="fas fa-fire"></i>
+          Popular Routes
         </div>
-        <input type="date" id="date-input" class="date-input"/>
+        <div class="popular-routes">
+          <div class="route-chip" onclick="selectRoute('Kolkata', 'Digha')">
+            <div class="route-info">
+              <i class="fas fa-map-marker-alt"></i>
+              <div class="route-text">
+                <strong>Kolkata → Digha</strong>
+                <span>~185 km, 4 hours</span>
+              </div>
+            </div>
+            <i class="fas fa-chevron-right" style="color: var(--primary);"></i>
+          </div>
+          <div class="route-chip" onclick="selectRoute('Kolkata', 'Siliguri')">
+            <div class="route-info">
+              <i class="fas fa-map-marker-alt"></i>
+              <div class="route-text">
+                <strong>Kolkata → Siliguri</strong>
+                <span>~580 km, 11 hours</span>
+              </div>
+            </div>
+            <i class="fas fa-chevron-right" style="color: var(--primary);"></i>
+          </div>
+          <div class="route-chip" onclick="selectRoute('Kolkata', 'Puri')">
+            <div class="route-info">
+              <i class="fas fa-map-marker-alt"></i>
+              <div class="route-text">
+                <strong>Kolkata → Puri</strong>
+                <span>~500 km, 9 hours</span>
+              </div>
+            </div>
+            <i class="fas fa-chevron-right" style="color: var(--primary);"></i>
+          </div>
+        </div>
       </div>
-
-      <button class="search-btn" id="search-btn" onclick="performSearch()">
-        <span class="search-text">Search Rides</span>
-      </button>
     </div>
 
-    <!-- Results Section -->
-    <div class="slots" id="slots-container"></div>
-  </div>
-
-  <!-- Toast Message -->
-  <div id="toast" class="toast">
-    <i class="fas fa-check-circle"></i>
-    <span id="toast-message">Your request has been received.</span>
-  </div>
-
-  <div class="navbar">
-    <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
-    <a href="booking.html"><i class="fas fa-car"></i>Book</a>
-    <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
-    <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
-  </div>
-
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc&libraries=places&callback=initMap"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
-      messagingSenderId: "298226098137",
-      appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const auth = firebase.auth();
-
-    const customEmojis = {
-      greeting: "🙋‍♂️",
-      car: "🚗",
-      location: "📍",
-      date: "📅"
-    };
-
-    let currentTab = 'oneway';
-    let isSearching = false;
-    let currentUserData = null;
-    let allLocations = [];
-    let pickupValue = '';
-    let dropoffValue = '';
-    let userCurrentLocation = null;
-    let autocompleteService = null;
-    let placesService = null;
-    let geocoder = null;
-    let mapsLoaded = false;
-    let map = null;
-    let directionsService = null;
-    let directionsRenderer = null;
-    let pickupMarker = null;
-    let dropoffMarker = null;
-
-    // Global callback for Google Maps
-    window.initMap = function() {
-      mapsLoaded = true;
-      if (autocompleteService === null) {
-        initializeGoogleMaps();
-      }
-    };
-
-    function showToast(message, isError = false) {
-      const toast = document.getElementById('toast');
-      const toastMessage = document.getElementById('toast-message');
-      const toastIcon = toast.querySelector('i');
-      
-      toastMessage.textContent = message;
-      
-      if (isError) {
-        toast.classList.add('error');
-        toastIcon.className = 'fas fa-exclamation-circle';
-      } else {
-        toast.classList.remove('error');
-        toastIcon.className = 'fas fa-check-circle';
-      }
-      
-      toast.classList.add('show');
-      
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 4000);
-    }
-
-    function switchTab(tabName) {
-      currentTab = tabName;
-      
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.closest('.tab-btn').classList.add('active');
-    }
-
-    function swapLocations() {
-      const pickupInput = document.getElementById('pickup-input');
-      const dropoffInput = document.getElementById('dropoff-input');
-      
-      const temp = pickupInput.value;
-      pickupInput.value = dropoffInput.value;
-      dropoffInput.value = temp;
-      
-      const tempVal = pickupValue;
-      pickupValue = dropoffValue;
-      dropoffValue = tempVal;
-    }
-
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        window.location.href = 'index.html';
-      } else {
-        fetchUserData(user.uid).then(() => {
-          loadLocations();
-          if (mapsLoaded) {
-            initializeGoogleMaps();
-          }
-        });
-      }
-    });
-
-    function fetchUserData(userId) {
-      return db.ref(`users/${userId}`).once('value')
-        .then(snapshot => {
-          if (snapshot.exists()) {
-            currentUserData = snapshot.val();
-          }
-        })
-        .catch(err => {
-          console.error('Error fetching user data:', err);
-          currentUserData = null;
-        });
-    }
-
-    function initializeGoogleMaps() {
-      if (typeof google !== 'undefined' && google.maps) {
-        autocompleteService = new google.maps.places.AutocompleteService();
-        geocoder = new google.maps.Geocoder();
-        directionsService = new google.maps.DirectionsService();
-        directionsRenderer = new google.maps.DirectionsRenderer({
-          suppressMarkers: false,
-          polylineOptions: {
-            strokeColor: '#3a7ca5',
-            strokeWeight: 5,
-            strokeOpacity: 0.8
-          }
-        });
+    <!-- Screen 2: Route Selection -->
+    <div class="screen" id="screen-2">
+      <div class="card">
+        <div class="card-title">
+          <i class="fas fa-location-arrow"></i>
+          Enter Your Route
+        </div>
         
-        // Initialize map centered on India
-        map = new google.maps.Map(document.getElementById('map'), {
-          center: { lat: 22.5726, lng: 88.3639 }, // Kolkata coordinates
-          zoom: 12,
-          styles: [
-            {
-              featureType: 'poi',
-              elementType: 'labels',
-              stylers: [{ visibility: 'off' }]
-            }
-          ],
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false
-        });
-
-        directionsRenderer.setMap(map);
-        placesService = new google.maps.places.PlacesService(map);
-        
-        detectCurrentLocation();
-      } else {
-        console.error('Google Maps API not loaded');
-        document.getElementById('pickup-input').placeholder = 'Enter pickup location';
-      }
-    }
-
-    function detectCurrentLocation() {
-      const pickupInput = document.getElementById('pickup-input');
-      const detectBtn = document.querySelector('.detect-location-btn');
-      
-      if (!navigator.geolocation) {
-        showToast('Geolocation is not supported by your browser', true);
-        pickupInput.placeholder = 'Enter pickup location';
-        return;
-      }
-
-      detectBtn.classList.add('detecting');
-      pickupInput.placeholder = 'Detecting your location...';
-      pickupInput.value = '';
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
+        <div class="location-input-group">
+          <div class="location-input-wrapper">
+            <div class="location-icon pickup">
+              <i class="fas fa-circle"></i>
+            </div>
+            <input type="text" class="input-field" id="pickup" placeholder="Pickup city or location" autocomplete="off"/>
+            <button class="detect-btn" onclick="detectLocation()" title="Use current location">
+              <i class="fas fa-crosshairs"></i>
+            </button>
+          </div>
           
-          userCurrentLocation = { lat, lng };
-
-          // Update map to show current location
-          if (map) {
-            map.setCenter(userCurrentLocation);
-            map.setZoom(14);
-            
-            // Add marker for current location
-            if (pickupMarker) {
-              pickupMarker.setMap(null);
-            }
-            pickupMarker = new google.maps.Marker({
-              position: userCurrentLocation,
-              map: map,
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 10,
-                fillColor: '#10b981',
-                fillOpacity: 1,
-                strokeColor: '#ffffff',
-                strokeWeight: 3
-              },
-              title: 'Your Location'
-            });
-          }
-
-          if (geocoder) {
-            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-              detectBtn.classList.remove('detecting');
-              
-              if (status === 'OK' && results[0]) {
-                const address = results[0].formatted_address;
-                pickupInput.value = address;
-                pickupValue = address;
-                pickupInput.placeholder = 'Enter pickup location';
-                
-                checkAndAutoSearch();
-              } else {
-                pickupInput.placeholder = 'Enter pickup location';
-                showToast('Could not determine your address', true);
-              }
-            });
-          } else {
-            detectBtn.classList.remove('detecting');
-            pickupInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            pickupValue = pickupInput.value;
-            pickupInput.placeholder = 'Enter pickup location';
-          }
-        },
-        (error) => {
-          detectBtn.classList.remove('detecting');
-          pickupInput.placeholder = 'Enter pickup location';
+          <div class="connecting-line"></div>
           
-          let errorMsg = 'Unable to retrieve your location';
-          switch(error.code) {
-            case error.PERMISSION_DENIED:
-              errorMsg = 'Location permission denied. Please enable location access.';
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMsg = 'Location information unavailable';
-              break;
-            case error.TIMEOUT:
-              errorMsg = 'Location request timed out';
-              break;
-          }
-          showToast(errorMsg, true);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
-    }
-
-    function checkAndAutoSearch() {
-      const dropoff = document.getElementById('dropoff-input').value.trim();
-      const date = document.getElementById('date-input').value;
+          <div class="location-input-wrapper" style="margin-top: 16px; position: relative;">
+            <div class="location-icon dropoff">
+              <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <input type="text" class="input-field" id="dropoff" placeholder="Destination city or location" autocomplete="off"/>
+            <button class="swap-btn" onclick="swapLocations()" title="Swap locations">
+              <i class="fas fa-exchange-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
       
-      if (pickupValue && dropoff && date) {
-        performSearch();
-      }
-    }
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" onclick="previousScreen()">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+        <button class="btn btn-primary" onclick="validateRoute()">
+          Continue <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
 
-    function loadLocations() {
-      return db.ref('locations').once('value').then(snap => {
-        allLocations = [];
+    <!-- Screen 3: Date & Time Selection -->
+    <div class="screen" id="screen-3">
+      <div class="card">
+        <div class="card-title">
+          <i class="fas fa-calendar-alt"></i>
+          Select Date & Time
+        </div>
         
-        snap.forEach(child => {
-          const loc = child.val();
-          const name = (loc && typeof loc === 'object' && loc.name) ? loc.name : child.key;
-          
-          if (name) {
-            allLocations.push(name);
-          }
-        });
-
-        // Set today's date
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const todayFormatted = `${year}-${month}-${day}`;
+        <div class="datetime-grid">
+          <div class="datetime-field">
+            <label><i class="fas fa-calendar"></i> Pickup Date</label>
+            <input type="date" id="pickup-date" class="input-field"/>
+          </div>
+          <div class="datetime-field">
+            <label><i class="fas fa-clock"></i> Pickup Time</label>
+            <input type="time" id="pickup-time" class="input-field"/>
+          </div>
+        </div>
         
-        document.getElementById('date-input').value = todayFormatted;
-        document.getElementById('date-input').min = todayFormatted;
-
-        setupLocationInputs();
-        
-      }).catch(err => {
-        console.error('Failed to load locations:', err);
-        showToast('Failed to load locations. Please refresh the page.', true);
-      });
-    }
-
-    function setupLocationInputs() {
-      const pickupInput = document.getElementById('pickup-input');
-      const dropoffInput = document.getElementById('dropoff-input');
-      const pickupSuggestions = document.getElementById('pickup-suggestions');
-      const dropoffSuggestions = document.getElementById('dropoff-suggestions');
-
-      let pickupTimeout = null;
-      let dropoffTimeout = null;
-
-      pickupInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim();
-        
-        clearTimeout(pickupTimeout);
-        
-        if (query.length === 0) {
-          pickupSuggestions.classList.remove('show');
-          return;
-        }
-
-        if (query.length < 2) {
-          return;
-        }
-
-        pickupTimeout = setTimeout(() => {
-          searchLocations(query, 'pickup', pickupSuggestions);
-        }, 300);
-      });
-
-      dropoffInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim();
-        
-        clearTimeout(dropoffTimeout);
-        
-        if (query.length === 0) {
-          dropoffSuggestions.classList.remove('show');
-          return;
-        }
-
-        if (query.length < 2) {
-          return;
-        }
-
-        dropoffTimeout = setTimeout(() => {
-          searchLocations(query, 'dropoff', dropoffSuggestions);
-        }, 300);
-      });
-
-      pickupInput.addEventListener('blur', () => {
-        setTimeout(() => pickupSuggestions.classList.remove('show'), 200);
-      });
-
-      dropoffInput.addEventListener('blur', () => {
-        setTimeout(() => dropoffSuggestions.classList.remove('show'), 200);
-      });
-
-      document.getElementById('date-input').addEventListener('change', () => {
-        if (pickupValue && dropoffValue) {
-          performSearch();
-        }
-      });
-    }
-
-    function searchLocations(query, type, suggestionsDiv) {
-      const results = [];
-
-      if (type === 'pickup' && userCurrentLocation) {
-        results.push({
-          type: 'current',
-          name: 'Current Location',
-          description: 'Use my current location',
-          placeId: null
-        });
-      }
-
-      const filteredLocal = allLocations.filter(loc => 
-        loc.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 3);
-
-      filteredLocal.forEach(loc => {
-        results.push({
-          type: 'local',
-          name: loc,
-          description: 'Saved location',
-          placeId: null
-        });
-      });
-
-      if (autocompleteService && query.length >= 3) {
-        const request = {
-          input: query,
-          componentRestrictions: { country: 'in' },
-          types: ['geocode', 'establishment']
-        };
-
-        autocompleteService.getPlacePredictions(request, (predictions, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
-            predictions.slice(0, 5).forEach(prediction => {
-              results.push({
-                type: 'google',
-                name: prediction.structured_formatting.main_text,
-                description: prediction.structured_formatting.secondary_text || '',
-                placeId: prediction.place_id,
-                fullDescription: prediction.description
-              });
-            });
-          }
-
-          renderSuggestions(results, type, suggestionsDiv);
-        });
-      } else {
-        renderSuggestions(results, type, suggestionsDiv);
-      }
-    }
-
-    function renderSuggestions(results, type, suggestionsDiv) {
-      if (results.length === 0) {
-        suggestionsDiv.classList.remove('show');
-        return;
-      }
-
-      const html = results.map(result => {
-        let iconClass = 'fa-map-marker-alt';
-        let itemClass = 'suggestion-item';
-        
-        if (result.type === 'current') {
-          iconClass = 'fa-crosshairs';
-          itemClass = 'suggestion-item current-location-item';
-        } else if (result.type === 'local') {
-          iconClass = 'fa-star';
-        }
-
-        const mainText = escapeHtml(result.name);
-        const secondaryText = result.description ? escapeHtml(result.description) : '';
-        const safeData = JSON.stringify({
-          name: result.fullDescription || result.name,
-          type: result.type,
-          placeId: result.placeId
-        });
-
-        return `
-          <div class="${itemClass}" onclick='selectLocationFromData(${JSON.stringify(type)}, ${safeData})'>
-            <i class="fas ${iconClass}"></i>
-            <div class="suggestion-content">
-              <div class="suggestion-text">${mainText}</div>
-              ${secondaryText ? `<div class="suggestion-secondary">${secondaryText}</div>` : ''}
+        <div id="return-fields" style="display: none;">
+          <div class="datetime-grid">
+            <div class="datetime-field">
+              <label><i class="fas fa-calendar"></i> Return Date</label>
+              <input type="date" id="return-date" class="input-field"/>
+            </div>
+            <div class="datetime-field">
+              <label><i class="fas fa-clock"></i> Return Time</label>
+              <input type="time" id="return-time" class="input-field"/>
             </div>
           </div>
-        `;
-      }).join('');
-
-      suggestionsDiv.innerHTML = html;
-      suggestionsDiv.classList.add('show');
-    }
-
-    function selectLocationFromData(type, data) {
-      selectLocation(type, data.name, data.type, data.placeId);
-    }
-
-    function selectLocation(type, location, locationType, placeId) {
-      if (type === 'pickup') {
-        if (locationType === 'current' && userCurrentLocation) {
-          detectCurrentLocation();
-        } else {
-          document.getElementById('pickup-input').value = location;
-          pickupValue = location;
-          
-          // Geocode and add marker
-          if (geocoder) {
-            geocoder.geocode({ address: location }, (results, status) => {
-              if (status === 'OK' && results[0]) {
-                const pos = results[0].geometry.location;
-                
-                if (pickupMarker) {
-                  pickupMarker.setMap(null);
-                }
-                pickupMarker = new google.maps.Marker({
-                  position: pos,
-                  map: map,
-                  icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 10,
-                    fillColor: '#10b981',
-                    fillOpacity: 1,
-                    strokeColor: '#ffffff',
-                    strokeWeight: 3
-                  },
-                  title: 'Pickup Location'
-                });
-                
-                updateMapRoute();
-              }
-            });
-          }
-        }
-        document.getElementById('pickup-suggestions').classList.remove('show');
-      } else {
-        document.getElementById('dropoff-input').value = location;
-        dropoffValue = location;
-        
-        // Geocode and add marker
-        if (geocoder) {
-          geocoder.geocode({ address: location }, (results, status) => {
-            if (status === 'OK' && results[0]) {
-              const pos = results[0].geometry.location;
-              
-              if (dropoffMarker) {
-                dropoffMarker.setMap(null);
-              }
-              dropoffMarker = new google.maps.Marker({
-                position: pos,
-                map: map,
-                icon: {
-                  path: google.maps.SymbolPath.CIRCLE,
-                  scale: 10,
-                  fillColor: '#ef4444',
-                  fillOpacity: 1,
-                  strokeColor: '#ffffff',
-                  strokeWeight: 3
-                },
-                title: 'Dropoff Location'
-              });
-              
-              updateMapRoute();
-            }
-          });
-        }
-        
-        document.getElementById('dropoff-suggestions').classList.remove('show');
-      }
-
-      if (pickupValue && dropoffValue && document.getElementById('date-input').value) {
-        performSearch();
-      }
-    }
-
-    function updateMapRoute() {
-      if (!directionsService || !directionsRenderer || !pickupValue || !dropoffValue) {
-        return;
-      }
-
-      directionsService.route(
-        {
-          origin: pickupValue,
-          destination: dropoffValue,
-          travelMode: google.maps.TravelMode.DRIVING
-        },
-        (response, status) => {
-          if (status === 'OK') {
-            directionsRenderer.setDirections(response);
-          } else {
-            console.log('Directions request failed:', status);
-          }
-        }
-      );
-    }
-
-    function setSearchingState(searching) {
-      isSearching = searching;
-      const searchBtn = document.getElementById('search-btn');
-      const searchText = searchBtn.querySelector('.search-text');
-      
-      if (searching) {
-        searchBtn.disabled = true;
-        searchText.innerHTML = '<div class="spinner"></div> Searching...';
-      } else {
-        searchBtn.disabled = false;
-        searchText.innerHTML = 'Search Rides';
-      }
-    }
-
-    function formatTime24to12(time24) {
-      const [hourStr, minute] = (time24||'00:00').split(':');
-      let hour = parseInt(hourStr, 10);
-      const period = hour >= 12 ? 'PM' : 'AM';
-      hour = hour % 12 === 0 ? 12 : hour % 12;
-      return `${hour}:${minute} ${period}`;
-    }
-
-    function formatDateISOtoDMY(isoDate) {
-      const [year, month, day] = isoDate.split('-');
-      return `${day}/${month}/${year}`;
-    }
-
-    function openWhatsAppWithMessage(phone, message) {
-      let digits = String(phone || '').replace(/\D/g,'');
-      if (!digits.startsWith('91')) {
-        digits = '91' + digits;
-      }
-      const encoded = encodeURIComponent(message);
-      const url = `https://wa.me/${digits}?text=${encoded}`;
-      window.location.href = url;
-    }
-
-    function isTripDateTimeInPast(tripDate, tripTime) {
-      try {
-        if (!tripDate || !tripTime) return false;
-
-        const dateParts = tripDate.split('-');
-        const timeParts = tripTime.split(':');
-        
-        if (dateParts.length !== 3 || timeParts.length !== 2) return false;
-
-        const year = parseInt(dateParts[0], 10);
-        const month = parseInt(dateParts[1], 10);
-        const day = parseInt(dateParts[2], 10);
-        const hours = parseInt(timeParts[0], 10);
-        const minutes = parseInt(timeParts[1], 10);
-        
-        if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hours) || isNaN(minutes)) {
-          return false;
-        }
-        
-        const tripDateTime = new Date(year, month - 1, day, hours, minutes);
-        const now = new Date();
-        
-        return tripDateTime < now;
-      } catch (err) {
-        console.error('Error checking trip date/time:', err);
-        return false;
-      }
-    }
-
-    function raiseRideRequest() {
-      const user = auth.currentUser;
-      if (!user) {
-        showToast('Please login to raise a ride request', true);
-        return;
-      }
-
-      const pickup = pickupValue || document.getElementById('pickup-input').value;
-      const dropoff = dropoffValue || document.getElementById('dropoff-input').value;
-      const date = document.getElementById('date-input').value;
-
-      if (!pickup || !dropoff || !date) {
-        showToast('Please fill in all fields before raising a request', true);
-        return;
-      }
-
-      db.ref(`users/${user.uid}`).once('value').then(userSnap => {
-        const userData = userSnap.val() || {};
-        
-        const requestData = {
-          customerId: user.uid,
-          customerEmail: user.email || userData.email || '',
-          customerName: userData.name || userData.username || 'Not provided',
-          customerPhone: userData.phone || userData.mobile || 'Not provided',
-          pickup: pickup,
-          dropoff: dropoff,
-          date: date,
-          tripType: currentTab,
-          status: 'pending',
-          requestedAt: firebase.database.ServerValue.TIMESTAMP,
-          notes: `Customer requested ${currentTab} ride from ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
-        };
-
-        db.ref('riderequest').push(requestData)
-          .then(() => {
-            showToast('Your request has been received. Redirecting to WhatsApp...');
-
-            const nameForMsg = requestData.customerName || (user.email || 'Customer');
-            const tripDetail = currentTab;
-            const pickupLoc = pickup;
-            const dropoffLoc = dropoff;
-            const rideDate = formatDateISOtoDMY(date);
-
-            const waMessage = `Hi i'm ${nameForMsg} ${customEmojis.greeting}\n` +
-                              `I need a car for ${tripDetail} trip ${customEmojis.car}\n` +
-                              `from - ${pickupLoc} ${customEmojis.location}\n` +
-                              `to - ${dropoffLoc} ${customEmojis.location}\n` +
-                              `on - ${rideDate} ${customEmojis.date}`;
-
-            setTimeout(() => {
-              openWhatsAppWithMessage('7439654831', waMessage);
-            }, 1500);
-          })
-          .catch(err => {
-            console.error('Error saving ride request:', err);
-            showToast('Failed to submit request. Redirecting to WhatsApp...', true);
-
-            const nameForMsg = (user.displayName || user.email || 'Customer');
-            const waMessage = `Hi i'm ${nameForMsg} ${customEmojis.greeting}\n` +
-                              `I need a car for ${currentTab} trip ${customEmojis.car}\n` +
-                              `from - ${pickup} ${customEmojis.location}\n` +
-                              `to - ${dropoff} ${customEmojis.location}\n` +
-                              `on - ${formatDateISOtoDMY(date)} ${customEmojis.date}`;
-
-            setTimeout(() => {
-              openWhatsAppWithMessage('7439654831', waMessage);
-            }, 1500);
-          });
-      });
-    }
-
-    function performSearch() {
-      if (isSearching) return;
-
-      const slotsDiv = document.getElementById('slots-container');
-      const pickup = pickupValue || document.getElementById('pickup-input').value.trim();
-      const dropoff = dropoffValue || document.getElementById('dropoff-input').value.trim();
-      const date = document.getElementById('date-input').value;
-      
-      setSearchingState(true);
-      
-      slotsDiv.innerHTML = '<div class="loading-msg"><i class="fas fa-spinner"></i>Searching for rides...</div>';
-      
-      if (!pickup || !dropoff || !date) {
-        slotsDiv.innerHTML = '<div class="no-slots">Please enter pickup, dropoff and date to search for rides.</div>';
-        setSearchingState(false);
-        return;
-      }
-
-      pickupValue = pickup;
-      dropoffValue = dropoff;
-
-      db.ref('availableslots').once('value')
-        .then(snap => {
-          setSearchingState(false);
-          
-          if (!snap.exists()) {
-            slotsDiv.innerHTML = `
-              <div class="no-slots">
-                No ${currentTab} rides found for ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}.
-                <br><br>
-                <button class="request-btn" onclick="raiseRideRequest()">
-                  <i class="fas fa-hand-paper"></i> Raise Ride Request
-                </button>
-              </div>
-            `;
-            return;
-          }
-
-          const allSlots = [];
-          
-          snap.forEach(driverSnap => {
-            const driverId = driverSnap.key;
-            
-            if (driverSnap.exists()) {
-              driverSnap.forEach(slotSnap => {
-                const slotKey = slotSnap.key;
-                const slotData = slotSnap.val();
-                
-                if (slotData && typeof slotData === 'object') {
-                  const completeSlot = {
-                    driverId: driverId,
-                    slotKey: slotKey,
-                    pickup: slotData.pickup || '',
-                    dropoff: slotData.dropoff || '',
-                    date: slotData.date || '',
-                    time: slotData.time || '',
-                    triptype: slotData.triptype || '',
-                    carBrand: slotData.carBrand || 'Unknown Car',
-                    carReg: slotData.carReg || '',
-                    seats: slotData.seats || '4',
-                    driverName: slotData.driverName || 'Unknown Driver',
-                    driverNumber: slotData.driverNumber || '',
-                    status: slotData.status || 'available',
-                    fare: Number(slotData.fare) || 0,
-                    distance: slotData.distance || null,
-                    duration: slotData.duration || null,
-                    notes: slotData.notes || '',
-                    originalData: slotData
-                  };
-                  
-                  allSlots.push(completeSlot);
-                }
-              });
-            }
-          });
-
-          const matchedSlots = allSlots.filter(slot => {
-            const normalizeString = (str) => (str || '').toLowerCase().trim();
-            
-            const pickupMatch = normalizeString(slot.pickup) === normalizeString(pickup);
-            const dropoffMatch = normalizeString(slot.dropoff) === normalizeString(dropoff);
-            const dateMatch = slot.date === date;
-            const tripTypeMatch = normalizeString(slot.triptype) === normalizeString(currentTab);
-            const statusFilter = !slot.status || (slot.status !== 'booked' && slot.status !== 'cancelled');
-
-            return pickupMatch && dropoffMatch && dateMatch && tripTypeMatch && statusFilter;
-          });
-
-          if (matchedSlots.length === 0) {
-            slotsDiv.innerHTML = `
-              <div class="no-slots">
-                No ${currentTab} rides found for ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}.
-                <br><br>
-                <button class="request-btn" onclick="raiseRideRequest()">
-                  <i class="fas fa-hand-paper"></i> Raise Ride Request
-                </button>
-              </div>
-            `;
-          } else {
-            renderSlots(matchedSlots, slotsDiv);
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch availableslots:', err);
-          setSearchingState(false);
-          slotsDiv.innerHTML = `
-            <div class="no-slots">
-              Failed to load rides. Please try again.
-              <br><br>
-              <button class="request-btn" onclick="raiseRideRequest()">
-                <i class="fas fa-hand-paper"></i> Raise Ride Request
-              </button>
-            </div>
-          `;
-        });
-    }
-
-    function renderSlots(slots, slotsDiv) {
-      slotsDiv.innerHTML = '';
-      const user = auth.currentUser;
-      
-      if (!user) {
-        slotsDiv.innerHTML = '<div class="no-slots">Please login first to book rides.</div>';
-        return;
-      }
-
-      slots.forEach((slot, idx) => {
-        const fare = Number(slot.fare) || 0;
-        const displayTime = formatTime24to12(slot.time);
-        const displayDate = formatDateISOtoDMY(slot.date);
-        const carInfo = slot.carBrand;
-
-        const card = document.createElement('div');
-        card.className = 'slot-card';
-
-        const tripTypeDisplay = currentTab === 'oneway' ? 'Oneway' : 'Roundtrip';
-        const tripTypeClass = currentTab === 'oneway' ? 'btn-oneway' : 'btn-roundtrip';
-        const tripIcon = currentTab === 'oneway' ? 'fa-arrow-right' : 'fa-exchange-alt';
-
-        const showFare = fare > 0;
-        
-        card.innerHTML = `
-          <div class="slot-accent" aria-hidden="true"></div>
-
-          <div class="slot-main">
-            <div style="display:flex;gap:12px;align-items:center;">
-              <div class="slot-number" aria-hidden="true">${idx + 1}</div>
-              <div style="flex:1;min-width:0;">
-                <div class="pickup-drop">
-                  <div class="pd-row">
-                    <div class="pd-label">Pickup</div>
-                    <div class="pd-value">${escapeHtml(slot.pickup)}</div>
-                  </div>
-                  <div class="pd-row">
-                    <div class="pd-label">Dropoff</div>
-                    <div class="pd-value">${escapeHtml(slot.dropoff)}</div>
-                  </div>
-                </div>
-
-                <div class="car-row">
-                  <div class="car-name">
-                    <i class="fas fa-car" aria-hidden="true"></i>
-                    <span>${escapeHtml(carInfo)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="slot-mid">
-              <div class="slot-mid-left">
-                <div class="pill trip-pill"><i class="fas ${tripIcon}"></i>${tripTypeDisplay}</div>
-                <div class="pill date-pill">${escapeHtml(displayDate)}</div>
-                <div class="pill time-pill">${escapeHtml(displayTime)}</div>
-                ${slot.seats ? `<div class="pill" style="background: linear-gradient(90deg,#fff2e6,#ffecd6); color: #d97706;"><i class="fas fa-users"></i>${slot.seats} seats</div>` : ''}
-                ${showFare ? `<div class="pill fare-pill">₹${fare}</div>` : ''}
-              </div>
-            </div>
-
-            <div class="slot-actions" role="group" aria-label="Booking actions">
-              <div class="action-wrap" style="grid-column: 1 / -1;">
-                <button class="btn-action ${tripTypeClass}" onclick="bookTrip(${idx})">
-                  <div class="btn-left">
-                    <i class="fas ${tripIcon}"></i>
-                    <span>Book ${tripTypeDisplay}</span>
-                  </div>
-                  <div class="btn-right">
-                    ${showFare ? `<span class="price-pill">₹${fare}</span>` : '<span class="price-pill">Contact</span>'}
-                  </div>
-                </button>
-              </div>
-            </div>
+          <div class="datetime-field">
+            <label><i class="fas fa-calendar-day"></i> Number of Days</label>
+            <input type="text" id="num-days" class="input-field" readonly style="background: #f3f4f6;"/>
           </div>
-
-          <div class="slot-right" aria-hidden="true">
-            <div class="fare-large">${showFare ? `₹${fare}` : 'Contact for fare'}</div>
-          </div>
-        `;
-
-        slotsDiv.appendChild(card);
-
-        card.setAttribute('data-slot', JSON.stringify({
-          driverId: slot.driverId,
-          slotKey: slot.slotKey,
-          pickup: slot.pickup,
-          dropoff: slot.dropoff,
-          date: slot.date,
-          time: slot.time,
-          tripType: currentTab,
-          fare: fare,
-          carBrand: slot.carBrand || '',
-          carReg: slot.carReg || '',
-          driverName: slot.driverName || '',
-          driverNumber: slot.driverNumber || '',
-          seats: slot.seats || '',
-          status: slot.status || 'available',
-          distance: slot.distance || null,
-          duration: slot.duration || null,
-          notes: slot.notes || '',
-          originalData: slot.originalData
-        }));
-      });
-    }
-
-    function bookTrip(slotIndex) {
-      const user = auth.currentUser;
-      if (!user) {
-        showToast('Please login first', true);
-        return;
-      }
-
-      const slotsDiv = document.getElementById('slots-container');
-      const slotCard = slotsDiv.children[slotIndex];
+        </div>
+      </div>
       
-      if (!slotCard) {
-        showToast('Error: Selected slot not found', true);
-        return;
-      }
-
-      const slotDataStr = slotCard.getAttribute('data-slot');
-      if (!slotDataStr) {
-        showToast('Error: Slot data not available', true);
-        return;
-      }
-
-      let slotData;
-      try {
-        slotData = JSON.parse(slotDataStr);
-      } catch (err) {
-        console.error('Error parsing slot data:', err);
-        showToast('Error: Invalid slot data', true);
-        return;
-      }
-
-      if (isTripDateTimeInPast(slotData.date, slotData.time)) {
-        showToast('Cannot book this ride - the trip date and time has already passed', true);
-        return;
-      }
-
-      const bookButton = slotCard.querySelector('.btn-action');
-      const originalText = bookButton.innerHTML;
-      bookButton.disabled = true;
-      bookButton.innerHTML = '<div class="spinner"></div> Processing...';
-
-      if (slotData.driverId && slotData.slotKey) {
-        db.ref(`availableslots/${slotData.driverId}/${slotData.slotKey}`).once('value')
-          .then(snapshot => {
-            if (!snapshot.exists()) {
-              showToast('This slot is no longer available. Please search again.', true);
-              bookButton.disabled = false;
-              bookButton.innerHTML = originalText;
-              return;
-            }
-
-            proceedWithBooking(slotData, user);
-          })
-          .catch(err => {
-            console.error('Error checking slot availability:', err);
-            showToast('Error checking availability. Please try again.', true);
-            bookButton.disabled = false;
-            bookButton.innerHTML = originalText;
-          });
-      } else {
-        showToast('Error: Missing slot information', true);
-        bookButton.disabled = false;
-        bookButton.innerHTML = originalText;
-      }
-    }
-
-    function proceedWithBooking(slotData, user) {
-      const bookingData = {
-        driverId: slotData.driverId,
-        slotKey: slotData.slotKey,
-        pickup: slotData.pickup,
-        dropoff: slotData.dropoff,
-        date: slotData.date,
-        time: slotData.time,
-        triptype: slotData.tripType,
-        fare: slotData.fare,
-        customerId: user.uid,
-        carBrand: slotData.carBrand,
-        carReg: slotData.carReg,
-        driverName: slotData.driverName,
-        driverNumber: slotData.driverNumber,
-        seats: slotData.seats,
-        status: slotData.status,
-        distance: slotData.distance,
-        duration: slotData.duration,
-        notes: slotData.notes,
-        bookingTimestamp: firebase.database.ServerValue.TIMESTAMP,
-        originalSlotData: slotData.originalData
-      };
-
-      try {
-        localStorage.setItem('selectedBooking', JSON.stringify(bookingData));
-        window.location.href = 'checkout.html';
-      } catch (err) {
-        console.error('Error storing booking data:', err);
-        showToast('Error: Failed to prepare booking. Please try again.', true);
-      }
-    }
-
-    function escapeHtml(str) {
-      if (!str && str !== 0) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    window.addEventListener('unhandledrejection', function(event) {
-      console.error('Unhandled promise rejection:', event.reason);
-      showToast('An unexpected error occurred. Please try again.', true);
-    });
-  </script>
-</body>
-</html>
+      <div class="nav-
