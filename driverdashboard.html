@@ -1,127 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Driver Dashboard — WaveTravel</title>
-
-  <!-- Font Awesome (icons) -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
-
   <style>
-    :root {
-      --accent-a: #8e2de2;
-      --accent-b: #4a00e0;
-      --card-bg: rgba(255,255,255,0.08);
-    }
-    html,body { height:100%; }
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0; padding: 0;
-      background: linear-gradient(to right, var(--accent-a), var(--accent-b));
-      color: white;
-      min-height: 100vh;
-      padding-bottom: 92px;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
-
-    .container {
-      padding: 16px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      font-size: 1.4rem;
-      text-align: center;
-      margin: 6px 0 14px;
-    }
-
-    .dashboard-card {
-      background: var(--card-bg);
-      padding: 14px;
-      border-radius: 10px;
-      margin-bottom: 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    }
-
-    .wallet-card { position: sticky; top:8px; z-index:90; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-
-    #balance { font-size: 1.4rem; font-weight: 700; margin: 6px 0; }
-    #withdraw-btn { margin-top: 10px; padding: 12px; width: 100%; background: #ffd700; color: black; font-weight:700; border:none; border-radius:8px; cursor:pointer; }
-    #withdraw-btn:disabled { opacity:.6; cursor:not-allowed; }
-
-    .table-wrapper { display: none !important; }
-    .card-list { display:flex !important; flex-direction:column; gap:12px; }
-    .entry-card { background: rgba(255,255,255,0.04); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); display:flex; flex-direction:column; gap:8px; }
-    .entry-row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-    .muted { opacity:0.85; font-size:0.9rem; }
-
-    .modal { position:fixed; left:0;top:0;right:0;bottom:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.5); z-index:200; padding:16px; }
-    .modal .card { background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); color:#fff; padding:20px 24px; width:100%; max-width:520px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); box-sizing:border-box; max-height:90vh; overflow-y:auto; }
-    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
-    .modal-close-btn { background:transparent; border:none; color:white; font-size:1.4rem; cursor:pointer; }
-    .booking-detail-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:1rem; }
-    .booking-detail-label { font-weight:600; opacity:0.95; }
-    .booking-detail-value { max-width:60%; text-align:right; word-wrap:break-word; }
-
-    .navbar { position:fixed; bottom:0; width:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(10px); display:flex; justify-content:space-around; align-items:center; padding:12px 0; z-index:999; }
-    .navbar a { color:#fff; text-decoration:none; font-size:0.75rem; display:flex; flex-direction:column; align-items:center; }
-    .navbar a i { font-size:1.15rem; margin-bottom:4px; }
-
-    /* Centered toast (for messages) */
-    .center-toast {
-      position: fixed;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.85);
-      color: #fff;
-      padding: 14px 18px;
-      border-radius: 10px;
-      z-index: 1200;
-      min-width: 240px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-      display: none;
-      font-weight: 600;
-    }
-    .center-toast.show { display: block; animation: toastIn 180ms ease; }
-    @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -45%); } to { opacity: 1; transform: translate(-50%, -50%); } }
-
-    /* UPI modal small form (improved readability) */
-    .upi-row { display:flex; gap:8px; align-items:center; margin-top:6px; }
-    /* made background less transparent and dark text for readability */
-    .upi-input {
-      flex:1;
-      padding:12px 14px;
-      border-radius:8px;
-      border:1px solid rgba(0,0,0,0.12);
-      background: rgba(255,255,255,0.95);
-      color:#111;
-      font-weight:600;
-      outline: none;
-      box-sizing: border-box;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08) inset;
-      transition: border-color 140ms ease, box-shadow 140ms ease;
-    }
-    .upi-input::placeholder { color:#666; font-weight:500; }
-
-    /* validation state */
-    .upi-input[data-valid="true"] { border-color: #22c55e; box-shadow: 0 4px 14px rgba(34,197,94,0.06) inset; }
-    .upi-input[data-valid="false"] { border-color: #fb7185; box-shadow: 0 4px 14px rgba(251,113,133,0.04) inset; }
-
-    .modal-actions { display:flex; gap:8px; margin-top:12px; }
-    .btn-primary { background: #22c55e; color:#000; padding:10px 12px; border-radius:8px; border:none; font-weight:700; cursor:pointer; }
-    .btn-secondary { background: transparent; color:#fff; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); cursor:pointer; }
-    .btn-disabled { opacity:0.6; pointer-events:none; }
+    :root{--accent-a:#8e2de2;--accent-b:#4a00e0;--card-bg:rgba(255,255,255,0.08)}
+    html,body{height:100%}
+    body{font-family:'Segoe UI',sans-serif;margin:0;padding:0;background:linear-gradient(to right,var(--accent-a),var(--accent-b));color:white;min-height:100vh;padding-bottom:92px}
+    .container{padding:16px;max-width:600px;margin:0 auto}
+    h1{font-size:1.4rem;text-align:center;margin:6px 0 14px}
+    .dashboard-card{background:var(--card-bg);padding:14px;border-radius:10px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+    .wallet-card{position:sticky;top:8px;z-index:90;backdrop-filter:blur(6px)}
+    #balance{font-size:1.4rem;font-weight:700;margin:6px 0}
+    #withdraw-btn{margin-top:10px;padding:12px;width:100%;background:#ffd700;color:black;font-weight:700;border:none;border-radius:8px;cursor:pointer}
+    #withdraw-btn:disabled{opacity:.6;cursor:not-allowed}
+    .card-list{display:flex;flex-direction:column;gap:12px}
+    .entry-card{background:rgba(255,255,255,0.04);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:8px}
+    .entry-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .muted{opacity:0.85;font-size:0.9rem}
+    .navbar{position:fixed;bottom:0;width:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);display:flex;justify-content:space-around;align-items:center;padding:12px 0;z-index:999}
+    .navbar a{color:#fff;text-decoration:none;font-size:0.75rem;display:flex;flex-direction:column;align-items:center}
+    .navbar a i{font-size:1.15rem;margin-bottom:4px}
+    .center-toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.85);color:#fff;padding:14px 18px;border-radius:10px;z-index:1200;min-width:240px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.4);display:none;font-weight:600}
+    .center-toast.show{display:block}
+    .ride-request-card{background:rgba(255,255,255,0.06);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);margin-bottom:12px}
+    .ride-info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:0.95rem}
+    .ride-label{opacity:0.8;font-weight:500}
+    .ride-value{font-weight:600}
+    .location-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,0.15);padding:6px 10px;border-radius:8px;font-size:0.85rem;margin:4px 0}
+    .ride-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)}
+    .btn-accept{flex:1;padding:12px;background:#10b981;color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;transition:all 0.2s}
+    .btn-accept:hover{background:#059669;transform:translateY(-2px)}
+    .btn-reject{flex:1;padding:12px;background:rgba(239,68,68,0.2);color:#fff;border:1px solid rgba(239,68,68,0.4);border-radius:8px;font-weight:700;cursor:pointer;transition:all 0.2s}
+    .btn-reject:hover{background:rgba(239,68,68,0.3)}
+    .btn-accept:disabled,.btn-reject:disabled{opacity:0.5;cursor:not-allowed;transform:none}
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Your Dashboard</h1>
-
+    
     <div class="dashboard-card wallet-card">
       <h2>Wallet Balance</h2>
       <div id="balance">Loading…</div>
@@ -129,45 +49,15 @@
     </div>
 
     <div class="dashboard-card">
+      <h2>Available Ride Requests</h2>
+      <div class="card-list" id="rideRequestsList">
+        <div class="entry-card muted">Loading ride requests...</div>
+      </div>
+    </div>
+
+    <div class="dashboard-card">
       <h2>Wallet History</h2>
-      <div class="table-wrapper">
-        <table id="history-table"><tbody></tbody></table>
-      </div>
       <div class="card-list" id="cardList"></div>
-    </div>
-  </div>
-
-  <div class="modal" id="bookingModal" role="dialog" aria-modal="true">
-    <div class="card">
-      <div class="modal-header">
-        <strong>Booking Details</strong>
-        <button id="closeModal" class="modal-close-btn" aria-label="Close modal">✕</button>
-      </div>
-      <div id="bookingContent">Loading…</div>
-    </div>
-  </div>
-
-  <!-- UPI entry modal -->
-  <div class="modal" id="upiModal" role="dialog" aria-modal="true">
-    <div class="card">
-      <div class="modal-header">
-        <strong>Enter / Update UPI</strong>
-        <button id="closeUpiModal" class="modal-close-btn" aria-label="Close modal">✕</button>
-      </div>
-
-      <div>
-        <label style="display:block;margin-bottom:8px;color:#ffd1f4;font-weight:600">UPI (VPA)</label>
-        <div class="upi-row">
-          <input id="upiInput" class="upi-input" type="text" placeholder="example@bank" aria-label="UPI id"/>
-        </div>
-        <div style="margin-top:8px;font-size:13px;color:#e9c7ef">We'll save this UPI to your profile and use it for withdrawals.</div>
-
-        <div class="modal-actions">
-          <button id="saveUpiBtn" class="btn-primary">Save</button>
-          <button id="saveWithdrawBtn" class="btn-primary">Save & Withdraw</button>
-          <button id="cancelUpiBtn" class="btn-secondary">Cancel</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -179,486 +69,41 @@
     <a href="driverprofile.html"><i class="fas fa-user"></i><span>Profile</span></a>
   </div>
 
-  <!-- Center toast element -->
-  <div id="centerToast" class="center-toast" role="status" aria-live="polite"></div>
+  <div id="centerToast" class="center-toast"></div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import{initializeApp}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import{getDatabase,ref,onValue,update,get,child}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
-      authDomain: "wavetravel-3c4c4.firebaseapp.com",
-      databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
-      projectId: "wavetravel-3c4c4"
-    };
-    const BOOKING_PATH_BASE = "bookings";
+    const firebaseConfig={apiKey:"AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",authDomain:"wavetravel-3c4c4.firebaseapp.com",databaseURL:"https://wavetravel-3c4c4-default-rtdb.firebaseio.com",projectId:"wavetravel-3c4c4"};
+    const app=initializeApp(firebaseConfig);
+    const db=getDatabase(app);
+    const auth=getAuth(app);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
+    const balanceEl=document.getElementById("balance");
+    const withdrawBtn=document.getElementById("withdraw-btn");
+    const cardList=document.getElementById("cardList");
+    const centerToastEl=document.getElementById("centerToast");
+    const rideRequestsList=document.getElementById("rideRequestsList");
 
-    const balanceEl = document.getElementById("balance");
-    const withdrawBtn = document.getElementById("withdraw-btn");
-    const cardList = document.getElementById("cardList");
-    const bookingModal = document.getElementById("bookingModal");
-    const bookingContent = document.getElementById("bookingContent");
-    const closeModalBtn = document.getElementById("closeModal");
-    const centerToastEl = document.getElementById("centerToast");
+    let driverId=null;
+    let walletData={};
+    let rideRequestsData={};
 
-    // UPI modal elements
-    const upiModal = document.getElementById("upiModal");
-    const upiInput = document.getElementById("upiInput");
-    const saveUpiBtn = document.getElementById("saveUpiBtn");
-    const saveWithdrawBtn = document.getElementById("saveWithdrawBtn");
-    const cancelUpiBtn = document.getElementById("cancelUpiBtn");
-    const closeUpiModal = document.getElementById("closeUpiModal");
+    function showToast(msg,dur=2800){centerToastEl.textContent=msg;centerToastEl.classList.add('show');clearTimeout(centerToastEl._t);centerToastEl._t=setTimeout(()=>centerToastEl.classList.remove('show'),dur)}
 
-    let driverId = null;
-    let walletData = {};
-    let driverHasUpiCache = false;
+    function formatDate(ts){if(!ts)return'-';const d=new Date(typeof ts==='number'?ts*1000:ts);return isNaN(d)?'-':d.toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"})}
 
-    function isUnpaid(entry) {
-      if (!entry) return false;
-      if (entry.paidout === false || entry.paidout === "false") return true;
-      if (entry.status && String(entry.status).toLowerCase() === "unpaid") return true;
-      if (entry.paidout === undefined && !entry.status) return true;
-      return false;
-    }
+    function renderWallet(){const entries=Object.entries(walletData||{});if(!entries.length){balanceEl.textContent="₹0";cardList.innerHTML='<div class="entry-card muted">No wallet entries</div>';withdrawBtn.disabled=true;return}const unpaid=entries.filter(([_,e])=>!e.paidout||e.paidout==="false");const total=unpaid.reduce((s,[_,e])=>s+parseFloat(e.amount||0),0);balanceEl.textContent=`₹${total.toFixed(2)}`;withdrawBtn.disabled=total<=0;cardList.innerHTML="";entries.forEach(([id,e])=>{const div=document.createElement("div");div.className="entry-card";div.innerHTML=`<div class="entry-row"><div><strong>Booking</strong><div class="muted">${id}</div></div><div><strong>₹${Number(e.amount||0).toFixed(2)}</strong></div></div><div class="entry-row"><div class="muted">Date</div><div class="muted">${formatDate(e.date||e.bookedAt)}</div></div><div class="entry-row"><div class="muted">Status</div><div class="muted">${e.status||'unpaid'}</div></div>`;cardList.appendChild(div)})}
 
-    function formatDateValue(ts) {
-      if (ts === undefined || ts === null || ts === '') return '-';
-      if (typeof ts === 'string' && /^\d{1,2}:\d{2}$/.test(ts.trim())) return ts;
-      if (typeof ts === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(ts)) {
-        const d = new Date(ts);
-        if (!isNaN(d)) return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-        return ts;
-      }
-      const maybeNum = Number(ts);
-      if (!isNaN(maybeNum)) {
-        const d = new Date(maybeNum);
-        if (!isNaN(d)) return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-      }
-      const d2 = new Date(ts);
-      if (!isNaN(d2)) return d2.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-      return String(ts);
-    }
+    function renderRideRequests(){const entries=Object.entries(rideRequestsData||{});const searching=entries.filter(([_,r])=>r.status==='searching');if(!searching.length){rideRequestsList.innerHTML='<div class="entry-card muted">No ride requests available</div>';return}rideRequestsList.innerHTML="";searching.forEach(([rideId,ride])=>{const pickup=(ride.pickup?.address||'Unknown').split(',')[0];const dropoff=(ride.dropoff?.address||'Unknown').split(',')[0];const dt=formatDate(ride.pickupTimestamp);const trip=ride.tripType||'oneway';const vehicle=ride.vehicleType||'sedan';const fare=ride.fareEstimate||0;const dist=ride.distance||0;const div=document.createElement("div");div.className="ride-request-card";div.innerHTML=`<div class="ride-info-row"><span class="ride-label">Request ID</span><span class="ride-value">${rideId.substring(0,8)}</span></div><div class="location-badge"><span>📍</span><strong>${pickup}</strong></div><div style="text-align:center;margin:4px 0;opacity:0.7">↓</div><div class="location-badge" style="background:rgba(239,68,68,0.15)"><span>📍</span><strong>${dropoff}</strong></div><div class="ride-info-row" style="margin-top:12px"><span class="ride-label">Pickup Time</span><span class="ride-value">${dt}</span></div><div class="ride-info-row"><span class="ride-label">Trip Type</span><span class="ride-value" style="text-transform:capitalize">${trip}</span></div><div class="ride-info-row"><span class="ride-label">Vehicle</span><span class="ride-value" style="text-transform:capitalize">${vehicle}</span></div><div class="ride-info-row"><span class="ride-label">Distance</span><span class="ride-value">${dist.toFixed(0)} km</span></div><div class="ride-info-row"><span class="ride-label">Fare Estimate</span><span class="ride-value" style="color:#ffd700">₹${fare}</span></div><div class="ride-actions"><button class="btn-accept" data-ride="${rideId}">Accept Ride</button><button class="btn-reject" data-ride="${rideId}">Reject</button></div>`;rideRequestsList.appendChild(div)});document.querySelectorAll('.btn-accept').forEach(btn=>{btn.onclick=()=>acceptRide(btn.dataset.ride)});document.querySelectorAll('.btn-reject').forEach(btn=>{btn.onclick=()=>rejectRide(btn.dataset.ride)})}
 
-    function createDetailRow(label, value) {
-      const row = document.createElement('div');
-      row.className = 'booking-detail-row';
-      const labelDiv = document.createElement('div');
-      labelDiv.className = 'booking-detail-label';
-      labelDiv.textContent = label;
-      const valueDiv = document.createElement('div');
-      valueDiv.className = 'booking-detail-value';
-      valueDiv.textContent = value ?? '-';
-      row.appendChild(labelDiv);
-      row.appendChild(valueDiv);
-      return row;
-    }
+    async function acceptRide(rideId){if(!driverId||!rideId){showToast("Invalid request");return}const ride=rideRequestsData[rideId];if(!ride){showToast("Ride request not found");return}try{const driverSnap=await get(child(ref(db),`driverdetails/${driverId}`));let driverName='Driver';let driverNumber='';if(driverSnap&&driverSnap.exists()){const d=driverSnap.val();driverName=d.name||d.fullName||'Driver';driverNumber=d.phone||d.phoneNumber||''}const booking={...ride,status:'booked',assignedDriverId:driverId,driverName:driverName,driverNumber:driverNumber,acceptedAt:Date.now(),bookingId:rideId};const updates={};updates[`evplan/bookings/${rideId}`]=booking;updates[`evplan/rideRequests/${rideId}/status`]='booked';updates[`evplan/rideRequests/${rideId}/assignedDriverId`]=driverId;await update(ref(db),updates);showToast("✓ Ride accepted successfully!")}catch(err){console.error("Error accepting ride:",err);showToast("Failed to accept ride: "+(err.message||err))}}
 
-    function safeGet(obj, ...keys) {
-      for (const k of keys) if (obj && (k in obj)) return obj[k];
-      return undefined;
-    }
+    async function rejectRide(rideId){if(!driverId||!rideId)return;try{const updates={};updates[`evplan/rideRequests/${rideId}/status`]='rejected';await update(ref(db),updates);showToast("Ride rejected")}catch(err){console.error("Error rejecting ride:",err);showToast("Failed to reject ride")}}
 
-    // Show centered toast
-    function showCenterToast(message, duration = 2800) {
-      centerToastEl.textContent = message;
-      centerToastEl.classList.add('show');
-      clearTimeout(centerToastEl._timeout);
-      centerToastEl._timeout = setTimeout(() => {
-        centerToastEl.classList.remove('show');
-      }, duration);
-    }
-
-    // --- NEW: simplified and resilient UPI lookup ---
-    // Only try the canonical path driverdetails/{uid}/upiId and fall back to driverdetails/{uid}/upi.
-    // Permission-denied errors are ignored silently to avoid console spam.
-    async function checkDriverUPI(uid) {
-      if (!uid) return false;
-      const paths = [
-        `driverdetails/${uid}/upiId`,
-        `driverdetails/${uid}/upi`
-      ];
-      for (const p of paths) {
-        try {
-          const snap = await get(child(ref(db), p));
-          if (snap && snap.exists()) {
-            const val = snap.val();
-            if (typeof val === 'string' && val.trim().length > 0) return val.trim();
-            if (typeof val === 'object' && val !== null) {
-              // try to extract string values if stored as object
-              for (const kk of ['upi','vpa','upiId','id','value']) {
-                if (kk in val && typeof val[kk] === 'string' && val[kk].trim().length > 0) return val[kk].trim();
-              }
-            }
-          }
-        } catch (err) {
-          // Ignore permission-denied (common when rules restrict read). Log other errors.
-          const msg = String(err && err.message ? err.message : err);
-          if (!/permission denied/i.test(msg)) {
-            console.error('checkDriverUPI unexpected error for path', p, err);
-          }
-          // continue to next path without noisy console warnings
-        }
-      }
-      return false;
-    }
-
-    // Robust booking lookup and display:
-    async function showBookingDetails(bookingId) {
-      bookingContent.textContent = "Loading booking...";
-      bookingModal.style.display = "flex";
-
-      if (!bookingId) {
-        bookingContent.textContent = "No booking id provided.";
-        return;
-      }
-
-      let booking = null;
-
-      try {
-        // 1) Try bookings/{driverId}/{bookingId}
-        if (driverId) {
-          const p1 = `${BOOKING_PATH_BASE}/${driverId}/${bookingId}`;
-          const snap1 = await get(child(ref(db), p1));
-          if (snap1 && snap1.exists()) {
-            booking = snap1.val();
-          }
-        }
-
-        // 2) Try bookings/{bookingId}
-        if (!booking) {
-          const p2 = `${BOOKING_PATH_BASE}/${bookingId}`;
-          const snap2 = await get(child(ref(db), p2));
-          if (snap2 && snap2.exists()) {
-            booking = snap2.val();
-          }
-        }
-
-        // 3) Check driverWallet entry for an embedded booking object or booking id
-        if (!booking && driverId) {
-          const wPath = `driverWallet/${driverId}/${bookingId}`;
-          const wSnap = await get(child(ref(db), wPath));
-          if (wSnap && wSnap.exists()) {
-            const w = wSnap.val();
-            // embedded booking object
-            if (w.booking && typeof w.booking === 'object') {
-              booking = w.booking;
-            } else if (w.booking && typeof w.booking === 'string') {
-              // booking contains another bookingId — try to locate it under bookings/*
-              const candidateId = w.booking;
-              const globalSnap = await get(ref(db, BOOKING_PATH_BASE));
-              if (globalSnap && globalSnap.exists()) {
-                const global = globalSnap.val();
-                outer:
-                for (const [dId, bookingsObj] of Object.entries(global)) {
-                  if (bookingsObj && bookingsObj[candidateId]) {
-                    booking = bookingsObj[candidateId];
-                    break outer;
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        // 4) Global search: bookings/*/{bookingId}
-        if (!booking) {
-          const globalSnap = await get(ref(db, BOOKING_PATH_BASE));
-          if (globalSnap && globalSnap.exists()) {
-            const global = globalSnap.val();
-            outer2:
-            for (const [dId, bookingsObj] of Object.entries(global)) {
-              if (bookingsObj && bookingsObj[bookingId]) {
-                booking = bookingsObj[bookingId];
-                break outer2;
-              }
-            }
-          }
-        }
-
-        if (!booking) {
-          bookingContent.innerHTML = `<div style="padding:12px;">No booking found for <strong>${bookingId}</strong>.<br>Tried paths:<br><pre>
-${BOOKING_PATH_BASE}/${driverId}/${bookingId}
-${BOOKING_PATH_BASE}/${bookingId}
-driverWallet/${driverId}/${bookingId} (embedded booking)
-global search under ${BOOKING_PATH_BASE}/*
-</pre></div>`;
-          return;
-        }
-
-        // Render booking details (intelligently picking available keys)
-        bookingContent.innerHTML = '';
-        bookingContent.appendChild(createDetailRow('Booking ID', bookingId));
-        bookingContent.appendChild(createDetailRow('Customer Name', safeGet(booking, 'userName', 'customerName', 'userName') || safeGet(booking, 'userName') || safeGet(booking, 'customerName')));
-        bookingContent.appendChild(createDetailRow('Pickup Location', safeGet(booking, 'pickup', 'pickupLocation')));
-        bookingContent.appendChild(createDetailRow('Dropoff Location', safeGet(booking, 'dropoff', 'dropoffLocation')));
-        const rawTime = safeGet(booking, 'time', 'pickupTime');
-        const pickupTimeVal = rawTime ? ( /^\d{1,2}:\d{2}$/.test(String(rawTime)) ? String(rawTime) : formatDateValue(rawTime) ) : '-';
-        bookingContent.appendChild(createDetailRow('Pickup Time', pickupTimeVal));
-        const fareVal = safeGet(booking, 'fare', 'amount', 'price', 'paymentAmount');
-        bookingContent.appendChild(createDetailRow('Fare', fareVal !== undefined && fareVal !== null ? `₹${Number(fareVal).toFixed(2)}` : '-'));
-        const status = booking.status || (booking.paidout ? (booking.paidout === true || booking.paidout === "true" ? "Paid" : String(booking.paidout)) : "Unpaid");
-        bookingContent.appendChild(createDetailRow('Status', status));
-        const bookedAtVal = safeGet(booking, 'bookedAt', 'createdAt') ? formatDateValue(safeGet(booking, 'bookedAt', 'createdAt')) : '-';
-        bookingContent.appendChild(createDetailRow('Booked At', bookedAtVal));
-        if (booking.driverName || booking.driverId || booking.driverNumber) {
-          bookingContent.appendChild(createDetailRow('Driver', booking.driverName ? `${booking.driverName} ${booking.driverNumber ? `(${booking.driverNumber})` : ''}` : booking.driverId));
-        }
-        if (booking.notes || booking.note) bookingContent.appendChild(createDetailRow('Notes', booking.notes || booking.note));
-
-        // show additional keys that were not displayed
-        const shown = new Set(['userName','customerName','pickup','pickupLocation','dropoff','dropoffLocation','time','pickupTime','fare','amount','price','paymentAmount','status','paidout','bookedAt','createdAt','driverName','driverId','driverNumber','notes','note']);
-        const extra = {};
-        for (const k in booking) if (!shown.has(k)) extra[k] = booking[k];
-        if (Object.keys(extra).length) {
-          const hr = document.createElement('hr'); hr.style.marginTop = '16px';
-          bookingContent.appendChild(hr);
-          bookingContent.appendChild(document.createTextNode('Additional Data:'));
-          const pre = document.createElement('pre');
-          pre.textContent = JSON.stringify(extra, null, 2);
-          pre.style.marginTop = '10px';
-          pre.style.background = 'rgba(255 255 255 / 0.06)';
-          pre.style.padding = '10px';
-          pre.style.borderRadius = '6px';
-          bookingContent.appendChild(pre);
-        }
-
-      } catch (err) {
-        console.error("Error fetching booking:", err);
-        bookingContent.textContent = `Error fetching booking: ${err && err.message ? err.message : String(err)}`;
-      }
-    }
-
-    // Render wallet cards and attach handlers
-    function renderWallet() {
-      const entries = Object.entries(walletData || {});
-      if (!entries.length) {
-        balanceEl.textContent = "₹0";
-        cardList.innerHTML = `<div class="entry-card muted">No wallet entries</div>`;
-        withdrawBtn.disabled = true;
-        return;
-      }
-
-      const unpaidEntries = entries.filter(([_, e]) => isUnpaid(e));
-      const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
-      balanceEl.textContent = `₹${total.toFixed(2)}`;
-
-      // withdraw enabled if unpaid balance exists (modal will handle UPI)
-      withdrawBtn.disabled = total <= 0;
-
-      cardList.innerHTML = "";
-      entries.forEach(([id, e]) => {
-        const status = e.status || (e.paidout ? (e.paidout === true || e.paidout === "true" ? "paid" : e.paidout) : "unpaid");
-        const div = document.createElement("div");
-        div.className = "entry-card";
-        div.innerHTML = `
-          <div class="entry-row"><div><strong>Booking</strong><div class="muted" style="font-size:0.95rem">${id}</div></div><div><strong>₹${Number(e.amount||0).toFixed(2)}</strong></div></div>
-          <div class="entry-row"><div class="muted">Date</div><div class="muted">${formatDateValue(e.date || e.bookedAt || e.createdAt)}</div></div>
-          <div class="entry-row"><div class="muted">Status</div><div class="muted">${status}</div></div>
-          <div style="display:flex;gap:8px;margin-top:6px;">
-            <button data-booking="${id}" class="showBookingBtn" style="flex:1;padding:8px;border-radius:8px;border:none;background:#ffd700;color:#000;font-weight:700;cursor:pointer">Show</button>
-          </div>
-        `;
-        cardList.appendChild(div);
-      });
-
-      // attach handlers to call the single showBookingDetails
-      document.querySelectorAll(".showBookingBtn").forEach(btn => {
-        btn.onclick = async () => {
-          const bookingId = btn.dataset.booking;
-          // If wallet entry contains an embedded booking object or bookingId, prefer that first (helps when wallet key != bookings key)
-          try {
-            if (driverId && bookingId) {
-              const wSnap = await get(child(ref(db), `driverWallet/${driverId}/${bookingId}`));
-              if (wSnap && wSnap.exists()) {
-                const w = wSnap.val();
-                if (w.booking && typeof w.booking === 'object') {
-                  bookingContent.innerHTML = '';
-                  bookingModal.style.display = "flex";
-                  const embedded = w.booking;
-                  bookingContent.appendChild(createDetailRow('Booking (embedded)', bookingId));
-                  bookingContent.appendChild(createDetailRow('Customer Name', safeGet(embedded, 'userName', 'customerName') || embedded.userName || embedded.customerName || '-'));
-                  bookingContent.appendChild(createDetailRow('Pickup', safeGet(embedded, 'pickup') || '-'));
-                  bookingContent.appendChild(createDetailRow('Dropoff', safeGet(embedded, 'dropoff') || '-'));
-                  bookingContent.appendChild(createDetailRow('Pickup Time', safeGet(embedded, 'time') || '-'));
-                  bookingContent.appendChild(createDetailRow('Fare', embedded.fare ? `₹${Number(embedded.fare).toFixed(2)}` : '-'));
-                  bookingContent.appendChild(createDetailRow('Status', embedded.status || (embedded.paidout ? 'Paid' : 'Unpaid')));
-                  return;
-                }
-                // if wallet entry's booking is a bookingId string, prefer that id
-                if (w.booking && typeof w.booking === 'string') {
-                  await showBookingDetails(w.booking);
-                  return;
-                }
-              }
-            }
-          } catch (e) {
-            // ignore and fallback to generic showBookingDetails flow
-            console.warn('Error checking embedded booking in wallet entry', e);
-          }
-
-          // fallback to generic lookup
-          await showBookingDetails(bookingId);
-        };
-      });
-    }
-
-    withdrawBtn.onclick = async () => {
-      // Open UPI modal to allow entering/updating UPI before withdrawing
-      if (!driverId) {
-        showCenterToast("Please log in to request withdrawal");
-        return;
-      }
-
-      // open UPI modal (it will prefill if upi exists)
-      openUpiModal().catch(err => {
-        console.error('openUpiModal error:', err);
-        showCenterToast("Unable to open UPI modal.");
-      });
-    };
-
-    closeModalBtn.onclick = () => bookingModal.style.display = "none";
-    bookingModal.onclick = (e) => { if (e.target === bookingModal) bookingModal.style.display = "none"; };
-
-    // UPI modal functions (reuse existing logic)
-    async function openUpiModal() {
-      if (!driverId) {
-        showCenterToast("Please log in to update UPI");
-        return;
-      }
-      upiInput.value = '';
-      try {
-        // Only look at canonical path(s) — checkDriverUPI is now safe and minimal
-        const upiVal = await checkDriverUPI(driverId);
-        if (upiVal) upiInput.value = upiVal;
-      } catch(e) {
-        // don't spam console on permission issues — checkDriverUPI handles that
-        console.warn('prefill UPI failed', e);
-      }
-      upiModal.style.display = 'flex';
-    }
-
-    // Save UPI to driverdetails only (into upiId)
-    async function saveUpi(upiVal) {
-      if (!driverId) throw new Error('Not signed in');
-      const cleaned = (upiVal || '').trim();
-      if (!cleaned || cleaned.length < 3) throw new Error('Enter a valid UPI id');
-      // basic client-side validation: must contain '@' and no spaces
-      if (!/^[^\s@]+@[^\s@]+$/.test(cleaned)) throw new Error('Invalid UPI format');
-      const updates = {};
-      updates[`driverdetails/${driverId}/upiId`] = cleaned;
-      await update(ref(db), updates);
-      driverHasUpiCache = true;
-      return cleaned;
-    }
-
-    // Perform withdrawal: mark unpaid entries as processing
-    async function performWithdraw() {
-      if (!driverId) {
-        showCenterToast("Please log in to request withdrawal");
-        return;
-      }
-      // compute unpaid entries
-      const updates = {};
-      for (const [id, entry] of Object.entries(walletData || {})) {
-        if (isUnpaid(entry)) updates[`driverWallet/${driverId}/${id}/status`] = "processing";
-      }
-      if (!Object.keys(updates).length) {
-        showCenterToast("No unpaid balance to withdraw.");
-        return;
-      }
-      try {
-        await update(ref(db), updates);
-        showCenterToast("Withdrawal request sent — entries marked as 'processing'.");
-      } catch (err) {
-        showCenterToast("Failed to send withdraw request: " + (err.message || err));
-        console.error("withdraw error", err);
-      }
-    }
-
-    // UPI modal event handlers
-    saveUpiBtn.addEventListener('click', async () => {
-      const val = upiInput.value.trim();
-      try {
-        if (!val) { showCenterToast("Enter a valid UPI"); return; }
-        await saveUpi(val);
-        showCenterToast("UPI saved.");
-        upiModal.style.display = 'none';
-        // refresh withdraw button state (wallet render sets it)
-        const unpaidEntries = Object.entries(walletData || {}).filter(([_, e]) => isUnpaid(e));
-        const total = unpaidEntries.reduce((s, [_, e]) => s + parseFloat(e.amount || 0), 0);
-        withdrawBtn.disabled = total <= 0;
-      } catch (err) {
-        showCenterToast("Failed to save UPI: " + (err.message || err));
-      }
-    });
-
-    saveWithdrawBtn.addEventListener('click', async () => {
-      const val = upiInput.value.trim();
-      try {
-        if (!val) { showCenterToast("Enter a valid UPI"); return; }
-        await saveUpi(val);
-        upiModal.style.display = 'none';
-        await performWithdraw();
-      } catch (err) {
-        showCenterToast("Error: " + (err.message || err));
-      }
-    });
-
-    cancelUpiBtn.addEventListener('click', () => {
-      upiModal.style.display = 'none';
-    });
-    closeUpiModal.addEventListener('click', () => upiModal.style.display = 'none');
-    upiModal.onclick = (e) => { if (e.target === upiModal) upiModal.style.display = "none"; };
-
-    // Live validation as user types (optional UX improvement)
-    function validUpi(upi) { return /^[^\s@]+@[^\s@]+$/.test((upi||'').trim()); }
-    function updateUpiValidationUI() {
-      const ok = validUpi(upiInput.value);
-      upiInput.setAttribute('data-valid', ok ? 'true' : 'false');
-      saveUpiBtn.disabled = !ok;
-      saveWithdrawBtn.disabled = !ok;
-      saveUpiBtn.classList.toggle('btn-disabled', !ok);
-      saveWithdrawBtn.classList.toggle('btn-disabled', !ok);
-    }
-    upiInput.addEventListener('input', updateUpiValidationUI);
-
-    // On auth change: load wallet and check for UPI presence
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        balanceEl.textContent = "Please log in.";
-        cardList.innerHTML = `<div class="entry-card muted">Log in to see data</div>`;
-        driverId = null;
-        driverHasUpiCache = false;
-        withdrawBtn.disabled = true;
-        return;
-      }
-      driverId = user.uid;
-
-      // check for driver UPI once at sign-in (and set driverHasUpiCache)
-      try {
-        const upiVal = await checkDriverUPI(driverId);
-        driverHasUpiCache = !!upiVal;
-      } catch(e) {
-        // since checkDriverUPI suppresses permission-denied logs, this should be quiet
-        driverHasUpiCache = false;
-      }
-
-      // subscribe to wallet changes
-      const walletRef = ref(db, `driverWallet/${driverId}`);
-      onValue(walletRef, snap => {
-        walletData = snap.val() || {};
-        renderWallet();
-      }, err => {
-        console.error("wallet onValue error:", err);
-      });
-    });
-
+    onAuthStateChanged(auth,async user=>{if(!user){balanceEl.textContent="Please log in.";cardList.innerHTML='<div class="entry-card muted">Log in to see data</div>';rideRequestsList.innerHTML='<div class="entry-card muted">Log in to see ride requests</div>';driverId=null;withdrawBtn.disabled=true;return}driverId=user.uid;const walletRef=ref(db,`driverWallet/${driverId}`);onValue(walletRef,snap=>{walletData=snap.val()||{};renderWallet()},err=>{console.error("wallet onValue error:",err)});const rideRequestsRef=ref(db,`evplan/rideRequests`);onValue(rideRequestsRef,snap=>{rideRequestsData=snap.val()||{};renderRideRequests()},err=>{console.error("ride requests onValue error:",err)})});
   </script>
 </body>
 </html>
