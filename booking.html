@@ -845,6 +845,7 @@
           console.log('User signed in:', user.email);
         } else {
           currentUser = null;
+          console.log('No user signed in, redirecting to login...');
           window.location.href = 'index.html';
         }
       });
@@ -1309,11 +1310,19 @@
       bookBtn.innerHTML = '<div class="spinner"></div> Searching for drivers...';
 
       try {
+        // Get rider name safely
+        let riderName = 'Rider';
+        if (currentUser.displayName) {
+          riderName = currentUser.displayName;
+        } else if (currentUser.email) {
+          riderName = currentUser.email.split('@')[0];
+        }
+
         // Create ride request in Realtime Database
         const rideRequest = {
           riderId: currentUser.uid,
-          riderEmail: currentUser.email,
-          riderName: currentUser.displayName || currentUser.email.split('@')[0],
+          riderEmail: currentUser.email || '',
+          riderName: riderName,
           pickup: bookingData.pickup,
           dropoff: bookingData.dropoff,
           tripType: bookingData.tripType,
