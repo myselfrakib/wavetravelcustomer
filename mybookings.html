@@ -313,6 +313,17 @@
     // derive pickup timestamp (epoch ms) from booking object (best-effort)
     function getPickupTimestamp(b) {
       if (!b) return null;
+      
+      // Handle evplan structure (pickupTimestamp is in seconds)
+      if (b.source === 'evplan' && b.pickupTimestamp) {
+        const ts = Number(b.pickupTimestamp);
+        if (!isNaN(ts)) {
+          // Convert seconds to milliseconds
+          return ts * 1000;
+        }
+      }
+      
+      // Handle old structure
       if (b.pickupTime) {
         const n = Number(b.pickupTime);
         if (!isNaN(n)) return n;
@@ -344,6 +355,16 @@
     // ensure bookings/{driverId}/{bookingId}/pickupTime numeric exists (returns numeric TS or null)
     async function ensurePickupTimeIfMissing(booking) {
       if (!booking) return null;
+      
+      // Skip for evplan bookings - they use pickupTimestamp (seconds)
+      if (booking.source === 'evplan') {
+        if (booking.pickupTimestamp && !isNaN(Number(booking.pickupTimestamp))) {
+          return Number(booking.pickupTimestamp) * 1000; // Convert to ms
+        }
+        return null;
+      }
+      
+      // Only process old-structure bookings
       try {
         if (booking.pickupTime && !isNaN(Number(booking.pickupTime))) {
           return Number(booking.pickupTime);
@@ -523,18 +544,36 @@
       createReviewModal();
 
       try {
-        const snap = await db.ref('bookings').once('value');
-        const allDrivers = snap.val() || {};
+        // Fetch from BOTH old /bookings and new /evplan/bookings
+        const [oldSnap, evplanSnap] = await Promise.all([
+          db.ref('bookings').once('value'),
+          db.ref('evplan/bookings').once('value')
+        ]);
+
+        const allDrivers = oldSnap.val() || {};
+        const evplanBookings = evplanSnap.val() || {};
         const myBookings = [];
 
-        // collect bookings owned by this user
+        // collect bookings from old structure (bookings/{driverId}/{bookingId})
         Object.entries(allDrivers).forEach(([driverId, bookings]) => {
           if (!bookings) return;
           Object.entries(bookings).forEach(([bookingId, b]) => {
             if (b.userId === user.uid || b.customerId === user.uid) {
-              myBookings.push({ id: bookingId, driverId, ...b });
+              myBookings.push({ id: bookingId, driverId, source: 'old', ...b });
             }
           });
+        });
+
+        // collect bookings from new structure (evplan/bookings/{bookingId})
+        Object.entries(evplanBookings).forEach(([bookingId, b]) => {
+          if (b.riderId === user.uid) {
+            myBookings.push({ 
+              id: bookingId, 
+              driverId: b.assignedDriverId || 'unknown',
+              source: 'evplan',
+              ...b 
+            });
+          }
         });
 
         if (myBookings.length === 0) {
@@ -554,13 +593,83 @@
 
         // Now render cards (uses possibly updated pickupTime)
         bookingsEl.innerHTML = myBookings.map((b, i) => {
-          const carText = (b.carBrand ? b.carBrand : '—') + (b.carReg ? ` (${b.carReg})` : '');
-          const fareText = (b.fare !== undefined && b.fare !== null) ? `₹${b.fare}` : 'N/A';
-          const driverNumber = (b.driverNumber || b.driver_phone || b.driverPhone || b.driverContact || '').toString().trim();
+          // Handle both old and new data structures
+          const isEvplan = b.source === 'evplan';
+          
+          // Date and time formatting
+          let displayDate, displayTime;
+          if (isEvplan && b.pickupTimestamp) {
+            const pickupDt = new Date(b.pickupTimestamp * 1000);
+            displayDate = pickupDt.toLocaleDateString(undefined, {
+              year: 'numeric', month: 'short', day: 'numeric'
+            });
+            displayTime = pickupDt.toLocaleTimeString(undefined, {
+              hour: '2-digit', minute: '2-digit'
+            });
+          } else {
+            displayDate = formatDate(b.date);
+            displayTime = to12Hour(b.time);
+          }
+
+          // Pickup and dropoff
+          const pickup = isEvplan ? (b.pickup?.address || 'N/A') : (b.pickup || 'N/A');
+          const dropoff = isEvplan ? (b.dropoff?.address || 'N/A') : (b.dropoff || 'N/A');
+
+          // Car details
+          let carText;
+          if (isEvplan) {
+            carText = b.vehicleType ? `${b.vehicleType.toUpperCase()}` : 'N/A';
+            if (b.assignedDriverVehicle) {
+              carText += ` (${b.assignedDriverVehicle})`;
+            }
+          } else {
+            carText = (b.carBrand ? b.carBrand : '—') + (b.carReg ? ` (${b.carReg})` : '');
+          }
+
+          // Fare
+          const fareValue = isEvplan ? b.fareEstimate : b.fare;
+          const fareText = (fareValue !== undefined && fareValue !== null) ? `₹${fareValue}` : 'N/A';
+
+          // Driver phone
+          let driverNumber;
+          if (isEvplan) {
+            driverNumber = (b.assignedDriverPhone || '').toString().trim();
+          } else {
+            driverNumber = (b.driverNumber || b.driver_phone || b.driverPhone || b.driverContact || '').toString().trim();
+          }
           const hasPhone = driverNumber.length > 0;
           const callBtn = hasPhone
             ? `<a class="call-btn" href="tel:${encodeURIComponent(driverNumber)}" aria-label="Call driver ${driverNumber}"><i class="fas fa-phone"></i> Call Driver</a>`
             : `<button class="call-btn disabled" aria-disabled="true" title="Driver number not available"><i class="fas fa-phone"></i> Call Driver</button>`;
+
+          // Status badge for evplan bookings
+          const statusBadge = isEvplan && b.status ? `
+            <div class="info">
+              <i class="fas fa-info-circle"></i> 
+              <span>Status: <strong style="color: ${b.status === 'booked' ? '#10b981' : '#64748b'}">${b.status}</strong></span>
+            </div>` : '';
+
+          // Trip type for evplan
+          const tripType = isEvplan && b.tripType ? `
+            <div class="info">
+              <i class="fas fa-route"></i> 
+              <span>${b.tripType === 'roundtrip' ? 'Round Trip' : 'One Way'}</span>
+            </div>` : '';
+
+          // Distance and duration for evplan
+          const distanceInfo = isEvplan && b.distance ? `
+            <div class="info">
+              <i class="fas fa-road"></i> 
+              <span>${b.distance} km • ${b.duration} hrs</span>
+            </div>` : '';
+
+          // Driver name
+          const driverName = isEvplan ? (b.assignedDriverName || 'Driver') : (b.driverName || 'Driver');
+          const driverInfo = hasPhone || isEvplan ? `
+            <div class="info">
+              <i class="fas fa-user-tie"></i> 
+              <span>Driver: ${driverName}</span>
+            </div>` : '';
 
           // placeholder for review UI
           const reviewPlaceholder = `<span class="review-area" data-booking-id="${b.id}" data-driver-id="${b.driverId}"></span>`;
@@ -570,10 +679,14 @@
             <div class="booking-card" id="booking-card-${b.id}">
               <div class="card-number">${i + 1}</div>
               <h3>Booking #${i + 1}</h3>
-              <div class="info"><i class="fas fa-calendar"></i> <span>${formatDate(b.date)}</span></div>
-              <div class="info"><i class="fas fa-clock"></i> <span>${to12Hour(b.time)}</span></div>
-              <div class="info"><i class="fas fa-map-marker-alt"></i> <span>Pickup: ${b.pickup}</span></div>
-              <div class="info"><i class="fas fa-flag-checkered"></i> <span>Dropoff: ${b.dropoff}</span></div>
+              ${statusBadge}
+              <div class="info"><i class="fas fa-calendar"></i> <span>${displayDate}</span></div>
+              <div class="info"><i class="fas fa-clock"></i> <span>${displayTime}</span></div>
+              <div class="info"><i class="fas fa-map-marker-alt"></i> <span>Pickup: ${pickup}</span></div>
+              <div class="info"><i class="fas fa-flag-checkered"></i> <span>Dropoff: ${dropoff}</span></div>
+              ${tripType}
+              ${distanceInfo}
+              ${driverInfo}
               <div class="info"><i class="fas fa-car"></i> <span>${carText}</span></div>
 
               <div class="fare-row">
