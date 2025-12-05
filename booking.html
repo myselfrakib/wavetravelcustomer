@@ -326,6 +326,11 @@
       cursor: not-allowed;
     }
     
+    .action-btn.active {
+      background: #10b981;
+      color: white;
+    }
+    
     .connecting-line {
       position: absolute;
       left: 4px;
@@ -593,6 +598,74 @@
       margin-top: 2px;
     }
     
+    /* Map Selection Mode */
+    .map-instruction {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #1e293b;
+      z-index: 1000;
+      display: none;
+      max-width: 90%;
+      text-align: center;
+    }
+    
+    .map-instruction.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+      from {
+        transform: translateX(-50%) translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .map-instruction i {
+      color: #10b981;
+      margin-right: 6px;
+    }
+    
+    .cancel-selection-btn {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+      z-index: 1000;
+      display: none;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .cancel-selection-btn.show {
+      display: block;
+      animation: slideDown 0.3s ease 0.1s both;
+    }
+    
+    .cancel-selection-btn:hover {
+      background: #dc2626;
+    }
+    
     @media (max-width: 480px) {
       .datetime-grid {
         grid-template-columns: 1fr;
@@ -614,6 +687,13 @@
       <div class="map-overlay" id="map-overlay">
         <div>📍 Enter destination to see route</div>
       </div>
+      <div class="map-instruction" id="map-instruction">
+        <i class="fas fa-hand-pointer"></i>
+        <span id="instruction-text">Tap on map to select pickup location</span>
+      </div>
+      <button class="cancel-selection-btn" id="cancel-selection-btn" onclick="cancelMapSelection()">
+        <i class="fas fa-times"></i> Cancel
+      </button>
     </div>
 
     <!-- Bottom Sheet -->
@@ -666,6 +746,9 @@
               <button class="action-btn" id="detect-btn" onclick="detectLocation()" title="Use current location">
                 <i class="fas fa-crosshairs"></i>
               </button>
+              <button class="action-btn" id="map-pickup-btn" onclick="selectFromMap('pickup')" title="Choose from map">
+                <i class="fas fa-map-marked-alt"></i>
+              </button>
             </div>
             <div class="suggestions-list" id="pickup-suggestions"></div>
             <div class="connecting-line"></div>
@@ -675,6 +758,9 @@
             <div class="input-wrapper">
               <div class="location-dot dropoff"></div>
               <input type="text" class="input-field" id="dropoff" placeholder="Where to?" autocomplete="off"/>
+              <button class="action-btn" id="map-dropoff-btn" onclick="selectFromMap('dropoff')" title="Choose from map">
+                <i class="fas fa-map-marked-alt"></i>
+              </button>
               <button class="swap-btn" onclick="swapLocations()" title="Swap locations">
                 <i class="fas fa-exchange-alt"></i>
               </button>
@@ -798,6 +884,8 @@
     let pickupMarker, dropoffMarker;
     let autocompleteService, placesService;
     let sessionToken;
+    let mapSelectionMode = null; // 'pickup' or 'dropoff'
+    let tempMarker = null;
 
     // Initialize Map
     function initMap() {
@@ -834,6 +922,9 @@
       // Setup input listeners
       setupAutocomplete('pickup', 'pickup-suggestions');
       setupAutocomplete('dropoff', 'dropoff-suggestions');
+      
+      // Setup map click listener
+      map.addListener('click', handleMapClick);
     }
 
     function setupAutocomplete(inputId, suggestionsId) {
@@ -1034,6 +1125,109 @@
       calculateRoute();
     }
 
+    // Map Selection Functions
+    function selectFromMap(type) {
+      mapSelectionMode = type;
+      
+      // Highlight active button
+      document.getElementById('map-pickup-btn').classList.remove('active');
+      document.getElementById('map-dropoff-btn').classList.remove('active');
+      
+      if (type === 'pickup') {
+        document.getElementById('map-pickup-btn').classList.add('active');
+        document.getElementById('instruction-text').textContent = 'Tap on map to select pickup location';
+      } else {
+        document.getElementById('map-dropoff-btn').classList.add('active');
+        document.getElementById('instruction-text').textContent = 'Tap on map to select dropoff location';
+      }
+      
+      // Show instruction and cancel button
+      document.getElementById('map-instruction').classList.add('show');
+      document.getElementById('cancel-selection-btn').classList.add('show');
+      
+      // Collapse bottom sheet to show more map
+      document.getElementById('bottom-sheet').classList.add('collapsed');
+    }
+
+    function cancelMapSelection() {
+      mapSelectionMode = null;
+      
+      // Remove temp marker if exists
+      if (tempMarker) {
+        tempMarker.setMap(null);
+        tempMarker = null;
+      }
+      
+      // Remove active state from buttons
+      document.getElementById('map-pickup-btn').classList.remove('active');
+      document.getElementById('map-dropoff-btn').classList.remove('active');
+      
+      // Hide instruction and cancel button
+      document.getElementById('map-instruction').classList.remove('show');
+      document.getElementById('cancel-selection-btn').classList.remove('show');
+    }
+
+    function handleMapClick(event) {
+      if (!mapSelectionMode) return;
+      
+      const lat = event.latLng.lat();
+      const lng = event.latLng.lng();
+      
+      // Show temporary marker
+      if (tempMarker) {
+        tempMarker.setMap(null);
+      }
+      
+      tempMarker = new google.maps.Marker({
+        position: event.latLng,
+        map: map,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: mapSelectionMode === 'pickup' ? '#10b981' : '#ef4444',
+          fillOpacity: 1,
+          strokeColor: 'white',
+          strokeWeight: 2
+        },
+        animation: google.maps.Animation.DROP
+      });
+      
+      // Reverse geocode to get address
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ location: event.latLng }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const address = results[0].formatted_address;
+          const placeName = results[0].address_components[0]?.long_name || 'Selected Location';
+          
+          if (mapSelectionMode === 'pickup') {
+            bookingData.pickup.lat = lat;
+            bookingData.pickup.lng = lng;
+            bookingData.pickup.address = address;
+            document.getElementById('pickup').value = placeName;
+          } else {
+            bookingData.dropoff.lat = lat;
+            bookingData.dropoff.lng = lng;
+            bookingData.dropoff.address = address;
+            document.getElementById('dropoff').value = placeName;
+          }
+          
+          // Clear temp marker
+          if (tempMarker) {
+            tempMarker.setMap(null);
+            tempMarker = null;
+          }
+          
+          showToast(`✓ ${mapSelectionMode === 'pickup' ? 'Pickup' : 'Dropoff'} location selected!`, 'success');
+          
+          // Exit selection mode
+          cancelMapSelection();
+          
+          // Calculate route if both locations are set
+          calculateRoute();
+        }
+      });
+    }
+
     async function detectLocation() {
       const btn = document.getElementById('detect-btn');
       btn.disabled = true;
@@ -1141,28 +1335,42 @@
       // Create pickup timestamp
       const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
       const pickupTimestamp = Math.floor(pickupDateTime.getTime() / 1000);
+      
+      // Create return timestamp if roundtrip
+      let returnTimestamp = null;
+      if (bookingData.tripType === 'roundtrip') {
+        const returnDate = document.getElementById('return-date').value;
+        const returnTime = document.getElementById('return-time').value;
+        const returnDateTime = new Date(`${returnDate}T${returnTime}`);
+        returnTimestamp = Math.floor(returnDateTime.getTime() / 1000);
+      }
 
       // Disable button and show loading
       const bookBtn = document.getElementById('book-btn');
       bookBtn.disabled = true;
-      bookBtn.innerHTML = '<div class="spinner"></div> Booking...';
+      bookBtn.innerHTML = '<div class="spinner"></div> Searching for drivers...';
 
       try {
         // Create ride request in Realtime Database
         const rideRequest = {
           riderId: currentUser.uid,
           riderEmail: currentUser.email,
+          riderName: currentUser.displayName || currentUser.email.split('@')[0],
           pickup: bookingData.pickup,
           dropoff: bookingData.dropoff,
           tripType: bookingData.tripType,
           pickupTimestamp: pickupTimestamp,
+          returnTimestamp: returnTimestamp,
           vehicleType: bookingData.selectedCar,
           fareEstimate: bookingData.fareEstimate,
           distance: bookingData.distance,
           duration: bookingData.duration,
           status: 'searching',
           createdAt: firebase.database.ServerValue.TIMESTAMP,
-          assignedDriverId: null
+          assignedDriverId: null,
+          assignedDriverName: null,
+          assignedDriverPhone: null,
+          assignedDriverVehicle: null
         };
 
         // Push to rideRequests node
@@ -1171,23 +1379,97 @@
         
         const rideId = newRideRef.key;
         
-        showToast('🎉 Booking confirmed! Request ID: ' + rideId.substring(0, 8), 'success');
-        
         console.log('Ride request created:', rideId);
         console.log('Request data:', rideRequest);
 
-        // Redirect or show success screen
-        setTimeout(() => {
-          // In production: window.location.href = '/tracking?id=' + rideId;
-        }, 2000);
+        // Listen for driver acceptance
+        listenForDriverAcceptance(rideId);
+        
+        showToast('🔍 Searching for available drivers...', 'success');
 
       } catch (error) {
         console.error('Booking error:', error);
         showToast('Booking failed: ' + error.message, 'error');
-      } finally {
         bookBtn.disabled = false;
         bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
       }
+    }
+
+    function listenForDriverAcceptance(rideId) {
+      const rideRequestRef = database.ref(`evplan/rideRequests/${rideId}`);
+      
+      // Listen for status changes
+      rideRequestRef.on('value', async (snapshot) => {
+        const rideData = snapshot.val();
+        
+        if (!rideData) {
+          console.log('Ride request not found');
+          return;
+        }
+
+        console.log('Ride status:', rideData.status);
+
+        if (rideData.status === 'accepted' && rideData.assignedDriverId) {
+          // Driver accepted! Move to bookings
+          console.log('Driver accepted! Moving to bookings...');
+          
+          try {
+            // Create booking with driver details
+            const booking = {
+              ...rideData,
+              status: 'booked',
+              bookedAt: firebase.database.ServerValue.TIMESTAMP,
+              rideRequestId: rideId
+            };
+
+            // Save to /evplan/bookings
+            const bookingRef = database.ref('evplan/bookings').push();
+            await bookingRef.set(booking);
+            
+            const bookingId = bookingRef.key;
+            console.log('Booking created:', bookingId);
+
+            // Optional: Remove from rideRequests (or mark as processed)
+            await rideRequestRef.update({ 
+              status: 'moved_to_bookings',
+              bookingId: bookingId
+            });
+
+            // Stop listening
+            rideRequestRef.off();
+
+            // Show success message
+            showToast('🎉 Driver assigned! Redirecting...', 'success');
+
+            // Redirect to my bookings page
+            setTimeout(() => {
+              window.location.href = `mybooking.html?id=${bookingId}`;
+            }, 2000);
+
+          } catch (error) {
+            console.error('Error creating booking:', error);
+            showToast('Error creating booking: ' + error.message, 'error');
+          }
+        } else if (rideData.status === 'cancelled') {
+          // Request was cancelled
+          rideRequestRef.off();
+          showToast('Ride request was cancelled', 'error');
+          
+          const bookBtn = document.getElementById('book-btn');
+          bookBtn.disabled = false;
+          bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
+        }
+      });
+
+      // Optional: Add timeout after 5 minutes of searching
+      setTimeout(() => {
+        rideRequestRef.once('value', (snapshot) => {
+          const rideData = snapshot.val();
+          if (rideData && rideData.status === 'searching') {
+            showToast('⏱️ Still searching for drivers...', 'success');
+          }
+        });
+      }, 300000); // 5 minutes
     }
 
     function showToast(message, type = 'success') {
