@@ -596,16 +596,7 @@
     </div>
   </div>
 
-  <!-- Login Modal -->
-  <div class="login-overlay hidden" id="login-overlay">
-    <div class="login-modal">
-      <h2>Session Expired</h2>
-      <p>Redirecting to login page...</p>
-      <div style="display: flex; justify-content: center; margin-top: 20px;">
-        <div class="spinner" style="border-color: #e2e8f0; border-top-color: #10b981;"></div>
-      </div>
-    </div>
-  </div>
+
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
@@ -641,8 +632,19 @@
     }
 
     // Check auth state and redirect if not signed in
-  
-    
+    if (auth) {
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          currentUser = user;
+          document.getElementById('login-overlay').classList.add('hidden');
+          console.log('User signed in:', user.email);
+        } else {
+          currentUser = null;
+          // Redirect to index.html if not signed in
+          window.location.href = 'index.html';
+        }
+      });
+    }
 
     // Booking data
     let bookingData = {
@@ -884,4 +886,3 @@
   </script>
 </body>
 </html>
-
