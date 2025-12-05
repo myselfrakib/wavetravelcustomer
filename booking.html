@@ -747,10 +747,10 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK - Realtime Database -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
   <!-- Google Maps API -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc&libraries=places"></script>
@@ -768,12 +768,12 @@
     };
 
     // Initialize Firebase
-    let app, auth, db, currentUser = null;
+    let app, auth, database, currentUser = null;
     
     try {
       app = firebase.initializeApp(firebaseConfig);
       auth = firebase.auth();
-      db = firebase.firestore();
+      database = firebase.database();
       console.log('Firebase initialized successfully');
     } catch (error) {
       console.error('Firebase initialization error:', error);
@@ -1128,7 +1128,7 @@
         return;
       }
 
-      if (!db) {
+      if (!database) {
         showToast('Firebase not configured', 'error');
         return;
       }
@@ -1148,30 +1148,37 @@
       bookBtn.innerHTML = '<div class="spinner"></div> Booking...';
 
       try {
-        // Create ride request in Firestore
+        // Create ride request in Realtime Database
         const rideRequest = {
           riderId: currentUser.uid,
+          riderEmail: currentUser.email,
           pickup: bookingData.pickup,
           dropoff: bookingData.dropoff,
           tripType: bookingData.tripType,
           pickupTimestamp: pickupTimestamp,
           vehicleType: bookingData.selectedCar,
           fareEstimate: bookingData.fareEstimate,
+          distance: bookingData.distance,
+          duration: bookingData.duration,
           status: 'searching',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          createdAt: firebase.database.ServerValue.TIMESTAMP,
           assignedDriverId: null
         };
 
-        const docRef = await db.collection('evplan').doc('rideRequests').collection('requests').add(rideRequest);
+        // Push to rideRequests node
+        const newRideRef = database.ref('evplan/rideRequests').push();
+        await newRideRef.set(rideRequest);
         
-        showToast('🎉 Booking confirmed! Request ID: ' + docRef.id.substring(0, 8), 'success');
+        const rideId = newRideRef.key;
         
-        console.log('Ride request created:', docRef.id);
+        showToast('🎉 Booking confirmed! Request ID: ' + rideId.substring(0, 8), 'success');
+        
+        console.log('Ride request created:', rideId);
         console.log('Request data:', rideRequest);
 
         // Redirect or show success screen
         setTimeout(() => {
-          // In production: window.location.href = '/tracking?id=' + docRef.id;
+          // In production: window.location.href = '/tracking?id=' + rideId;
         }, 2000);
 
       } catch (error) {
