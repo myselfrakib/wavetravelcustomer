@@ -37,6 +37,43 @@
       color: var(--light);
     }
 
+    /* Map Container */
+    .map-container {
+      width: 100%;
+      height: 300px;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      position: relative;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .map-overlay {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: white;
+      padding: 12px 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--dark);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .map-overlay i {
+      color: var(--primary);
+    }
+
     /* Location Search Card */
     .search-card {
       background: white;
@@ -557,6 +594,15 @@
       </button>
     </div>
 
+    <!-- Map Container -->
+    <div class="map-container">
+      <div id="map"></div>
+      <div class="map-overlay">
+        <i class="fas fa-route"></i>
+        <span>Route Preview</span>
+      </div>
+    </div>
+
     <!-- Search Card -->
     <div class="search-card">
       <div class="location-inputs">
@@ -668,6 +714,11 @@
     let placesService = null;
     let geocoder = null;
     let mapsLoaded = false;
+    let map = null;
+    let directionsService = null;
+    let directionsRenderer = null;
+    let pickupMarker = null;
+    let dropoffMarker = null;
 
     // Global callback for Google Maps
     window.initMap = function() {
@@ -749,9 +800,33 @@
       if (typeof google !== 'undefined' && google.maps) {
         autocompleteService = new google.maps.places.AutocompleteService();
         geocoder = new google.maps.Geocoder();
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer({
+          suppressMarkers: false,
+          polylineOptions: {
+            strokeColor: '#3a7ca5',
+            strokeWeight: 5,
+            strokeOpacity: 0.8
+          }
+        });
         
-        const dummyDiv = document.createElement('div');
-        const map = new google.maps.Map(dummyDiv);
+        // Initialize map centered on India
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: { lat: 22.5726, lng: 88.3639 }, // Kolkata coordinates
+          zoom: 12,
+          styles: [
+            {
+              featureType: 'poi',
+              elementType: 'labels',
+              stylers: [{ visibility: 'off' }]
+            }
+          ],
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false
+        });
+
+        directionsRenderer.setMap(map);
         placesService = new google.maps.places.PlacesService(map);
         
         detectCurrentLocation();
@@ -781,6 +856,30 @@
           const lng = position.coords.longitude;
           
           userCurrentLocation = { lat, lng };
+
+          // Update map to show current location
+          if (map) {
+            map.setCenter(userCurrentLocation);
+            map.setZoom(14);
+            
+            // Add marker for current location
+            if (pickupMarker) {
+              pickupMarker.setMap(null);
+            }
+            pickupMarker = new google.maps.Marker({
+              position: userCurrentLocation,
+              map: map,
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: '#10b981',
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 3
+              },
+              title: 'Your Location'
+            });
+          }
 
           if (geocoder) {
             geocoder.geocode({ location: { lat, lng } }, (results, status) => {
@@ -853,8 +952,15 @@
           }
         });
 
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('date-input').value = today;
+        // Set today's date
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayFormatted = `${year}-${month}-${day}`;
+        
+        document.getElementById('date-input').value = todayFormatted;
+        document.getElementById('date-input').min = todayFormatted;
 
         setupLocationInputs();
         
@@ -1029,17 +1135,95 @@
         } else {
           document.getElementById('pickup-input').value = location;
           pickupValue = location;
+          
+          // Geocode and add marker
+          if (geocoder) {
+            geocoder.geocode({ address: location }, (results, status) => {
+              if (status === 'OK' && results[0]) {
+                const pos = results[0].geometry.location;
+                
+                if (pickupMarker) {
+                  pickupMarker.setMap(null);
+                }
+                pickupMarker = new google.maps.Marker({
+                  position: pos,
+                  map: map,
+                  icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: '#10b981',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 3
+                  },
+                  title: 'Pickup Location'
+                });
+                
+                updateMapRoute();
+              }
+            });
+          }
         }
         document.getElementById('pickup-suggestions').classList.remove('show');
       } else {
         document.getElementById('dropoff-input').value = location;
         dropoffValue = location;
+        
+        // Geocode and add marker
+        if (geocoder) {
+          geocoder.geocode({ address: location }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+              const pos = results[0].geometry.location;
+              
+              if (dropoffMarker) {
+                dropoffMarker.setMap(null);
+              }
+              dropoffMarker = new google.maps.Marker({
+                position: pos,
+                map: map,
+                icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 10,
+                  fillColor: '#ef4444',
+                  fillOpacity: 1,
+                  strokeColor: '#ffffff',
+                  strokeWeight: 3
+                },
+                title: 'Dropoff Location'
+              });
+              
+              updateMapRoute();
+            }
+          });
+        }
+        
         document.getElementById('dropoff-suggestions').classList.remove('show');
       }
 
       if (pickupValue && dropoffValue && document.getElementById('date-input').value) {
         performSearch();
       }
+    }
+
+    function updateMapRoute() {
+      if (!directionsService || !directionsRenderer || !pickupValue || !dropoffValue) {
+        return;
+      }
+
+      directionsService.route(
+        {
+          origin: pickupValue,
+          destination: dropoffValue,
+          travelMode: google.maps.TravelMode.DRIVING
+        },
+        (response, status) => {
+          if (status === 'OK') {
+            directionsRenderer.setDirections(response);
+          } else {
+            console.log('Directions request failed:', status);
+          }
+        }
+      );
     }
 
     function setSearchingState(searching) {
