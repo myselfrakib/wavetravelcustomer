@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Book a Ride - WaveTravel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
     :root {
@@ -33,8 +33,265 @@
       margin: 0 auto; padding: 18px; padding-bottom: 120px;
     }
     h1 {
-      font-size: 1.5rem; text-align: center; margin-bottom: 14px;
+      font-size: 1.5rem; text-align: center; margin-bottom: 20px;
       color: var(--light);
+    }
+
+    /* Location Search Card */
+    .search-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      margin-bottom: 24px;
+    }
+
+    .location-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .location-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .detect-location-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .detect-location-btn:hover {
+      background: #10b981;
+      border-color: #10b981;
+      color: white;
+    }
+
+    .detect-location-btn.detecting {
+      background: #10b981;
+      border-color: #10b981;
+      color: white;
+    }
+
+    .detect-location-btn.detecting i {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+    }
+
+    .location-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .location-icon i {
+      font-size: 1.2rem;
+    }
+
+    .pickup-icon { color: #10b981; }
+    .dropoff-icon { color: #ef4444; }
+
+    .connecting-line {
+      position: absolute;
+      left: 19px;
+      top: 40px;
+      bottom: 40px;
+      width: 2px;
+      background: linear-gradient(to bottom, #10b981, #ef4444);
+      z-index: 0;
+    }
+
+    .location-input {
+      flex: 1;
+      padding: 14px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      background: #f9fafb;
+    }
+
+    .location-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+      box-shadow: 0 0 0 4px rgba(47, 102, 144, 0.1);
+    }
+
+    .location-input::placeholder {
+      color: #9ca3af;
+      font-weight: 400;
+    }
+
+    .suggestions-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 48px;
+      right: 48px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      margin-top: 4px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .suggestions-dropdown.show {
+      display: block;
+    }
+
+    .suggestion-item {
+      padding: 14px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: background 0.15s ease;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .suggestion-item:hover {
+      background: #f9fafb;
+    }
+
+    .suggestion-item i {
+      color: #6b7280;
+      width: 20px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .suggestion-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .suggestion-text {
+      font-size: 0.95rem;
+      color: #1f2937;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .suggestion-secondary {
+      font-size: 0.8rem;
+      color: #6b7280;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .current-location-item {
+      background: #f0fdf4;
+    }
+
+    .current-location-item i {
+      color: #10b981;
+    }
+
+    .current-location-item .suggestion-text {
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .swap-button {
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .swap-button:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      transform: translateY(-50%) rotate(180deg);
+    }
+
+    .swap-button i {
+      font-size: 1.1rem;
+      color: inherit;
+    }
+
+    /* Date Selection */
+    .date-wrapper {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .date-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+    }
+
+    .date-input {
+      flex: 1;
+      padding: 14px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 500;
+      background: #f9fafb;
+      transition: all 0.2s ease;
+    }
+
+    .date-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+      box-shadow: 0 0 0 4px rgba(47, 102, 144, 0.1);
     }
 
     /* Tab Navigation */
@@ -66,31 +323,17 @@
       background: rgba(255,255,255,0.1);
     }
 
-    /* Tab Content */
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
-
-    .form-group { margin-bottom: 12px; }
-    label {
-      display: block; margin-bottom: 8px; font-weight: 600; color: var(--light);
-    }
-    select, input {
-      width: 100%; padding: 0.75rem; border: 1px solid rgba(0,0,0,0.06);
-      border-radius: 10px; background: #fff; font-size: 1rem;
-      box-shadow: 0 1px 2px rgba(16,24,40,0.03);
-    }
     .search-btn {
-      display: block; width: 100%; padding: 12px;
-      margin-top: 12px;
+      display: block; width: 100%; padding: 16px;
+      margin-top: 16px;
       background: linear-gradient(90deg, var(--primary), var(--sky));
-      color: #fff; font-size: 1.02rem; font-weight: 700;
-      border: none; border-radius: 10px; cursor: pointer;
+      color: #fff; font-size: 1.1rem; font-weight: 700;
+      border: none; border-radius: 12px; cursor: pointer;
       transition: transform .08s ease, box-shadow .12s ease;
-      box-shadow: 0 8px 18px rgba(2,6,23,0.12);
+      box-shadow: 0 8px 24px rgba(47,102,144,0.3);
+    }
+    .search-btn:hover {
+      box-shadow: 0 12px 32px rgba(47,102,144,0.4);
     }
     .search-btn:active { transform: translateY(1px); }
     .search-btn:disabled { opacity: 0.7; cursor: not-allowed; }
@@ -257,7 +500,6 @@
     }
     .loading-msg i { animation: spin 1s linear infinite; }
 
-    /* Toast Message Styles */
     .toast {
       position: fixed;
       top: 50%;
@@ -294,6 +536,7 @@
       background: #fff; border-top: 1px solid rgba(0,0,0,0.06);
       display: flex; justify-content: space-around; padding: 0.6rem 0;
       box-shadow: 0 -6px 18px rgba(2,6,23,0.06);
+      z-index: 100;
     }
     .navbar a { color: var(--primary); text-decoration: none; font-size: 0.78rem; text-align:center; }
     .navbar a i { font-size:1.3rem; display:block; margin-bottom:4px; }
@@ -314,59 +557,71 @@
       </button>
     </div>
 
-    <!-- Oneway Tab -->
-    <div id="oneway-tab" class="tab-content active">
-      <div class="form-group">
-        <label for="pickup-oneway">Pickup Location</label>
-        <select id="pickup-oneway"><option value="">Select Pickup</option></select>
+    <!-- Search Card -->
+    <div class="search-card">
+      <div class="location-inputs">
+        <div class="connecting-line"></div>
+        
+        <!-- Pickup Location -->
+        <div class="location-input-wrapper">
+          <div class="location-icon pickup-icon">
+            <i class="fas fa-circle"></i>
+          </div>
+          <input 
+            type="text" 
+            id="pickup-input" 
+            class="location-input" 
+            placeholder="Detecting your location..."
+            autocomplete="off"
+          />
+          <button class="detect-location-btn" onclick="detectCurrentLocation()" title="Use my current location">
+            <i class="fas fa-crosshairs"></i>
+          </button>
+          <div id="pickup-suggestions" class="suggestions-dropdown"></div>
+        </div>
+
+        <!-- Dropoff Location -->
+        <div class="location-input-wrapper">
+          <div class="location-icon dropoff-icon">
+            <i class="fas fa-map-marker-alt"></i>
+          </div>
+          <input 
+            type="text" 
+            id="dropoff-input" 
+            class="location-input" 
+            placeholder="Enter dropoff location"
+            autocomplete="off"
+          />
+          <div id="dropoff-suggestions" class="suggestions-dropdown"></div>
+          
+          <!-- Swap Button -->
+          <button class="swap-button" onclick="swapLocations()">
+            <i class="fas fa-exchange-alt"></i>
+          </button>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label for="dropoff-oneway">Dropoff Location</label>
-        <select id="dropoff-oneway"><option value="">Select Dropoff</option></select>
+      <!-- Date Input -->
+      <div class="date-wrapper">
+        <div class="date-icon">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <input type="date" id="date-input" class="date-input"/>
       </div>
 
-      <div class="form-group">
-        <label for="date-oneway">Select Date</label>
-        <input type="date" id="date-oneway"/>
-      </div>
-
-      <button class="search-btn" id="search-btn-oneway" onclick="searchSlots('oneway')">
-        <span class="search-text">Search Oneway Rides</span>
+      <button class="search-btn" id="search-btn" onclick="performSearch()">
+        <span class="search-text">Search Rides</span>
       </button>
-
-      <div class="slots" id="slots-oneway"></div>
     </div>
 
-    <!-- Roundtrip Tab -->
-    <div id="roundtrip-tab" class="tab-content">
-      <div class="form-group">
-        <label for="pickup-roundtrip">Pickup Location</label>
-        <select id="pickup-roundtrip"><option value="">Select Pickup</option></select>
-      </div>
-
-      <div class="form-group">
-        <label for="dropoff-roundtrip">Dropoff Location</label>
-        <select id="dropoff-roundtrip"><option value="">Select Dropoff</option></select>
-      </div>
-
-      <div class="form-group">
-        <label for="date-roundtrip">Select Date</label>
-        <input type="date" id="date-roundtrip"/>
-      </div>
-
-      <button class="search-btn" id="search-btn-roundtrip" onclick="searchSlots('roundtrip')">
-        <span class="search-text">Search Roundtrip Rides</span>
-      </button>
-
-      <div class="slots" id="slots-roundtrip"></div>
-    </div>
+    <!-- Results Section -->
+    <div class="slots" id="slots-container"></div>
   </div>
 
   <!-- Toast Message -->
   <div id="toast" class="toast">
     <i class="fas fa-check-circle"></i>
-    <span id="toast-message">Your request has been received. Our team will contact you soon.</span>
+    <span id="toast-message">Your request has been received.</span>
   </div>
 
   <div class="navbar">
@@ -379,6 +634,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc&libraries=places"></script>
 
   <script>
     const firebaseConfig = {
@@ -391,7 +647,7 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
     firebase.initializeApp(firebaseConfig);
-    const db   = firebase.database();
+    const db = firebase.database();
     const auth = firebase.auth();
 
     const customEmojis = {
@@ -404,7 +660,13 @@
     let currentTab = 'oneway';
     let isSearching = false;
     let currentUserData = null;
-    let isInitialLoad = true;
+    let allLocations = [];
+    let pickupValue = '';
+    let dropoffValue = '';
+    let userCurrentLocation = null;
+    let autocompleteService = null;
+    let placesService = null;
+    let geocoder = null;
 
     function showToast(message, isError = false) {
       const toast = document.getElementById('toast');
@@ -428,39 +690,32 @@
       }, 4000);
     }
 
-    function debounce(fn, wait = 350) {
-      let t;
-      return function(...args) {
-        clearTimeout(t);
-        t = setTimeout(() => fn.apply(this, args), wait);
-      };
-    }
-
     function switchTab(tabName) {
       currentTab = tabName;
       
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
-      
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      document.getElementById(`${tabName}-tab`).classList.add('active');
+      event.target.closest('.tab-btn').classList.add('active');
     }
 
-    const debounceSearch = debounce(() => {
-      const pickup = document.getElementById(`pickup-${currentTab}`);
-      const dropoff = document.getElementById(`dropoff-${currentTab}`);
-      const date = document.getElementById(`date-${currentTab}`);
+    function swapLocations() {
+      const pickupInput = document.getElementById('pickup-input');
+      const dropoffInput = document.getElementById('dropoff-input');
       
-      if (pickup.value && dropoff.value && date.value && !isSearching) {
-        searchSlots(currentTab);
-      }
-    }, 350);
+      const temp = pickupInput.value;
+      pickupInput.value = dropoffInput.value;
+      dropoffInput.value = temp;
+      
+      const tempVal = pickupValue;
+      pickupValue = dropoffValue;
+      dropoffValue = tempVal;
+    }
 
     auth.onAuthStateChanged(user => {
       if (!user) {
         window.location.href = 'index.html';
       } else {
         fetchUserData(user.uid).then(() => {
+          initializeGoogleMaps();
           loadLocations();
         });
       }
@@ -471,10 +726,6 @@
         .then(snapshot => {
           if (snapshot.exists()) {
             currentUserData = snapshot.val();
-            console.log('User data fetched:', currentUserData);
-          } else {
-            console.warn('No user data found for userId:', userId);
-            currentUserData = null;
           }
         })
         .catch(err => {
@@ -483,69 +734,34 @@
         });
     }
 
-    function setSearchingState(tripType, searching) {
-      isSearching = searching;
-      const searchBtn = document.getElementById(`search-btn-${tripType}`);
-      const searchText = searchBtn.querySelector('.search-text');
-      
-      if (searching) {
-        searchBtn.disabled = true;
-        searchText.innerHTML = '<div class="spinner"></div> Searching...';
-      } else {
-        searchBtn.disabled = false;
-        const typeDisplay = tripType === 'oneway' ? 'Oneway' : 'Roundtrip';
-        searchText.innerHTML = `Search ${typeDisplay} Rides`;
-      }
-    }
-
     function loadLocations() {
       return db.ref('locations').once('value').then(snap => {
-        let puOpts = '<option value="">Select Pickup</option>';
-        let doOpts = '<option value="">Select Dropoff</option>';
+        allLocations = [];
         
         snap.forEach(child => {
           const loc = child.val();
           const name = (loc && typeof loc === 'object' && loc.name) ? loc.name : child.key;
           
           if (name) {
-            const option = `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-            puOpts += option;
-            doOpts += option;
+            allLocations.push(name);
           }
-        });
-        
-        ['oneway', 'roundtrip'].forEach(tabType => {
-          document.getElementById(`pickup-${tabType}`).innerHTML = puOpts;
-          document.getElementById(`dropoff-${tabType}`).innerHTML = doOpts;
         });
 
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('date-oneway').value = today;
-        document.getElementById('date-roundtrip').value = today;
+        document.getElementById('date-input').value = today;
 
         const defaultPickup = 'Berhampore';
         const defaultDropoff = 'Kolkata Airport';
         
-        ['oneway', 'roundtrip'].forEach(tabType => {
-          const pickupEl = document.getElementById(`pickup-${tabType}`);
-          const dropoffEl = document.getElementById(`dropoff-${tabType}`);
-          
-          Array.from(pickupEl.options).forEach(opt => {
-            if (opt.text === defaultPickup) opt.selected = true;
-          });
-          Array.from(dropoffEl.options).forEach(opt => {
-            if (opt.text === defaultDropoff) opt.selected = true;
-          });
-        });
+        document.getElementById('pickup-input').value = defaultPickup;
+        document.getElementById('dropoff-input').value = defaultDropoff;
+        pickupValue = defaultPickup;
+        dropoffValue = defaultDropoff;
 
-        setupEventListeners();
+        setupLocationInputs();
 
         setTimeout(() => {
-          if (document.getElementById('pickup-oneway').value && 
-              document.getElementById('dropoff-oneway').value && 
-              document.getElementById('date-oneway').value) {
-            searchSlots('oneway');
-          }
+          performSearch();
         }, 500);
         
       }).catch(err => {
@@ -554,27 +770,103 @@
       });
     }
 
-    function setupEventListeners() {
-      ['oneway', 'roundtrip'].forEach(tabType => {
-        const pickup = document.getElementById(`pickup-${tabType}`);
-        const dropoff = document.getElementById(`dropoff-${tabType}`);
-        const date = document.getElementById(`date-${tabType}`);
+    function setupLocationInputs() {
+      const pickupInput = document.getElementById('pickup-input');
+      const dropoffInput = document.getElementById('dropoff-input');
+      const pickupSuggestions = document.getElementById('pickup-suggestions');
+      const dropoffSuggestions = document.getElementById('dropoff-suggestions');
 
-        pickup.addEventListener('change', () => {
-          if (currentTab === tabType && dropoff.value && date.value) debounceSearch();
-        });
-        
-        dropoff.addEventListener('change', () => {
-          if (currentTab === tabType && pickup.value && date.value) debounceSearch();
-        });
+      pickupInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (query.length === 0) {
+          pickupSuggestions.classList.remove('show');
+          return;
+        }
 
-        date.addEventListener('change', () => {
-          if (currentTab === tabType) debounceSearch();
-        });
-        date.addEventListener('input', () => {
-          if (currentTab === tabType) debounceSearch();
-        });
+        const filtered = allLocations.filter(loc => 
+          loc.toLowerCase().includes(query)
+        );
+
+        if (filtered.length > 0) {
+          pickupSuggestions.innerHTML = filtered.map(loc => `
+            <div class="suggestion-item" onclick="selectLocation('pickup', '${escapeHtml(loc)}')">
+              <i class="fas fa-map-marker-alt"></i>
+              <span class="suggestion-text">${escapeHtml(loc)}</span>
+            </div>
+          `).join('');
+          pickupSuggestions.classList.add('show');
+        } else {
+          pickupSuggestions.classList.remove('show');
+        }
       });
+
+      dropoffInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (query.length === 0) {
+          dropoffSuggestions.classList.remove('show');
+          return;
+        }
+
+        const filtered = allLocations.filter(loc => 
+          loc.toLowerCase().includes(query)
+        );
+
+        if (filtered.length > 0) {
+          dropoffSuggestions.innerHTML = filtered.map(loc => `
+            <div class="suggestion-item" onclick="selectLocation('dropoff', '${escapeHtml(loc)}')">
+              <i class="fas fa-map-marker-alt"></i>
+              <span class="suggestion-text">${escapeHtml(loc)}</span>
+            </div>
+          `).join('');
+          dropoffSuggestions.classList.add('show');
+        } else {
+          dropoffSuggestions.classList.remove('show');
+        }
+      });
+
+      pickupInput.addEventListener('blur', () => {
+        setTimeout(() => pickupSuggestions.classList.remove('show'), 200);
+      });
+
+      dropoffInput.addEventListener('blur', () => {
+        setTimeout(() => dropoffSuggestions.classList.remove('show'), 200);
+      });
+
+      document.getElementById('date-input').addEventListener('change', () => {
+        if (pickupValue && dropoffValue) {
+          performSearch();
+        }
+      });
+    }
+
+    function selectLocation(type, location) {
+      if (type === 'pickup') {
+        document.getElementById('pickup-input').value = location;
+        document.getElementById('pickup-suggestions').classList.remove('show');
+        pickupValue = location;
+      } else {
+        document.getElementById('dropoff-input').value = location;
+        document.getElementById('dropoff-suggestions').classList.remove('show');
+        dropoffValue = location;
+      }
+
+      if (pickupValue && dropoffValue && document.getElementById('date-input').value) {
+        performSearch();
+      }
+    }
+
+    function setSearchingState(searching) {
+      isSearching = searching;
+      const searchBtn = document.getElementById('search-btn');
+      const searchText = searchBtn.querySelector('.search-text');
+      
+      if (searching) {
+        searchBtn.disabled = true;
+        searchText.innerHTML = '<div class="spinner"></div> Searching...';
+      } else {
+        searchBtn.disabled = false;
+        searchText.innerHTML = 'Search Rides';
+      }
     }
 
     function formatTime24to12(time24) {
@@ -600,23 +892,14 @@
       window.location.href = url;
     }
 
-    // Function to check if trip date/time is in the past
     function isTripDateTimeInPast(tripDate, tripTime) {
       try {
-        // Validate inputs
-        if (!tripDate || !tripTime) {
-          console.warn('Invalid date or time provided');
-          return false;
-        }
+        if (!tripDate || !tripTime) return false;
 
-        // Parse trip date and time
         const dateParts = tripDate.split('-');
         const timeParts = tripTime.split(':');
         
-        if (dateParts.length !== 3 || timeParts.length !== 2) {
-          console.warn('Invalid date or time format');
-          return false;
-        }
+        if (dateParts.length !== 3 || timeParts.length !== 2) return false;
 
         const year = parseInt(dateParts[0], 10);
         const month = parseInt(dateParts[1], 10);
@@ -624,36 +907,30 @@
         const hours = parseInt(timeParts[0], 10);
         const minutes = parseInt(timeParts[1], 10);
         
-        // Validate parsed values
         if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hours) || isNaN(minutes)) {
-          console.warn('Invalid date or time values');
           return false;
         }
         
-        // Create trip datetime (month is 0-indexed in JavaScript Date)
         const tripDateTime = new Date(year, month - 1, day, hours, minutes);
-        
-        // Get current datetime
         const now = new Date();
         
-        // Compare - return true if trip is in the past
         return tripDateTime < now;
       } catch (err) {
         console.error('Error checking trip date/time:', err);
-        return false; // If there's an error, allow the booking to proceed
+        return false;
       }
     }
 
-    function raiseRideRequest(tripType) {
+    function raiseRideRequest() {
       const user = auth.currentUser;
       if (!user) {
         showToast('Please login to raise a ride request', true);
         return;
       }
 
-      const pickup = document.getElementById(`pickup-${tripType}`).value;
-      const dropoff = document.getElementById(`dropoff-${tripType}`).value;
-      const date = document.getElementById(`date-${tripType}`).value;
+      const pickup = pickupValue || document.getElementById('pickup-input').value;
+      const dropoff = dropoffValue || document.getElementById('dropoff-input').value;
+      const date = document.getElementById('date-input').value;
 
       if (!pickup || !dropoff || !date) {
         showToast('Please fill in all fields before raising a request', true);
@@ -671,10 +948,10 @@
           pickup: pickup,
           dropoff: dropoff,
           date: date,
-          tripType: tripType,
+          tripType: currentTab,
           status: 'pending',
           requestedAt: firebase.database.ServerValue.TIMESTAMP,
-          notes: `Customer requested ${tripType} ride from ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
+          notes: `Customer requested ${currentTab} ride from ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}`,
         };
 
         db.ref('riderequest').push(requestData)
@@ -682,7 +959,7 @@
             showToast('Your request has been received. Redirecting to WhatsApp...');
 
             const nameForMsg = requestData.customerName || (user.email || 'Customer');
-            const tripDetail = tripType;
+            const tripDetail = currentTab;
             const pickupLoc = pickup;
             const dropoffLoc = dropoff;
             const rideDate = formatDateISOtoDMY(date);
@@ -699,102 +976,53 @@
           })
           .catch(err => {
             console.error('Error saving ride request:', err);
-            showToast('Failed to submit request to server. Redirecting to WhatsApp...', true);
+            showToast('Failed to submit request. Redirecting to WhatsApp...', true);
 
             const nameForMsg = (user.displayName || user.email || 'Customer');
-            const tripDetail = tripType;
-            const pickupLoc = pickup;
-            const dropoffLoc = dropoff;
-            const rideDate = formatDateISOtoDMY(date);
-
             const waMessage = `Hi i'm ${nameForMsg} ${customEmojis.greeting}\n` +
-                              `I need a car for ${tripDetail} trip ${customEmojis.car}\n` +
-                              `from - ${pickupLoc} ${customEmojis.location}\n` +
-                              `to - ${dropoffLoc} ${customEmojis.location}\n` +
-                              `on - ${rideDate} ${customEmojis.date}`;
+                              `I need a car for ${currentTab} trip ${customEmojis.car}\n` +
+                              `from - ${pickup} ${customEmojis.location}\n` +
+                              `to - ${dropoff} ${customEmojis.location}\n` +
+                              `on - ${formatDateISOtoDMY(date)} ${customEmojis.date}`;
 
             setTimeout(() => {
               openWhatsAppWithMessage('7439654831', waMessage);
             }, 1500);
           });
-      }).catch(err => {
-        console.error('Error fetching user data:', err);
-        showToast('Failed to submit request. Redirecting to WhatsApp...', true);
-
-        const nameForMsg = (user.displayName || user.email || 'Customer');
-        const tripDetail = tripType;
-        const pickupLoc = pickup;
-        const dropoffLoc = dropoff;
-        const rideDate = formatDateISOtoDMY(date);
-
-        const waMessage = `Hi i'm ${nameForMsg} ${customEmojis.greeting}\n` +
-                          `I need a car for ${tripDetail} trip ${customEmojis.car}\n` +
-                          `from - ${pickupLoc} ${customEmojis.location}\n` +
-                          `to - ${dropoffLoc} ${customEmojis.location}\n` +
-                          `on - ${rideDate} ${customEmojis.date}`;
-
-        setTimeout(() => {
-          openWhatsAppWithMessage('7439654831', waMessage);
-        }, 1500);
       });
     }
 
-    function searchSlots(tripType) {
+    function performSearch() {
       if (isSearching) return;
 
-      const slotsDiv = document.getElementById(`slots-${tripType}`);
-      const pickup = document.getElementById(`pickup-${tripType}`).value;
-      const dropoff = document.getElementById(`dropoff-${tripType}`).value;
-      const date = document.getElementById(`date-${tripType}`).value;
+      const slotsDiv = document.getElementById('slots-container');
+      const pickup = pickupValue || document.getElementById('pickup-input').value.trim();
+      const dropoff = dropoffValue || document.getElementById('dropoff-input').value.trim();
+      const date = document.getElementById('date-input').value;
       
-      setSearchingState(tripType, true);
+      setSearchingState(true);
       
       slotsDiv.innerHTML = '<div class="loading-msg"><i class="fas fa-spinner"></i>Searching for rides...</div>';
       
       if (!pickup || !dropoff || !date) {
-        slotsDiv.innerHTML = '<div class="no-slots">Please select pickup, dropoff and date to search for rides.</div>';
-        setSearchingState(tripType, false);
+        slotsDiv.innerHTML = '<div class="no-slots">Please enter pickup, dropoff and date to search for rides.</div>';
+        setSearchingState(false);
         return;
       }
 
-      let searchRef = null;
-      if (!isInitialLoad) {
-        try {
-          const user = auth.currentUser;
-          searchRef = db.ref('searches').push();
-          
-          const searchData = {
-            customerId: user ? user.uid : null,
-            customerEmail: user ? user.email : null,
-            customerName: currentUserData ? currentUserData.name : null,
-            customerPhone: currentUserData ? currentUserData.phone : null,
-            pickup: pickup,
-            dropoff: dropoff,
-            date: date,
-            tripType: tripType,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-          };
-          
-          searchRef.set(searchData).catch(err => console.log('Failed to save search', err));
-        } catch (err) {
-          console.log('Error creating search record', err);
-        }
-      }
-      
-      if (isInitialLoad) {
-        isInitialLoad = false;
-      }
+      pickupValue = pickup;
+      dropoffValue = dropoff;
 
       db.ref('availableslots').once('value')
         .then(snap => {
-          setSearchingState(tripType, false);
+          setSearchingState(false);
           
           if (!snap.exists()) {
             slotsDiv.innerHTML = `
               <div class="no-slots">
-                No ${tripType} rides found for ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}.
+                No ${currentTab} rides found for ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}.
                 <br><br>
-                <button class="request-btn" onclick="raiseRideRequest('${tripType}')">
+                <button class="request-btn" onclick="raiseRideRequest()">
                   <i class="fas fa-hand-paper"></i> Raise Ride Request
                 </button>
               </div>
@@ -846,62 +1074,47 @@
             const pickupMatch = normalizeString(slot.pickup) === normalizeString(pickup);
             const dropoffMatch = normalizeString(slot.dropoff) === normalizeString(dropoff);
             const dateMatch = slot.date === date;
-            const tripTypeMatch = normalizeString(slot.triptype) === normalizeString(tripType);
+            const tripTypeMatch = normalizeString(slot.triptype) === normalizeString(currentTab);
             const statusFilter = !slot.status || (slot.status !== 'booked' && slot.status !== 'cancelled');
 
             return pickupMatch && dropoffMatch && dateMatch && tripTypeMatch && statusFilter;
           });
 
-          try {
-            if (searchRef) {
-              searchRef.update({ 
-                resultCount: matchedSlots.length, 
-                fallbackUsed: false 
-              }).catch(err => console.log('Failed to update search record', err));
-            }
-          } catch (err) {
-            console.log('Error updating search record', err);
-          }
-
           if (matchedSlots.length === 0) {
             slotsDiv.innerHTML = `
               <div class="no-slots">
-                No ${tripType} rides found for ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}.
+                No ${currentTab} rides found for ${pickup} to ${dropoff} on ${formatDateISOtoDMY(date)}.
                 <br><br>
-                <button class="request-btn" onclick="raiseRideRequest('${tripType}')">
+                <button class="request-btn" onclick="raiseRideRequest()">
                   <i class="fas fa-hand-paper"></i> Raise Ride Request
                 </button>
               </div>
             `;
           } else {
-            renderSlots(matchedSlots, tripType, slotsDiv);
+            renderSlots(matchedSlots, slotsDiv);
           }
         })
         .catch(err => {
           console.error('Failed to fetch availableslots:', err);
-          setSearchingState(tripType, false);
+          setSearchingState(false);
           slotsDiv.innerHTML = `
             <div class="no-slots">
               Failed to load rides. Please try again.
               <br><br>
-              <button class="request-btn" onclick="raiseRideRequest('${tripType}')">
+              <button class="request-btn" onclick="raiseRideRequest()">
                 <i class="fas fa-hand-paper"></i> Raise Ride Request
               </button>
             </div>
           `;
-          
-          if (searchRef) {
-            searchRef.update({ fetchError: true }).catch(e => console.log('Failed to update search error flag', e));
-          }
         });
     }
 
-    function renderSlots(slots, tripType, slotsDiv) {
+    function renderSlots(slots, slotsDiv) {
       slotsDiv.innerHTML = '';
       const user = auth.currentUser;
       
       if (!user) {
-        slotsDiv.innerHTML = '<div class="fallback-msg">Please login first to book rides.</div>';
+        slotsDiv.innerHTML = '<div class="no-slots">Please login first to book rides.</div>';
         return;
       }
 
@@ -914,9 +1127,9 @@
         const card = document.createElement('div');
         card.className = 'slot-card';
 
-        const tripTypeDisplay = tripType === 'oneway' ? 'Oneway' : 'Roundtrip';
-        const tripTypeClass = tripType === 'oneway' ? 'btn-oneway' : 'btn-roundtrip';
-        const tripIcon = tripType === 'oneway' ? 'fa-arrow-right' : 'fa-exchange-alt';
+        const tripTypeDisplay = currentTab === 'oneway' ? 'Oneway' : 'Roundtrip';
+        const tripTypeClass = currentTab === 'oneway' ? 'btn-oneway' : 'btn-roundtrip';
+        const tripIcon = currentTab === 'oneway' ? 'fa-arrow-right' : 'fa-exchange-alt';
 
         const showFare = fare > 0;
         
@@ -959,7 +1172,7 @@
 
             <div class="slot-actions" role="group" aria-label="Booking actions">
               <div class="action-wrap" style="grid-column: 1 / -1;">
-                <button class="btn-action ${tripTypeClass}" onclick="bookTrip(${idx}, '${tripType}')">
+                <button class="btn-action ${tripTypeClass}" onclick="bookTrip(${idx})">
                   <div class="btn-left">
                     <i class="fas ${tripIcon}"></i>
                     <span>Book ${tripTypeDisplay}</span>
@@ -986,7 +1199,7 @@
           dropoff: slot.dropoff,
           date: slot.date,
           time: slot.time,
-          tripType: tripType,
+          tripType: currentTab,
           fare: fare,
           carBrand: slot.carBrand || '',
           carReg: slot.carReg || '',
@@ -1002,14 +1215,14 @@
       });
     }
 
-    function bookTrip(slotIndex, tripType) {
+    function bookTrip(slotIndex) {
       const user = auth.currentUser;
       if (!user) {
         showToast('Please login first', true);
         return;
       }
 
-      const slotsDiv = document.getElementById(`slots-${tripType}`);
+      const slotsDiv = document.getElementById('slots-container');
       const slotCard = slotsDiv.children[slotIndex];
       
       if (!slotCard) {
@@ -1032,7 +1245,6 @@
         return;
       }
 
-      // Check if trip date/time is in the past
       if (isTripDateTimeInPast(slotData.date, slotData.time)) {
         showToast('Cannot book this ride - the trip date and time has already passed', true);
         return;
@@ -1098,13 +1310,6 @@
       } catch (err) {
         console.error('Error storing booking data:', err);
         showToast('Error: Failed to prepare booking. Please try again.', true);
-        setTimeout(() => {
-          const searchBtn = document.querySelector('.btn-action:disabled');
-          if (searchBtn) {
-            searchBtn.disabled = false;
-            searchBtn.innerHTML = searchBtn.originalHTML || 'Book Now';
-          }
-        }, 1000);
       }
     }
 
@@ -1121,10 +1326,6 @@
     window.addEventListener('unhandledrejection', function(event) {
       console.error('Unhandled promise rejection:', event.reason);
       showToast('An unexpected error occurred. Please try again.', true);
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('Page loaded, initializing...');
     });
   </script>
 </body>
