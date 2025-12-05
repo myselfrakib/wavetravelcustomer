@@ -634,7 +634,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc&libraries=places"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc&libraries=places&callback=initMap"></script>
 
   <script>
     const firebaseConfig = {
@@ -667,6 +667,15 @@
     let autocompleteService = null;
     let placesService = null;
     let geocoder = null;
+    let mapsLoaded = false;
+
+    // Global callback for Google Maps
+    window.initMap = function() {
+      mapsLoaded = true;
+      if (autocompleteService === null) {
+        initializeGoogleMaps();
+      }
+    };
 
     function showToast(message, isError = false) {
       const toast = document.getElementById('toast');
@@ -715,8 +724,10 @@
         window.location.href = 'index.html';
       } else {
         fetchUserData(user.uid).then(() => {
-          initializeGoogleMaps();
           loadLocations();
+          if (mapsLoaded) {
+            initializeGoogleMaps();
+          }
         });
       }
     });
@@ -732,6 +743,101 @@
           console.error('Error fetching user data:', err);
           currentUserData = null;
         });
+    }
+
+    function initializeGoogleMaps() {
+      if (typeof google !== 'undefined' && google.maps) {
+        autocompleteService = new google.maps.places.AutocompleteService();
+        geocoder = new google.maps.Geocoder();
+        
+        const dummyDiv = document.createElement('div');
+        const map = new google.maps.Map(dummyDiv);
+        placesService = new google.maps.places.PlacesService(map);
+        
+        detectCurrentLocation();
+      } else {
+        console.error('Google Maps API not loaded');
+        document.getElementById('pickup-input').placeholder = 'Enter pickup location';
+      }
+    }
+
+    function detectCurrentLocation() {
+      const pickupInput = document.getElementById('pickup-input');
+      const detectBtn = document.querySelector('.detect-location-btn');
+      
+      if (!navigator.geolocation) {
+        showToast('Geolocation is not supported by your browser', true);
+        pickupInput.placeholder = 'Enter pickup location';
+        return;
+      }
+
+      detectBtn.classList.add('detecting');
+      pickupInput.placeholder = 'Detecting your location...';
+      pickupInput.value = '';
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          
+          userCurrentLocation = { lat, lng };
+
+          if (geocoder) {
+            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+              detectBtn.classList.remove('detecting');
+              
+              if (status === 'OK' && results[0]) {
+                const address = results[0].formatted_address;
+                pickupInput.value = address;
+                pickupValue = address;
+                pickupInput.placeholder = 'Enter pickup location';
+                
+                checkAndAutoSearch();
+              } else {
+                pickupInput.placeholder = 'Enter pickup location';
+                showToast('Could not determine your address', true);
+              }
+            });
+          } else {
+            detectBtn.classList.remove('detecting');
+            pickupInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            pickupValue = pickupInput.value;
+            pickupInput.placeholder = 'Enter pickup location';
+          }
+        },
+        (error) => {
+          detectBtn.classList.remove('detecting');
+          pickupInput.placeholder = 'Enter pickup location';
+          
+          let errorMsg = 'Unable to retrieve your location';
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMsg = 'Location permission denied. Please enable location access.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMsg = 'Location information unavailable';
+              break;
+            case error.TIMEOUT:
+              errorMsg = 'Location request timed out';
+              break;
+          }
+          showToast(errorMsg, true);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    function checkAndAutoSearch() {
+      const dropoff = document.getElementById('dropoff-input').value.trim();
+      const date = document.getElementById('date-input').value;
+      
+      if (pickupValue && dropoff && date) {
+        performSearch();
+      }
     }
 
     function loadLocations() {
@@ -750,19 +856,7 @@
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('date-input').value = today;
 
-        const defaultPickup = 'Berhampore';
-        const defaultDropoff = 'Kolkata Airport';
-        
-        document.getElementById('pickup-input').value = defaultPickup;
-        document.getElementById('dropoff-input').value = defaultDropoff;
-        pickupValue = defaultPickup;
-        dropoffValue = defaultDropoff;
-
         setupLocationInputs();
-
-        setTimeout(() => {
-          performSearch();
-        }, 500);
         
       }).catch(err => {
         console.error('Failed to load locations:', err);
@@ -776,52 +870,45 @@
       const pickupSuggestions = document.getElementById('pickup-suggestions');
       const dropoffSuggestions = document.getElementById('dropoff-suggestions');
 
+      let pickupTimeout = null;
+      let dropoffTimeout = null;
+
       pickupInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
+        const query = e.target.value.trim();
+        
+        clearTimeout(pickupTimeout);
+        
         if (query.length === 0) {
           pickupSuggestions.classList.remove('show');
           return;
         }
 
-        const filtered = allLocations.filter(loc => 
-          loc.toLowerCase().includes(query)
-        );
-
-        if (filtered.length > 0) {
-          pickupSuggestions.innerHTML = filtered.map(loc => `
-            <div class="suggestion-item" onclick="selectLocation('pickup', '${escapeHtml(loc)}')">
-              <i class="fas fa-map-marker-alt"></i>
-              <span class="suggestion-text">${escapeHtml(loc)}</span>
-            </div>
-          `).join('');
-          pickupSuggestions.classList.add('show');
-        } else {
-          pickupSuggestions.classList.remove('show');
+        if (query.length < 2) {
+          return;
         }
+
+        pickupTimeout = setTimeout(() => {
+          searchLocations(query, 'pickup', pickupSuggestions);
+        }, 300);
       });
 
       dropoffInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
+        const query = e.target.value.trim();
+        
+        clearTimeout(dropoffTimeout);
+        
         if (query.length === 0) {
           dropoffSuggestions.classList.remove('show');
           return;
         }
 
-        const filtered = allLocations.filter(loc => 
-          loc.toLowerCase().includes(query)
-        );
-
-        if (filtered.length > 0) {
-          dropoffSuggestions.innerHTML = filtered.map(loc => `
-            <div class="suggestion-item" onclick="selectLocation('dropoff', '${escapeHtml(loc)}')">
-              <i class="fas fa-map-marker-alt"></i>
-              <span class="suggestion-text">${escapeHtml(loc)}</span>
-            </div>
-          `).join('');
-          dropoffSuggestions.classList.add('show');
-        } else {
-          dropoffSuggestions.classList.remove('show');
+        if (query.length < 2) {
+          return;
         }
+
+        dropoffTimeout = setTimeout(() => {
+          searchLocations(query, 'dropoff', dropoffSuggestions);
+        }, 300);
       });
 
       pickupInput.addEventListener('blur', () => {
@@ -839,15 +926,115 @@
       });
     }
 
-    function selectLocation(type, location) {
+    function searchLocations(query, type, suggestionsDiv) {
+      const results = [];
+
+      if (type === 'pickup' && userCurrentLocation) {
+        results.push({
+          type: 'current',
+          name: 'Current Location',
+          description: 'Use my current location',
+          placeId: null
+        });
+      }
+
+      const filteredLocal = allLocations.filter(loc => 
+        loc.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 3);
+
+      filteredLocal.forEach(loc => {
+        results.push({
+          type: 'local',
+          name: loc,
+          description: 'Saved location',
+          placeId: null
+        });
+      });
+
+      if (autocompleteService && query.length >= 3) {
+        const request = {
+          input: query,
+          componentRestrictions: { country: 'in' },
+          types: ['geocode', 'establishment']
+        };
+
+        autocompleteService.getPlacePredictions(request, (predictions, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+            predictions.slice(0, 5).forEach(prediction => {
+              results.push({
+                type: 'google',
+                name: prediction.structured_formatting.main_text,
+                description: prediction.structured_formatting.secondary_text || '',
+                placeId: prediction.place_id,
+                fullDescription: prediction.description
+              });
+            });
+          }
+
+          renderSuggestions(results, type, suggestionsDiv);
+        });
+      } else {
+        renderSuggestions(results, type, suggestionsDiv);
+      }
+    }
+
+    function renderSuggestions(results, type, suggestionsDiv) {
+      if (results.length === 0) {
+        suggestionsDiv.classList.remove('show');
+        return;
+      }
+
+      const html = results.map(result => {
+        let iconClass = 'fa-map-marker-alt';
+        let itemClass = 'suggestion-item';
+        
+        if (result.type === 'current') {
+          iconClass = 'fa-crosshairs';
+          itemClass = 'suggestion-item current-location-item';
+        } else if (result.type === 'local') {
+          iconClass = 'fa-star';
+        }
+
+        const mainText = escapeHtml(result.name);
+        const secondaryText = result.description ? escapeHtml(result.description) : '';
+        const safeData = JSON.stringify({
+          name: result.fullDescription || result.name,
+          type: result.type,
+          placeId: result.placeId
+        });
+
+        return `
+          <div class="${itemClass}" onclick='selectLocationFromData(${JSON.stringify(type)}, ${safeData})'>
+            <i class="fas ${iconClass}"></i>
+            <div class="suggestion-content">
+              <div class="suggestion-text">${mainText}</div>
+              ${secondaryText ? `<div class="suggestion-secondary">${secondaryText}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      suggestionsDiv.innerHTML = html;
+      suggestionsDiv.classList.add('show');
+    }
+
+    function selectLocationFromData(type, data) {
+      selectLocation(type, data.name, data.type, data.placeId);
+    }
+
+    function selectLocation(type, location, locationType, placeId) {
       if (type === 'pickup') {
-        document.getElementById('pickup-input').value = location;
+        if (locationType === 'current' && userCurrentLocation) {
+          detectCurrentLocation();
+        } else {
+          document.getElementById('pickup-input').value = location;
+          pickupValue = location;
+        }
         document.getElementById('pickup-suggestions').classList.remove('show');
-        pickupValue = location;
       } else {
         document.getElementById('dropoff-input').value = location;
-        document.getElementById('dropoff-suggestions').classList.remove('show');
         dropoffValue = location;
+        document.getElementById('dropoff-suggestions').classList.remove('show');
       }
 
       if (pickupValue && dropoffValue && document.getElementById('date-input').value) {
