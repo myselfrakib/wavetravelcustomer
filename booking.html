@@ -1045,7 +1045,13 @@
     }
 
     // Initialize on load
-    window.addEventListener('load', initMap);
+    window.addEventListener('load', () => {
+      initMap();
+      // Auto-detect location after a short delay to ensure map is ready
+      setTimeout(() => {
+        autoDetectPickupLocation();
+      }, 1000);
+    });
 
     // Booking data
     let bookingData = {
@@ -1200,6 +1206,44 @@
       });
     }
 
+    // Auto-detect pickup location on page load
+    async function autoDetectPickupLocation() {
+      if ("geolocation" in navigator) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 10000,
+              enableHighAccuracy: false
+            });
+          });
+          
+          bookingData.pickup.lat = position.coords.latitude;
+          bookingData.pickup.lng = position.coords.longitude;
+          
+          // Reverse geocode
+          const geocoder = new google.maps.Geocoder();
+          const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
+          
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+              const placeName = results[0].address_components[0]?.long_name || 'Current Location';
+              bookingData.pickup.address = results[0].formatted_address;
+              document.getElementById('pickup').value = placeName;
+              
+              // Center map on current location
+              map.setCenter(latlng);
+              map.setZoom(14);
+              
+              console.log('Auto-detected location:', placeName);
+            }
+          });
+        } catch (error) {
+          console.log('Auto-detect location failed, using default:', error.message);
+          // Keep default Kolkata location
+        }
+      }
+    }
+
     async function detectLocation() {
       const btn = document.getElementById('detect-btn');
       btn.disabled = true;
@@ -1223,6 +1267,11 @@
               const placeName = results[0].address_components[0]?.long_name || 'Current Location';
               bookingData.pickup.address = results[0].formatted_address;
               document.getElementById('pickup').value = placeName;
+              
+              // Center map on detected location
+              map.setCenter(latlng);
+              map.setZoom(14);
+              
               showToast('✓ Location detected!', 'success');
               calculateRoute();
             }
@@ -1462,4 +1511,3 @@
   </script>
 </body>
 </html>
-
