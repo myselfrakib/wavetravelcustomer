@@ -78,6 +78,44 @@
       display: none;
     }
     
+    /* Map Controls */
+    .map-controls {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 1000;
+    }
+    
+    .map-control-btn {
+      width: 44px;
+      height: 44px;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #334155;
+      transition: all 0.2s ease;
+    }
+    
+    .map-control-btn:hover {
+      background: #f8fafc;
+      transform: scale(1.05);
+    }
+    
+    .map-control-btn:active {
+      transform: scale(0.95);
+      background: #e2e8f0;
+    }
+    
     /* Bottom Sheet */
     .bottom-sheet {
       position: absolute;
@@ -340,8 +378,6 @@
       background: linear-gradient(to bottom, rgba(16,185,129,0.3), rgba(239,68,68,0.3));
       z-index: 1;
     }
-    
-
     
     /* Date Time Section */
     .datetime-section {
@@ -661,6 +697,20 @@
       <div class="map-overlay" id="map-overlay">
         <div>📍 Enter destination to see route</div>
       </div>
+      
+      <!-- Map Controls -->
+      <div class="map-controls">
+        <button class="map-control-btn" onclick="zoomIn()" title="Zoom in">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button class="map-control-btn" onclick="zoomOut()" title="Zoom out">
+          <i class="fas fa-minus"></i>
+        </button>
+        <button class="map-control-btn" onclick="centerMap()" title="Center map">
+          <i class="fas fa-location-arrow"></i>
+        </button>
+      </div>
+      
       <div class="map-instruction" id="map-instruction">
         <i class="fas fa-hand-pointer"></i>
         <span id="instruction-text">Tap on map to select pickup location</span>
@@ -856,8 +906,12 @@
     let pickupMarker, dropoffMarker;
     let autocompleteService, placesService;
     let sessionToken;
-    let mapSelectionMode = null; // 'pickup' or 'dropoff'
+    let mapSelectionMode = null;
     let tempMarker = null;
+    let touchStartTime = 0;
+    let lastTap = 0;
+    let initialPinchDistance = null;
+    let initialZoom = null;
 
     // Initialize Map
     function initMap() {
@@ -867,7 +921,8 @@
         center: kolkata,
         zoom: 12,
         disableDefaultUI: true,
-        zoomControl: true,
+        zoomControl: false,
+        gestureHandling: 'greedy',
         styles: [
           {
             featureType: "poi",
@@ -891,12 +946,87 @@
       placesService = new google.maps.places.PlacesService(map);
       sessionToken = new google.maps.places.AutocompleteSessionToken();
 
-      // Setup input listeners
       setupAutocomplete('pickup', 'pickup-suggestions');
       setupAutocomplete('dropoff', 'dropoff-suggestions');
       
-      // Setup map click listener
       map.addListener('click', handleMapClick);
+      
+      setupTouchControls();
+    }
+
+    function setupTouchControls() {
+      const mapDiv = document.getElementById('map');
+      
+      mapDiv.addEventListener('touchstart', handleTouchStart, { passive: false });
+      mapDiv.addEventListener('touchmove', handleTouchMove, { passive: false });
+      mapDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
+
+    function handleTouchStart(e) {
+      touchStartTime = Date.now();
+      
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        initialPinchDistance = getTouchDistance(e.touches[0], e.touches[1]);
+        initialZoom = map.getZoom();
+      }
+      
+      if (e.touches.length === 1) {
+        const currentTime = Date.now();
+        const tapGap = currentTime - lastTap;
+        
+        if (tapGap < 300 && tapGap > 0) {
+          e.preventDefault();
+          const currentZoom = map.getZoom();
+          map.setZoom(currentZoom + 1);
+          lastTap = 0;
+        } else {
+          lastTap = currentTime;
+        }
+      }
+    }
+
+    function handleTouchMove(e) {
+      if (e.touches.length === 2 && initialPinchDistance !== null) {
+        e.preventDefault();
+        const currentDistance = getTouchDistance(e.touches[0], e.touches[1]);
+        const zoomDelta = (currentDistance - initialPinchDistance) / 100;
+        const newZoom = Math.max(1, Math.min(20, initialZoom + zoomDelta));
+        map.setZoom(Math.round(newZoom));
+      }
+    }
+
+    function handleTouchEnd(e) {
+      if (e.touches.length < 2) {
+        initialPinchDistance = null;
+        initialZoom = null;
+      }
+    }
+
+    function getTouchDistance(touch1, touch2) {
+      const dx = touch1.clientX - touch2.clientX;
+      const dy = touch1.clientY - touch2.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function zoomIn() {
+      const currentZoom = map.getZoom();
+      map.setZoom(currentZoom + 1);
+    }
+
+    function zoomOut() {
+      const currentZoom = map.getZoom();
+      map.setZoom(currentZoom - 1);
+    }
+
+    function centerMap() {
+      if (bookingData.pickup.lat && bookingData.pickup.lng) {
+        map.setCenter({ 
+          lat: bookingData.pickup.lat, 
+          lng: bookingData.pickup.lng 
+        });
+        map.setZoom(14);
+      }
     }
 
     function setupAutocomplete(inputId, suggestionsId) {
@@ -931,7 +1061,6 @@
         }, 300);
       });
 
-      // Close suggestions when clicking outside
       document.addEventListener('click', (e) => {
         if (!e.target.closest(`#${inputId}`) && !e.target.closest(`#${suggestionsId}`)) {
           suggestionsList.classList.remove('show');
@@ -987,7 +1116,6 @@
               bookingData.dropoff.address = place.formatted_address;
             }
 
-            // Regenerate session token
             sessionToken = new google.maps.places.AutocompleteSessionToken();
             
             calculateRoute();
@@ -1016,13 +1144,11 @@
             const distanceKm = (route.distance.value / 1000).toFixed(0);
             const durationHrs = (route.duration.value / 3600).toFixed(1);
             
-            // Calculate fare
             const rate = bookingData.tripType === 'oneway' ? 13 : 9;
             const multiplier = bookingData.tripType === 'roundtrip' ? 2 : 1;
             const baseFare = distanceKm * rate * multiplier;
             const fareEstimate = bookingData.selectedCar === 'suv' ? Math.round(baseFare * 1.4) : baseFare;
             
-            // Update UI
             document.getElementById('map-overlay').classList.add('hidden');
             document.getElementById('route-info-card').classList.add('show');
             document.getElementById('distance-display').textContent = distanceKm + ' km';
@@ -1044,16 +1170,13 @@
       );
     }
 
-    // Initialize on load
     window.addEventListener('load', () => {
       initMap();
-      // Auto-detect location after a short delay to ensure map is ready
       setTimeout(() => {
         autoDetectPickupLocation();
       }, 1000);
     });
 
-    // Booking data
     let bookingData = {
       tripType: 'oneway',
       pickup: { address: 'Kolkata', lat: 22.5726, lng: 88.3639 },
@@ -1068,7 +1191,6 @@
       fareEstimate: 0
     };
 
-    // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('pickup-date').value = today;
     document.getElementById('pickup-date').min = today;
@@ -1103,11 +1225,9 @@
       calculateRoute();
     }
 
-    // Map Selection Functions
     function selectFromMap(type) {
       mapSelectionMode = type;
       
-      // Highlight active button
       document.getElementById('map-pickup-btn').classList.remove('active');
       document.getElementById('map-dropoff-btn').classList.remove('active');
       
@@ -1119,28 +1239,23 @@
         document.getElementById('instruction-text').textContent = 'Tap on map to select dropoff location';
       }
       
-      // Show instruction and cancel button
       document.getElementById('map-instruction').classList.add('show');
       document.getElementById('cancel-selection-btn').classList.add('show');
       
-      // Collapse bottom sheet to show more map
       document.getElementById('bottom-sheet').classList.add('collapsed');
     }
 
     function cancelMapSelection() {
       mapSelectionMode = null;
       
-      // Remove temp marker if exists
       if (tempMarker) {
         tempMarker.setMap(null);
         tempMarker = null;
       }
       
-      // Remove active state from buttons
       document.getElementById('map-pickup-btn').classList.remove('active');
       document.getElementById('map-dropoff-btn').classList.remove('active');
       
-      // Hide instruction and cancel button
       document.getElementById('map-instruction').classList.remove('show');
       document.getElementById('cancel-selection-btn').classList.remove('show');
     }
@@ -1151,7 +1266,6 @@
       const lat = event.latLng.lat();
       const lng = event.latLng.lng();
       
-      // Show temporary marker
       if (tempMarker) {
         tempMarker.setMap(null);
       }
@@ -1170,7 +1284,6 @@
         animation: google.maps.Animation.DROP
       });
       
-      // Reverse geocode to get address
       const geocoder = new google.maps.Geocoder();
       geocoder.geocode({ location: event.latLng }, (results, status) => {
         if (status === 'OK' && results[0]) {
@@ -1189,7 +1302,6 @@
             document.getElementById('dropoff').value = placeName;
           }
           
-          // Clear temp marker
           if (tempMarker) {
             tempMarker.setMap(null);
             tempMarker = null;
@@ -1197,16 +1309,13 @@
           
           showToast(`✓ ${mapSelectionMode === 'pickup' ? 'Pickup' : 'Dropoff'} location selected!`, 'success');
           
-          // Exit selection mode
           cancelMapSelection();
           
-          // Calculate route if both locations are set
           calculateRoute();
         }
       });
     }
 
-    // Auto-detect pickup location on page load
     async function autoDetectPickupLocation() {
       if ("geolocation" in navigator) {
         try {
@@ -1220,7 +1329,6 @@
           bookingData.pickup.lat = position.coords.latitude;
           bookingData.pickup.lng = position.coords.longitude;
           
-          // Reverse geocode
           const geocoder = new google.maps.Geocoder();
           const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
           
@@ -1230,7 +1338,6 @@
               bookingData.pickup.address = results[0].formatted_address;
               document.getElementById('pickup').value = placeName;
               
-              // Center map on current location
               map.setCenter(latlng);
               map.setZoom(14);
               
@@ -1239,7 +1346,6 @@
           });
         } catch (error) {
           console.log('Auto-detect location failed, using default:', error.message);
-          // Keep default Kolkata location
         }
       }
     }
@@ -1258,7 +1364,6 @@
           bookingData.pickup.lat = position.coords.latitude;
           bookingData.pickup.lng = position.coords.longitude;
           
-          // Reverse geocode
           const geocoder = new google.maps.Geocoder();
           const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
           
@@ -1268,7 +1373,6 @@
               bookingData.pickup.address = results[0].formatted_address;
               document.getElementById('pickup').value = placeName;
               
-              // Center map on detected location
               map.setCenter(latlng);
               map.setZoom(14);
               
@@ -1297,7 +1401,6 @@
     }
 
     async function bookRide() {
-      // Validation
       const pickup = document.getElementById('pickup').value.trim();
       const dropoff = document.getElementById('dropoff').value.trim();
       const pickupDate = document.getElementById('pickup-date').value;
@@ -1340,11 +1443,9 @@
         return;
       }
 
-      // Create pickup timestamp
       const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
       const pickupTimestamp = Math.floor(pickupDateTime.getTime() / 1000);
       
-      // Create return timestamp if roundtrip
       let returnTimestamp = null;
       if (bookingData.tripType === 'roundtrip') {
         const returnDate = document.getElementById('return-date').value;
@@ -1353,13 +1454,11 @@
         returnTimestamp = Math.floor(returnDateTime.getTime() / 1000);
       }
 
-      // Disable button and show loading
       const bookBtn = document.getElementById('book-btn');
       bookBtn.disabled = true;
       bookBtn.innerHTML = '<div class="spinner"></div> Searching for drivers...';
 
       try {
-        // Get rider name safely
         let riderName = 'Rider';
         if (currentUser.displayName) {
           riderName = currentUser.displayName;
@@ -1367,7 +1466,6 @@
           riderName = currentUser.email.split('@')[0];
         }
 
-        // Create ride request in Realtime Database
         const rideRequest = {
           riderId: currentUser.uid,
           riderEmail: currentUser.email || '',
@@ -1389,7 +1487,6 @@
           assignedDriverVehicle: null
         };
 
-        // Push to rideRequests node
         const newRideRef = database.ref('evplan/rideRequests').push();
         await newRideRef.set(rideRequest);
         
@@ -1398,7 +1495,6 @@
         console.log('Ride request created:', rideId);
         console.log('Request data:', rideRequest);
 
-        // Listen for driver acceptance
         listenForDriverAcceptance(rideId);
         
         showToast('🔍 Searching for available drivers...', 'success');
@@ -1414,7 +1510,6 @@
     function listenForDriverAcceptance(rideId) {
       const rideRequestRef = database.ref(`evplan/rideRequests/${rideId}`);
       
-      // Listen for status changes
       rideRequestRef.on('value', async (snapshot) => {
         const rideData = snapshot.val();
         
@@ -1426,11 +1521,9 @@
         console.log('Ride status:', rideData.status);
 
         if (rideData.status === 'accepted' && rideData.assignedDriverId) {
-          // Driver accepted! Move to bookings
           console.log('Driver accepted! Moving to bookings...');
           
           try {
-            // Create booking with driver details
             const booking = {
               ...rideData,
               status: 'booked',
@@ -1438,26 +1531,21 @@
               rideRequestId: rideId
             };
 
-            // Save to /evplan/bookings
             const bookingRef = database.ref('evplan/bookings').push();
             await bookingRef.set(booking);
             
             const bookingId = bookingRef.key;
             console.log('Booking created:', bookingId);
 
-            // Optional: Remove from rideRequests (or mark as processed)
             await rideRequestRef.update({ 
               status: 'moved_to_bookings',
               bookingId: bookingId
             });
 
-            // Stop listening
             rideRequestRef.off();
 
-            // Show success message
             showToast('🎉 Driver assigned! Redirecting...', 'success');
 
-            // Redirect to my bookings page
             setTimeout(() => {
               window.location.href = `mybookings.html?id=${bookingId}`;
             }, 2000);
@@ -1467,7 +1555,6 @@
             showToast('Error creating booking: ' + error.message, 'error');
           }
         } else if (rideData.status === 'cancelled') {
-          // Request was cancelled
           rideRequestRef.off();
           showToast('Ride request was cancelled', 'error');
           
@@ -1477,7 +1564,6 @@
         }
       });
 
-      // Optional: Add timeout after 5 minutes of searching
       setTimeout(() => {
         rideRequestRef.once('value', (snapshot) => {
           const rideData = snapshot.val();
@@ -1485,7 +1571,7 @@
             showToast('⏱️ Still searching for drivers...', 'success');
           }
         });
-      }, 300000); // 5 minutes
+      }, 300000);
     }
 
     function showToast(message, type = 'success') {
@@ -1498,7 +1584,6 @@
       }, 3000);
     }
 
-    // Event listeners
     document.getElementById('pickup-date').addEventListener('change', (e) => {
       const returnDateInput = document.getElementById('return-date');
       if (bookingData.tripType === 'roundtrip') {
