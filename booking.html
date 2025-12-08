@@ -280,6 +280,71 @@
       margin-right: 6px;
     }
     
+    /* Journey Time Toggle */
+    .journey-time-section {
+      margin-bottom: 20px;
+    }
+    
+    .journey-toggle {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 12px;
+    }
+    
+    .journey-option {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: #64748b;
+    }
+    
+    .journey-option:hover {
+      color: #334155;
+    }
+    
+    .journey-option.active {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+    }
+    
+    .journey-option i {
+      margin-right: 6px;
+    }
+    
+    .current-time-display {
+      background: #f0fdf4;
+      border: 2px solid #10b981;
+      border-radius: 10px;
+      padding: 12px 16px;
+      text-align: center;
+      display: none;
+    }
+    
+    .current-time-display.show {
+      display: block;
+    }
+    
+    .current-time-label {
+      font-size: 0.75rem;
+      color: #64748b;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .current-time-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #059669;
+    }
+    
     /* Location Inputs */
     .location-section {
       margin-bottom: 20px;
@@ -379,9 +444,52 @@
       z-index: 1;
     }
     
+    .detect-location-section {
+      margin-top: 12px;
+      display: none;
+    }
+    
+    .detect-location-section.show {
+      display: block;
+    }
+    
+    .detect-btn-full {
+      width: 100%;
+      padding: 12px 16px;
+      background: #f0fdf4;
+      border: 2px dashed #10b981;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #059669;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .detect-btn-full:hover {
+      background: #10b981;
+      color: white;
+      border-style: solid;
+    }
+    
+    .detect-btn-full:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
     /* Date Time Section */
     .datetime-section {
       margin-bottom: 20px;
+      display: none;
+    }
+    
+    .datetime-section.show {
+      display: block;
     }
     
     .datetime-grid {
@@ -511,6 +619,19 @@
     
     .btn-primary:active:not(:disabled) {
       transform: translateY(0);
+    }
+    
+    .btn-cancel {
+      background: #ef4444;
+      color: white;
+      box-shadow: 0 8px 24px rgba(239,68,68,0.3);
+      margin-bottom: 12px;
+    }
+    
+    .btn-cancel:hover:not(:disabled) {
+      background: #dc2626;
+      box-shadow: 0 12px 32px rgba(239,68,68,0.4);
+      transform: translateY(-2px);
     }
     
     .btn:disabled {
@@ -767,15 +888,19 @@
             <div class="input-wrapper">
               <div class="location-dot pickup"></div>
               <input type="text" class="input-field" id="pickup" placeholder="Pickup location" value="Kolkata" autocomplete="off"/>
-              <button class="action-btn" id="detect-btn" onclick="detectLocation()" title="Use current location">
-                <i class="fas fa-crosshairs"></i>
-              </button>
               <button class="action-btn" id="map-pickup-btn" onclick="selectFromMap('pickup')" title="Choose from map">
                 <i class="fas fa-map-marked-alt"></i>
               </button>
             </div>
             <div class="suggestions-list" id="pickup-suggestions"></div>
             <div class="connecting-line"></div>
+          </div>
+          
+          <div class="detect-location-section" id="detect-location-section">
+            <button class="detect-btn-full" id="detect-btn-full" onclick="detectLocation()">
+              <i class="fas fa-crosshairs"></i>
+              Use Current Location
+            </button>
           </div>
           
           <div class="input-group">
@@ -790,28 +915,44 @@
           </div>
         </div>
 
-        <!-- Date & Time -->
-        <div class="datetime-section">
-          <div class="datetime-grid">
-            <div class="datetime-field">
-              <label>Pickup Date</label>
-              <input type="date" id="pickup-date"/>
+        <!-- Journey Time Section -->
+        <div class="journey-time-section">
+          <div class="journey-toggle">
+            <div class="journey-option active" data-time="now" onclick="setJourneyTime('now')">
+              <i class="fas fa-clock"></i> Now
             </div>
-            <div class="datetime-field">
-              <label>Pickup Time</label>
-              <input type="time" id="pickup-time" value="09:00"/>
+            <div class="journey-option" data-time="later" onclick="setJourneyTime('later')">
+              <i class="fas fa-calendar-alt"></i> Ride Later
             </div>
           </div>
           
-          <div class="return-section hidden" id="return-section">
+          <div class="current-time-display show" id="current-time-display">
+            <div class="current-time-label">Pickup Time</div>
+            <div class="current-time-value" id="current-time-value">Now</div>
+          </div>
+          
+          <div class="datetime-section" id="datetime-section">
             <div class="datetime-grid">
               <div class="datetime-field">
-                <label>Return Date</label>
-                <input type="date" id="return-date"/>
+                <label>Pickup Date</label>
+                <input type="date" id="pickup-date"/>
               </div>
               <div class="datetime-field">
-                <label>Return Time</label>
-                <input type="time" id="return-time" value="18:00"/>
+                <label>Pickup Time</label>
+                <input type="time" id="pickup-time" value="09:00"/>
+              </div>
+            </div>
+            
+            <div class="return-section hidden" id="return-section">
+              <div class="datetime-grid">
+                <div class="datetime-field">
+                  <label>Return Date</label>
+                  <input type="date" id="return-date"/>
+                </div>
+                <div class="datetime-field">
+                  <label>Return Time</label>
+                  <input type="time" id="return-time" value="18:00"/>
+                </div>
               </div>
             </div>
           </div>
@@ -841,6 +982,12 @@
             </div>
           </div>
         </div>
+
+        <!-- Cancel Search Button -->
+        <button class="btn btn-cancel hidden" id="cancel-search-btn" onclick="cancelSearch()">
+          <i class="fas fa-times-circle"></i>
+          Cancel Searching
+        </button>
 
         <!-- Book Button -->
         <button class="btn btn-primary" id="book-btn" onclick="bookRide()">
@@ -912,6 +1059,8 @@
     let lastTap = 0;
     let initialPinchDistance = null;
     let initialZoom = null;
+    let currentRideRequestRef = null;
+    let searchingForRide = false;
 
     // Initialize Map
     function initMap() {
@@ -1081,6 +1230,20 @@
       const suggestionsList = document.getElementById(suggestionsId);
       let debounceTimer;
 
+      input.addEventListener('focus', () => {
+        if (inputId === 'pickup') {
+          document.getElementById('detect-location-section').classList.add('show');
+        }
+      });
+
+      input.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (inputId === 'pickup' && !input.matches(':focus')) {
+            document.getElementById('detect-location-section').classList.remove('show');
+          }
+        }, 200);
+      });
+
       input.addEventListener('input', (e) => {
         clearTimeout(debounceTimer);
         const query = e.target.value.trim();
@@ -1222,6 +1385,7 @@
 
     window.addEventListener('load', () => {
       initMap();
+      updateCurrentTime();
       setTimeout(() => {
         autoDetectPickupLocation();
       }, 1000);
@@ -1229,6 +1393,7 @@
 
     let bookingData = {
       tripType: 'oneway',
+      journeyTime: 'now',
       pickup: { address: 'Kolkata', lat: 22.5726, lng: 88.3639 },
       dropoff: { address: '', lat: null, lng: null },
       pickupDate: '',
@@ -1274,6 +1439,53 @@
       
       calculateRoute();
     }
+
+    function setJourneyTime(timeType) {
+      bookingData.journeyTime = timeType;
+      
+      document.querySelectorAll('.journey-option').forEach(opt => {
+        opt.classList.remove('active');
+      });
+      document.querySelector(`[data-time="${timeType}"]`).classList.add('active');
+      
+      const datetimeSection = document.getElementById('datetime-section');
+      const currentTimeDisplay = document.getElementById('current-time-display');
+      
+      if (timeType === 'now') {
+        datetimeSection.classList.remove('show');
+        currentTimeDisplay.classList.add('show');
+        updateCurrentTime();
+      } else {
+        datetimeSection.classList.add('show');
+        currentTimeDisplay.classList.remove('show');
+        
+        if (bookingData.tripType === 'roundtrip') {
+          document.getElementById('return-section').classList.remove('hidden');
+        }
+      }
+    }
+
+    function updateCurrentTime() {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-IN', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      });
+      const timeStr = now.toLocaleTimeString('en-IN', { 
+        hour: '2-digit', 
+        minute: '2-digit'
+      });
+      
+      document.getElementById('current-time-value').textContent = `${dateStr}, ${timeStr}`;
+    }
+
+    setInterval(() => {
+      if (bookingData.journeyTime === 'now') {
+        updateCurrentTime();
+      }
+    }, 60000);
 
     function selectFromMap(type) {
       mapSelectionMode = type;
@@ -1406,9 +1618,9 @@
     }
 
     async function detectLocation() {
-      const btn = document.getElementById('detect-btn');
+      const btn = document.getElementById('detect-btn-full');
       btn.disabled = true;
-      btn.innerHTML = '<div class="spinner"></div>';
+      btn.innerHTML = '<div class="spinner"></div> Detecting...';
       
       if ("geolocation" in navigator) {
         try {
@@ -1445,10 +1657,12 @@
       }
       
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-crosshairs"></i>';
+      btn.innerHTML = '<i class="fas fa-crosshairs"></i> Use Current Location';
     }
 
     function selectCar(element) {
+      if (searchingForRide) return;
+      
       document.querySelectorAll('.car-option').forEach(opt => {
         opt.classList.remove('selected');
       });
@@ -1457,28 +1671,116 @@
       calculateRoute();
     }
 
+    function disableAllInputs() {
+      document.querySelectorAll('.toggle-option').forEach(el => {
+        el.style.pointerEvents = 'none';
+        el.style.opacity = '0.5';
+      });
+      
+      document.querySelectorAll('.journey-option').forEach(el => {
+        el.style.pointerEvents = 'none';
+        el.style.opacity = '0.5';
+      });
+      
+      document.getElementById('pickup').disabled = true;
+      document.getElementById('dropoff').disabled = true;
+      document.getElementById('map-pickup-btn').disabled = true;
+      document.getElementById('map-dropoff-btn').disabled = true;
+      
+      const detectBtn = document.getElementById('detect-btn-full');
+      if (detectBtn) detectBtn.disabled = true;
+      
+      document.querySelectorAll('.car-option').forEach(el => {
+        el.style.pointerEvents = 'none';
+        el.style.opacity = '0.5';
+      });
+      
+      const datetimeInputs = document.querySelectorAll('.datetime-field input');
+      datetimeInputs.forEach(input => input.disabled = true);
+    }
+
+    function enableAllInputs() {
+      document.querySelectorAll('.toggle-option').forEach(el => {
+        el.style.pointerEvents = '';
+        el.style.opacity = '';
+      });
+      
+      document.querySelectorAll('.journey-option').forEach(el => {
+        el.style.pointerEvents = '';
+        el.style.opacity = '';
+      });
+      
+      document.getElementById('pickup').disabled = false;
+      document.getElementById('dropoff').disabled = false;
+      document.getElementById('map-pickup-btn').disabled = false;
+      document.getElementById('map-dropoff-btn').disabled = false;
+      
+      const detectBtn = document.getElementById('detect-btn-full');
+      if (detectBtn) detectBtn.disabled = false;
+      
+      document.querySelectorAll('.car-option').forEach(el => {
+        el.style.pointerEvents = '';
+        el.style.opacity = '';
+      });
+      
+      const datetimeInputs = document.querySelectorAll('.datetime-field input');
+      datetimeInputs.forEach(input => input.disabled = false);
+    }
+
+    async function cancelSearch() {
+      if (currentRideRequestRef) {
+        try {
+          await currentRideRequestRef.update({ 
+            status: 'cancelled',
+            cancelledAt: firebase.database.ServerValue.TIMESTAMP
+          });
+          
+          currentRideRequestRef.off();
+          currentRideRequestRef = null;
+          searchingForRide = false;
+          
+          document.getElementById('cancel-search-btn').classList.add('hidden');
+          
+          const bookBtn = document.getElementById('book-btn');
+          bookBtn.disabled = false;
+          bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
+          
+          enableAllInputs();
+          
+          showToast('Search cancelled', 'success');
+          
+        } catch (error) {
+          console.error('Error cancelling search:', error);
+          showToast('Error cancelling search', 'error');
+        }
+      }
+    }
+
     async function bookRide() {
       const pickup = document.getElementById('pickup').value.trim();
       const dropoff = document.getElementById('dropoff').value.trim();
-      const pickupDate = document.getElementById('pickup-date').value;
-      const pickupTime = document.getElementById('pickup-time').value;
 
       if (!pickup || !dropoff) {
         showToast('Please enter pickup and drop locations', 'error');
         return;
       }
 
-      if (!pickupDate || !pickupTime) {
-        showToast('Please select pickup date and time', 'error');
-        return;
-      }
-
-      if (bookingData.tripType === 'roundtrip') {
-        const returnDate = document.getElementById('return-date').value;
-        const returnTime = document.getElementById('return-time').value;
-        if (!returnDate || !returnTime) {
-          showToast('Please select return date and time', 'error');
+      if (bookingData.journeyTime === 'later') {
+        const pickupDate = document.getElementById('pickup-date').value;
+        const pickupTime = document.getElementById('pickup-time').value;
+        
+        if (!pickupDate || !pickupTime) {
+          showToast('Please select pickup date and time', 'error');
           return;
+        }
+
+        if (bookingData.tripType === 'roundtrip') {
+          const returnDate = document.getElementById('return-date').value;
+          const returnTime = document.getElementById('return-time').value;
+          if (!returnDate || !returnTime) {
+            showToast('Please select return date and time', 'error');
+            return;
+          }
         }
       }
 
@@ -1500,20 +1802,33 @@
         return;
       }
 
-      const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
-      const pickupTimestamp = Math.floor(pickupDateTime.getTime() / 1000);
+      let pickupTimestamp, returnTimestamp = null;
       
-      let returnTimestamp = null;
-      if (bookingData.tripType === 'roundtrip') {
-        const returnDate = document.getElementById('return-date').value;
-        const returnTime = document.getElementById('return-time').value;
-        const returnDateTime = new Date(`${returnDate}T${returnTime}`);
-        returnTimestamp = Math.floor(returnDateTime.getTime() / 1000);
+      if (bookingData.journeyTime === 'now') {
+        pickupTimestamp = Math.floor(Date.now() / 1000);
+      } else {
+        const pickupDate = document.getElementById('pickup-date').value;
+        const pickupTime = document.getElementById('pickup-time').value;
+        const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
+        pickupTimestamp = Math.floor(pickupDateTime.getTime() / 1000);
+        
+        if (bookingData.tripType === 'roundtrip') {
+          const returnDate = document.getElementById('return-date').value;
+          const returnTime = document.getElementById('return-time').value;
+          const returnDateTime = new Date(`${returnDate}T${returnTime}`);
+          returnTimestamp = Math.floor(returnDateTime.getTime() / 1000);
+        }
       }
 
       const bookBtn = document.getElementById('book-btn');
       bookBtn.disabled = true;
       bookBtn.innerHTML = '<div class="spinner"></div> Searching for drivers...';
+      
+      searchingForRide = true;
+      
+      disableAllInputs();
+      
+      document.getElementById('cancel-search-btn').classList.remove('hidden');
 
       try {
         let riderName = 'Rider';
@@ -1530,6 +1845,7 @@
           pickup: bookingData.pickup,
           dropoff: bookingData.dropoff,
           tripType: bookingData.tripType,
+          journeyTime: bookingData.journeyTime,
           pickupTimestamp: pickupTimestamp,
           returnTimestamp: returnTimestamp,
           vehicleType: bookingData.selectedCar,
@@ -1544,10 +1860,10 @@
           assignedDriverVehicle: null
         };
 
-        const newRideRef = database.ref('evplan/rideRequests').push();
-        await newRideRef.set(rideRequest);
+        currentRideRequestRef = database.ref('evplan/rideRequests').push();
+        await currentRideRequestRef.set(rideRequest);
         
-        const rideId = newRideRef.key;
+        const rideId = currentRideRequestRef.key;
         
         console.log('Ride request created:', rideId);
         console.log('Request data:', rideRequest);
@@ -1561,13 +1877,14 @@
         showToast('Booking failed: ' + error.message, 'error');
         bookBtn.disabled = false;
         bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
+        searchingForRide = false;
+        enableAllInputs();
+        document.getElementById('cancel-search-btn').classList.add('hidden');
       }
     }
 
     function listenForDriverAcceptance(rideId) {
-      const rideRequestRef = database.ref(`evplan/rideRequests/${rideId}`);
-      
-      rideRequestRef.on('value', async (snapshot) => {
+      currentRideRequestRef.on('value', async (snapshot) => {
         const rideData = snapshot.val();
         
         if (!rideData) {
@@ -1594,12 +1911,14 @@
             const bookingId = bookingRef.key;
             console.log('Booking created:', bookingId);
 
-            await rideRequestRef.update({ 
+            await currentRideRequestRef.update({ 
               status: 'moved_to_bookings',
               bookingId: bookingId
             });
 
-            rideRequestRef.off();
+            currentRideRequestRef.off();
+            currentRideRequestRef = null;
+            searchingForRide = false;
 
             showToast('🎉 Driver assigned! Redirecting...', 'success');
 
@@ -1612,23 +1931,30 @@
             showToast('Error creating booking: ' + error.message, 'error');
           }
         } else if (rideData.status === 'cancelled') {
-          rideRequestRef.off();
-          showToast('Ride request was cancelled', 'error');
+          currentRideRequestRef.off();
+          currentRideRequestRef = null;
+          searchingForRide = false;
+          
+          document.getElementById('cancel-search-btn').classList.add('hidden');
           
           const bookBtn = document.getElementById('book-btn');
           bookBtn.disabled = false;
           bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
+          
+          enableAllInputs();
         }
       });
 
       setTimeout(() => {
-        rideRequestRef.once('value', (snapshot) => {
-          const rideData = snapshot.val();
-          if (rideData && rideData.status === 'searching') {
-            showToast('⏱️ Still searching for drivers...', 'success');
-          }
-        });
-      }, 300000);
+        if (currentRideRequestRef) {
+          currentRideRequestRef.once('value', (snapshot) => {
+            const rideData = snapshot.val();
+            if (rideData && rideData.status === 'searching') {
+              showToast('⏱️ Still searching for drivers...', 'success');
+            }
+          });
+        }
+      }, 30000);
     }
 
     function showToast(message, type = 'success') {
