@@ -694,7 +694,7 @@
     <!-- Map Container -->
     <div class="map-container">
       <div id="map"></div>
-      <div class="map-overlay" id="map-overlay">
+      <div class="map-overlay hidden" id="map-overlay">
         <div>📍 Enter destination to see route</div>
       </div>
       
@@ -946,12 +946,59 @@
       placesService = new google.maps.places.PlacesService(map);
       sessionToken = new google.maps.places.AutocompleteSessionToken();
 
+      // Create initial pickup marker with checkmark
+      createPickupMarker(kolkata);
+
       setupAutocomplete('pickup', 'pickup-suggestions');
       setupAutocomplete('dropoff', 'dropoff-suggestions');
       
       map.addListener('click', handleMapClick);
       
       setupTouchControls();
+    }
+
+    // Create pickup marker with checkmark icon
+    function createPickupMarker(position) {
+      if (pickupMarker) {
+        pickupMarker.setMap(null);
+      }
+
+      pickupMarker = new google.maps.Marker({
+        position: position,
+        map: map,
+        icon: {
+          path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+          fillColor: '#10b981',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+          scale: 1,
+          anchor: new google.maps.Point(0, 0)
+        },
+        animation: google.maps.Animation.DROP,
+        title: 'Pickup Location'
+      });
+
+      // Add info window with checkmark
+      const infoWindow = new google.maps.InfoWindow({
+        content: '<div style="padding: 8px; font-weight: 600; color: #10b981;"><i class="fas fa-check-circle"></i> Pickup Location</div>'
+      });
+
+      pickupMarker.addListener('mouseover', () => {
+        infoWindow.open(map, pickupMarker);
+      });
+
+      pickupMarker.addListener('mouseout', () => {
+        infoWindow.close();
+      });
+
+      // For mobile - show on tap
+      pickupMarker.addListener('click', () => {
+        infoWindow.open(map, pickupMarker);
+        setTimeout(() => {
+          infoWindow.close();
+        }, 2000);
+      });
     }
 
     function setupTouchControls() {
@@ -1110,6 +1157,10 @@
               bookingData.pickup.lat = place.geometry.location.lat();
               bookingData.pickup.lng = place.geometry.location.lng();
               bookingData.pickup.address = place.formatted_address;
+              
+              // Update pickup marker
+              createPickupMarker(place.geometry.location);
+              map.setCenter(place.geometry.location);
             } else {
               bookingData.dropoff.lat = place.geometry.location.lat();
               bookingData.dropoff.lng = place.geometry.location.lng();
@@ -1149,7 +1200,6 @@
             const baseFare = distanceKm * rate * multiplier;
             const fareEstimate = bookingData.selectedCar === 'suv' ? Math.round(baseFare * 1.4) : baseFare;
             
-            document.getElementById('map-overlay').classList.add('hidden');
             document.getElementById('route-info-card').classList.add('show');
             document.getElementById('distance-display').textContent = distanceKm + ' km';
             document.getElementById('duration-display').textContent = durationHrs + ' hrs';
@@ -1295,6 +1345,9 @@
             bookingData.pickup.lng = lng;
             bookingData.pickup.address = address;
             document.getElementById('pickup').value = placeName;
+            
+            // Update pickup marker
+            createPickupMarker(event.latLng);
           } else {
             bookingData.dropoff.lat = lat;
             bookingData.dropoff.lng = lng;
@@ -1338,6 +1391,8 @@
               bookingData.pickup.address = results[0].formatted_address;
               document.getElementById('pickup').value = placeName;
               
+              // Update pickup marker to current location
+              createPickupMarker(latlng);
               map.setCenter(latlng);
               map.setZoom(14);
               
@@ -1373,6 +1428,8 @@
               bookingData.pickup.address = results[0].formatted_address;
               document.getElementById('pickup').value = placeName;
               
+              // Update pickup marker
+              createPickupMarker(latlng);
               map.setCenter(latlng);
               map.setZoom(14);
               
