@@ -675,6 +675,22 @@
       transform: translateY(0);
     }
     
+    .btn-secondary {
+      background: white;
+      color: #ef4444;
+      border: 2px solid #ef4444;
+      margin-top: 12px;
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+      background: #fef2f2;
+      transform: translateY(-2px);
+    }
+    
+    .btn-secondary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    
     .btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -765,35 +781,7 @@
       margin-top: 2px;
     }
     
-    /* Bottom Sheet for Map Mode */
-    .map-bottom-sheet {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      border-radius: 24px 24px 0 0;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-      padding: 20px;
-      z-index: 999;
-      max-height: 40vh;
-      overflow-y: auto;
-    }
-    
-    .sheet-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #1e293b;
-      margin-bottom: 12px;
-    }
-    
-    .sheet-address {
-      font-size: 0.85rem;
-      color: #64748b;
-      line-height: 1.5;
-    }
-    
-    /* Searching View */
+    /* Searching View - Split Screen */
     .searching-view {
       position: absolute;
       top: 0;
@@ -810,8 +798,14 @@
     }
     
     .searching-map-container {
-      flex: 1;
+      height: 50vh;
       position: relative;
+      border-bottom: 3px solid #10b981;
+    }
+    
+    #searching-map {
+      width: 100%;
+      height: 100%;
     }
     
     .searching-details {
@@ -819,7 +813,6 @@
       background: white;
       padding: 24px 20px;
       overflow-y: auto;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
     }
     
     .searching-header {
@@ -1145,11 +1138,6 @@
         <button class="confirm-map-btn" id="confirm-map-btn" onclick="confirmMapSelection()">
           <i class="fas fa-check"></i> Confirm Location
         </button>
-        
-        <div class="map-bottom-sheet" id="map-bottom-sheet">
-          <div class="sheet-title">Selected Location</div>
-          <div class="sheet-address" id="selected-address">Tap on the map to select a location</div>
-        </div>
       </div>
 
       <!-- Searching View -->
@@ -1206,6 +1194,12 @@
             <div class="vehicle-icon" id="search-vehicle-icon">🚗</div>
             <div class="vehicle-name" id="search-vehicle-name">Sedan</div>
           </div>
+          
+          <!-- Cancel Button -->
+          <button class="btn btn-secondary" id="cancel-search-btn" onclick="cancelRideSearch()">
+            <i class="fas fa-times-circle"></i>
+            Cancel Search
+          </button>
         </div>
       </div>
     </div>
@@ -1468,8 +1462,6 @@
         : 'Tap on map to select dropoff location';
       document.getElementById('instruction-text').textContent = instructionText;
       
-      document.getElementById('selected-address').textContent = 'Tap on the map to select a location';
-      
       setTimeout(() => {
         google.maps.event.trigger(map, 'resize');
         if (type === 'pickup' && bookingData.pickup.lat) {
@@ -1525,10 +1517,7 @@
       geocoder.geocode({ location: event.latLng }, (results, status) => {
         if (status === 'OK' && results[0]) {
           const fullAddress = results[0].formatted_address;
-          document.getElementById('selected-address').textContent = fullAddress;
-          
           tempSelectedLocation.address = fullAddress;
-          
           showToast('✓ Location selected', 'success');
         }
       });
@@ -1994,6 +1983,45 @@
       });
       
       document.querySelectorAll('.datetime-field input').forEach(input => input.disabled = false);
+    }
+
+    // Cancel ride search
+    async function cancelRideSearch() {
+      if (!currentRideRequestRef) {
+        showToast('No active ride request', 'error');
+        return;
+      }
+
+      try {
+        // Update status to cancelled in Firebase
+        await currentRideRequestRef.update({ 
+          status: 'cancelled',
+          cancelledAt: firebase.database.ServerValue.TIMESTAMP,
+          cancelledBy: 'rider'
+        });
+
+        // Stop listening
+        currentRideRequestRef.off();
+        currentRideRequestRef = null;
+        searchingForRide = false;
+
+        // Hide searching view and show form
+        document.getElementById('searching-view').classList.remove('active');
+        document.getElementById('form-view').classList.remove('hidden');
+
+        // Reset book button
+        const bookBtn = document.getElementById('book-btn');
+        bookBtn.disabled = false;
+        bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
+
+        // Re-enable all inputs
+        enableAllInputs();
+
+        showToast('🚫 Ride search cancelled', 'success');
+      } catch (error) {
+        console.error('Error cancelling ride:', error);
+        showToast('Error cancelling: ' + error.message, 'error');
+      }
     }
 
     // Book ride
