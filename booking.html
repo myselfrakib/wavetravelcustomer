@@ -24,6 +24,7 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
+      background: white;
     }
     
     /* Header */
@@ -32,6 +33,7 @@
       padding: 16px 20px;
       color: white;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 100;
     }
     
     .header h1 {
@@ -45,37 +47,53 @@
       opacity: 0.9;
     }
     
-    /* Map Container */
-    .map-container {
-      position: relative;
-      width: 100%;
+    /* Main Content Wrapper */
+    .content-wrapper {
       flex: 1;
-      background: #e5e7eb;
+      position: relative;
       overflow: hidden;
     }
     
-    #map {
-      width: 100%;
-      height: 100%;
-    }
-    
-    .map-overlay {
+    /* Form View (Default) */
+    .form-view {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 0.9rem;
+      background: white;
+      overflow-y: auto;
+      z-index: 10;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 20px;
+    }
+    
+    .form-view.hidden {
+      transform: translateY(100%);
       pointer-events: none;
     }
     
-    .map-overlay.hidden {
-      display: none;
+    /* Map View */
+    .map-view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 5;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    
+    .map-view.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    
+    #map {
+      width: 100%;
+      height: 100%;
     }
     
     /* Map Controls */
@@ -116,74 +134,88 @@
       background: #e2e8f0;
     }
     
-    /* Bottom Sheet */
-    .bottom-sheet {
+    /* Map Instruction */
+    .map-instruction {
       position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
       background: white;
-      border-radius: 24px 24px 0 0;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-      transition: transform 0.3s ease;
-      max-height: 75vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      transform: translateY(0);
-    }
-    
-    .bottom-sheet.collapsed {
-      transform: translateY(calc(100% - 80px));
-    }
-    
-    .sheet-handle {
-      width: 40px;
-      height: 4px;
-      background: #cbd5e1;
-      border-radius: 2px;
-      margin: 12px auto 8px;
-      cursor: pointer;
-    }
-    
-    .sheet-content {
-      padding: 0 20px 20px;
-      overflow-y: auto;
-      flex: 1;
-    }
-    
-    .sheet-preview {
       padding: 12px 20px;
-      border-bottom: 1px solid #e2e8f0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    
-    .preview-info {
-      flex: 1;
-    }
-    
-    .preview-route {
-      font-size: 0.95rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      font-size: 0.85rem;
       font-weight: 600;
       color: #1e293b;
-      margin-bottom: 4px;
+      z-index: 1000;
+      max-width: 90%;
+      text-align: center;
+      animation: slideDown 0.3s ease;
     }
     
-    .preview-details {
-      font-size: 0.8rem;
-      color: #64748b;
+    @keyframes slideDown {
+      from {
+        transform: translateX(-50%) translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
     }
     
-    .expand-icon {
-      font-size: 1.2rem;
-      color: #64748b;
-      transition: transform 0.3s ease;
+    .map-instruction i {
+      color: #10b981;
+      margin-right: 6px;
     }
     
-    .bottom-sheet.collapsed .expand-icon {
-      transform: rotate(180deg);
+    .cancel-map-btn {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: white;
+      color: #1e293b;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 1000;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .cancel-map-btn:hover {
+      background: #f8fafc;
+    }
+    
+    .confirm-map-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(16,185,129,0.4);
+      z-index: 1000;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .confirm-map-btn:active {
+      transform: translateX(-50%) scale(0.95);
     }
     
     /* Autocomplete Suggestions */
@@ -212,7 +244,7 @@
       transition: background 0.2s ease;
       border-bottom: 1px solid #f1f5f9;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 12px;
     }
     
@@ -227,6 +259,7 @@
     .suggestion-icon {
       color: #64748b;
       font-size: 0.9rem;
+      margin-top: 2px;
     }
     
     .suggestion-text {
@@ -687,11 +720,6 @@
       background: #10b981;
     }
     
-    /* Hidden */
-    .hidden {
-      display: none;
-    }
-    
     /* Route Info Card */
     .route-info-card {
       background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
@@ -729,72 +757,194 @@
       margin-top: 2px;
     }
     
-    /* Map Selection Mode */
-    .map-instruction {
+    /* Bottom Sheet for Map Mode */
+    .map-bottom-sheet {
       position: absolute;
-      top: 16px;
-      left: 50%;
-      transform: translateX(-50%);
+      bottom: 0;
+      left: 0;
+      right: 0;
       background: white;
-      padding: 12px 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      border-radius: 24px 24px 0 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+      padding: 20px;
+      z-index: 999;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+    
+    .sheet-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 12px;
+    }
+    
+    .sheet-address {
       font-size: 0.85rem;
+      color: #64748b;
+      line-height: 1.5;
+    }
+    
+    /* Searching View */
+    .searching-view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+    }
+    
+    .searching-view.active {
+      display: flex;
+    }
+    
+    .searching-map-container {
+      flex: 1;
+      position: relative;
+    }
+    
+    .searching-details {
+      height: 50vh;
+      background: white;
+      padding: 24px 20px;
+      overflow-y: auto;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .searching-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    
+    .searching-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid #10b981;
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      animation: spin 1s linear infinite;
+    }
+    
+    .searching-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+    
+    .searching-subtitle {
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+    
+    .ride-summary {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #a7f3d0;
+    }
+    
+    .summary-row {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    
+    .summary-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .summary-icon {
+      width: 36px;
+      height: 36px;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    
+    .summary-icon.pickup {
+      color: #10b981;
+    }
+    
+    .summary-icon.dropoff {
+      color: #ef4444;
+    }
+    
+    .summary-content {
+      flex: 1;
+    }
+    
+    .summary-label {
+      font-size: 0.75rem;
+      color: #64748b;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .summary-value {
+      font-size: 0.9rem;
+      color: #1e293b;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    
+    .ride-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      border: 2px solid #e2e8f0;
+    }
+    
+    .stat-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #059669;
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 0.7rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+    
+    .vehicle-info {
+      display: flex;
+      align-items: center;
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 2px solid #e2e8f0;
+    }
+    
+    .vehicle-icon {
+      font-size: 2rem;
+      margin-right: 12px;
+    }
+    
+    .vehicle-name {
       font-weight: 600;
       color: #1e293b;
-      z-index: 1000;
-      display: none;
-      max-width: 90%;
-      text-align: center;
-    }
-    
-    .map-instruction.show {
-      display: block;
-      animation: slideDown 0.3s ease;
-    }
-    
-    @keyframes slideDown {
-      from {
-        transform: translateX(-50%) translateY(-20px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-      }
-    }
-    
-    .map-instruction i {
-      color: #10b981;
-      margin-right: 6px;
-    }
-    
-    .cancel-selection-btn {
-      position: absolute;
-      top: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ef4444;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(239,68,68,0.3);
-      z-index: 1000;
-      display: none;
-      font-family: 'Inter', sans-serif;
-    }
-    
-    .cancel-selection-btn.show {
-      display: block;
-      animation: slideDown 0.3s ease 0.1s both;
-    }
-    
-    .cancel-selection-btn:hover {
-      background: #dc2626;
+      font-size: 0.95rem;
     }
     
     @media (max-width: 480px) {
@@ -812,48 +962,9 @@
       <p>Book Your EV Ride</p>
     </div>
 
-    <!-- Map Container -->
-    <div class="map-container">
-      <div id="map"></div>
-      <div class="map-overlay hidden" id="map-overlay">
-        <div>📍 Enter destination to see route</div>
-      </div>
-      
-      <!-- Map Controls -->
-      <div class="map-controls">
-        <button class="map-control-btn" onclick="zoomIn()" title="Zoom in">
-          <i class="fas fa-plus"></i>
-        </button>
-        <button class="map-control-btn" onclick="zoomOut()" title="Zoom out">
-          <i class="fas fa-minus"></i>
-        </button>
-        <button class="map-control-btn" onclick="centerMap()" title="Center map">
-          <i class="fas fa-location-arrow"></i>
-        </button>
-      </div>
-      
-      <div class="map-instruction" id="map-instruction">
-        <i class="fas fa-hand-pointer"></i>
-        <span id="instruction-text">Tap on map to select pickup location</span>
-      </div>
-      <button class="cancel-selection-btn" id="cancel-selection-btn" onclick="cancelMapSelection()">
-        <i class="fas fa-times"></i> Cancel
-      </button>
-    </div>
-
-    <!-- Bottom Sheet -->
-    <div class="bottom-sheet" id="bottom-sheet">
-      <div class="sheet-handle" onclick="toggleSheet()"></div>
-      
-      <div class="sheet-preview" onclick="toggleSheet()">
-        <div class="preview-info">
-          <div class="preview-route" id="preview-route">Where to?</div>
-          <div class="preview-details" id="preview-details">Enter your destination</div>
-        </div>
-        <i class="fas fa-chevron-down expand-icon"></i>
-      </div>
-      
-      <div class="sheet-content">
+    <div class="content-wrapper">
+      <!-- Form View (Default) -->
+      <div class="form-view" id="form-view">
         <!-- Trip Type Toggle -->
         <div class="trip-toggle">
           <div class="toggle-option active" data-type="oneway" onclick="setTripType('oneway')">
@@ -888,7 +999,7 @@
             <div class="input-wrapper">
               <div class="location-dot pickup"></div>
               <input type="text" class="input-field" id="pickup" placeholder="Pickup location" value="Kolkata" autocomplete="off"/>
-              <button class="action-btn" id="map-pickup-btn" onclick="selectFromMap('pickup')" title="Choose from map">
+              <button class="action-btn" id="map-pickup-btn" onclick="openMapSelection('pickup')" title="Choose from map">
                 <i class="fas fa-map-marked-alt"></i>
               </button>
             </div>
@@ -907,7 +1018,7 @@
             <div class="input-wrapper">
               <div class="location-dot dropoff"></div>
               <input type="text" class="input-field" id="dropoff" placeholder="Where to?" autocomplete="off"/>
-              <button class="action-btn" id="map-dropoff-btn" onclick="selectFromMap('dropoff')" title="Choose from map">
+              <button class="action-btn" id="map-dropoff-btn" onclick="openMapSelection('dropoff')" title="Choose from map">
                 <i class="fas fa-map-marked-alt"></i>
               </button>
             </div>
@@ -995,13 +1106,111 @@
           Book Your Ride
         </button>
       </div>
+
+      <!-- Map View -->
+      <div class="map-view" id="map-view">
+        <div id="map"></div>
+        
+        <!-- Map Controls -->
+        <div class="map-controls">
+          <button class="map-control-btn" onclick="zoomIn()" title="Zoom in">
+            <i class="fas fa-plus"></i>
+          </button>
+          <button class="map-control-btn" onclick="zoomOut()" title="Zoom out">
+            <i class="fas fa-minus"></i>
+          </button>
+          <button class="map-control-btn" onclick="centerMap()" title="Center map">
+            <i class="fas fa-location-arrow"></i>
+          </button>
+        </div>
+        
+        <button class="cancel-map-btn" onclick="closeMapSelection()">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+        
+        <div class="map-instruction" id="map-instruction">
+          <i class="fas fa-hand-pointer"></i>
+          <span id="instruction-text">Tap on map to select location</span>
+        </div>
+        
+        <button class="confirm-map-btn" id="confirm-map-btn" onclick="confirmMapSelection()">
+          <i class="fas fa-check"></i> Confirm Location
+        </button>
+        
+        <div class="map-bottom-sheet" id="map-bottom-sheet">
+          <div class="sheet-title">Selected Location</div>
+          <div class="sheet-address" id="selected-address">Tap on the map to select a location</div>
+        </div>
+      </div>
+
+      <!-- Searching View -->
+      <div class="searching-view" id="searching-view">
+        <div class="searching-map-container">
+          <div id="searching-map"></div>
+        </div>
+        
+        <div class="searching-details">
+          <div class="searching-header">
+            <div class="searching-spinner"></div>
+            <div class="searching-title">Finding Your Driver</div>
+            <div class="searching-subtitle">Please wait while we connect you...</div>
+          </div>
+          
+          <div class="ride-summary">
+            <div class="summary-row">
+              <div class="summary-icon pickup">
+                <i class="fas fa-map-marker-alt"></i>
+              </div>
+              <div class="summary-content">
+                <div class="summary-label">PICKUP LOCATION</div>
+                <div class="summary-value" id="search-pickup-address">Loading...</div>
+              </div>
+            </div>
+            
+            <div class="summary-row">
+              <div class="summary-icon dropoff">
+                <i class="fas fa-flag-checkered"></i>
+              </div>
+              <div class="summary-content">
+                <div class="summary-label">DROP-OFF LOCATION</div>
+                <div class="summary-value" id="search-dropoff-address">Loading...</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="ride-stats-grid">
+            <div class="stat-card">
+              <span class="stat-value" id="search-distance">--</span>
+              <span class="stat-label">Distance</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="search-duration">--</span>
+              <span class="stat-label">Duration</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="search-fare">--</span>
+              <span class="stat-label">Fare</span>
+            </div>
+          </div>
+          
+          <div class="vehicle-info">
+            <div class="vehicle-icon" id="search-vehicle-icon">🚗</div>
+            <div class="vehicle-name" id="search-vehicle-name">Sedan</div>
+          </div>
+          
+          <button class="btn btn-cancel" onclick="cancelSearch()">
+            <i class="fas fa-times-circle"></i>
+            Cancel Search
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
-  <!-- Firebase SDK - Realtime Database -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -1034,7 +1243,7 @@
       showToast('⚠️ Firebase initialization failed', 'error');
     }
 
-    // Check auth state and redirect if not signed in
+    // Check auth state
     if (auth) {
       auth.onAuthStateChanged((user) => {
         if (user) {
@@ -1048,19 +1257,44 @@
       });
     }
 
-    // Google Maps
+    // Global variables
     let map, directionsService, directionsRenderer;
-    let pickupMarker, dropoffMarker;
-    let autocompleteService, placesService;
+    let searchingMap, searchingDirectionsRenderer;
+    let pickupMarker, dropoffMarker, tempMarker;
+    let autocompleteService, placesService, geocoder;
     let sessionToken;
     let mapSelectionMode = null;
-    let tempMarker = null;
-    let touchStartTime = 0;
-    let lastTap = 0;
+    let tempSelectedLocation = null;
     let initialPinchDistance = null;
     let initialZoom = null;
     let currentRideRequestRef = null;
     let searchingForRide = false;
+
+    // Booking data
+    let bookingData = {
+      tripType: 'oneway',
+      journeyTime: 'now',
+      pickup: { address: 'Kolkata', lat: 22.5726, lng: 88.3639 },
+      dropoff: { address: '', lat: null, lng: null },
+      pickupDate: '',
+      pickupTime: '09:00',
+      returnDate: '',
+      returnTime: '18:00',
+      selectedCar: 'sedan',
+      distance: 0,
+      duration: 0,
+      fareEstimate: 0
+    };
+
+    // Initialize on load
+    window.addEventListener('load', () => {
+      initMap();
+      setupDateInputs();
+      updateCurrentTime();
+      setTimeout(() => {
+        autoDetectPickupLocation();
+      }, 1000);
+    });
 
     // Initialize Map
     function initMap() {
@@ -1083,7 +1317,7 @@
 
       directionsService = new google.maps.DirectionsService();
       directionsRenderer = new google.maps.DirectionsRenderer({
-        map: map,
+        map: null,
         suppressMarkers: false,
         polylineOptions: {
           strokeColor: '#10b981',
@@ -1093,63 +1327,49 @@
 
       autocompleteService = new google.maps.places.AutocompleteService();
       placesService = new google.maps.places.PlacesService(map);
+      geocoder = new google.maps.Geocoder();
       sessionToken = new google.maps.places.AutocompleteSessionToken();
-
-      // Create initial pickup marker with checkmark
-      createPickupMarker(kolkata);
 
       setupAutocomplete('pickup', 'pickup-suggestions');
       setupAutocomplete('dropoff', 'dropoff-suggestions');
       
       map.addListener('click', handleMapClick);
-      
       setupTouchControls();
+      
+      // Initialize searching map
+      initSearchingMap();
     }
 
-    // Create pickup marker with checkmark icon
-    function createPickupMarker(position) {
-      if (pickupMarker) {
-        pickupMarker.setMap(null);
-      }
-
-      pickupMarker = new google.maps.Marker({
-        position: position,
-        map: map,
-        icon: {
-          path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
-          fillColor: '#10b981',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
-          scale: 1,
-          anchor: new google.maps.Point(0, 0)
-        },
-        animation: google.maps.Animation.DROP,
-        title: 'Pickup Location'
+    // Initialize searching map
+    function initSearchingMap() {
+      const kolkata = { lat: 22.5726, lng: 88.3639 };
+      
+      searchingMap = new google.maps.Map(document.getElementById('searching-map'), {
+        center: kolkata,
+        zoom: 12,
+        disableDefaultUI: true,
+        zoomControl: false,
+        gestureHandling: 'greedy',
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "off" }]
+          }
+        ]
       });
 
-      // Add info window with checkmark
-      const infoWindow = new google.maps.InfoWindow({
-        content: '<div style="padding: 8px; font-weight: 600; color: #10b981;"><i class="fas fa-check-circle"></i> Pickup Location</div>'
-      });
-
-      pickupMarker.addListener('mouseover', () => {
-        infoWindow.open(map, pickupMarker);
-      });
-
-      pickupMarker.addListener('mouseout', () => {
-        infoWindow.close();
-      });
-
-      // For mobile - show on tap
-      pickupMarker.addListener('click', () => {
-        infoWindow.open(map, pickupMarker);
-        setTimeout(() => {
-          infoWindow.close();
-        }, 2000);
+      searchingDirectionsRenderer = new google.maps.DirectionsRenderer({
+        map: searchingMap,
+        suppressMarkers: false,
+        polylineOptions: {
+          strokeColor: '#10b981',
+          strokeWeight: 4
+        }
       });
     }
 
+    // Touch controls for pinch zoom
     function setupTouchControls() {
       const mapDiv = document.getElementById('map');
       
@@ -1157,6 +1377,9 @@
       mapDiv.addEventListener('touchmove', handleTouchMove, { passive: false });
       mapDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
     }
+
+    let touchStartTime = 0;
+    let lastTap = 0;
 
     function handleTouchStart(e) {
       touchStartTime = Date.now();
@@ -1205,6 +1428,7 @@
       return Math.sqrt(dx * dx + dy * dy);
     }
 
+    // Map control functions
     function zoomIn() {
       const currentZoom = map.getZoom();
       map.setZoom(currentZoom + 1);
@@ -1216,7 +1440,10 @@
     }
 
     function centerMap() {
-      if (bookingData.pickup.lat && bookingData.pickup.lng) {
+      if (tempSelectedLocation) {
+        map.setCenter(tempSelectedLocation);
+        map.setZoom(16);
+      } else if (bookingData.pickup.lat && bookingData.pickup.lng) {
         map.setCenter({ 
           lat: bookingData.pickup.lat, 
           lng: bookingData.pickup.lng 
@@ -1225,6 +1452,129 @@
       }
     }
 
+    // Open map selection
+    function openMapSelection(type) {
+      mapSelectionMode = type;
+      
+      document.getElementById('form-view').classList.add('hidden');
+      document.getElementById('map-view').classList.add('active');
+      
+      const instructionText = type === 'pickup' 
+        ? 'Tap on map to select pickup location' 
+        : 'Tap on map to select dropoff location';
+      document.getElementById('instruction-text').textContent = instructionText;
+      
+      document.getElementById('selected-address').textContent = 'Tap on the map to select a location';
+      
+      setTimeout(() => {
+        google.maps.event.trigger(map, 'resize');
+        if (type === 'pickup' && bookingData.pickup.lat) {
+          map.setCenter({ lat: bookingData.pickup.lat, lng: bookingData.pickup.lng });
+        } else if (type === 'dropoff' && bookingData.dropoff.lat) {
+          map.setCenter({ lat: bookingData.dropoff.lat, lng: bookingData.dropoff.lng });
+        }
+      }, 100);
+    }
+
+    // Close map selection
+    function closeMapSelection() {
+      mapSelectionMode = null;
+      tempSelectedLocation = null;
+      
+      if (tempMarker) {
+        tempMarker.setMap(null);
+        tempMarker = null;
+      }
+      
+      document.getElementById('map-view').classList.remove('active');
+      document.getElementById('form-view').classList.remove('hidden');
+    }
+
+    // Handle map click
+    function handleMapClick(event) {
+      if (!mapSelectionMode) return;
+      
+      const lat = event.latLng.lat();
+      const lng = event.latLng.lng();
+      
+      tempSelectedLocation = { lat, lng };
+      
+      if (tempMarker) {
+        tempMarker.setMap(null);
+      }
+      
+      tempMarker = new google.maps.Marker({
+        position: event.latLng,
+        map: map,
+        icon: {
+          path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+          fillColor: mapSelectionMode === 'pickup' ? '#10b981' : '#ef4444',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+          scale: 1.2,
+          anchor: new google.maps.Point(0, 0)
+        },
+        animation: google.maps.Animation.DROP
+      });
+      
+      geocoder.geocode({ location: event.latLng }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const fullAddress = results[0].formatted_address;
+          document.getElementById('selected-address').textContent = fullAddress;
+          
+          tempSelectedLocation.address = fullAddress;
+          
+          showToast('✓ Location selected', 'success');
+        }
+      });
+    }
+
+    // Confirm map selection
+    function confirmMapSelection() {
+      if (!tempSelectedLocation || !tempSelectedLocation.address) {
+        showToast('Please select a location on the map', 'error');
+        return;
+      }
+      
+      if (mapSelectionMode === 'pickup') {
+        bookingData.pickup.lat = tempSelectedLocation.lat;
+        bookingData.pickup.lng = tempSelectedLocation.lng;
+        bookingData.pickup.address = tempSelectedLocation.address;
+        
+        document.getElementById('pickup').value = tempSelectedLocation.address;
+        
+        if (pickupMarker) {
+          pickupMarker.setMap(null);
+        }
+        pickupMarker = tempMarker;
+        tempMarker = null;
+        
+      } else if (mapSelectionMode === 'dropoff') {
+        bookingData.dropoff.lat = tempSelectedLocation.lat;
+        bookingData.dropoff.lng = tempSelectedLocation.lng;
+        bookingData.dropoff.address = tempSelectedLocation.address;
+        
+        document.getElementById('dropoff').value = tempSelectedLocation.address;
+        
+        if (dropoffMarker) {
+          dropoffMarker.setMap(null);
+        }
+        dropoffMarker = tempMarker;
+        tempMarker = null;
+      }
+      
+      showToast(`✓ ${mapSelectionMode === 'pickup' ? 'Pickup' : 'Dropoff'} location confirmed!`, 'success');
+      
+      // Close map and return to form
+      closeMapSelection();
+      
+      if (bookingData.pickup.lat && bookingData.dropoff.lat) {
+        calculateRoute();
+      }
+    }
+
+    // Setup autocomplete
     function setupAutocomplete(inputId, suggestionsId) {
       const input = document.getElementById(inputId);
       const suggestionsList = document.getElementById(suggestionsId);
@@ -1307,37 +1657,74 @@
       placesService.getDetails(
         {
           placeId: placeId,
-          fields: ['formatted_address', 'geometry', 'name'],
+          fields: ['formatted_address', 'geometry', 'name', 'address_components'],
           sessionToken: sessionToken
         },
         (place, status) => {
           if (status === google.maps.places.PlacesServiceStatus.OK) {
             const input = document.getElementById(inputId);
-            const displayName = place.name || place.formatted_address;
-            input.value = displayName;
+            const fullAddress = place.formatted_address;
+            input.value = fullAddress;
 
             if (inputId === 'pickup') {
               bookingData.pickup.lat = place.geometry.location.lat();
               bookingData.pickup.lng = place.geometry.location.lng();
-              bookingData.pickup.address = place.formatted_address;
+              bookingData.pickup.address = fullAddress;
               
-              // Update pickup marker
-              createPickupMarker(place.geometry.location);
-              map.setCenter(place.geometry.location);
+              if (pickupMarker) {
+                pickupMarker.setMap(null);
+              }
+              pickupMarker = new google.maps.Marker({
+                position: place.geometry.location,
+                map: null,
+                icon: {
+                  path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+                  fillColor: '#10b981',
+                  fillOpacity: 1,
+                  strokeColor: '#ffffff',
+                  strokeWeight: 2,
+                  scale: 1,
+                  anchor: new google.maps.Point(0, 0)
+                },
+                animation: google.maps.Animation.DROP,
+                title: 'Pickup Location'
+              });
             } else {
               bookingData.dropoff.lat = place.geometry.location.lat();
               bookingData.dropoff.lng = place.geometry.location.lng();
-              bookingData.dropoff.address = place.formatted_address;
+              bookingData.dropoff.address = fullAddress;
+              
+              if (dropoffMarker) {
+                dropoffMarker.setMap(null);
+              }
+              dropoffMarker = new google.maps.Marker({
+                position: place.geometry.location,
+                map: null,
+                icon: {
+                  path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+                  fillColor: '#ef4444',
+                  fillOpacity: 1,
+                  strokeColor: '#ffffff',
+                  strokeWeight: 2,
+                  scale: 1,
+                  anchor: new google.maps.Point(0, 0)
+                },
+                animation: google.maps.Animation.DROP,
+                title: 'Dropoff Location'
+              });
             }
 
             sessionToken = new google.maps.places.AutocompleteSessionToken();
             
-            calculateRoute();
+            if (bookingData.pickup.lat && bookingData.dropoff.lat) {
+              calculateRoute();
+            }
           }
         }
       );
     }
 
+    // Calculate route
     function calculateRoute() {
       if (!bookingData.pickup.lat || !bookingData.dropoff.lat) return;
 
@@ -1352,8 +1739,6 @@
         },
         (result, status) => {
           if (status === 'OK') {
-            directionsRenderer.setDirections(result);
-            
             const route = result.routes[0].legs[0];
             const distanceKm = (route.distance.value / 1000).toFixed(0);
             const durationHrs = (route.duration.value / 3600).toFixed(1);
@@ -1368,13 +1753,6 @@
             document.getElementById('duration-display').textContent = durationHrs + ' hrs';
             document.getElementById('fare-display').textContent = '₹' + fareEstimate;
             
-            const pickupName = bookingData.pickup.address.split(',')[0];
-            const dropoffName = bookingData.dropoff.address.split(',')[0];
-            
-            document.getElementById('preview-route').textContent = pickupName + ' → ' + dropoffName;
-            document.getElementById('preview-details').textContent = 
-              distanceKm + ' km • ' + durationHrs + ' hrs • ₹' + fareEstimate;
-            
             bookingData.distance = parseFloat(distanceKm);
             bookingData.duration = parseFloat(durationHrs);
             bookingData.fareEstimate = fareEstimate;
@@ -1383,39 +1761,79 @@
       );
     }
 
-    window.addEventListener('load', () => {
-      initMap();
-      updateCurrentTime();
-      setTimeout(() => {
-        autoDetectPickupLocation();
-      }, 1000);
-    });
-
-    let bookingData = {
-      tripType: 'oneway',
-      journeyTime: 'now',
-      pickup: { address: 'Kolkata', lat: 22.5726, lng: 88.3639 },
-      dropoff: { address: '', lat: null, lng: null },
-      pickupDate: '',
-      pickupTime: '09:00',
-      returnDate: '',
-      returnTime: '18:00',
-      selectedCar: 'sedan',
-      distance: 0,
-      duration: 0,
-      fareEstimate: 0
-    };
-
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('pickup-date').value = today;
-    document.getElementById('pickup-date').min = today;
-    document.getElementById('return-date').min = today;
-
-    function toggleSheet() {
-      const sheet = document.getElementById('bottom-sheet');
-      sheet.classList.toggle('collapsed');
+    // Auto-detect pickup location
+    async function autoDetectPickupLocation() {
+      if ("geolocation" in navigator) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 10000,
+              enableHighAccuracy: false
+            });
+          });
+          
+          bookingData.pickup.lat = position.coords.latitude;
+          bookingData.pickup.lng = position.coords.longitude;
+          
+          const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
+          
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+              const fullAddress = results[0].formatted_address;
+              bookingData.pickup.address = fullAddress;
+              document.getElementById('pickup').value = fullAddress;
+              
+              console.log('Auto-detected location:', fullAddress);
+            }
+          });
+        } catch (error) {
+          console.log('Auto-detect location failed, using default:', error.message);
+        }
+      }
     }
 
+    // Detect location button
+    async function detectLocation() {
+      const btn = document.getElementById('detect-btn-full');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Detecting...';
+      
+      if ("geolocation" in navigator) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
+          
+          bookingData.pickup.lat = position.coords.latitude;
+          bookingData.pickup.lng = position.coords.longitude;
+          
+          const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
+          
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+              const fullAddress = results[0].formatted_address;
+              bookingData.pickup.address = fullAddress;
+              document.getElementById('pickup').value = fullAddress;
+              
+              showToast('✓ Location detected!', 'success');
+              
+              if (bookingData.dropoff.lat) {
+                calculateRoute();
+              }
+            }
+          });
+        } catch (error) {
+          showToast('Could not detect location', 'error');
+        }
+      } else {
+        showToast('Geolocation not supported', 'error');
+      }
+      
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-crosshairs"></i> Use Current Location';
+    }
+
+    // Trip type functions
     function setTripType(type) {
       bookingData.tripType = type;
       
@@ -1437,9 +1855,12 @@
         returnSection.classList.add('hidden');
       }
       
-      calculateRoute();
+      if (bookingData.pickup.lat && bookingData.dropoff.lat) {
+        calculateRoute();
+      }
     }
 
+    // Journey time functions
     function setJourneyTime(timeType) {
       bookingData.journeyTime = timeType;
       
@@ -1487,179 +1908,7 @@
       }
     }, 60000);
 
-    function selectFromMap(type) {
-      mapSelectionMode = type;
-      
-      document.getElementById('map-pickup-btn').classList.remove('active');
-      document.getElementById('map-dropoff-btn').classList.remove('active');
-      
-      if (type === 'pickup') {
-        document.getElementById('map-pickup-btn').classList.add('active');
-        document.getElementById('instruction-text').textContent = 'Tap on map to select pickup location';
-      } else {
-        document.getElementById('map-dropoff-btn').classList.add('active');
-        document.getElementById('instruction-text').textContent = 'Tap on map to select dropoff location';
-      }
-      
-      document.getElementById('map-instruction').classList.add('show');
-      document.getElementById('cancel-selection-btn').classList.add('show');
-      
-      document.getElementById('bottom-sheet').classList.add('collapsed');
-    }
-
-    function cancelMapSelection() {
-      mapSelectionMode = null;
-      
-      if (tempMarker) {
-        tempMarker.setMap(null);
-        tempMarker = null;
-      }
-      
-      document.getElementById('map-pickup-btn').classList.remove('active');
-      document.getElementById('map-dropoff-btn').classList.remove('active');
-      
-      document.getElementById('map-instruction').classList.remove('show');
-      document.getElementById('cancel-selection-btn').classList.remove('show');
-    }
-
-    function handleMapClick(event) {
-      if (!mapSelectionMode) return;
-      
-      const lat = event.latLng.lat();
-      const lng = event.latLng.lng();
-      
-      if (tempMarker) {
-        tempMarker.setMap(null);
-      }
-      
-      tempMarker = new google.maps.Marker({
-        position: event.latLng,
-        map: map,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: mapSelectionMode === 'pickup' ? '#10b981' : '#ef4444',
-          fillOpacity: 1,
-          strokeColor: 'white',
-          strokeWeight: 2
-        },
-        animation: google.maps.Animation.DROP
-      });
-      
-      const geocoder = new google.maps.Geocoder();
-      geocoder.geocode({ location: event.latLng }, (results, status) => {
-        if (status === 'OK' && results[0]) {
-          const address = results[0].formatted_address;
-          const placeName = results[0].address_components[0]?.long_name || 'Selected Location';
-          
-          if (mapSelectionMode === 'pickup') {
-            bookingData.pickup.lat = lat;
-            bookingData.pickup.lng = lng;
-            bookingData.pickup.address = address;
-            document.getElementById('pickup').value = placeName;
-            
-            // Update pickup marker
-            createPickupMarker(event.latLng);
-          } else {
-            bookingData.dropoff.lat = lat;
-            bookingData.dropoff.lng = lng;
-            bookingData.dropoff.address = address;
-            document.getElementById('dropoff').value = placeName;
-          }
-          
-          if (tempMarker) {
-            tempMarker.setMap(null);
-            tempMarker = null;
-          }
-          
-          showToast(`✓ ${mapSelectionMode === 'pickup' ? 'Pickup' : 'Dropoff'} location selected!`, 'success');
-          
-          cancelMapSelection();
-          
-          calculateRoute();
-        }
-      });
-    }
-
-    async function autoDetectPickupLocation() {
-      if ("geolocation" in navigator) {
-        try {
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 10000,
-              enableHighAccuracy: false
-            });
-          });
-          
-          bookingData.pickup.lat = position.coords.latitude;
-          bookingData.pickup.lng = position.coords.longitude;
-          
-          const geocoder = new google.maps.Geocoder();
-          const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
-          
-          geocoder.geocode({ location: latlng }, (results, status) => {
-            if (status === 'OK' && results[0]) {
-              const placeName = results[0].address_components[0]?.long_name || 'Current Location';
-              bookingData.pickup.address = results[0].formatted_address;
-              document.getElementById('pickup').value = placeName;
-              
-              // Update pickup marker to current location
-              createPickupMarker(latlng);
-              map.setCenter(latlng);
-              map.setZoom(14);
-              
-              console.log('Auto-detected location:', placeName);
-            }
-          });
-        } catch (error) {
-          console.log('Auto-detect location failed, using default:', error.message);
-        }
-      }
-    }
-
-    async function detectLocation() {
-      const btn = document.getElementById('detect-btn-full');
-      btn.disabled = true;
-      btn.innerHTML = '<div class="spinner"></div> Detecting...';
-      
-      if ("geolocation" in navigator) {
-        try {
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject);
-          });
-          
-          bookingData.pickup.lat = position.coords.latitude;
-          bookingData.pickup.lng = position.coords.longitude;
-          
-          const geocoder = new google.maps.Geocoder();
-          const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
-          
-          geocoder.geocode({ location: latlng }, (results, status) => {
-            if (status === 'OK' && results[0]) {
-              const placeName = results[0].address_components[0]?.long_name || 'Current Location';
-              bookingData.pickup.address = results[0].formatted_address;
-              document.getElementById('pickup').value = placeName;
-              
-              // Update pickup marker
-              createPickupMarker(latlng);
-              map.setCenter(latlng);
-              map.setZoom(14);
-              
-              showToast('✓ Location detected!', 'success');
-              calculateRoute();
-            }
-          });
-        } catch (error) {
-          showToast('Could not detect location', 'error');
-        }
-      } else {
-        showToast('Geolocation not supported', 'error');
-      }
-      
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-crosshairs"></i> Use Current Location';
-    }
-
+    // Car selection
     function selectCar(element) {
       if (searchingForRide) return;
       
@@ -1668,16 +1917,33 @@
       });
       element.classList.add('selected');
       bookingData.selectedCar = element.dataset.car;
-      calculateRoute();
+      
+      if (bookingData.pickup.lat && bookingData.dropoff.lat) {
+        calculateRoute();
+      }
     }
 
-    function disableAllInputs() {
-      document.querySelectorAll('.toggle-option').forEach(el => {
-        el.style.pointerEvents = 'none';
-        el.style.opacity = '0.5';
+    // Setup date inputs
+    function setupDateInputs() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('pickup-date').value = today;
+      document.getElementById('pickup-date').min = today;
+      document.getElementById('return-date').min = today;
+
+      document.getElementById('pickup-date').addEventListener('change', (e) => {
+        const returnDateInput = document.getElementById('return-date');
+        if (bookingData.tripType === 'roundtrip') {
+          const pickupDate = new Date(e.target.value);
+          pickupDate.setDate(pickupDate.getDate() + 2);
+          returnDateInput.value = pickupDate.toISOString().split('T')[0];
+          returnDateInput.min = e.target.value;
+        }
       });
-      
-      document.querySelectorAll('.journey-option').forEach(el => {
+    }
+
+    // Disable/Enable inputs
+    function disableAllInputs() {
+      document.querySelectorAll('.toggle-option, .journey-option').forEach(el => {
         el.style.pointerEvents = 'none';
         el.style.opacity = '0.5';
       });
@@ -1695,17 +1961,11 @@
         el.style.opacity = '0.5';
       });
       
-      const datetimeInputs = document.querySelectorAll('.datetime-field input');
-      datetimeInputs.forEach(input => input.disabled = true);
+      document.querySelectorAll('.datetime-field input').forEach(input => input.disabled = true);
     }
 
     function enableAllInputs() {
-      document.querySelectorAll('.toggle-option').forEach(el => {
-        el.style.pointerEvents = '';
-        el.style.opacity = '';
-      });
-      
-      document.querySelectorAll('.journey-option').forEach(el => {
+      document.querySelectorAll('.toggle-option, .journey-option').forEach(el => {
         el.style.pointerEvents = '';
         el.style.opacity = '';
       });
@@ -1723,10 +1983,10 @@
         el.style.opacity = '';
       });
       
-      const datetimeInputs = document.querySelectorAll('.datetime-field input');
-      datetimeInputs.forEach(input => input.disabled = false);
+      document.querySelectorAll('.datetime-field input').forEach(input => input.disabled = false);
     }
 
+    // Cancel search
     async function cancelSearch() {
       if (currentRideRequestRef) {
         try {
@@ -1739,7 +1999,9 @@
           currentRideRequestRef = null;
           searchingForRide = false;
           
-          document.getElementById('cancel-search-btn').classList.add('hidden');
+          // Hide searching view and show form
+          document.getElementById('searching-view').classList.remove('active');
+          document.getElementById('form-view').classList.remove('hidden');
           
           const bookBtn = document.getElementById('book-btn');
           bookBtn.disabled = false;
@@ -1756,6 +2018,7 @@
       }
     }
 
+    // Book ride
     async function bookRide() {
       const pickup = document.getElementById('pickup').value.trim();
       const dropoff = document.getElementById('dropoff').value.trim();
@@ -1828,7 +2091,27 @@
       
       disableAllInputs();
       
-      document.getElementById('cancel-search-btn').classList.remove('hidden');
+      // Hide form view and show searching view
+      document.getElementById('form-view').classList.add('hidden');
+      document.getElementById('searching-view').classList.add('active');
+      
+      // Update searching view with ride details
+      document.getElementById('search-pickup-address').textContent = bookingData.pickup.address;
+      document.getElementById('search-dropoff-address').textContent = bookingData.dropoff.address;
+      document.getElementById('search-distance').textContent = bookingData.distance + ' km';
+      document.getElementById('search-duration').textContent = bookingData.duration + ' hrs';
+      document.getElementById('search-fare').textContent = '₹' + bookingData.fareEstimate;
+      
+      const vehicleIcon = bookingData.selectedCar === 'suv' ? '🚙' : '🚗';
+      const vehicleName = bookingData.selectedCar === 'suv' ? 'SUV' : 'Sedan';
+      document.getElementById('search-vehicle-icon').textContent = vehicleIcon;
+      document.getElementById('search-vehicle-name').textContent = vehicleName;
+      
+      // Show route on searching map
+      setTimeout(() => {
+        google.maps.event.trigger(searchingMap, 'resize');
+        showRouteOnSearchingMap();
+      }, 100);
 
       try {
         let riderName = 'Rider';
@@ -1879,10 +2162,33 @@
         bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
         searchingForRide = false;
         enableAllInputs();
-        document.getElementById('cancel-search-btn').classList.add('hidden');
+        document.getElementById('searching-view').classList.remove('active');
+        document.getElementById('form-view').classList.remove('hidden');
       }
     }
 
+    // Show route on searching map
+    function showRouteOnSearchingMap() {
+      if (!bookingData.pickup.lat || !bookingData.dropoff.lat) return;
+
+      const origin = new google.maps.LatLng(bookingData.pickup.lat, bookingData.pickup.lng);
+      const destination = new google.maps.LatLng(bookingData.dropoff.lat, bookingData.dropoff.lng);
+
+      directionsService.route(
+        {
+          origin: origin,
+          destination: destination,
+          travelMode: google.maps.TravelMode.DRIVING
+        },
+        (result, status) => {
+          if (status === 'OK') {
+            searchingDirectionsRenderer.setDirections(result);
+          }
+        }
+      );
+    }
+
+    // Listen for driver acceptance
     function listenForDriverAcceptance(rideId) {
       currentRideRequestRef.on('value', async (snapshot) => {
         const rideData = snapshot.val();
@@ -1935,7 +2241,9 @@
           currentRideRequestRef = null;
           searchingForRide = false;
           
-          document.getElementById('cancel-search-btn').classList.add('hidden');
+          // Hide searching view and show form
+          document.getElementById('searching-view').classList.remove('active');
+          document.getElementById('form-view').classList.remove('hidden');
           
           const bookBtn = document.getElementById('book-btn');
           bookBtn.disabled = false;
@@ -1957,6 +2265,7 @@
       }, 30000);
     }
 
+    // Toast notification
     function showToast(message, type = 'success') {
       const toast = document.getElementById('toast');
       toast.textContent = message;
@@ -1966,16 +2275,6 @@
         toast.classList.remove('show');
       }, 3000);
     }
-
-    document.getElementById('pickup-date').addEventListener('change', (e) => {
-      const returnDateInput = document.getElementById('return-date');
-      if (bookingData.tripType === 'roundtrip') {
-        const pickupDate = new Date(e.target.value);
-        pickupDate.setDate(pickupDate.getDate() + 2);
-        returnDateInput.value = pickupDate.toISOString().split('T')[0];
-        returnDateInput.min = e.target.value;
-      }
-    });
   </script>
 </body>
 </html>
