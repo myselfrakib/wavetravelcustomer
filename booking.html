@@ -486,6 +486,27 @@
       display: block;
     }
     
+    .map-selection-hint {
+      margin-top: 12px;
+      display: none;
+      text-align: center;
+    }
+    
+    .map-selection-hint.show {
+      display: block;
+    }
+    
+    .map-hint-text {
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+    
+    .map-hint-text i {
+      color: #10b981;
+      margin-right: 4px;
+    }
+    
     .detect-btn-full {
       width: 100%;
       padding: 12px 16px;
@@ -1024,6 +1045,13 @@
             </div>
             <div class="suggestions-list" id="dropoff-suggestions"></div>
           </div>
+          
+          <div class="map-selection-hint" id="map-selection-hint">
+            <div class="map-hint-text">
+              <i class="fas fa-map-marked-alt"></i>
+              Choose from map
+            </div>
+          </div>
         </div>
 
         <!-- Journey Time Section -->
@@ -1094,8 +1122,8 @@
           </div>
         </div>
 
-        <!-- Cancel Search Button -->
-        <button class="btn btn-cancel hidden" id="cancel-search-btn" onclick="cancelSearch()">
+        <!-- Cancel Search Button - Only shows when searching -->
+        <button class="btn btn-cancel hidden" id="cancel-search-btn-form" onclick="cancelSearch()">
           <i class="fas fa-times-circle"></i>
           Cancel Searching
         </button>
@@ -1583,6 +1611,10 @@
       input.addEventListener('focus', () => {
         if (inputId === 'pickup') {
           document.getElementById('detect-location-section').classList.add('show');
+          document.getElementById('map-selection-hint').classList.remove('show');
+        } else if (inputId === 'dropoff') {
+          document.getElementById('detect-location-section').classList.remove('show');
+          document.getElementById('map-selection-hint').classList.add('show');
         }
       });
 
@@ -1590,6 +1622,8 @@
         setTimeout(() => {
           if (inputId === 'pickup' && !input.matches(':focus')) {
             document.getElementById('detect-location-section').classList.remove('show');
+          } else if (inputId === 'dropoff' && !input.matches(':focus')) {
+            document.getElementById('map-selection-hint').classList.remove('show');
           }
         }, 200);
       });
@@ -1999,6 +2033,12 @@
           currentRideRequestRef = null;
           searchingForRide = false;
           
+          // Hide cancel search button and views
+          const cancelBtnForm = document.getElementById('cancel-search-btn-form');
+          if (cancelBtnForm) {
+            cancelBtnForm.classList.add('hidden');
+          }
+          
           // Hide searching view and show form
           document.getElementById('searching-view').classList.remove('active');
           document.getElementById('form-view').classList.remove('hidden');
@@ -2091,6 +2131,12 @@
       
       disableAllInputs();
       
+      // Show cancel search button in form view
+      const cancelBtnForm = document.getElementById('cancel-search-btn-form');
+      if (cancelBtnForm) {
+        cancelBtnForm.classList.remove('hidden');
+      }
+      
       // Hide form view and show searching view
       document.getElementById('form-view').classList.add('hidden');
       document.getElementById('searching-view').classList.add('active');
@@ -2162,6 +2208,13 @@
         bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
         searchingForRide = false;
         enableAllInputs();
+        
+        // Hide cancel search button in form view
+        const cancelBtnForm = document.getElementById('cancel-search-btn-form');
+        if (cancelBtnForm) {
+          cancelBtnForm.classList.add('hidden');
+        }
+        
         document.getElementById('searching-view').classList.remove('active');
         document.getElementById('form-view').classList.remove('hidden');
       }
@@ -2240,6 +2293,12 @@
           currentRideRequestRef.off();
           currentRideRequestRef = null;
           searchingForRide = false;
+          
+          // Hide cancel search button
+          const cancelBtnForm = document.getElementById('cancel-search-btn-form');
+          if (cancelBtnForm) {
+            cancelBtnForm.classList.add('hidden');
+          }
           
           // Hide searching view and show form
           document.getElementById('searching-view').classList.remove('active');
