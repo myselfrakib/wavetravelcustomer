@@ -2,467 +2,1463 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>User Profile – WaveTravel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>My Profile - WaveTravel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <style>
-    :root {
-      --primary: #0077ff;
-      --bg-gradient: linear-gradient(to right, #16425b, #81c3d7);
-      --card-bg: #fff;
-      --dark-text: #333;
-      --whatsapp-green: #25d366;
-      --danger-red: #dc2626;
-      --danger-red-hover: #b91c1c;
-    }
-    * { box-sizing: border-box; margin:0; padding:0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
-      font-family:'Poppins',sans-serif;
-      background:var(--bg-gradient);
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-      color:var(--dark-text);
+      font-family: 'Inter', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      color: #1e293b;
+      overflow-x: hidden;
     }
-    .container { flex:1; max-width:400px; width:100%; margin:0 auto; padding:24px 16px; }
-    .card {
-      background:var(--card-bg);
-      border-radius:12px;
-      padding:24px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.1);
-      text-align:left;
-    }
-    .card h1 {
-      font-size:1.5rem;
-      color:var(--primary);
-      margin-bottom:16px;
-      text-align:center;
-    }
-    .field { display:flex; justify-content:space-between; margin-bottom:12px; font-size:1rem; }
-    .field span:first-child { font-weight:600; }
-    .loading { font-style:italic; color:#666; }
-    #logoutBtn, #supportBtn, #deleteAccountBtn {
-      display:block;
-      margin-top:16px;
-      width:100%;
-      padding:12px;
-      border:none;
-      border-radius:8px;
-      font-weight:600;
-      cursor:pointer;
-      text-decoration:none;
-      text-align:center;
-      font-size:1rem;
-    }
-    #logoutBtn {
-      background:var(--primary);
-      color:#fff;
-    }
-    #supportBtn {
-      background:var(--whatsapp-green);
-      color:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-    }
-    #supportBtn:hover {
-      background:#22c55e;
-    }
-    #deleteAccountBtn {
-      background:var(--danger-red);
-      color:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-    }
-    #deleteAccountBtn:hover {
-      background:var(--danger-red-hover);
-    }
-    #deleteAccountBtn:disabled {
-      background:#9ca3af;
-      cursor:not-allowed;
-    }
-
-    /* Confirmation Modal */
-    .modal {
-      display:none;
-      position:fixed;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      background:rgba(0,0,0,0.5);
-      z-index:2000;
-    }
-    .modal.show {
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:20px;
-    }
-    .modal-content {
-      background:#fff;
-      border-radius:12px;
-      padding:24px;
-      max-width:350px;
-      width:100%;
-      text-align:center;
-    }
-    .modal h3 {
-      color:var(--danger-red);
-      margin-bottom:16px;
-      font-size:1.25rem;
-    }
-    .modal p {
-      margin-bottom:20px;
-      line-height:1.5;
-    }
-    .modal-buttons {
-      display:flex;
-      gap:12px;
-      justify-content:center;
-    }
-    .modal-btn {
-      padding:10px 20px;
-      border:none;
-      border-radius:6px;
-      font-weight:600;
-      cursor:pointer;
-      font-size:0.9rem;
-    }
-    .modal-btn.cancel {
-      background:#e5e7eb;
-      color:var(--dark-text);
-    }
-    .modal-btn.confirm {
-      background:var(--danger-red);
-      color:#fff;
-    }
-    .modal-btn.confirm:hover {
-      background:var(--danger-red-hover);
-    }
-
-    /* footer links bar placed just above the navbar */
-    .footer-links {
-      position: fixed;
-      left: 0;
-      bottom: 56px; /* sits right above the navbar which is at bottom:0 */
-      width: 100%;
+    
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      position: relative;
+      min-height: 100vh;
       display: flex;
-      justify-content: space-around;
-      gap: 8px;
-      background: rgba(255,255,255,0.98);
-      padding: 8px 12px;
-      border-top: 1px solid #eee;
-      box-shadow: 0 -1px 6px rgba(0,0,0,0.06);
-      z-index: 1000;
+      flex-direction: column;
+      background: white;
     }
-    .footer-links a {
-      color: var(--primary);
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 16px 20px;
+      color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 100;
+      flex-shrink: 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .hamburger-btn {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+    
+    .hamburger-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+    }
+    
+    .hamburger-btn:active {
+      transform: scale(0.95);
+    }
+    
+    .hamburger-line {
+      width: 20px;
+      height: 2.5px;
+      background: white;
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
+    
+    .hamburger-btn.active .hamburger-line:nth-child(1) {
+      transform: translateY(7.5px) rotate(45deg);
+    }
+    
+    .hamburger-btn.active .hamburger-line:nth-child(2) {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    
+    .hamburger-btn.active .hamburger-line:nth-child(3) {
+      transform: translateY(-7.5px) rotate(-45deg);
+    }
+    
+    .header-content {
+      flex: 1;
+    }
+    
+    .header h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .header p {
+      font-size: 0.85rem;
+      opacity: 0.9;
+    }
+    
+    /* Sidebar Navigation */
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .sidebar-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 280px;
+      max-width: 85vw;
+      background: white;
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    
+    .sidebar-header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 24px 20px;
+      color: white;
+    }
+    
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    
+    .sidebar-avatar {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+    }
+    
+    .sidebar-user-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .sidebar-user-name {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .sidebar-user-email {
+      font-size: 0.75rem;
+      opacity: 0.9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .sidebar-close-btn {
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    
+    .sidebar-close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .sidebar-nav {
+      flex: 1;
+      padding: 12px 0;
+      overflow-y: auto;
+    }
+    
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      color: #334155;
       text-decoration: none;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      font-size: 0.95rem;
+      border-left: 3px solid transparent;
+    }
+    
+    .nav-item:hover {
+      background: #f8fafc;
+      border-left-color: #10b981;
+    }
+    
+    .nav-item.active {
+      background: #f0fdf4;
+      border-left-color: #10b981;
+      color: #059669;
+    }
+    
+    .nav-item i {
+      font-size: 1.2rem;
+      width: 24px;
+      text-align: center;
+    }
+    
+    .nav-divider {
+      height: 1px;
+      background: #e2e8f0;
+      margin: 8px 20px;
+    }
+    
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .logout-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
       font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .logout-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    
+    .logout-btn:active {
+      transform: translateY(0);
+    }
+    
+    /* Main Content */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    
+    /* Profile Header */
+    .profile-header {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+      border: 1px solid #a7f3d0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .profile-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%);
+      animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 0.8; }
+    }
+    
+    .profile-avatar-container {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+    
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: white;
+      border: 4px solid white;
+      box-shadow: 0 8px 24px rgba(16,185,129,0.3);
+      position: relative;
+      z-index: 1;
+    }
+    
+    .profile-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 6px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .profile-email {
+      font-size: 0.9rem;
+      color: #64748b;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .stat-item {
+      background: white;
+      padding: 12px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .stat-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #059669;
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 0.7rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+    
+    /* Profile Sections */
+    .profile-section {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 2px solid #e2e8f0;
+      transition: all 0.2s ease;
+    }
+    
+    .profile-section:hover {
+      border-color: #10b981;
+      box-shadow: 0 4px 16px rgba(16,185,129,0.1);
+    }
+    
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .section-title i {
+      color: #10b981;
+      font-size: 1.2rem;
+    }
+    
+    .edit-btn {
+      background: #f0fdf4;
+      color: #059669;
+      border: 2px solid #10b981;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .edit-btn:hover {
+      background: #10b981;
+      color: white;
+      transform: scale(1.05);
+    }
+    
+    .edit-btn:active {
+      transform: scale(0.95);
+    }
+    
+    /* Info Items */
+    .info-item {
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .info-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    
+    .info-label {
+      font-size: 0.75rem;
+      color: #64748b;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .info-label i {
       font-size: 0.85rem;
     }
-    .footer-links a:hover {
-      text-decoration: underline;
+    
+    .info-value {
+      font-size: 0.95rem;
+      color: #1e293b;
+      font-weight: 500;
     }
-
-    .navbar {
-      position:fixed;
-      bottom:0;
-      left:0;
-      width:100%;
-      background:#fff;
-      border-top:1px solid #ddd;
-      display:flex;
-      justify-content:space-around;
-      padding:8px 0;
-      box-shadow:0 -2px 8px rgba(0,0,0,0.1);
+    
+    .info-value.editable {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      width: 100%;
     }
-    .navbar a {
-      color:var(--primary);
-      text-decoration:none;
-      font-size:0.75rem;
-      text-align:center;
+    
+    .info-value.editable:focus {
+      outline: none;
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
     }
-    .navbar a i { display:block; font-size:1.25rem; margin-bottom:4px; }
-    .notice { margin-top:12px; color:red; text-align:center; }
-    .success { margin-top:12px; color:green; text-align:center; }
+    
+    /* Action Buttons */
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+    }
+    
+    .btn-primary:hover {
+      box-shadow: 0 6px 16px rgba(16,185,129,0.4);
+      transform: translateY(-1px);
+    }
+    
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: #64748b;
+      border: 2px solid #e2e8f0;
+    }
+    
+    .btn-secondary:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+    
+    .btn-secondary:active {
+      transform: translateY(0);
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    /* Toggle Switch */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      background: #e2e8f0;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    
+    .toggle-switch.active {
+      background: #10b981;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .toggle-switch.active .toggle-slider {
+      transform: translateX(22px);
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #94a3b8;
+    }
+    
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    .empty-state p {
+      font-size: 0.9rem;
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #1e293b;
+      color: white;
+      padding: 14px 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      z-index: 3000;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.3s ease;
+      max-width: 90%;
+      font-size: 0.9rem;
+    }
+    
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    
+    .toast.error {
+      background: #ef4444;
+    }
+    
+    .toast.success {
+      background: #10b981;
+    }
+    
+    /* Spinner */
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .modal-overlay.active {
+      display: flex;
+    }
+    
+    .modal {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: modalSlideIn 0.3s ease;
+    }
+    
+    @keyframes modalSlideIn {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .modal-header {
+      margin-bottom: 20px;
+    }
+    
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .modal-title i {
+      color: #10b981;
+    }
+    
+    .modal-body {
+      margin-bottom: 20px;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    @media (max-width: 480px) {
+      .profile-stats {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="card">
-      <h1>Your Profile</h1>
-      <div class="field"><span>Name:</span><span id="userName" class="loading">Loading…</span></div>
-      <div class="field"><span>Email:</span><span id="userEmail" class="loading">Loading…</span></div>
-      <div class="field"><span>Phone:</span><span id="userPhone" class="loading">Loading…</span></div>
-      <div class="field"><span>Role:</span><span id="userRole" class="loading">Loading…</span></div>
-      <button id="logoutBtn">Logout</button>
-      <a href="https://wa.me/+917439654831?text=Hi%2C%20I%20need%20help%21" id="supportBtn" target="_blank" rel="noopener">
-        <i class="fab fa-whatsapp"></i>
-        Contact Support
-      </a>
-      <button id="deleteAccountBtn">
-        <i class="fas fa-trash-alt"></i>
-        Delete Account
-      </button>
-      <div id="notice" class="notice"></div>
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+    
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;">
+          <div class="sidebar-user">
+            <div class="sidebar-avatar" id="sidebar-avatar">👤</div>
+            <div class="sidebar-user-info">
+              <div class="sidebar-user-name" id="sidebar-user-name">Loading...</div>
+              <div class="sidebar-user-email" id="sidebar-user-email">loading@email.com</div>
+            </div>
+          </div>
+          <button class="sidebar-close-btn" onclick="closeSidebar()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <a href="customerdashboard.html" class="nav-item">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+        <a href="booking.html" class="nav-item">
+          <i class="fas fa-car"></i>
+          <span>Book a Ride</span>
+        </a>
+        <a href="mybookings.html" class="nav-item">
+          <i class="fas fa-list-alt"></i>
+          <span>My Rides</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="customerprofile.html" class="nav-item active">
+          <i class="fas fa-user-circle"></i>
+          <span>Profile</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="handleLogout()">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </button>
+      </div>
     </div>
-  </div>
+    
+    <!-- Header -->
+    <div class="header">
+      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+      <div class="header-content">
+        <h1>🌊 WaveTravel</h1>
+        <p>My Profile</p>
+      </div>
+    </div>
 
-  <!-- Confirmation Modal -->
-  <div id="deleteModal" class="modal">
-    <div class="modal-content">
-      <h3><i class="fas fa-exclamation-triangle"></i> Delete Account</h3>
-      <p>Are you sure you want to permanently delete your account? This action cannot be undone and will remove all your data including bookings and profile information.</p>
-      <div class="modal-buttons">
-        <button class="modal-btn cancel" id="cancelDelete">Cancel</button>
-        <button class="modal-btn confirm" id="confirmDelete">Delete Account</button>
+    <!-- Main Content -->
+    <div class="content">
+      <!-- Profile Header -->
+      <div class="profile-header">
+        <div class="profile-avatar-container">
+          <div class="profile-avatar" id="profile-avatar">U</div>
+        </div>
+        <div class="profile-name" id="profile-name">Loading...</div>
+        <div class="profile-email" id="profile-email">loading@email.com</div>
+        
+        <div class="profile-stats">
+          <div class="stat-item">
+            <span class="stat-value" id="total-rides">0</span>
+            <span class="stat-label">Total Rides</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="total-distance">0</span>
+            <span class="stat-label">KM Traveled</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="member-since">2024</span>
+            <span class="stat-label">Member Since</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Personal Information -->
+      <div class="profile-section" id="personal-info-section">
+        <div class="section-header">
+          <div class="section-title">
+            <i class="fas fa-user"></i>
+            Personal Information
+          </div>
+          <button class="edit-btn" onclick="toggleEdit('personal-info')">
+            <i class="fas fa-edit"></i> Edit
+          </button>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label">
+            <i class="fas fa-signature"></i>
+            Full Name
+          </div>
+          <div class="info-value" id="display-name">Loading...</div>
+          <input type="text" class="info-value editable" id="edit-name" style="display: none;" placeholder="Enter your name">
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label">
+            <i class="fas fa-phone"></i>
+            Phone Number
+          </div>
+          <div class="info-value" id="display-phone">Not set</div>
+          <input type="tel" class="info-value editable" id="edit-phone" style="display: none;" placeholder="+91 XXXXX XXXXX">
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label">
+            <i class="fas fa-envelope"></i>
+            Email Address
+          </div>
+          <div class="info-value" id="display-email">loading@email.com</div>
+        </div>
+        
+        <div class="action-buttons" id="personal-info-actions" style="display: none;">
+          <button class="btn btn-secondary" onclick="cancelEdit('personal-info')">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button class="btn btn-primary" onclick="savePersonalInfo()">
+            <i class="fas fa-check"></i> Save
+          </button>
+        </div>
+      </div>
+
+      <!-- Preferences -->
+      <div class="profile-section">
+        <div class="section-header">
+          <div class="section-title">
+            <i class="fas fa-cog"></i>
+            Preferences
+          </div>
+        </div>
+        
+        <div class="info-item">
+          <div class="toggle-container">
+            <div>
+              <div class="info-label">
+                <i class="fas fa-bell"></i>
+                Ride Notifications
+              </div>
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">
+                Get updates about your rides
+              </div>
+            </div>
+            <div class="toggle-switch active" onclick="toggleSwitch(this)">
+              <div class="toggle-slider"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="info-item">
+          <div class="toggle-container">
+            <div>
+              <div class="info-label">
+                <i class="fas fa-envelope"></i>
+                Email Updates
+              </div>
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">
+                Receive promotional emails
+              </div>
+            </div>
+            <div class="toggle-switch" onclick="toggleSwitch(this)">
+              <div class="toggle-slider"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved Locations -->
+      <div class="profile-section">
+        <div class="section-header">
+          <div class="section-title">
+            <i class="fas fa-map-marker-alt"></i>
+            Saved Locations
+          </div>
+          <button class="edit-btn" onclick="addLocation()">
+            <i class="fas fa-plus"></i> Add
+          </button>
+        </div>
+        
+        <div id="saved-locations-list">
+          <div class="info-item">
+            <div class="info-label">
+              <i class="fas fa-home"></i>
+              Home
+            </div>
+            <div class="info-value">Kolkata, West Bengal</div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">
+              <i class="fas fa-briefcase"></i>
+              Work
+            </div>
+            <div class="info-value">Salt Lake, Kolkata</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Settings -->
+      <div class="profile-section">
+        <div class="section-header">
+          <div class="section-title">
+            <i class="fas fa-shield-alt"></i>
+            Account Settings
+          </div>
+        </div>
+        
+        <div class="info-item">
+          <button class="btn btn-secondary" style="width: 100%;" onclick="changePassword()">
+            <i class="fas fa-key"></i>
+            Change Password
+          </button>
+        </div>
+        
+        <div class="info-item">
+          <button class="btn btn-secondary" style="width: 100%; color: #ef4444; border-color: #ef4444;" onclick="confirmDeleteAccount()">
+            <i class="fas fa-trash-alt"></i>
+            Delete Account
+          </button>
+        </div>
+      </div>
+
+      <!-- App Info -->
+      <div class="profile-section" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%); border-color: #a7f3d0;">
+        <div class="section-header">
+          <div class="section-title">
+            <i class="fas fa-info-circle"></i>
+            About WaveTravel
+          </div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label">
+            <i class="fas fa-code-branch"></i>
+            Version
+          </div>
+          <div class="info-value">1.0.0</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label">
+            <i class="fas fa-leaf"></i>
+            Eco-Friendly EV Rides
+          </div>
+          <div class="info-value">Reducing carbon footprint, one ride at a time</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- footer links (NOW includes About) -->
-  <div class="footer-links" aria-label="Site links">
-    <a href="terms.html">Terms</a>
-    <a href="privacy.html">Privacy</a>
-    <a href="pricing.html">Pricing</a>
-    <a href="refund.html">Refund Policy</a>
-    <a href="about.html">About Us</a>
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Delete Account Modal -->
+  <div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+          Delete Account
+        </div>
+      </div>
+      <div class="modal-body">
+        <p style="color: #64748b; font-size: 0.95rem; line-height: 1.6;">
+          Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.
+        </p>
+      </div>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" onclick="closeDeleteModal()">
+          Cancel
+        </button>
+        <button class="btn btn-primary" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);" onclick="deleteAccount()">
+          <i class="fas fa-trash-alt"></i>
+          Delete
+        </button>
+      </div>
+    </div>
   </div>
 
-  <div class="navbar">
-    <a href="customerdashboard.html"><i class="fas fa-home"></i>Home</a>
-    <a href="booking.html"><i class="fas fa-car"></i>Book</a>
-    <a href="mybookings.html"><i class="fas fa-calendar-check"></i>Bookings</a>
-    <a href="profile.html"><i class="fas fa-user"></i>Profile</a>
+  <!-- Add Location Modal -->
+  <div class="modal-overlay" id="location-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fas fa-map-marker-alt"></i>
+          Add Location
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="info-item">
+          <div class="info-label">
+            <i class="fas fa-tag"></i>
+            Label
+          </div>
+          <input type="text" class="info-value editable" id="location-label" placeholder="e.g., Home, Work, Gym">
+        </div>
+        <div class="info-item" style="border: none;">
+          <div class="info-label">
+            <i class="fas fa-map-pin"></i>
+            Address
+          </div>
+          <input type="text" class="info-value editable" id="location-address" placeholder="Enter address">
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" onclick="closeLocationModal()">
+          Cancel
+        </button>
+        <button class="btn btn-primary" onclick="saveLocation()">
+          <i class="fas fa-check"></i>
+          Save
+        </button>
+      </div>
+    </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref as dbRef, get, query, orderByChild, equalTo, remove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
+  <script>
+    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc",
       authDomain: "wavetravel-3c4c4.firebaseapp.com",
       databaseURL: "https://wavetravel-3c4c4-default-rtdb.firebaseio.com",
       projectId: "wavetravel-3c4c4",
-      storageBucket: "wavetravel-3c4c4.appspot.com",
+      storageBucket: "wavetravel-3c4c4.firebasestorage.app",
       messagingSenderId: "298226098137",
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
+    // Initialize Firebase
+    let app, auth, database, currentUser = null;
+    let userProfile = {};
+    
+    try {
+      app = firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      database = firebase.database();
+      console.log('Firebase initialized successfully');
+    } catch (error) {
+      console.error('Firebase initialization error:', error);
+      showToast('⚠️ Firebase initialization failed', 'error');
+    }
 
-    const nameEl = document.getElementById('userName');
-    const emailEl = document.getElementById('userEmail');
-    const phoneEl = document.getElementById('userPhone');
-    const roleEl = document.getElementById('userRole');
-    const noticeEl = document.getElementById('notice');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-    const deleteModal = document.getElementById('deleteModal');
-    const cancelDelete = document.getElementById('cancelDelete');
-    const confirmDelete = document.getElementById('confirmDelete');
+    // Check auth state
+    if (auth) {
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          currentUser = user;
+          console.log('User signed in:', user.email);
+          loadUserProfile();
+          updateSidebarUserInfo(user);
+        } else {
+          currentUser = null;
+          console.log('No user signed in, redirecting to login...');
+          window.location.href = 'index.html';
+        }
+      });
+    }
 
-    let currentUser = null;
-    let userDataKey = null;
+    // Load user profile
+    async function loadUserProfile() {
+      if (!currentUser) return;
 
-    // ---------- helper: clear session/local markers ----------
-    function clearSessionMarkers(uid = null) {
       try {
-        // Remove known keys for the specific uid (if provided)
-        if (uid) {
-          try { sessionStorage.removeItem(`lastRoleFor:${uid}`); } catch(e) {}
-          try { sessionStorage.removeItem(`lastDriverIdFor:${uid}`); } catch(e) {}
-          try { localStorage.removeItem(`lastRoleFor:${uid}`); } catch(e) {}
-          try { localStorage.removeItem(`lastDriverIdFor:${uid}`); } catch(e) {}
-        }
+        // Load user profile from database
+        const profileRef = database.ref(`evplan/users/${currentUser.uid}/profile`);
+        const snapshot = await profileRef.once('value');
+        const profileData = snapshot.val();
 
-        // Also remove any leftover keys that match these prefixes (global sweep)
-        const prefixes = ['lastRoleFor:', 'lastDriverIdFor:'];
-        for (let i = sessionStorage.length - 1; i >= 0; i--) {
-          const key = sessionStorage.key(i);
-          if (!key) continue;
-          for (const p of prefixes) {
-            if (key.startsWith(p)) sessionStorage.removeItem(key);
-          }
-        }
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-          const key = localStorage.key(i);
-          if (!key) continue;
-          for (const p of prefixes) {
-            if (key.startsWith(p)) localStorage.removeItem(key);
-          }
-        }
+        // Set default values
+        userProfile = {
+          name: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+          email: currentUser.email || '',
+          phone: profileData?.phone || '',
+          createdAt: currentUser.metadata.creationTime,
+          notifications: profileData?.notifications !== false,
+          emailUpdates: profileData?.emailUpdates || false,
+          savedLocations: profileData?.savedLocations || []
+        };
 
-        // Remove other app-specific keys you might use
-        try { localStorage.removeItem('userPhone'); } catch(e) {}
-        try { sessionStorage.removeItem('cart'); } catch(e) {}
-        try { sessionStorage.removeItem('draftBooking'); } catch(e) {}
-
-      } catch (e) {
-        console.warn('clearSessionMarkers error', e);
+        // Update UI
+        updateProfileUI();
+        
+        // Load ride statistics
+        loadRideStatistics();
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        showToast('Error loading profile', 'error');
       }
     }
 
-    // ---------- load profile ----------
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        // No user — go to index/login
-        window.location = "index.html";
+    // Update profile UI
+    function updateProfileUI() {
+      const initial = userProfile.name.charAt(0).toUpperCase();
+      
+      document.getElementById('profile-avatar').textContent = initial;
+      document.getElementById('profile-name').textContent = userProfile.name;
+      document.getElementById('profile-email').textContent = userProfile.email;
+      
+      document.getElementById('display-name').textContent = userProfile.name;
+      document.getElementById('display-phone').textContent = userProfile.phone || 'Not set';
+      document.getElementById('display-email').textContent = userProfile.email;
+      
+      document.getElementById('edit-name').value = userProfile.name;
+      document.getElementById('edit-phone').value = userProfile.phone;
+
+      // Member since
+      if (userProfile.createdAt) {
+        const createdDate = new Date(userProfile.createdAt);
+        document.getElementById('member-since').textContent = createdDate.getFullYear();
+      }
+    }
+
+    // Load ride statistics
+    async function loadRideStatistics() {
+      if (!currentUser) return;
+
+      try {
+        const bookingsRef = database.ref('evplan/bookings');
+        const snapshot = await bookingsRef.orderByChild('riderId').equalTo(currentUser.uid).once('value');
+        
+        let totalRides = 0;
+        let totalDistance = 0;
+
+        snapshot.forEach((childSnapshot) => {
+          const booking = childSnapshot.val();
+          if (booking.status === 'completed') {
+            totalRides++;
+            totalDistance += booking.distance || 0;
+          }
+        });
+
+        document.getElementById('total-rides').textContent = totalRides;
+        document.getElementById('total-distance').textContent = Math.round(totalDistance);
+      } catch (error) {
+        console.error('Error loading statistics:', error);
+      }
+    }
+
+    // Update sidebar user info
+    function updateSidebarUserInfo(user) {
+      const userName = user.displayName || user.email?.split('@')[0] || 'User';
+      const userEmail = user.email || 'No email';
+      const userInitial = userName.charAt(0).toUpperCase();
+      
+      document.getElementById('sidebar-user-name').textContent = userName;
+      document.getElementById('sidebar-user-email').textContent = userEmail;
+      document.getElementById('sidebar-avatar').textContent = userInitial;
+    }
+
+    // Sidebar functions
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      sidebar.classList.toggle('active');
+      overlay.classList.toggle('active');
+      hamburger.classList.toggle('active');
+      
+      if (sidebar.classList.contains('active')) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+
+    function closeSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      sidebar.classList.remove('active');
+      overlay.classList.remove('active');
+      hamburger.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // Close sidebar when clicking outside
+    document.addEventListener('click', (e) => {
+      const sidebar = document.getElementById('sidebar');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      if (sidebar.classList.contains('active') && 
+          !sidebar.contains(e.target) && 
+          !hamburger.contains(e.target)) {
+        closeSidebar();
+      }
+    });
+
+    // Toggle edit mode
+    function toggleEdit(section) {
+      if (section === 'personal-info') {
+        const displayName = document.getElementById('display-name');
+        const displayPhone = document.getElementById('display-phone');
+        const editName = document.getElementById('edit-name');
+        const editPhone = document.getElementById('edit-phone');
+        const actions = document.getElementById('personal-info-actions');
+
+        if (displayName.style.display === 'none') {
+          // Cancel edit
+          cancelEdit('personal-info');
+        } else {
+          // Enter edit mode
+          displayName.style.display = 'none';
+          displayPhone.style.display = 'none';
+          editName.style.display = 'block';
+          editPhone.style.display = 'block';
+          actions.style.display = 'flex';
+          editName.focus();
+        }
+      }
+    }
+
+    // Cancel edit
+    function cancelEdit(section) {
+      if (section === 'personal-info') {
+        document.getElementById('display-name').style.display = 'block';
+        document.getElementById('display-phone').style.display = 'block';
+        document.getElementById('edit-name').style.display = 'none';
+        document.getElementById('edit-phone').style.display = 'none';
+        document.getElementById('personal-info-actions').style.display = 'none';
+        
+        // Reset values
+        document.getElementById('edit-name').value = userProfile.name;
+        document.getElementById('edit-phone').value = userProfile.phone;
+      }
+    }
+
+    // Save personal info
+    async function savePersonalInfo() {
+      const newName = document.getElementById('edit-name').value.trim();
+      const newPhone = document.getElementById('edit-phone').value.trim();
+
+      if (!newName) {
+        showToast('Name cannot be empty', 'error');
         return;
       }
 
-      currentUser = user;
+      if (newPhone && !newPhone.match(/^[+]?[\d\s-()]+$/)) {
+        showToast('Invalid phone number format', 'error');
+        return;
+      }
 
       try {
-        let userData = null;
-        const uid = user.uid;
+        // Update Firebase profile
+        const profileRef = database.ref(`evplan/users/${currentUser.uid}/profile`);
+        await profileRef.update({
+          name: newName,
+          phone: newPhone,
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        });
 
-        // 1. Check by UID
-        const uidSnap = await get(dbRef(db, `users/${uid}`));
-        if (uidSnap.exists()) {
-          userData = uidSnap.val();
-          userDataKey = uid;
+        // Update Firebase Auth display name
+        if (currentUser.displayName !== newName) {
+          await currentUser.updateProfile({ displayName: newName });
         }
 
-        // 2. If not found, check by phone
-        if (!userData && user.phoneNumber) {
-          const phoneSnap = await get(query(dbRef(db, "users"), orderByChild("phone"), equalTo(user.phoneNumber)));
-          if (phoneSnap.exists()) {
-            const entries = Object.entries(phoneSnap.val());
-            userData = entries[0][1];
-            userDataKey = entries[0][0];
-          }
-        }
+        userProfile.name = newName;
+        userProfile.phone = newPhone;
 
-        // 3. If not found, check by email
-        if (!userData && user.email) {
-          const emailSnap = await get(query(dbRef(db, "users"), orderByChild("email"), equalTo(user.email)));
-          if (emailSnap.exists()) {
-            const entries = Object.entries(emailSnap.val());
-            userData = entries[0][1];
-            userDataKey = entries[0][0];
-          }
-        }
+        updateProfileUI();
+        updateSidebarUserInfo(currentUser);
+        cancelEdit('personal-info');
 
-        if (userData) {
-          nameEl.textContent = userData.name || "Not set";
-          emailEl.textContent = userData.email || "Not set";
-          phoneEl.textContent = userData.phone || "Not set";
-          roleEl.textContent = userData.role || "Not set";
-        } else {
-          nameEl.textContent = "Not available";
-          emailEl.textContent = "Not available";
-          phoneEl.textContent = "Not available";
-          roleEl.textContent = "Not available";
-          noticeEl.textContent = "Profile data not found in /users.";
-        }
-      } catch (err) {
-        console.error("Error loading profile:", err);
-        noticeEl.textContent = "Error loading profile.";
+        showToast('✓ Profile updated successfully', 'success');
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        showToast('Error updating profile: ' + error.message, 'error');
       }
-    });
+    }
 
-    // ---------- Logout: clears session markers and signs out ----------
-    logoutBtn.addEventListener('click', async () => {
+    // Toggle switch
+    function toggleSwitch(element) {
+      element.classList.toggle('active');
+      showToast('✓ Preference updated', 'success');
+    }
+
+    // Add location modal
+    function addLocation() {
+      document.getElementById('location-modal').classList.add('active');
+      document.getElementById('location-label').value = '';
+      document.getElementById('location-address').value = '';
+    }
+
+    function closeLocationModal() {
+      document.getElementById('location-modal').classList.remove('active');
+    }
+
+    function saveLocation() {
+      const label = document.getElementById('location-label').value.trim();
+      const address = document.getElementById('location-address').value.trim();
+
+      if (!label || !address) {
+        showToast('Please fill in all fields', 'error');
+        return;
+      }
+
+      // Add to saved locations list
+      const locationsList = document.getElementById('saved-locations-list');
+      const newLocation = document.createElement('div');
+      newLocation.className = 'info-item';
+      newLocation.innerHTML = `
+        <div class="info-label">
+          <i class="fas fa-map-marker-alt"></i>
+          ${label}
+        </div>
+        <div class="info-value">${address}</div>
+      `;
+      locationsList.appendChild(newLocation);
+
+      closeLocationModal();
+      showToast('✓ Location added successfully', 'success');
+    }
+
+    // Change password
+    async function changePassword() {
+      if (!currentUser || !currentUser.email) {
+        showToast('Email not available', 'error');
+        return;
+      }
+
       try {
-        // If we have a current user, capture uid first
-        const uid = currentUser?.uid || null;
-
-        // Clear client-side session/local markers (ensures autologin won't reuse)
-        clearSessionMarkers(uid);
-
-        // Sign out from Firebase Auth
-        await signOut(auth);
-
-        // Redirect to login
-        window.location = 'index.html';
-      } catch (err) {
-        console.error("Logout error:", err);
-        noticeEl.textContent = "Logout failed.";
+        await auth.sendPasswordResetEmail(currentUser.email);
+        showToast('✓ Password reset email sent!', 'success');
+      } catch (error) {
+        console.error('Error sending reset email:', error);
+        showToast('Error: ' + error.message, 'error');
       }
-    });
+    }
 
-    // ---------- Delete Account Modal handlers ----------
-    deleteAccountBtn.addEventListener('click', () => {
-      deleteModal.classList.add('show');
-    });
+    // Delete account modal
+    function confirmDeleteAccount() {
+      document.getElementById('delete-modal').classList.add('active');
+    }
 
-    cancelDelete.addEventListener('click', () => {
-      deleteModal.classList.remove('show');
-    });
+    function closeDeleteModal() {
+      document.getElementById('delete-modal').classList.remove('active');
+    }
 
-    // Close modal when clicking outside
-    deleteModal.addEventListener('click', (e) => {
-      if (e.target === deleteModal) {
-        deleteModal.classList.remove('show');
-      }
-    });
-
-    // ---------- Confirm Delete ----------
-    confirmDelete.addEventListener('click', async () => {
+    async function deleteAccount() {
       if (!currentUser) return;
 
-      deleteAccountBtn.disabled = true;
-      confirmDelete.disabled = true;
-      noticeEl.textContent = "Deleting account...";
-      noticeEl.className = "notice";
+      try {
+        // Delete user data from database
+        await database.ref(`evplan/users/${currentUser.uid}`).remove();
+
+        // Delete auth account
+        await currentUser.delete();
+
+        showToast('✓ Account deleted successfully', 'success');
+        
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1500);
+      } catch (error) {
+        console.error('Error deleting account:', error);
+        if (error.code === 'auth/requires-recent-login') {
+          showToast('Please log in again to delete your account', 'error');
+          setTimeout(() => {
+            handleLogout();
+          }, 2000);
+        } else {
+          showToast('Error deleting account: ' + error.message, 'error');
+        }
+      }
+    }
+
+    // Handle logout
+    async function handleLogout() {
+      if (!auth) {
+        showToast('Authentication not available', 'error');
+        return;
+      }
 
       try {
-        // 1. Delete user data from database if we found it
-        if (userDataKey) {
-          await remove(dbRef(db, `users/${userDataKey}`));
-        }
-
-        // 2. Optional: delete user's bookings (uncomment to enable)
-        /*
-        const bookingsSnap = await get(query(dbRef(db, "bookings"), orderByChild("userId"), equalTo(currentUser.uid)));
-        if (bookingsSnap.exists()) {
-          const deletePromises = Object.keys(bookingsSnap.val()).map(bookingId => 
-            remove(dbRef(db, `bookings/${bookingId}`))
-          );
-          await Promise.all(deletePromises);
-        }
-        */
-
-        // 3. Clear session markers BEFORE deleting the auth user (ensures they are removed)
-        clearSessionMarkers(currentUser.uid);
-
-        // 4. Delete the Firebase Auth user (requires recent login)
-        await deleteUser(currentUser);
-
-        // 5. Clear any remaining local keys
-        try { localStorage.removeItem('userPhone'); } catch(e){}
-
-        // 6. Show success and redirect
-        noticeEl.textContent = "Account deleted successfully. Redirecting...";
-        noticeEl.className = "success";
-
+        await auth.signOut();
+        showToast('✓ Logged out successfully', 'success');
         setTimeout(() => {
-          window.location = 'index.html';
-        }, 1600);
+          window.location.href = 'index.html';
+        }, 1000);
+      } catch (error) {
+        console.error('Logout error:', error);
+        showToast('Error logging out: ' + error.message, 'error');
+      }
+    }
 
-      } catch (err) {
-        console.error("Delete account error:", err);
-        deleteAccountBtn.disabled = false;
-        confirmDelete.disabled = false;
-        deleteModal.classList.remove('show');
+    // Toast notification
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
 
-        if (err.code === 'auth/requires-recent-login') {
-          noticeEl.textContent = "Please log out and log back in before deleting your account.";
-        } else {
-          noticeEl.textContent = "Failed to delete account. Please try again or contact support.";
-        }
-        noticeEl.className = "notice";
+    // Close modals on overlay click
+    document.getElementById('delete-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'delete-modal') {
+        closeDeleteModal();
+      }
+    });
+
+    document.getElementById('location-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'location-modal') {
+        closeLocationModal();
       }
     });
   </script>
