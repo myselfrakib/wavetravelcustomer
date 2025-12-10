@@ -894,16 +894,20 @@
       showToast('⚠️ Firebase initialization failed', 'error');
     }
 
-    // Mock driver data (in production, fetch from database)
+    // Driver data - get from approved cars
     const driverData = {
-      id: 'driver_001',
-      name: 'Rajesh Kumar',
-      phone: '+91 98765 43210',
-      vehicle: 'Tesla Model 3 • DL 01 AB 1234',
+      id: '2VmOFuuliNb4ne1Ad796NCUbklo2', // Use actual driver ID
+      name: 'Rakib sk',
+      phone: '+919907718066',
+      vehicle: 'Dzire • WB02AJ7678',
       vehicleType: 'sedan',
       rating: 4.8,
       todayEarnings: 0,
-      totalRides: 0
+      totalRides: 0,
+      currentLocation: {
+        lat: 22.5954176,
+        lng: 88.4385091
+      }
     };
 
     // Initialize on load
@@ -911,7 +915,44 @@
       initializeDriver();
       initMap();
       listenForRideRequests();
+      
+      // Update location immediately if online
+      updateDriverLocation();
     });
+    
+    // Update driver location periodically
+    function updateDriverLocation() {
+      if (!isOnline || !database) return;
+      
+      // Try to get current location
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            driverData.currentLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            
+            // Update in database
+            database.ref(`evplan/drivers/${driverData.id}`).update({
+              location: driverData.currentLocation,
+              lastLocationUpdate: firebase.database.ServerValue.TIMESTAMP
+            });
+          },
+          (error) => {
+            console.log('Location error:', error);
+          },
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      }
+    }
+    
+    // Update location every 10 seconds when online
+    setInterval(() => {
+      if (isOnline) {
+        updateDriverLocation();
+      }
+    }, 10000);
 
     // Initialize driver info
     function initializeDriver() {
@@ -982,8 +1023,14 @@
       if (database) {
         database.ref(`evplan/drivers/${driverData.id}`).update({
           isOnline: isOnline,
-          lastSeen: firebase.database.ServerValue.TIMESTAMP
+          lastSeen: firebase.database.ServerValue.TIMESTAMP,
+          location: driverData.currentLocation
         });
+        
+        // Start updating location if going online
+        if (isOnline) {
+          updateDriverLocation();
+        }
       }
     }
 
@@ -1072,13 +1119,14 @@
       }
 
       try {
-        // Update ride request with driver info
+        // Update ride request with driver info and location
         await currentRideRequestRef.update({
           status: 'accepted',
           assignedDriverId: driverData.id,
           assignedDriverName: driverData.name,
           assignedDriverPhone: driverData.phone,
           assignedDriverVehicle: driverData.vehicle,
+          driverLocation: driverData.currentLocation,
           acceptedAt: firebase.database.ServerValue.TIMESTAMP
         });
 
@@ -1199,12 +1247,24 @@
         switch (rideState) {
           case 'going_to_pickup':
             // Driver reached pickup point
+            if (currentRideRequestRef) {
+              await currentRideRequestRef.update({
+                tripStage: 'at_pickup',
+                reachedPickupAt: firebase.database.ServerValue.TIMESTAMP
+              });
+            }
             showToast('✓ Marked as reached pickup', 'success');
             updateRideState('at_pickup');
             break;
             
           case 'at_pickup':
             // Start journey
+            if (currentRideRequestRef) {
+              await currentRideRequestRef.update({
+                tripStage: 'in_journey',
+                journeyStartedAt: firebase.database.ServerValue.TIMESTAMP
+              });
+            }
             showToast('✓ Journey started', 'success');
             updateRideState('in_journey');
             // Update route to show destination
@@ -1227,13 +1287,26 @@
 
     // Complete ride
     async function completeRide() {
-      if (!currentRideRequest || !database) return;
+      if (!currentRideRequest || !database || !currentRideRequestRef) return;
       
       try {
-        // Update ride status to completed
-        if (currentRideRequestRef) {
-          await currentRideRequestRef.update({
+        // First get the booking reference from the ride request
+        const snapshot = await currentRideRequestRef.once('value');
+        const rideData = snapshot.val();
+        const bookingId = rideData.bookingId;
+        
+        // Update ride request status
+        await currentRideRequestRef.update({
+          status: 'completed',
+          tripStage: 'completed',
+          completedAt: firebase.database.ServerValue.TIMESTAMP
+        });
+        
+        // Update the booking if it exists
+        if (bookingId) {
+          await database.ref(`evplan/bookings/${bookingId}`).update({
             status: 'completed',
+            tripStage: 'completed',
             completedAt: firebase.database.ServerValue.TIMESTAMP
           });
         }
@@ -1243,19 +1316,22 @@
         driverData.totalRides += 1;
         updateStats();
         
-        // Save to driver's earnings in database
-        if (database) {
-          await database.ref(`evplan/drivers/${driverData.id}/earnings`).push({
-            amount: currentRideRequest.fareEstimate,
-            rideId: currentRideId,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-          });
-          
-          await database.ref(`evplan/drivers/${driverData.id}`).update({
-            todayEarnings: driverData.todayEarnings,
-            totalRides: driverData.totalRides
-          });
-        }
+        // Save to driver's earnings and update totals
+        const earningsUpdate = {
+          amount: currentRideRequest.fareEstimate,
+          bookingId: bookingId || currentRideId,
+          rideRequestId: currentRideId,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+          status: 'unpaid'
+        };
+        
+        await database.ref(`evplan/driverEarnings/${driverData.id}`).push(earningsUpdate);
+        
+        await database.ref(`evplan/drivers/${driverData.id}`).update({
+          todayEarnings: driverData.todayEarnings,
+          totalRides: driverData.totalRides,
+          lastRideCompletedAt: firebase.database.ServerValue.TIMESTAMP
+        });
         
         showToast('🎉 Ride completed! ₹' + currentRideRequest.fareEstimate + ' earned', 'success');
         
@@ -1280,10 +1356,9 @@
 
     // Show route on map (to pickup)
     function showRouteOnMap() {
-      if (!currentRideRequest) return;
+      if (!currentRideRequest || !driverData.currentLocation) return;
       
-      // For demo, using pickup location as driver's current location
-      const origin = { lat: 22.5726, lng: 88.3639 }; // Driver's location (mock)
+      const origin = driverData.currentLocation;
       const destination = {
         lat: currentRideRequest.pickup.lat,
         lng: currentRideRequest.pickup.lng
@@ -1296,6 +1371,8 @@
       }, (result, status) => {
         if (status === 'OK') {
           directionsRenderer.setDirections(result);
+        } else {
+          console.error('Directions request failed:', status);
         }
       });
     }
