@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
   <title>Book Your Ride - WaveTravel</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
@@ -15,6 +15,7 @@
       min-height: 100vh;
       color: #1e293b;
       overflow-x: hidden;
+      touch-action: pan-y;
     }
     
     .container {
@@ -34,33 +35,18 @@
       color: white;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       z-index: 100;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .header.compact {
-      padding: 10px 20px;
+      flex-shrink: 0;
     }
     
     .header h1 {
       font-size: 1.3rem;
       font-weight: 700;
       margin-bottom: 4px;
-      transition: all 0.4s ease;
-    }
-    
-    .header.compact h1 {
-      font-size: 1.1rem;
-      margin-bottom: 2px;
     }
     
     .header p {
       font-size: 0.85rem;
       opacity: 0.9;
-      transition: all 0.4s ease;
-    }
-    
-    .header.compact p {
-      font-size: 0.75rem;
     }
     
     /* Main Content Wrapper */
@@ -79,6 +65,7 @@
       bottom: 0;
       background: white;
       overflow-y: auto;
+      overflow-x: hidden;
       z-index: 10;
       transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       padding: 20px;
@@ -88,6 +75,10 @@
     .form-view.hidden {
       transform: translateY(100%);
       pointer-events: none;
+    }
+    
+    .form-view.scrolled {
+      padding-top: 10px;
     }
     
     /* Map View */
@@ -304,6 +295,13 @@
       border-radius: 12px;
       padding: 4px;
       margin-bottom: 20px;
+      transition: all 0.3s ease;
+    }
+    
+    .trip-toggle.compact {
+      transform: scale(0.85);
+      transform-origin: top center;
+      margin-bottom: 10px;
     }
     
     .toggle-option {
@@ -505,15 +503,36 @@
       display: block;
     }
     
+    .map-selection-hint {
+      margin-top: 12px;
+      display: none;
+      text-align: center;
+    }
+    
+    .map-selection-hint.show {
+      display: block;
+    }
+    
+    .map-hint-text {
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+    
+    .map-hint-text i {
+      color: #10b981;
+      margin-right: 4px;
+    }
+    
     .detect-btn-full {
       width: 100%;
-      padding: 10px 16px;
+      padding: 10px 14px;
       background: #f0fdf4;
       border: 2px dashed #10b981;
-      border-radius: 12px;
+      border-radius: 10px;
       font-family: 'Inter', sans-serif;
       font-weight: 600;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: #059669;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -535,7 +554,7 @@
     }
     
     .detect-btn-full i {
-      font-size: 0.85rem;
+      font-size: 0.9rem;
     }
     
     /* Date Time Section */
@@ -960,7 +979,7 @@
 <body>
   <div class="container">
     <!-- Header -->
-    <div class="header" id="main-header">
+    <div class="header">
       <h1>🌊 WaveTravel</h1>
       <p>Book Your EV Ride</p>
     </div>
@@ -1026,6 +1045,13 @@
               </button>
             </div>
             <div class="suggestions-list" id="dropoff-suggestions"></div>
+          </div>
+          
+          <div class="map-selection-hint" id="map-selection-hint">
+            <div class="map-hint-text">
+              <i class="fas fa-map-marked-alt"></i>
+              Choose from map
+            </div>
           </div>
         </div>
 
@@ -1258,14 +1284,12 @@
     let sessionToken;
     let mapSelectionMode = null;
     let tempSelectedLocation = null;
+    let initialPinchDistance = null;
+    let initialZoom = null;
     let currentRideRequestRef = null;
     let searchingForRide = false;
-    
-    // Touch control variables
-    let touchStartDistance = 0;
-    let touchStartZoom = 0;
-    let lastTouchEnd = 0;
-    let pinchStartScale = 1;
+    let lastPinchTime = 0;
+    let pinchZoomInProgress = false;
 
     // Booking data
     let bookingData = {
@@ -1331,7 +1355,7 @@
       setupAutocomplete('dropoff', 'dropoff-suggestions');
       
       map.addListener('click', handleMapClick);
-      setupAdvancedTouchControls();
+      setupTouchControls();
       
       // Initialize searching map
       initSearchingMap();
@@ -1366,8 +1390,8 @@
       });
     }
 
-    // Advanced touch controls with smooth pinch zoom
-    function setupAdvancedTouchControls() {
+    // Enhanced touch controls for smoother pinch zoom
+    function setupTouchControls() {
       const mapDiv = document.getElementById('map');
       
       mapDiv.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -1375,99 +1399,125 @@
       mapDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
     }
 
+    let touchStartTime = 0;
+    let lastTap = 0;
+    let zoomAnimationFrame = null;
+
     function handleTouchStart(e) {
+      touchStartTime = Date.now();
+      
+      // Handle pinch zoom
       if (e.touches.length === 2) {
         e.preventDefault();
-        touchStartDistance = getDistance(e.touches[0], e.touches[1]);
-        touchStartZoom = map.getZoom();
-        pinchStartScale = 1;
-      } else if (e.touches.length === 1) {
-        const now = Date.now();
-        if (now - lastTouchEnd <= 300) {
+        pinchZoomInProgress = true;
+        initialPinchDistance = getTouchDistance(e.touches[0], e.touches[1]);
+        initialZoom = map.getZoom();
+        lastPinchTime = Date.now();
+      }
+      
+      // Handle double tap to zoom
+      if (e.touches.length === 1) {
+        const currentTime = Date.now();
+        const tapGap = currentTime - lastTap;
+        
+        if (tapGap < 300 && tapGap > 0) {
           e.preventDefault();
-          smoothZoom(map.getZoom() + 1);
+          const currentZoom = map.getZoom();
+          smoothZoom(currentZoom, currentZoom + 1);
+          lastTap = 0;
+        } else {
+          lastTap = currentTime;
         }
-        lastTouchEnd = now;
       }
     }
 
     function handleTouchMove(e) {
-      if (e.touches.length === 2) {
+      if (e.touches.length === 2 && initialPinchDistance !== null && pinchZoomInProgress) {
         e.preventDefault();
         
-        const currentDistance = getDistance(e.touches[0], e.touches[1]);
-        const scale = currentDistance / touchStartDistance;
+        const now = Date.now();
+        if (now - lastPinchTime < 16) return; // Throttle to ~60fps
+        lastPinchTime = now;
         
-        // Smooth scaling with easing
-        const zoomDelta = Math.log2(scale);
-        const newZoom = touchStartZoom + zoomDelta;
+        const currentDistance = getTouchDistance(e.touches[0], e.touches[1]);
+        const scale = currentDistance / initialPinchDistance;
         
-        // Clamp zoom between 1 and 20
-        const clampedZoom = Math.max(1, Math.min(20, newZoom));
+        // More sensitive and smoother zoom calculation
+        const zoomChange = Math.log2(scale) * 1.5;
+        const newZoom = Math.max(3, Math.min(20, initialZoom + zoomChange));
         
-        // Apply zoom smoothly
-        map.setZoom(clampedZoom);
+        // Cancel any pending animation frame
+        if (zoomAnimationFrame) {
+          cancelAnimationFrame(zoomAnimationFrame);
+        }
         
-        // Calculate center point between two fingers
-        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        
-        pinchStartScale = scale;
+        // Use requestAnimationFrame for smoother updates
+        zoomAnimationFrame = requestAnimationFrame(() => {
+          map.setZoom(newZoom);
+        });
       }
     }
 
     function handleTouchEnd(e) {
       if (e.touches.length < 2) {
-        touchStartDistance = 0;
-        touchStartZoom = 0;
-        pinchStartScale = 1;
+        initialPinchDistance = null;
+        initialZoom = null;
+        pinchZoomInProgress = false;
+        
+        if (zoomAnimationFrame) {
+          cancelAnimationFrame(zoomAnimationFrame);
+          zoomAnimationFrame = null;
+        }
       }
     }
 
-    function getDistance(touch1, touch2) {
+    function getTouchDistance(touch1, touch2) {
       const dx = touch1.clientX - touch2.clientX;
       const dy = touch1.clientY - touch2.clientY;
       return Math.sqrt(dx * dx + dy * dy);
     }
 
-    function smoothZoom(targetZoom) {
-      const currentZoom = map.getZoom();
+    // Smooth zoom animation
+    function smoothZoom(fromZoom, toZoom) {
       const steps = 10;
-      const increment = (targetZoom - currentZoom) / steps;
+      const diff = toZoom - fromZoom;
       let step = 0;
       
-      const animate = () => {
-        if (step < steps) {
-          map.setZoom(currentZoom + (increment * step));
-          step++;
-          requestAnimationFrame(animate);
-        } else {
-          map.setZoom(targetZoom);
+      function animateZoom() {
+        step++;
+        if (step <= steps) {
+          const progress = step / steps;
+          const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+          const currentZoom = fromZoom + (diff * easeProgress);
+          map.setZoom(currentZoom);
+          requestAnimationFrame(animateZoom);
         }
-      };
+      }
       
-      animate();
+      animateZoom();
     }
 
     // Map control functions
     function zoomIn() {
-      smoothZoom(map.getZoom() + 1);
+      const currentZoom = map.getZoom();
+      smoothZoom(currentZoom, currentZoom + 1);
     }
 
     function zoomOut() {
-      smoothZoom(map.getZoom() - 1);
+      const currentZoom = map.getZoom();
+      smoothZoom(currentZoom, currentZoom - 1);
     }
 
     function centerMap() {
       if (tempSelectedLocation) {
         map.panTo(tempSelectedLocation);
-        smoothZoom(16);
+        smoothZoom(map.getZoom(), 16);
       } else if (bookingData.pickup.lat && bookingData.pickup.lng) {
         map.panTo({ 
           lat: bookingData.pickup.lat, 
           lng: bookingData.pickup.lng 
         });
-        smoothZoom(14);
+        smoothZoom(map.getZoom(), 14);
       }
     }
 
@@ -1487,8 +1537,14 @@
         google.maps.event.trigger(map, 'resize');
         if (type === 'pickup' && bookingData.pickup.lat) {
           map.setCenter({ lat: bookingData.pickup.lat, lng: bookingData.pickup.lng });
+          map.setZoom(14);
         } else if (type === 'dropoff' && bookingData.dropoff.lat) {
           map.setCenter({ lat: bookingData.dropoff.lat, lng: bookingData.dropoff.lng });
+          map.setZoom(14);
+        } else if (bookingData.pickup.lat) {
+          // For dropoff, center on pickup if dropoff not set
+          map.setCenter({ lat: bookingData.pickup.lat, lng: bookingData.pickup.lng });
+          map.setZoom(13);
         }
       }, 100);
     }
@@ -1585,28 +1641,24 @@
       
       if (bookingData.pickup.lat && bookingData.dropoff.lat) {
         calculateRoute();
-        // Scroll and compact header when both locations are selected
-        compactHeaderAndScroll();
+        // Auto-scroll after both locations are selected
+        setTimeout(scrollFormUp, 300);
       }
     }
 
-    // Compact header and scroll to show options
-    function compactHeaderAndScroll() {
-      const header = document.getElementById('main-header');
+    // Scroll form up to show more options
+    function scrollFormUp() {
       const formView = document.getElementById('form-view');
       const tripToggle = document.getElementById('trip-toggle');
       
-      // Compact header
-      header.classList.add('compact');
+      // Add compact class to trip toggle
+      tripToggle.classList.add('compact');
       
-      // Scroll to show journey time and car options
-      setTimeout(() => {
-        const scrollTarget = tripToggle.offsetTop - 20;
-        formView.scrollTo({
-          top: scrollTarget,
-          behavior: 'smooth'
-        });
-      }, 100);
+      // Smooth scroll to bring journey time section into view
+      const journeySection = document.querySelector('.journey-time-section');
+      if (journeySection) {
+        journeySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
 
     // Setup autocomplete
@@ -1618,6 +1670,10 @@
       input.addEventListener('focus', () => {
         if (inputId === 'pickup') {
           document.getElementById('detect-location-section').classList.add('show');
+          document.getElementById('map-selection-hint').classList.remove('show');
+        } else if (inputId === 'dropoff') {
+          document.getElementById('detect-location-section').classList.remove('show');
+          document.getElementById('map-selection-hint').classList.add('show');
         }
       });
 
@@ -1625,6 +1681,8 @@
         setTimeout(() => {
           if (inputId === 'pickup' && !input.matches(':focus')) {
             document.getElementById('detect-location-section').classList.remove('show');
+          } else if (inputId === 'dropoff' && !input.matches(':focus')) {
+            document.getElementById('map-selection-hint').classList.remove('show');
           }
         }, 200);
       });
@@ -1753,8 +1811,8 @@
             
             if (bookingData.pickup.lat && bookingData.dropoff.lat) {
               calculateRoute();
-              // Compact header and scroll when both locations selected
-              compactHeaderAndScroll();
+              // Auto-scroll after both locations are selected
+              setTimeout(scrollFormUp, 300);
             }
           }
         }
@@ -2031,17 +2089,19 @@
       }
 
       try {
+        // Update status to cancelled in Firebase
         await currentRideRequestRef.update({ 
           status: 'cancelled',
           cancelledAt: firebase.database.ServerValue.TIMESTAMP,
           cancelledBy: 'rider'
         });
 
+        // Stop listening
         currentRideRequestRef.off();
         currentRideRequestRef = null;
         searchingForRide = false;
 
-        // Hide searching view and show form (keeping locations)
+        // Hide searching view and show form
         document.getElementById('searching-view').classList.remove('active');
         document.getElementById('form-view').classList.remove('hidden');
 
@@ -2053,10 +2113,9 @@
         // Re-enable all inputs
         enableAllInputs();
 
-        // Expand header back to normal
-        document.getElementById('main-header').classList.remove('compact');
-
         showToast('🚫 Ride search cancelled', 'success');
+        
+        // Locations are preserved in bookingData - no need to reset
       } catch (error) {
         console.error('Error cancelling ride:', error);
         showToast('Error cancelling: ' + error.message, 'error');
@@ -2287,7 +2346,7 @@
           currentRideRequestRef = null;
           searchingForRide = false;
           
-          // Hide searching view and show form (keeping locations)
+          // Hide searching view and show form (locations preserved)
           document.getElementById('searching-view').classList.remove('active');
           document.getElementById('form-view').classList.remove('hidden');
           
@@ -2296,9 +2355,6 @@
           bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
           
           enableAllInputs();
-          
-          // Expand header back
-          document.getElementById('main-header').classList.remove('compact');
         }
       });
 
