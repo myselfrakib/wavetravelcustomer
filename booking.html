@@ -36,6 +36,60 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       z-index: 100;
       flex-shrink: 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .hamburger-btn {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+    
+    .hamburger-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+    }
+    
+    .hamburger-btn:active {
+      transform: scale(0.95);
+    }
+    
+    .hamburger-line {
+      width: 20px;
+      height: 2.5px;
+      background: white;
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
+    
+    .hamburger-btn.active .hamburger-line:nth-child(1) {
+      transform: translateY(7.5px) rotate(45deg);
+    }
+    
+    .hamburger-btn.active .hamburger-line:nth-child(2) {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    
+    .hamburger-btn.active .hamburger-line:nth-child(3) {
+      transform: translateY(-7.5px) rotate(-45deg);
+    }
+    
+    .header-content {
+      flex: 1;
     }
     
     .header h1 {
@@ -47,6 +101,188 @@
     .header p {
       font-size: 0.85rem;
       opacity: 0.9;
+    }
+    
+    /* Sidebar Navigation */
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .sidebar-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 280px;
+      max-width: 85vw;
+      background: white;
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    
+    .sidebar-header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 24px 20px;
+      color: white;
+    }
+    
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    
+    .sidebar-avatar {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+    }
+    
+    .sidebar-user-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .sidebar-user-name {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .sidebar-user-email {
+      font-size: 0.75rem;
+      opacity: 0.9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .sidebar-close-btn {
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    
+    .sidebar-close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .sidebar-nav {
+      flex: 1;
+      padding: 12px 0;
+      overflow-y: auto;
+    }
+    
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      color: #334155;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      font-size: 0.95rem;
+      border-left: 3px solid transparent;
+    }
+    
+    .nav-item:hover {
+      background: #f8fafc;
+      border-left-color: #10b981;
+    }
+    
+    .nav-item.active {
+      background: #f0fdf4;
+      border-left-color: #10b981;
+      color: #059669;
+    }
+    
+    .nav-item i {
+      font-size: 1.2rem;
+      width: 24px;
+      text-align: center;
+    }
+    
+    .nav-divider {
+      height: 1px;
+      background: #e2e8f0;
+      margin: 8px 20px;
+    }
+    
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .logout-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .logout-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    
+    .logout-btn:active {
+      transform: translateY(0);
     }
     
     /* Main Content Wrapper */
@@ -978,10 +1214,65 @@
 </head>
 <body>
   <div class="container">
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+    
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;">
+          <div class="sidebar-user">
+            <div class="sidebar-avatar" id="sidebar-avatar">👤</div>
+            <div class="sidebar-user-info">
+              <div class="sidebar-user-name" id="sidebar-user-name">Loading...</div>
+              <div class="sidebar-user-email" id="sidebar-user-email">loading@email.com</div>
+            </div>
+          </div>
+          <button class="sidebar-close-btn" onclick="closeSidebar()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <a href="customerdashboard.html" class="nav-item">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+        <a href="booking.html" class="nav-item active">
+          <i class="fas fa-car"></i>
+          <span>Book a Ride</span>
+        </a>
+        <a href="mybookings.html" class="nav-item">
+          <i class="fas fa-list-alt"></i>
+          <span>My Rides</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="customerprofile.html" class="nav-item">
+          <i class="fas fa-user-circle"></i>
+          <span>Profile</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="handleLogout()">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+    
     <!-- Header -->
     <div class="header">
-      <h1>🌊 WaveTravel</h1>
-      <p>Book Your EV Ride</p>
+      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+      <div class="header-content">
+        <h1>🌊 WaveTravel</h1>
+        <p>Book Your EV Ride</p>
+      </div>
     </div>
 
     <div class="content-wrapper">
@@ -1268,6 +1559,7 @@
         if (user) {
           currentUser = user;
           console.log('User signed in:', user.email);
+          updateSidebarUserInfo(user);
         } else {
           currentUser = null;
           console.log('No user signed in, redirecting to login...');
@@ -1275,6 +1567,77 @@
         }
       });
     }
+
+    // Update sidebar user info
+    function updateSidebarUserInfo(user) {
+      const userName = user.displayName || user.email?.split('@')[0] || 'User';
+      const userEmail = user.email || 'No email';
+      const userInitial = userName.charAt(0).toUpperCase();
+      
+      document.getElementById('sidebar-user-name').textContent = userName;
+      document.getElementById('sidebar-user-email').textContent = userEmail;
+      document.getElementById('sidebar-avatar').textContent = userInitial;
+    }
+
+    // Sidebar functions
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      sidebar.classList.toggle('active');
+      overlay.classList.toggle('active');
+      hamburger.classList.toggle('active');
+      
+      // Prevent body scroll when sidebar is open
+      if (sidebar.classList.contains('active')) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+
+    function closeSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      sidebar.classList.remove('active');
+      overlay.classList.remove('active');
+      hamburger.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // Handle logout
+    async function handleLogout() {
+      if (!auth) {
+        showToast('Authentication not available', 'error');
+        return;
+      }
+
+      try {
+        await auth.signOut();
+        showToast('✓ Logged out successfully', 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+      } catch (error) {
+        console.error('Logout error:', error);
+        showToast('Error logging out: ' + error.message, 'error');
+      }
+    }
+
+    // Close sidebar when clicking outside
+    document.addEventListener('click', (e) => {
+      const sidebar = document.getElementById('sidebar');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      if (sidebar.classList.contains('active') && 
+          !sidebar.contains(e.target) && 
+          !hamburger.contains(e.target)) {
+        closeSidebar();
+      }
+    });
 
     // Global variables
     let map, directionsService, directionsRenderer;
