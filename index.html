@@ -508,7 +508,7 @@
           case 'driver':
             showToast('Welcome back, Driver!', 'success');
             const driverParam = roleInfo.driverId ? `?driverId=${encodeURIComponent(roleInfo.driverId)}` : `?uid=${encodeURIComponent(roleInfo.uid)}`;
-            setTimeout(() => location.href = `driverslots.html${driverParam}`, 500);
+            setTimeout(() => location.href = `driverdashboard.html${driverParam}`, 500);
             break;
           default:
             hideLoading();
