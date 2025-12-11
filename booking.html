@@ -1590,7 +1590,8 @@
         center: kolkata,
         zoom: 12,
         disableDefaultUI: true,
-        gestureHandling: 'greedy'
+        gestureHandling: 'greedy',
+        clickableIcons: false
       });
 
       directionsService = new google.maps.DirectionsService();
@@ -1608,7 +1609,7 @@
       setupAutocomplete('pickup', 'pickup-suggestions');
       setupAutocomplete('dropoff', 'dropoff-suggestions');
       
-      map.addListener('click', handleMapClick);
+      google.maps.event.addListener(map, 'click', handleMapClick);
       
       initSearchingMap();
       initAcceptedMap();
@@ -1681,10 +1682,18 @@
         google.maps.event.trigger(map, 'resize');
         if (type === 'pickup' && bookingData.pickup.lat) {
           map.setCenter({ lat: bookingData.pickup.lat, lng: bookingData.pickup.lng });
+          map.setZoom(14);
         } else if (type === 'dropoff' && bookingData.dropoff.lat) {
           map.setCenter({ lat: bookingData.dropoff.lat, lng: bookingData.dropoff.lng });
+          map.setZoom(14);
+        } else if (bookingData.pickup.lat) {
+          map.setCenter({ lat: bookingData.pickup.lat, lng: bookingData.pickup.lng });
+          map.setZoom(13);
+        } else {
+          map.setCenter({ lat: 22.5726, lng: 88.3639 });
+          map.setZoom(12);
         }
-      }, 100);
+      }, 150);
     }
 
     function closeMapSelection() {
