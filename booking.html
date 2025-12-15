@@ -1194,6 +1194,221 @@
         grid-template-columns: 1fr;
       }
     }
+    /* Ride Tracking View */
+.tracking-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  display: none;
+  flex-direction: column;
+}
+
+.tracking-view.active {
+  display: flex;
+}
+
+.tracking-map-container {
+  height: 55vh;
+  position: relative;
+}
+
+#tracking-map {
+  width: 100%;
+  height: 100%;
+}
+
+.tracking-status-bar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse 2s infinite;
+}
+
+.status-text {
+  font-weight: 600;
+  color: #059669;
+  font-size: 0.9rem;
+}
+
+.tracking-details {
+  height: 45vh;
+  background: white;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.driver-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #a7f3d0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.driver-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: white;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 3px solid white;
+  box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+}
+
+.driver-info {
+  flex: 1;
+}
+
+.driver-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.driver-vehicle {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.driver-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.star-icon {
+  color: #fbbf24;
+  font-size: 0.9rem;
+}
+
+.rating-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.call-driver-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.call-driver-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(16,185,129,0.4);
+}
+
+.call-driver-btn:active {
+  transform: scale(0.95);
+}
+
+.eta-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 2px solid #e2e8f0;
+}
+
+.eta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.eta-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.eta-time {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.eta-distance {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn-outline {
+  padding: 12px;
+  border: 2px solid #10b981;
+  background: white;
+  color: #10b981;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-outline:hover {
+  background: #f0fdf4;
+}
+
+@media (max-width: 480px) {
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
+}
   </style>
 </head>
 <body>
@@ -1472,7 +1687,72 @@
             <div class="vehicle-icon" id="search-vehicle-icon">🚗</div>
             <div class="vehicle-name" id="search-vehicle-name">Sedan</div>
           </div>
-          
+          <!-- Tracking View (add this after searching-view) -->
+<div class="tracking-view" id="tracking-view">
+  <div class="tracking-map-container">
+    <div id="tracking-map"></div>
+    <div class="tracking-status-bar">
+      <div class="status-indicator"></div>
+      <div class="status-text" id="tracking-status-text">Driver is on the way</div>
+    </div>
+  </div>
+  
+  <div class="tracking-details">
+    <div class="driver-card">
+      <div class="driver-avatar" id="driver-avatar">D</div>
+      <div class="driver-info">
+        <div class="driver-name" id="driver-name">Driver Name</div>
+        <div class="driver-vehicle" id="driver-vehicle">Vehicle Info</div>
+        <div class="driver-rating">
+          <i class="fas fa-star star-icon"></i>
+          <span class="rating-text">4.8</span>
+        </div>
+      </div>
+      <button class="call-driver-btn" onclick="callDriver()">
+        <i class="fas fa-phone"></i>
+      </button>
+    </div>
+    
+    <div class="eta-card">
+      <div class="eta-header">
+        <span class="eta-label">ESTIMATED ARRIVAL</span>
+      </div>
+      <div class="eta-time" id="eta-time">-- min</div>
+      <div class="eta-distance" id="eta-distance">-- km away</div>
+    </div>
+    
+    <div class="ride-summary">
+      <div class="summary-row">
+        <div class="summary-icon pickup">
+          <i class="fas fa-map-marker-alt"></i>
+        </div>
+        <div class="summary-content">
+          <div class="summary-label">PICKUP</div>
+          <div class="summary-value" id="tracking-pickup-address">Loading...</div>
+        </div>
+      </div>
+      
+      <div class="summary-row">
+        <div class="summary-icon dropoff">
+          <i class="fas fa-flag-checkered"></i>
+        </div>
+        <div class="summary-content">
+          <div class="summary-label">DROP-OFF</div>
+          <div class="summary-value" id="tracking-dropoff-address">Loading...</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="action-buttons">
+      <button class="btn-outline" onclick="viewAllBookings()">
+        <i class="fas fa-list"></i> View All Rides
+      </button>
+      <button class="btn-outline" onclick="bookNewRide()">
+        <i class="fas fa-plus"></i> New Booking
+      </button>
+    </div>
+  </div>
+</div>
           <!-- Cancel Button -->
           <button class="btn btn-secondary" id="cancel-search-btn" onclick="cancelRideSearch()">
             <i class="fas fa-times-circle"></i>
@@ -1683,7 +1963,37 @@
       setupTouchControls();
       
       initSearchingMap();
+      initTrackingMap(); // <-- Missing!
+}
+// ADD THIS NEW FUNCTION:
+function initTrackingMap() {
+  const kolkata = { lat: 22.5726, lng: 88.3639 };
+  
+  trackingMap = new google.maps.Map(document.getElementById('tracking-map'), {
+    center: kolkata,
+    zoom: 12,
+    disableDefaultUI: true,
+    zoomControl: false,
+    gestureHandling: 'greedy',
+    styles: [
+      {
+        featureType: "poi",
+        elementType: "labels",
+        stylers: [{ visibility: "off" }]
+      }
+    ]
+  });
+
+  trackingDirectionsRenderer = new google.maps.DirectionsRenderer({
+    map: trackingMap,
+    suppressMarkers: true, // We'll add custom markers
+    polylineOptions: {
+      strokeColor: '#10b981',
+      strokeWeight: 4
     }
+  });
+}
+    
 
     // Initialize searching map
     function initSearchingMap() {
@@ -1726,6 +2036,11 @@
     let touchStartTime = 0;
     let lastTap = 0;
     let zoomAnimationFrame = null;
+    let trackingMap, trackingDirectionsRenderer;
+let currentBookingRef = null;
+let currentRideData = null;
+let driverMarker = null;
+let etaUpdateInterval = null;
 
     function handleTouchStart(e) {
       touchStartTime = Date.now();
@@ -1837,6 +2152,855 @@
         smoothZoom(map.getZoom(), 14);
       }
     }
+
+    // Open map selection
+    function openMapSelection(type) {
+      mapSelectionMode = type;
+      
+      document.getElementById('form-view').classList.add('hidden');
+      document.getElementById('map-view').classList.add('active');
+      
+      const instructionText = type === 'pickup' 
+        ? 'Tap on map to select pickup location' 
+        : 'Tap on map to select dropoff location';
+      document.getElementById('instruction-text').textContent = instructionText;
+      
+      setTimeout(() => {
+        google.maps.event.trigger(map, 'resize');
+        if (type === 'pickup' && bookingData.pickup.lat) {
+          map.setCenter({ lat: bookingData.pickup.lat, lng: bookingData.pickup.lng });
+          map.setZoom(14);
+        } else if (type === 'dropoff' && bookingData.dropoff.lat) {
+          map.setCenter({ lat: bookingData.dropoff.lat, lng: bookingData.dropoff.lng });
+          map.setZoom(14);
+        } else if (bookingData.pickup.lat) {
+          map.setCenter({ lat: bookingData.pickup.lat, lng: bookingData.pickup.lng });
+          map.setZoom(13);
+        }
+      }, 100);
+    }
+
+    // Close map selection
+    function closeMapSelection() {
+      mapSelectionMode = null;
+      tempSelectedLocation = null;
+      
+      if (tempMarker) {
+        tempMarker.setMap(null);
+        tempMarker = null;
+      }
+      
+      document.getElementById('map-view').classList.remove('active');
+      document.getElementById('form-view').classList.remove('hidden');
+    }
+
+    // Handle map click
+    function handleMapClick(event) {
+      if (!mapSelectionMode) return;
+      
+      const lat = event.latLng.lat();
+      const lng = event.latLng.lng();
+      
+      tempSelectedLocation = { lat, lng };
+      
+      if (tempMarker) {
+        tempMarker.setMap(null);
+      }
+      
+      tempMarker = new google.maps.Marker({
+        position: event.latLng,
+        map: map,
+        icon: {
+          path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+          fillColor: mapSelectionMode === 'pickup' ? '#10b981' : '#ef4444',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+          scale: 1.2,
+          anchor: new google.maps.Point(0, 0)
+        },
+        animation: google.maps.Animation.DROP
+      });
+      
+      geocoder.geocode({ location: event.latLng }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const fullAddress = results[0].formatted_address;
+          tempSelectedLocation.address = fullAddress;
+          showToast('✓ Location selected', 'success');
+        }
+      });
+    }
+
+    // Confirm map selection
+    function confirmMapSelection() {
+      if (!tempSelectedLocation || !tempSelectedLocation.address) {
+        showToast('Please select a location on the map', 'error');
+        return;
+      }
+      
+      if (mapSelectionMode === 'pickup') {
+        bookingData.pickup.lat = tempSelectedLocation.lat;
+        bookingData.pickup.lng = tempSelectedLocation.lng;
+        bookingData.pickup.address = tempSelectedLocation.address;
+        
+        document.getElementById('pickup').value = tempSelectedLocation.address;
+        
+        if (pickupMarker) {
+          pickupMarker.setMap(null);
+        }
+        pickupMarker = tempMarker;
+        tempMarker = null;
+        
+      } else if (mapSelectionMode === 'dropoff') {
+        bookingData.dropoff.lat = tempSelectedLocation.lat;
+        bookingData.dropoff.lng = tempSelectedLocation.lng;
+        bookingData.dropoff.address = tempSelectedLocation.address;
+        
+        document.getElementById('dropoff').value = tempSelectedLocation.address;
+        
+        if (dropoffMarker) {
+          dropoffMarker.setMap(null);
+        }
+        dropoffMarker = tempMarker;
+        tempMarker = null;
+      }
+      
+      showToast(`✓ ${mapSelectionMode === 'pickup' ? 'Pickup' : 'Dropoff'} location confirmed!`, 'success');
+      
+      closeMapSelection();
+      
+      if (bookingData.pickup.lat && bookingData.dropoff.lat) {
+        calculateRoute();
+        setTimeout(scrollFormUp, 300);
+      }
+    }
+
+    // Scroll form up
+    function scrollFormUp() {
+      const formView = document.getElementById('form-view');
+      const tripToggle = document.getElementById('trip-toggle');
+      
+      tripToggle.classList.add('compact');
+      
+      const journeySection = document.querySelector('.journey-time-section');
+      if (journeySection) {
+        journeySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    // Setup autocomplete
+    function setupAutocomplete(inputId, suggestionsId) {
+      const input = document.getElementById(inputId);
+      const suggestionsList = document.getElementById(suggestionsId);
+      let debounceTimer;
+
+      input.addEventListener('focus', () => {
+        if (inputId === 'pickup') {
+          document.getElementById('detect-location-section').classList.add('show');
+          document.getElementById('map-selection-hint').classList.remove('show');
+        } else if (inputId === 'dropoff') {
+          document.getElementById('detect-location-section').classList.remove('show');
+          document.getElementById('map-selection-hint').classList.add('show');
+        }
+      });
+
+      input.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (inputId === 'pickup' && !input.matches(':focus')) {
+            document.getElementById('detect-location-section').classList.remove('show');
+          } else if (inputId === 'dropoff' && !input.matches(':focus')) {
+            document.getElementById('map-selection-hint').classList.remove('show');
+          }
+        }, 200);
+      });
+
+      input.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        const query = e.target.value.trim();
+
+        if (query.length < 2) {
+          suggestionsList.classList.remove('show');
+          return;
+        }
+
+        debounceTimer = setTimeout(() => {
+          autocompleteService.getPlacePredictions(
+            {
+              input: query,
+              componentRestrictions: { country: 'in' },
+              sessionToken: sessionToken
+            },
+            (predictions, status) => {
+              if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+                displaySuggestions(predictions, suggestionsList, inputId);
+              } else {
+                suggestionsList.classList.remove('show');
+              }
+            }
+          );
+        }, 300);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest(`#${inputId}`) && !e.target.closest(`#${suggestionsId}`)) {
+          suggestionsList.classList.remove('show');
+        }
+      });
+    }
+
+    function displaySuggestions(predictions, suggestionsList, inputId) {
+      suggestionsList.innerHTML = '';
+      
+      predictions.forEach(prediction => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.innerHTML = `
+          <i class="fas fa-map-marker-alt suggestion-icon"></i>
+          <div class="suggestion-text">
+            <div class="suggestion-main">${prediction.structured_formatting.main_text}</div>
+            <div class="suggestion-secondary">${prediction.structured_formatting.secondary_text || ''}</div>
+          </div>
+        `;
+        
+        item.addEventListener('click', () => {
+          selectPlace(prediction.place_id, inputId);
+          suggestionsList.classList.remove('show');
+        });
+        
+        suggestionsList.appendChild(item);
+      });
+      
+      suggestionsList.classList.add('show');
+    }
+
+    function selectPlace(placeId, inputId) {
+      placesService.getDetails(
+        {
+          placeId: placeId,
+          fields: ['formatted_address', 'geometry', 'name', 'address_components'],
+          sessionToken: sessionToken
+        },
+        (place, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            const input = document.getElementById(inputId);
+            const fullAddress = place.formatted_address;
+            input.value = fullAddress;
+
+            if (inputId === 'pickup') {
+              bookingData.pickup.lat = place.geometry.location.lat();
+              bookingData.pickup.lng = place.geometry.location.lng();
+              bookingData.pickup.address = fullAddress;
+              
+              if (pickupMarker) {
+                pickupMarker.setMap(null);
+              }
+              pickupMarker = new google.maps.Marker({
+                position: place.geometry.location,
+                map: null,
+                icon: {
+                  path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+                  fillColor: '#10b981',
+                  fillOpacity: 1,
+                  strokeColor: '#ffffff',
+                  strokeWeight: 2,
+                  scale: 1,
+                  anchor: new google.maps.Point(0, 0)
+                },
+                animation: google.maps.Animation.DROP,
+                title: 'Pickup Location'
+              });
+            } else {
+              bookingData.dropoff.lat = place.geometry.location.lat();
+              bookingData.dropoff.lng = place.geometry.location.lng();
+              bookingData.dropoff.address = fullAddress;
+              
+              if (dropoffMarker) {
+                dropoffMarker.setMap(null);
+              }
+              dropoffMarker = new google.maps.Marker({
+                position: place.geometry.location,
+                map: null,
+                icon: {
+                  path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+                  fillColor: '#ef4444',
+                  fillOpacity: 1,
+                  strokeColor: '#ffffff',
+                  strokeWeight: 2,
+                  scale: 1,
+                  anchor: new google.maps.Point(0, 0)
+                },
+                animation: google.maps.Animation.DROP,
+                title: 'Dropoff Location'
+              });
+            }
+
+            sessionToken = new google.maps.places.AutocompleteSessionToken();
+            
+            if (bookingData.pickup.lat && bookingData.dropoff.lat) {
+              calculateRoute();
+              setTimeout(scrollFormUp, 300);
+            }
+          }
+        }
+      );
+    }
+
+    // Calculate route
+    function calculateRoute() {
+      if (!bookingData.pickup.lat || !bookingData.dropoff.lat) return;
+
+      const origin = new google.maps.LatLng(bookingData.pickup.lat, bookingData.pickup.lng);
+      const destination = new google.maps.LatLng(bookingData.dropoff.lat, bookingData.dropoff.lng);
+
+      directionsService.route(
+        {
+          origin: origin,
+          destination: destination,
+          travelMode: google.maps.TravelMode.DRIVING
+        },
+        (result, status) => {
+          if (status === 'OK') {
+            const route = result.routes[0].legs[0];
+            const distanceKm = (route.distance.value / 1000).toFixed(0);
+            const durationHrs = (route.duration.value / 3600).toFixed(1);
+            
+            const rate = bookingData.tripType === 'oneway' ? 13 : 9;
+            const multiplier = bookingData.tripType === 'roundtrip' ? 2 : 1;
+            const baseFare = distanceKm * rate * multiplier;
+            const fareEstimate = bookingData.selectedCar === 'suv' ? Math.round(baseFare * 1.4) : baseFare;
+            
+            document.getElementById('route-info-card').classList.add('show');
+            document.getElementById('distance-display').textContent = distanceKm + ' km';
+            document.getElementById('duration-display').textContent = durationHrs + ' hrs';
+            document.getElementById('fare-display').textContent = '₹' + fareEstimate;
+            
+            bookingData.distance = parseFloat(distanceKm);
+            bookingData.duration = parseFloat(durationHrs);
+            bookingData.fareEstimate = fareEstimate;
+          }
+        }
+      );
+    }
+
+    // Auto-detect pickup location
+    async function autoDetectPickupLocation() {
+      if ("geolocation" in navigator) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 10000,
+              enableHighAccuracy: false
+            });
+          });
+          
+          bookingData.pickup.lat = position.coords.latitude;
+          bookingData.pickup.lng = position.coords.longitude;
+          
+          const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
+          
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+              const fullAddress = results[0].formatted_address;
+              bookingData.pickup.address = fullAddress;
+              document.getElementById('pickup').value = fullAddress;
+              
+              console.log('Auto-detected location:', fullAddress);
+            }
+          });
+        } catch (error) {
+          console.log('Auto-detect location failed, using default:', error.message);
+        }
+      }
+    }
+
+    // Detect location button
+    async function detectLocation() {
+      const btn = document.getElementById('detect-btn-full');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Detecting...';
+      
+      if ("geolocation" in navigator) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
+          
+          bookingData.pickup.lat = position.coords.latitude;
+          bookingData.pickup.lng = position.coords.longitude;
+          
+          const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
+          
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+              const fullAddress = results[0].formatted_address;
+              bookingData.pickup.address = fullAddress;
+              document.getElementById('pickup').value = fullAddress;
+              
+              showToast('✓ Location detected!', 'success');
+              
+              if (bookingData.dropoff.lat) {
+                calculateRoute();
+              }
+            }
+          });
+        } catch (error) {
+          showToast('Could not detect location', 'error');
+        }
+      } else {
+        showToast('Geolocation not supported', 'error');
+      }
+      
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-crosshairs"></i> Use Current Location';
+    }
+
+    // Trip type functions
+    function setTripType(type) {
+      bookingData.tripType = type;
+      
+      document.querySelectorAll('.toggle-option').forEach(opt => {
+        opt.classList.remove('active');
+      });
+      document.querySelector(`[data-type="${type}"]`).classList.add('active');
+      
+      if (bookingData.pickup.lat && bookingData.dropoff.lat) {
+        calculateRoute();
+      }
+    }
+
+    // Journey time functions
+    function setJourneyTime(timeType) {
+      bookingData.journeyTime = timeType;
+      
+      document.querySelectorAll('.journey-option').forEach(opt => {
+        opt.classList.remove('active');
+      });
+      document.querySelector(`[data-time="${timeType}"]`).classList.add('active');
+      
+      const datetimeSection = document.getElementById('datetime-section');
+      
+      if (timeType === 'later') {
+        datetimeSection.classList.add('show');
+      } else {
+        datetimeSection.classList.remove('show');
+      }
+    }
+
+    // Car selection
+    function selectCar(element) {
+      if (searchingForRide) return;
+      
+      document.querySelectorAll('.car-option').forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      element.classList.add('selected');
+      bookingData.selectedCar = element.dataset.car;
+      
+      if (bookingData.pickup.lat && bookingData.dropoff.lat) {
+        calculateRoute();
+      }
+    }
+
+    // Setup date inputs
+    function setupDateInputs() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('pickup-date').value = today;
+      document.getElementById('pickup-date').min = today;
+    }
+
+    // Disable/Enable inputs
+    function disableAllInputs() {
+      document.querySelectorAll('.toggle-option, .journey-option').forEach(el => {
+        el.style.pointerEvents = 'none';
+        el.style.opacity = '0.5';
+      });
+      
+      document.getElementById('pickup').disabled = true;
+      document.getElementById('dropoff').disabled = true;
+      document.getElementById('map-pickup-btn').disabled = true;
+      document.getElementById('map-dropoff-btn').disabled = true;
+      
+      const detectBtn = document.getElementById('detect-btn-full');
+      if (detectBtn) detectBtn.disabled = true;
+      
+      document.querySelectorAll('.car-option').forEach(el => {
+        el.style.pointerEvents = 'none';
+        el.style.opacity = '0.5';
+      });
+    // [Previous functions for openMapSelection, closeMapSelection, handleMapClick, confirmMapSelection remain same]
+    // [Previous functions for setupAutocomplete, displaySuggestions, selectPlace remain same]
+    // [Previous functions for calculateRoute, autoDetectPickupLocation, detectLocation remain same]
+    // [Previous functions for setTripType, setJourneyTime, selectCar, setupDateInputs remain same]
+    
+    // Listen for driver acceptance - UPDATED
+    function listenForDriverAcceptance(rideId) {
+      currentRideRequestRef.on('value', async (snapshot) => {
+        const rideData = snapshot.val();
+        
+        if (!rideData) {
+          console.log('Ride request not found');
+          return;
+        }
+
+        console.log('Ride status:', rideData.status);
+
+        if (rideData.status === 'accepted' && rideData.assignedDriverId) {
+          console.log('Driver accepted! Moving to bookings...');
+          
+          try {
+            const booking = {
+              ...rideData,
+              status: 'booked',
+              bookedAt: firebase.database.ServerValue.TIMESTAMP,
+              rideRequestId: rideId
+            };
+
+            const bookingRef = database.ref('evplan/bookings').push();
+            await bookingRef.set(booking);
+            
+            const bookingId = bookingRef.key;
+            console.log('Booking created:', bookingId);
+
+            await currentRideRequestRef.update({ 
+              status: 'moved_to_bookings',
+              bookingId: bookingId
+            });
+
+            currentRideRequestRef.off();
+            currentRideRequestRef = null;
+            searchingForRide = false;
+
+            showToast('🎉 Driver assigned! Loading tracking...', 'success');
+
+            // Instead of redirecting, show tracking view
+            setTimeout(() => {
+              showTrackingView(bookingId);
+            }, 1500);
+
+          } catch (error) {
+            console.error('Error creating booking:', error);
+            showToast('Error creating booking: ' + error.message, 'error');
+          }
+        } else if (rideData.status === 'cancelled') {
+          currentRideRequestRef.off();
+          currentRideRequestRef = null;
+          searchingForRide = false;
+          
+          document.getElementById('searching-view').classList.remove('active');
+          document.getElementById('form-view').classList.remove('hidden');
+          
+          const bookBtn = document.getElementById('book-btn');
+          bookBtn.disabled = false;
+          bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
+          
+          enableAllInputs();
+        }
+      });
+
+      setTimeout(() => {
+        if (currentRideRequestRef) {
+          currentRideRequestRef.once('value', (snapshot) => {
+            const rideData = snapshot.val();
+            if (rideData && rideData.status === 'searching') {
+              showToast('⏱️ Still searching for drivers...', 'success');
+            }
+          });
+        }
+      }, 30000);
+    }
+
+    // Show tracking view - NEW FUNCTION
+    async function showTrackingView(bookingId) {
+      // Hide searching view
+      document.getElementById('searching-view').classList.remove('active');
+      
+      // Show tracking view
+      document.getElementById('tracking-view').classList.add('active');
+      
+      // Set up the booking reference
+      currentBookingRef = database.ref(`evplan/bookings/${bookingId}`);
+      
+      // Listen for booking updates
+      currentBookingRef.on('value', (snapshot) => {
+        const bookingData = snapshot.val();
+        if (bookingData) {
+          currentRideData = bookingData;
+          updateTrackingUI(bookingData);
+          
+          // Update driver location if available
+          if (bookingData.driverLocation) {
+            updateDriverLocationOnMap(bookingData.driverLocation);
+          }
+        }
+      });
+      
+      // Trigger map resize
+      setTimeout(() => {
+        google.maps.event.trigger(trackingMap, 'resize');
+        if (currentRideData) {
+          showRouteOnTrackingMap();
+        }
+      }, 100);
+      
+      // Start ETA updates
+      startETAUpdates();
+    }
+
+    // Update tracking UI - NEW FUNCTION
+    function updateTrackingUI(bookingData) {
+      // Update driver info
+      const driverName = bookingData.assignedDriverName || 'Driver';
+      const driverInitial = driverName.charAt(0).toUpperCase();
+      const driverVehicle = bookingData.assignedDriverVehicle || 'Vehicle info';
+      
+      document.getElementById('driver-name').textContent = driverName;
+      document.getElementById('driver-avatar').textContent = driverInitial;
+      document.getElementById('driver-vehicle').textContent = driverVehicle;
+      
+      // Update addresses
+      document.getElementById('tracking-pickup-address').textContent = bookingData.pickup.address;
+      document.getElementById('tracking-dropoff-address').textContent = bookingData.dropoff.address;
+      
+      // Update status text
+      let statusText = 'Driver is on the way';
+      if (bookingData.status === 'arrived') {
+        statusText = 'Driver has arrived';
+      } else if (bookingData.status === 'in_progress') {
+        statusText = 'Trip in progress';
+      } else if (bookingData.status === 'completed') {
+        statusText = 'Trip completed';
+      }
+      document.getElementById('tracking-status-text').textContent = statusText;
+    }
+
+    // Show route on tracking map - NEW FUNCTION
+    function showRouteOnTrackingMap() {
+      if (!currentRideData) return;
+      
+      const origin = new google.maps.LatLng(currentRideData.pickup.lat, currentRideData.pickup.lng);
+      const destination = new google.maps.LatLng(currentRideData.dropoff.lat, currentRideData.dropoff.lng);
+
+      directionsService.route(
+        {
+          origin: origin,
+          destination: destination,
+          travelMode: google.maps.TravelMode.DRIVING
+        },
+        (result, status) => {
+          if (status === 'OK') {
+            trackingDirectionsRenderer.setDirections(result);
+            
+            // Add custom markers
+            new google.maps.Marker({
+              position: origin,
+              map: trackingMap,
+              icon: {
+                path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+                fillColor: '#10b981',
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 2,
+                scale: 1,
+                anchor: new google.maps.Point(0, 0)
+              },
+              title: 'Pickup Location'
+            });
+            
+            new google.maps.Marker({
+              position: destination,
+              map: trackingMap,
+              icon: {
+                path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+                fillColor: '#ef4444',
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 2,
+                scale: 1,
+                anchor: new google.maps.Point(0, 0)
+              },
+              title: 'Dropoff Location'
+            });
+          }
+        }
+      );
+    }
+
+    // Update driver location on map - NEW FUNCTION
+    function updateDriverLocationOnMap(driverLocation) {
+      const driverPos = new google.maps.LatLng(driverLocation.lat, driverLocation.lng);
+      
+      if (!driverMarker) {
+        driverMarker = new google.maps.Marker({
+          position: driverPos,
+          map: trackingMap,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#3b82f6',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3,
+            scale: 8
+          },
+          title: 'Driver Location'
+        });
+      } else {
+        // Animate marker movement
+        animateMarker(driverMarker, driverPos);
+      }
+      
+      // Center map to show both driver and pickup
+      if (currentRideData && currentRideData.pickup) {
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(driverPos);
+        bounds.extend(new google.maps.LatLng(currentRideData.pickup.lat, currentRideData.pickup.lng));
+        trackingMap.fitBounds(bounds);
+      }
+    }
+
+    // Animate marker - NEW FUNCTION
+    function animateMarker(marker, newPosition) {
+      const startPosition = marker.getPosition();
+      const endPosition = newPosition;
+      
+      let step = 0;
+      const numSteps = 20;
+      
+      const animate = () => {
+        step++;
+        if (step <= numSteps) {
+          const progress = step / numSteps;
+          const lat = startPosition.lat() + (endPosition.lat() - startPosition.lat()) * progress;
+          const lng = startPosition.lng() + (endPosition.lng() - startPosition.lng()) * progress;
+          marker.setPosition(new google.maps.LatLng(lat, lng));
+          requestAnimationFrame(animate);
+        }
+      };
+      
+      animate();
+    }
+
+    // Start ETA updates - NEW FUNCTION
+    function startETAUpdates() {
+      // Clear any existing interval
+      if (etaUpdateInterval) {
+        clearInterval(etaUpdateInterval);
+      }
+      
+      // Update ETA immediately
+      updateETA();
+      
+      // Update ETA every 30 seconds
+      etaUpdateInterval = setInterval(() => {
+        updateETA();
+      }, 30000);
+    }
+
+    // Update ETA - NEW FUNCTION
+    function updateETA() {
+      if (!currentRideData || !currentRideData.driverLocation || !currentRideData.pickup) {
+        return;
+      }
+      
+      const driverPos = new google.maps.LatLng(
+        currentRideData.driverLocation.lat, 
+        currentRideData.driverLocation.lng
+      );
+      const pickupPos = new google.maps.LatLng(
+        currentRideData.pickup.lat, 
+        currentRideData.pickup.lng
+      );
+      
+      directionsService.route(
+        {
+          origin: driverPos,
+          destination: pickupPos,
+          travelMode: google.maps.TravelMode.DRIVING
+        },
+        (result, status) => {
+          if (status === 'OK') {
+            const route = result.routes[0].legs[0];
+            const durationMinutes = Math.ceil(route.duration.value / 60);
+            const distanceKm = (route.distance.value / 1000).toFixed(1);
+            
+            document.getElementById('eta-time').textContent = `${durationMinutes} min`;
+            document.getElementById('eta-distance').textContent = `${distanceKm} km away`;
+          }
+        }
+      );
+    }
+
+    // Call driver - NEW FUNCTION
+    function callDriver() {
+      if (currentRideData && currentRideData.assignedDriverPhone) {
+        window.location.href = `tel:${currentRideData.assignedDriverPhone}`;
+      } else {
+        showToast('Driver phone number not available', 'error');
+      }
+    }
+
+    // View all bookings - NEW FUNCTION
+    function viewAllBookings() {
+      // Clean up listeners
+      if (currentBookingRef) {
+        currentBookingRef.off();
+      }
+      if (etaUpdateInterval) {
+        clearInterval(etaUpdateInterval);
+      }
+      
+      window.location.href = 'mybookings.html';
+    }
+
+    // Book new ride - NEW FUNCTION
+    function bookNewRide() {
+      // Clean up listeners
+      if (currentBookingRef) {
+        currentBookingRef.off();
+      }
+      if (etaUpdateInterval) {
+        clearInterval(etaUpdateInterval);
+      }
+      
+      // Hide tracking view
+      document.getElementById('tracking-view').classList.remove('active');
+      
+      // Show form view
+      document.getElementById('form-view').classList.remove('hidden');
+      
+      // Reset form
+      document.getElementById('dropoff').value = '';
+      bookingData.dropoff = { address: '', lat: null, lng: null };
+      document.getElementById('route-info-card').classList.remove('show');
+      
+      // Re-enable inputs
+      enableAllInputs();
+      
+      showToast('✓ Ready for new booking', 'success');
+    }
+
+    // Toast notification
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+      if (currentRideRequestRef) {
+        currentRideRequestRef.off();
+      }
+      if (currentBookingRef) {
+        currentBookingRef.off();
+      }
+      if (etaUpdateInterval) {
+        clearInterval(etaUpdateInterval);
+      }
+    });
 
     // Open map selection
     function openMapSelection(type) {
@@ -2523,93 +3687,6 @@
         }
       );
     }
-
-    // Listen for driver acceptance
-    function listenForDriverAcceptance(rideId) {
-      currentRideRequestRef.on('value', async (snapshot) => {
-        const rideData = snapshot.val();
-        
-        if (!rideData) {
-          console.log('Ride request not found');
-          return;
-        }
-
-        console.log('Ride status:', rideData.status);
-
-        if (rideData.status === 'accepted' && rideData.assignedDriverId) {
-          console.log('Driver accepted! Moving to bookings...');
-          
-          try {
-            const booking = {
-              ...rideData,
-              status: 'booked',
-              bookedAt: firebase.database.ServerValue.TIMESTAMP,
-              rideRequestId: rideId
-            };
-
-            const bookingRef = database.ref('evplan/bookings').push();
-            await bookingRef.set(booking);
-            
-            const bookingId = bookingRef.key;
-            console.log('Booking created:', bookingId);
-
-            await currentRideRequestRef.update({ 
-              status: 'moved_to_bookings',
-              bookingId: bookingId
-            });
-
-            currentRideRequestRef.off();
-            currentRideRequestRef = null;
-            searchingForRide = false;
-
-            showToast('🎉 Driver assigned! Redirecting...', 'success');
-
-            setTimeout(() => {
-              window.location.href = `mybookings.html?id=${bookingId}`;
-            }, 2000);
-
-          } catch (error) {
-            console.error('Error creating booking:', error);
-            showToast('Error creating booking: ' + error.message, 'error');
-          }
-        } else if (rideData.status === 'cancelled') {
-          currentRideRequestRef.off();
-          currentRideRequestRef = null;
-          searchingForRide = false;
-          
-          document.getElementById('searching-view').classList.remove('active');
-          document.getElementById('form-view').classList.remove('hidden');
-          
-          const bookBtn = document.getElementById('book-btn');
-          bookBtn.disabled = false;
-          bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
-          
-          enableAllInputs();
-        }
-      });
-
-      setTimeout(() => {
-        if (currentRideRequestRef) {
-          currentRideRequestRef.once('value', (snapshot) => {
-            const rideData = snapshot.val();
-            if (rideData && rideData.status === 'searching') {
-              showToast('⏱️ Still searching for drivers...', 'success');
-            }
-          });
-        }
-      }, 30000);
-    }
-
-    // Toast notification
-    function showToast(message, type = 'success') {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.className = `toast ${type} show`;
-      
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3000);
-    }
   </script>
 </body>
-</html>.
+</html>
