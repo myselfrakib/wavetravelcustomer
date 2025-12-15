@@ -1527,6 +1527,10 @@
           console.log('User signed in:', user.email);
           updateSidebarUserInfo(user);
         } else {
+          currentUser = null;
+          console.log('No user signed in, redirecting to login...');
+          window.location.href = 'index.html';
+        }
       });
     }
 
