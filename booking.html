@@ -605,30 +605,45 @@
       margin-right: 6px;
     }
     
-    .current-time-display {
-      background: #f0fdf4;
-      border: 2px solid #10b981;
-      border-radius: 10px;
-      padding: 12px 16px;
-      text-align: center;
+    /* Date Time Section */
+    .datetime-section {
+      margin-bottom: 20px;
       display: none;
     }
     
-    .current-time-display.show {
+    .datetime-section.show {
       display: block;
     }
     
-    .current-time-label {
-      font-size: 0.75rem;
-      color: #64748b;
-      font-weight: 600;
-      margin-bottom: 4px;
+    .datetime-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
     
-    .current-time-value {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #059669;
+    .datetime-field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    
+    .datetime-field input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      font-size: 0.85rem;
+    }
+    
+    .datetime-field input:focus {
+      outline: none;
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
     }
     
     /* Location Inputs */
@@ -753,11 +768,27 @@
       font-size: 0.8rem;
       color: #64748b;
       font-weight: 500;
+      padding: 10px 14px;
+      background: #f0fdf4;
+      border: 2px dashed #10b981;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .map-hint-text:hover {
+      background: #10b981;
+      color: white;
+      border-style: solid;
     }
     
     .map-hint-text i {
       color: #10b981;
       margin-right: 4px;
+    }
+    
+    .map-hint-text:hover i {
+      color: white;
     }
     
     .detect-btn-full {
@@ -791,53 +822,6 @@
     
     .detect-btn-full i {
       font-size: 0.9rem;
-    }
-    
-    /* Date Time Section */
-    .datetime-section {
-      margin-bottom: 20px;
-      display: none;
-    }
-    
-    .datetime-section.show {
-      display: block;
-    }
-    
-    .datetime-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    
-    .datetime-field label {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #64748b;
-      margin-bottom: 6px;
-    }
-    
-    .datetime-field input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-family: 'Inter', sans-serif;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      font-size: 0.85rem;
-    }
-    
-    .datetime-field input:focus {
-      outline: none;
-      border-color: #10b981;
-      box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
-    }
-    
-    .return-section {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 2px dashed #e2e8f0;
     }
     
     /* Car Selection */
@@ -1338,7 +1322,7 @@
             <div class="suggestions-list" id="dropoff-suggestions"></div>
           </div>
           
-          <div class="map-selection-hint" id="map-selection-hint">
+          <div class="map-selection-hint" id="map-selection-hint" onclick="openMapSelection('dropoff')">
             <div class="map-hint-text">
               <i class="fas fa-map-marked-alt"></i>
               Choose from map
@@ -1357,11 +1341,6 @@
             </div>
           </div>
           
-          <div class="current-time-display show" id="current-time-display">
-            <div class="current-time-label">Pickup Time</div>
-            <div class="current-time-value" id="current-time-value">Now</div>
-          </div>
-          
           <div class="datetime-section" id="datetime-section">
             <div class="datetime-grid">
               <div class="datetime-field">
@@ -1371,19 +1350,6 @@
               <div class="datetime-field">
                 <label>Pickup Time</label>
                 <input type="time" id="pickup-time" value="09:00"/>
-              </div>
-            </div>
-            
-            <div class="return-section hidden" id="return-section">
-              <div class="datetime-grid">
-                <div class="datetime-field">
-                  <label>Return Date</label>
-                  <input type="date" id="return-date"/>
-                </div>
-                <div class="datetime-field">
-                  <label>Return Time</label>
-                  <input type="time" id="return-time" value="18:00"/>
-                </div>
               </div>
             </div>
           </div>
@@ -1561,10 +1527,6 @@
           console.log('User signed in:', user.email);
           updateSidebarUserInfo(user);
         } else {
-          currentUser = null;
-          console.log('No user signed in, redirecting to login...');
-          window.location.href = 'index.html';
-        }
       });
     }
 
@@ -1589,7 +1551,6 @@
       overlay.classList.toggle('active');
       hamburger.classList.toggle('active');
       
-      // Prevent body scroll when sidebar is open
       if (sidebar.classList.contains('active')) {
         document.body.style.overflow = 'hidden';
       } else {
@@ -1662,8 +1623,6 @@
       dropoff: { address: '', lat: null, lng: null },
       pickupDate: '',
       pickupTime: '09:00',
-      returnDate: '',
-      returnTime: '18:00',
       selectedCar: 'sedan',
       distance: 0,
       duration: 0,
@@ -1674,7 +1633,6 @@
     window.addEventListener('load', () => {
       initMap();
       setupDateInputs();
-      updateCurrentTime();
       setTimeout(() => {
         autoDetectPickupLocation();
       }, 1000);
@@ -1720,7 +1678,6 @@
       map.addListener('click', handleMapClick);
       setupTouchControls();
       
-      // Initialize searching map
       initSearchingMap();
     }
 
@@ -1753,7 +1710,7 @@
       });
     }
 
-    // Enhanced touch controls for smoother pinch zoom
+    // Enhanced touch controls
     function setupTouchControls() {
       const mapDiv = document.getElementById('map');
       
@@ -1769,7 +1726,6 @@
     function handleTouchStart(e) {
       touchStartTime = Date.now();
       
-      // Handle pinch zoom
       if (e.touches.length === 2) {
         e.preventDefault();
         pinchZoomInProgress = true;
@@ -1778,7 +1734,6 @@
         lastPinchTime = Date.now();
       }
       
-      // Handle double tap to zoom
       if (e.touches.length === 1) {
         const currentTime = Date.now();
         const tapGap = currentTime - lastTap;
@@ -1799,22 +1754,19 @@
         e.preventDefault();
         
         const now = Date.now();
-        if (now - lastPinchTime < 16) return; // Throttle to ~60fps
+        if (now - lastPinchTime < 16) return;
         lastPinchTime = now;
         
         const currentDistance = getTouchDistance(e.touches[0], e.touches[1]);
         const scale = currentDistance / initialPinchDistance;
         
-        // More sensitive and smoother zoom calculation
         const zoomChange = Math.log2(scale) * 1.5;
         const newZoom = Math.max(3, Math.min(20, initialZoom + zoomChange));
         
-        // Cancel any pending animation frame
         if (zoomAnimationFrame) {
           cancelAnimationFrame(zoomAnimationFrame);
         }
         
-        // Use requestAnimationFrame for smoother updates
         zoomAnimationFrame = requestAnimationFrame(() => {
           map.setZoom(newZoom);
         });
@@ -1840,7 +1792,6 @@
       return Math.sqrt(dx * dx + dy * dy);
     }
 
-    // Smooth zoom animation
     function smoothZoom(fromZoom, toZoom) {
       const steps = 10;
       const diff = toZoom - fromZoom;
@@ -1850,7 +1801,7 @@
         step++;
         if (step <= steps) {
           const progress = step / steps;
-          const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+          const easeProgress = 1 - Math.pow(1 - progress, 3);
           const currentZoom = fromZoom + (diff * easeProgress);
           map.setZoom(currentZoom);
           requestAnimationFrame(animateZoom);
@@ -1860,7 +1811,6 @@
       animateZoom();
     }
 
-    // Map control functions
     function zoomIn() {
       const currentZoom = map.getZoom();
       smoothZoom(currentZoom, currentZoom + 1);
@@ -1905,7 +1855,6 @@
           map.setCenter({ lat: bookingData.dropoff.lat, lng: bookingData.dropoff.lng });
           map.setZoom(14);
         } else if (bookingData.pickup.lat) {
-          // For dropoff, center on pickup if dropoff not set
           map.setCenter({ lat: bookingData.pickup.lat, lng: bookingData.pickup.lng });
           map.setZoom(13);
         }
@@ -1999,25 +1948,21 @@
       
       showToast(`✓ ${mapSelectionMode === 'pickup' ? 'Pickup' : 'Dropoff'} location confirmed!`, 'success');
       
-      // Close map and return to form
       closeMapSelection();
       
       if (bookingData.pickup.lat && bookingData.dropoff.lat) {
         calculateRoute();
-        // Auto-scroll after both locations are selected
         setTimeout(scrollFormUp, 300);
       }
     }
 
-    // Scroll form up to show more options
+    // Scroll form up
     function scrollFormUp() {
       const formView = document.getElementById('form-view');
       const tripToggle = document.getElementById('trip-toggle');
       
-      // Add compact class to trip toggle
       tripToggle.classList.add('compact');
       
-      // Smooth scroll to bring journey time section into view
       const journeySection = document.querySelector('.journey-time-section');
       if (journeySection) {
         journeySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2174,7 +2119,6 @@
             
             if (bookingData.pickup.lat && bookingData.dropoff.lat) {
               calculateRoute();
-              // Auto-scroll after both locations are selected
               setTimeout(scrollFormUp, 300);
             }
           }
@@ -2300,19 +2244,6 @@
       });
       document.querySelector(`[data-type="${type}"]`).classList.add('active');
       
-      const returnSection = document.getElementById('return-section');
-      if (type === 'roundtrip') {
-        returnSection.classList.remove('hidden');
-        const pickupDate = document.getElementById('pickup-date').value;
-        if (pickupDate) {
-          const returnDate = new Date(pickupDate);
-          returnDate.setDate(returnDate.getDate() + 2);
-          document.getElementById('return-date').value = returnDate.toISOString().split('T')[0];
-        }
-      } else {
-        returnSection.classList.add('hidden');
-      }
-      
       if (bookingData.pickup.lat && bookingData.dropoff.lat) {
         calculateRoute();
       }
@@ -2328,43 +2259,13 @@
       document.querySelector(`[data-time="${timeType}"]`).classList.add('active');
       
       const datetimeSection = document.getElementById('datetime-section');
-      const currentTimeDisplay = document.getElementById('current-time-display');
       
-      if (timeType === 'now') {
-        datetimeSection.classList.remove('show');
-        currentTimeDisplay.classList.add('show');
-        updateCurrentTime();
-      } else {
+      if (timeType === 'later') {
         datetimeSection.classList.add('show');
-        currentTimeDisplay.classList.remove('show');
-        
-        if (bookingData.tripType === 'roundtrip') {
-          document.getElementById('return-section').classList.remove('hidden');
-        }
+      } else {
+        datetimeSection.classList.remove('show');
       }
     }
-
-    function updateCurrentTime() {
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('en-IN', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric',
-        year: 'numeric'
-      });
-      const timeStr = now.toLocaleTimeString('en-IN', { 
-        hour: '2-digit', 
-        minute: '2-digit'
-      });
-      
-      document.getElementById('current-time-value').textContent = `${dateStr}, ${timeStr}`;
-    }
-
-    setInterval(() => {
-      if (bookingData.journeyTime === 'now') {
-        updateCurrentTime();
-      }
-    }, 60000);
 
     // Car selection
     function selectCar(element) {
@@ -2386,17 +2287,6 @@
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('pickup-date').value = today;
       document.getElementById('pickup-date').min = today;
-      document.getElementById('return-date').min = today;
-
-      document.getElementById('pickup-date').addEventListener('change', (e) => {
-        const returnDateInput = document.getElementById('return-date');
-        if (bookingData.tripType === 'roundtrip') {
-          const pickupDate = new Date(e.target.value);
-          pickupDate.setDate(pickupDate.getDate() + 2);
-          returnDateInput.value = pickupDate.toISOString().split('T')[0];
-          returnDateInput.min = e.target.value;
-        }
-      });
     }
 
     // Disable/Enable inputs
@@ -2452,33 +2342,27 @@
       }
 
       try {
-        // Update status to cancelled in Firebase
         await currentRideRequestRef.update({ 
           status: 'cancelled',
           cancelledAt: firebase.database.ServerValue.TIMESTAMP,
           cancelledBy: 'rider'
         });
 
-        // Stop listening
         currentRideRequestRef.off();
         currentRideRequestRef = null;
         searchingForRide = false;
 
-        // Hide searching view and show form
         document.getElementById('searching-view').classList.remove('active');
         document.getElementById('form-view').classList.remove('hidden');
 
-        // Reset book button
         const bookBtn = document.getElementById('book-btn');
         bookBtn.disabled = false;
         bookBtn.innerHTML = '<i class="fas fa-check-circle"></i> Book Your Ride';
 
-        // Re-enable all inputs
         enableAllInputs();
 
         showToast('🚫 Ride search cancelled', 'success');
         
-        // Locations are preserved in bookingData - no need to reset
       } catch (error) {
         console.error('Error cancelling ride:', error);
         showToast('Error cancelling: ' + error.message, 'error');
@@ -2503,15 +2387,6 @@
           showToast('Please select pickup date and time', 'error');
           return;
         }
-
-        if (bookingData.tripType === 'roundtrip') {
-          const returnDate = document.getElementById('return-date').value;
-          const returnTime = document.getElementById('return-time').value;
-          if (!returnDate || !returnTime) {
-            showToast('Please select return date and time', 'error');
-            return;
-          }
-        }
       }
 
       if (!currentUser) {
@@ -2532,7 +2407,7 @@
         return;
       }
 
-      let pickupTimestamp, returnTimestamp = null;
+      let pickupTimestamp;
       
       if (bookingData.journeyTime === 'now') {
         pickupTimestamp = Math.floor(Date.now() / 1000);
@@ -2541,13 +2416,6 @@
         const pickupTime = document.getElementById('pickup-time').value;
         const pickupDateTime = new Date(`${pickupDate}T${pickupTime}`);
         pickupTimestamp = Math.floor(pickupDateTime.getTime() / 1000);
-        
-        if (bookingData.tripType === 'roundtrip') {
-          const returnDate = document.getElementById('return-date').value;
-          const returnTime = document.getElementById('return-time').value;
-          const returnDateTime = new Date(`${returnDate}T${returnTime}`);
-          returnTimestamp = Math.floor(returnDateTime.getTime() / 1000);
-        }
       }
 
       const bookBtn = document.getElementById('book-btn');
@@ -2558,11 +2426,9 @@
       
       disableAllInputs();
       
-      // Hide form view and show searching view
       document.getElementById('form-view').classList.add('hidden');
       document.getElementById('searching-view').classList.add('active');
       
-      // Update searching view with ride details
       document.getElementById('search-pickup-address').textContent = bookingData.pickup.address;
       document.getElementById('search-dropoff-address').textContent = bookingData.dropoff.address;
       document.getElementById('search-distance').textContent = bookingData.distance + ' km';
@@ -2574,7 +2440,6 @@
       document.getElementById('search-vehicle-icon').textContent = vehicleIcon;
       document.getElementById('search-vehicle-name').textContent = vehicleName;
       
-      // Show route on searching map
       setTimeout(() => {
         google.maps.event.trigger(searchingMap, 'resize');
         showRouteOnSearchingMap();
@@ -2597,7 +2462,6 @@
           tripType: bookingData.tripType,
           journeyTime: bookingData.journeyTime,
           pickupTimestamp: pickupTimestamp,
-          returnTimestamp: returnTimestamp,
           vehicleType: bookingData.selectedCar,
           fareEstimate: bookingData.fareEstimate,
           distance: bookingData.distance,
@@ -2709,7 +2573,6 @@
           currentRideRequestRef = null;
           searchingForRide = false;
           
-          // Hide searching view and show form (locations preserved)
           document.getElementById('searching-view').classList.remove('active');
           document.getElementById('form-view').classList.remove('hidden');
           
@@ -2745,5 +2608,4 @@
     }
   </script>
 </body>
-</html>
-
+</html>.
