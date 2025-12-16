@@ -1404,6 +1404,15 @@
   background: #f0fdf4;
 }
 
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 @media (max-width: 480px) {
   .action-buttons {
     grid-template-columns: 1fr;
@@ -1688,7 +1697,16 @@
             <div class="vehicle-name" id="search-vehicle-name">Sedan</div>
           </div>
           <!-- Tracking View (add this after searching-view) -->
-<div class="tracking-view" id="tracking-view">
+
+          <!-- Cancel Button -->
+          <button class="btn btn-secondary" id="cancel-search-btn" onclick="cancelRideSearch()">
+            <i class="fas fa-times-circle"></i>
+            Cancel Search
+          </button>
+        </div>
+      </div>
+    
+ <div class="tracking-view" id="tracking-view">
   <div class="tracking-map-container">
     <div id="tracking-map"></div>
     <div class="tracking-status-bar">
@@ -1753,16 +1771,6 @@
     </div>
   </div>
 </div>
-          <!-- Cancel Button -->
-          <button class="btn btn-secondary" id="cancel-search-btn" onclick="cancelRideSearch()">
-            <i class="fas fa-times-circle"></i>
-            Cancel Search
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
@@ -1885,8 +1893,10 @@
     });
 
     // Global variables
+    // Global variables
     let map, directionsService, directionsRenderer;
     let searchingMap, searchingDirectionsRenderer;
+    let trackingMap, trackingDirectionsRenderer;
     let pickupMarker, dropoffMarker, tempMarker;
     let autocompleteService, placesService, geocoder;
     let sessionToken;
@@ -1898,6 +1908,10 @@
     let searchingForRide = false;
     let lastPinchTime = 0;
     let pinchZoomInProgress = false;
+    let currentBookingRef = null;
+    let currentRideData = null;
+    let driverMarker = null;
+    let etaUpdateInterval = null;
 
     // Booking data
     let bookingData = {
@@ -1963,11 +1977,12 @@
       setupTouchControls();
       
       initSearchingMap();
-      initTrackingMap(); // <-- Missing!
-}
-// ADD THIS NEW FUNCTION:
-function initTrackingMap() {
-  const kolkata = { lat: 22.5726, lng: 88.3639 };
+      initTrackingMap();
+    }
+
+    // Initialize tracking map
+    function initTrackingMap() {
+      const kolkata = { lat: 22.5726, lng: 88.3639 };
   
   trackingMap = new google.maps.Map(document.getElementById('tracking-map'), {
     center: kolkata,
@@ -2036,11 +2051,7 @@ function initTrackingMap() {
     let touchStartTime = 0;
     let lastTap = 0;
     let zoomAnimationFrame = null;
-    let trackingMap, trackingDirectionsRenderer;
-let currentBookingRef = null;
-let currentRideData = null;
-let driverMarker = null;
-let etaUpdateInterval = null;
+   
 
     function handleTouchStart(e) {
       touchStartTime = Date.now();
@@ -2608,31 +2619,7 @@ let etaUpdateInterval = null;
       document.getElementById('pickup-date').min = today;
     }
 
-    // Disable/Enable inputs
-    function disableAllInputs() {
-      document.querySelectorAll('.toggle-option, .journey-option').forEach(el => {
-        el.style.pointerEvents = 'none';
-        el.style.opacity = '0.5';
-      });
-      
-      document.getElementById('pickup').disabled = true;
-      document.getElementById('dropoff').disabled = true;
-      document.getElementById('map-pickup-btn').disabled = true;
-      document.getElementById('map-dropoff-btn').disabled = true;
-      
-      const detectBtn = document.getElementById('detect-btn-full');
-      if (detectBtn) detectBtn.disabled = true;
-      
-      document.querySelectorAll('.car-option').forEach(el => {
-        el.style.pointerEvents = 'none';
-        el.style.opacity = '0.5';
-      });
-    // [Previous functions for openMapSelection, closeMapSelection, handleMapClick, confirmMapSelection remain same]
-    // [Previous functions for setupAutocomplete, displaySuggestions, selectPlace remain same]
-    // [Previous functions for calculateRoute, autoDetectPickupLocation, detectLocation remain same]
-    // [Previous functions for setTripType, setJourneyTime, selectCar, setupDateInputs remain same]
     
-    // Listen for driver acceptance - UPDATED
     function listenForDriverAcceptance(rideId) {
       currentRideRequestRef.on('value', async (snapshot) => {
         const rideData = snapshot.val();
