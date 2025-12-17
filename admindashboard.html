@@ -19,25 +19,16 @@
       --text-primary: #0f172a;
       --text-secondary: #64748b;
       --border: #e2e8f0;
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     }
     
     body {
       font-family: 'Inter', sans-serif;
       background: var(--bg-main);
       color: var(--text-primary);
-      overflow-x: hidden;
     }
     
-    .dashboard-container {
-      display: flex;
-      min-height: 100vh;
-    }
+    .dashboard-container { display: flex; min-height: 100vh; }
     
-    /* Hamburger Menu */
     .hamburger {
       display: none;
       position: fixed;
@@ -54,8 +45,6 @@
       justify-content: center;
       align-items: center;
       gap: 5px;
-      box-shadow: var(--shadow-lg);
-      transition: all 0.3s ease;
     }
     
     .hamburger span {
@@ -63,38 +52,22 @@
       height: 2px;
       background: white;
       transition: all 0.3s ease;
-      border-radius: 2px;
-    }
-    
-    .hamburger.active span:nth-child(1) {
-      transform: rotate(45deg) translate(5px, 5px);
-    }
-    
-    .hamburger.active span:nth-child(2) {
-      opacity: 0;
-    }
-    
-    .hamburger.active span:nth-child(3) {
-      transform: rotate(-45deg) translate(7px, -7px);
     }
     
     .sidebar {
       width: 280px;
       background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
       color: white;
-      padding: 0;
       position: fixed;
       height: 100vh;
       overflow-y: auto;
       z-index: 100;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: var(--shadow-xl);
+      transition: all 0.3s ease;
     }
     
     .sidebar-header {
       padding: 32px 24px;
       border-bottom: 1px solid rgba(255,255,255,0.1);
-      background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, transparent 100%);
     }
     
     .logo {
@@ -104,7 +77,6 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      letter-spacing: -0.02em;
     }
     
     .logo-icon {
@@ -116,7 +88,6 @@
       align-items: center;
       justify-content: center;
       font-size: 1.5rem;
-      box-shadow: 0 4px 12px rgba(16,185,129,0.3);
     }
     
     .admin-badge {
@@ -125,13 +96,9 @@
       border-radius: 20px;
       font-size: 0.75rem;
       font-weight: 700;
-      letter-spacing: 0.5px;
-      box-shadow: 0 2px 8px rgba(16,185,129,0.3);
     }
     
-    .nav-menu {
-      padding: 24px 12px;
-    }
+    .nav-menu { padding: 24px 12px; }
     
     .nav-item {
       padding: 14px 20px;
@@ -140,81 +107,36 @@
       align-items: center;
       gap: 14px;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s ease;
       color: rgba(255,255,255,0.7);
       font-weight: 600;
-      font-size: 0.95rem;
       border-radius: 12px;
-      position: relative;
     }
     
-    .nav-item::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      height: 100%;
-      width: 4px;
-      background: var(--primary);
-      transform: scaleY(0);
-      transition: transform 0.2s ease;
-    }
-    
-    .nav-item:hover {
-      background: rgba(255,255,255,0.08);
-      color: white;
-      transform: translateX(4px);
-    }
-    
-    .nav-item.active {
-      background: linear-gradient(90deg, rgba(16,185,129,0.15) 0%, transparent 100%);
-      color: var(--primary);
-    }
-    
-    .nav-item.active::before {
-      transform: scaleY(1);
-    }
-    
-    .nav-item i {
-      font-size: 1.25rem;
-      width: 24px;
-      text-align: center;
-    }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+    .nav-item.active { background: rgba(16,185,129,0.15); color: var(--primary); }
     
     .main-content {
       flex: 1;
       margin-left: 280px;
       padding: 32px;
-      background: var(--bg-main);
-      min-height: 100vh;
       transition: margin-left 0.3s ease;
     }
     
     .top-bar {
-      background: var(--bg-card);
+      background: white;
       padding: 24px 32px;
       border-radius: 20px;
-      box-shadow: var(--shadow-md);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       margin-bottom: 32px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border: 1px solid var(--border);
-      animation: slideDown 0.4s ease;
-    }
-    
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
     }
     
     .page-title {
       font-size: 1.75rem;
       font-weight: 800;
-      background: linear-gradient(135deg, var(--text-primary) 0%, #475569 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.02em;
     }
     
     .btn {
@@ -223,83 +145,32 @@
       border-radius: 12px;
       font-weight: 600;
       cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.95rem;
-      position: relative;
-      overflow: hidden;
     }
     
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: white;
-      box-shadow: 0 4px 12px rgba(16,185,129,0.3);
-    }
-    
-    .btn-danger {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-      color: white;
-      box-shadow: 0 4px 12px rgba(239,68,68,0.3);
-    }
-    
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(16,185,129,0.4);
-    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn:hover { transform: translateY(-2px); }
     
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 24px;
       margin-bottom: 32px;
     }
     
     .stat-card {
-      background: var(--bg-card);
+      background: white;
       padding: 28px;
       border-radius: 20px;
-      box-shadow: var(--shadow-md);
-      position: relative;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      animation: fadeInUp 0.5s ease backwards;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
     }
     
-    .stat-card:nth-child(1) { animation-delay: 0.1s; }
-    .stat-card:nth-child(2) { animation-delay: 0.2s; }
-    .stat-card:nth-child(3) { animation-delay: 0.3s; }
-    .stat-card:nth-child(4) { animation-delay: 0.4s; }
-    
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 4px;
-      background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform 0.3s ease;
-    }
-    
-    .stat-card:hover {
-      transform: translateY(-8px);
-      box-shadow: var(--shadow-xl);
-    }
-    
-    .stat-card:hover::before {
-      transform: scaleX(1);
-    }
+    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     
     .stat-header {
       display: flex;
@@ -316,28 +187,14 @@
       align-items: center;
       justify-content: center;
       font-size: 1.75rem;
-      transition: all 0.3s ease;
     }
     
-    .stat-card:hover .stat-icon {
-      transform: scale(1.1) rotate(5deg);
-    }
-    
-    .stat-icon.green { 
-      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-      color: var(--primary-dark);
-      box-shadow: 0 4px 12px rgba(16,185,129,0.2);
-    }
-    .stat-icon.blue { 
-      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-      color: #1e40af;
-      box-shadow: 0 4px 12px rgba(37,99,235,0.2);
-    }
-    .stat-icon.orange { 
-      background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
-      color: #c2410c;
-      box-shadow: 0 4px 12px rgba(234,88,12,0.2);
-    }
+    .stat-icon.green { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #059669; }
+    .stat-icon.blue { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; }
+    .stat-icon.orange { background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); color: #c2410c; }
+    .stat-icon.purple { background: linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%); color: #7c3aed; }
+    .stat-icon.red { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #dc2626; }
+    .stat-icon.cyan { background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%); color: #0891b2; }
     
     .stat-label {
       font-size: 0.875rem;
@@ -345,59 +202,100 @@
       font-weight: 600;
       margin-bottom: 8px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
     
     .stat-value {
       font-size: 2.25rem;
       font-weight: 800;
-      color: var(--text-primary);
       line-height: 1;
-      letter-spacing: -0.02em;
+    }
+    
+    .stat-trend {
+      margin-top: 8px;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
     }
     
     .content-card {
-      background: var(--bg-card);
+      background: white;
       border-radius: 20px;
-      box-shadow: var(--shadow-md);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       overflow: hidden;
       margin-bottom: 32px;
-      border: 1px solid var(--border);
-      animation: fadeIn 0.6s ease;
     }
     
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    /* Driver Tracking Map */
-    #map {
-      height: 600px;
-      width: 100%;
-      border-radius: 16px;
-      box-shadow: var(--shadow-lg);
-    }
-    
-    .driver-marker {
-      background: var(--primary);
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
+    .card-header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border);
       display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .data-table th {
+      padding: 18px 32px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      background: #f8fafc;
+    }
+    
+    .data-table td {
+      padding: 20px 32px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .data-table tbody tr:hover {
+      background: rgba(16,185,129,0.05);
+    }
+    
+    .status-badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-block;
+      text-transform: uppercase;
+    }
+    
+    .status-badge.completed { background: #d1fae5; color: #059669; }
+    .status-badge.pending { background: #fef3c7; color: #d97706; }
+    .status-badge.cancelled { background: #fee2e2; color: #dc2626; }
+    .status-badge.in_journey { background: #e0e7ff; color: #4f46e5; }
+    .status-badge.going_to_pickup { background: #fce7f3; color: #db2777; }
+    
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(16,185,129,0.4);
-      border: 3px solid white;
-      animation: pulse 2s infinite;
+      transition: all 0.2s ease;
+      margin: 0 4px;
     }
     
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
+    .icon-btn.view { background: #dbeafe; color: #2563eb; }
+    .icon-btn:hover { transform: scale(1.15); }
+    
+    #map { height: 600px; border-radius: 16px; }
     
     .driver-list {
       display: grid;
@@ -415,15 +313,8 @@
       cursor: pointer;
     }
     
-    .driver-card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-xl);
-      border-color: var(--primary);
-    }
-    
-    .driver-card.online {
-      border-color: var(--primary);
-    }
+    .driver-card:hover { transform: translateY(-4px); border-color: var(--primary); }
+    .driver-card.online { border-color: var(--primary); }
     
     .driver-status {
       display: inline-block;
@@ -434,120 +325,8 @@
       text-transform: uppercase;
     }
     
-    .driver-status.online {
-      background: #d1fae5;
-      color: #059669;
-    }
-    
-    .driver-status.offline {
-      background: #fee2e2;
-      color: #dc2626;
-    }
-    
-    .toast {
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      background: white;
-      padding: 18px 24px;
-      border-radius: 16px;
-      box-shadow: var(--shadow-xl);
-      z-index: 2000;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      transform: translateX(400px);
-      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid var(--border);
-      min-width: 300px;
-    }
-    
-    .toast.show {
-      transform: translateX(0);
-    }
-    
-    .toast.success { 
-      border-left: 4px solid var(--primary);
-      background: linear-gradient(90deg, rgba(16,185,129,0.1) 0%, white 10%);
-    }
-    .toast.error { 
-      border-left: 4px solid #ef4444;
-      background: linear-gradient(90deg, rgba(239,68,68,0.1) 0%, white 10%);
-    }
-    
-    .toast i {
-      font-size: 1.5rem;
-    }
-    
-    .toast.success i { color: var(--primary); }
-    .toast.error i { color: #ef4444; }
-    
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    
-    .data-table thead {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    }
-    
-    .data-table th {
-      padding: 18px 32px;
-      text-align: left;
-      font-weight: 700;
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-    
-    .data-table td {
-      padding: 20px 32px;
-      border-top: 1px solid var(--border);
-      font-size: 0.95rem;
-    }
-    
-    .data-table tbody tr {
-      transition: all 0.2s ease;
-    }
-    
-    .data-table tbody tr:hover {
-      background: linear-gradient(90deg, rgba(16,185,129,0.05) 0%, transparent 100%);
-    }
-    
-    .status-badge {
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      display: inline-block;
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-      box-shadow: var(--shadow-sm);
-    }
-    
-    .status-badge.completed { background: #d1fae5; color: #059669; }
-    .status-badge.pending { background: #fef3c7; color: #d97706; }
-    .status-badge.booked { background: #dbeafe; color: #2563eb; }
-    
-    .icon-btn {
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      margin: 0 4px;
-    }
-    
-    .icon-btn.view { background: #dbeafe; color: #2563eb; }
-    .icon-btn:hover {
-      transform: scale(1.15);
-      box-shadow: var(--shadow-md);
-    }
+    .driver-status.online { background: #d1fae5; color: #059669; }
+    .driver-status.offline { background: #fee2e2; color: #dc2626; }
     
     .modal-overlay {
       position: fixed;
@@ -568,17 +347,10 @@
     .modal {
       background: white;
       border-radius: 24px;
-      max-width: 600px;
+      max-width: 700px;
       width: 90%;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: var(--shadow-xl);
-      animation: modalSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    @keyframes modalSlideUp {
-      from { opacity: 0; transform: translateY(40px) scale(0.95); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
     }
     
     .modal-header {
@@ -587,37 +359,18 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: linear-gradient(135deg, rgba(16,185,129,0.05) 0%, transparent 100%);
-    }
-    
-    .modal-title {
-      font-size: 1.5rem;
-      font-weight: 700;
     }
     
     .close-btn {
       width: 36px;
       height: 36px;
       border: none;
-      background: var(--bg-main);
+      background: #f1f5f9;
       border-radius: 10px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-secondary);
-      transition: all 0.2s ease;
     }
     
-    .close-btn:hover {
-      background: #fee2e2;
-      color: #dc2626;
-      transform: rotate(90deg);
-    }
-    
-    .modal-body {
-      padding: 32px;
-    }
+    .modal-body { padding: 32px; }
     
     .detail-row {
       display: flex;
@@ -629,51 +382,39 @@
       font-weight: 700;
       color: var(--text-secondary);
       flex: 0 0 180px;
-      font-size: 0.9rem;
     }
     
     .detail-value {
       flex: 1;
-      color: var(--text-primary);
       font-weight: 500;
     }
     
+    .toast {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background: white;
+      padding: 18px 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transform: translateX(400px);
+      transition: transform 0.4s ease;
+    }
+    
+    .toast.show { transform: translateX(0); }
+    .toast.success { border-left: 4px solid var(--primary); }
+    .toast.error { border-left: 4px solid #ef4444; }
+    
     @media (max-width: 768px) {
-      .hamburger {
-        display: flex;
-      }
-      
-      .sidebar {
-        transform: translateX(-100%);
-      }
-      
-      .sidebar.active {
-        transform: translateX(0);
-      }
-      
-      .main-content {
-        margin-left: 0;
-        padding: 80px 20px 20px;
-      }
-      
-      .stats-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .top-bar {
-        padding: 20px;
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
-      }
-      
-      .driver-list {
-        grid-template-columns: 1fr;
-      }
-      
-      #map {
-        height: 400px;
-      }
+      .hamburger { display: flex; }
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.active { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 80px 20px 20px; }
+      .stats-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -699,13 +440,17 @@
           <i class="fas fa-chart-line"></i>
           <span>Overview</span>
         </div>
-        <div class="nav-item" data-view="live-tracking">
-          <i class="fas fa-map-marked-alt"></i>
-          <span>Live Tracking</span>
+        <div class="nav-item" data-view="ride-requests">
+          <i class="fas fa-clipboard-list"></i>
+          <span>Ride Requests</span>
         </div>
         <div class="nav-item" data-view="bookings">
           <i class="fas fa-calendar-check"></i>
-          <span>Bookings</span>
+          <span>Active Bookings</span>
+        </div>
+        <div class="nav-item" data-view="live-tracking">
+          <i class="fas fa-map-marked-alt"></i>
+          <span>Live Tracking</span>
         </div>
         <div class="nav-item" data-view="drivers">
           <i class="fas fa-id-card"></i>
@@ -737,11 +482,25 @@
           <div class="stat-card">
             <div class="stat-header">
               <div>
-                <div class="stat-label">Total Bookings</div>
-                <div class="stat-value" id="totalBookings">0</div>
+                <div class="stat-label">Total Ride Requests</div>
+                <div class="stat-value" id="totalRideRequests">0</div>
+                <div class="stat-trend"><span id="requestsTrend">All time</span></div>
+              </div>
+              <div class="stat-icon blue">
+                <i class="fas fa-clipboard-list"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-header">
+              <div>
+                <div class="stat-label">Completed Rides</div>
+                <div class="stat-value" id="completedRides">0</div>
+                <div class="stat-trend"><span id="completedTrend">Success rate</span></div>
               </div>
               <div class="stat-icon green">
-                <i class="fas fa-calendar-check"></i>
+                <i class="fas fa-check-circle"></i>
               </div>
             </div>
           </div>
@@ -751,8 +510,9 @@
               <div>
                 <div class="stat-label">Active Drivers</div>
                 <div class="stat-value" id="activeDrivers">0</div>
+                <div class="stat-trend"><span id="onlineDrivers">0 Online</span></div>
               </div>
-              <div class="stat-icon blue">
+              <div class="stat-icon purple">
                 <i class="fas fa-car"></i>
               </div>
             </div>
@@ -761,10 +521,37 @@
           <div class="stat-card">
             <div class="stat-header">
               <div>
-                <div class="stat-label">Total Revenue</div>
-                <div class="stat-value" id="totalRevenue">₹0</div>
+                <div class="stat-label">Active Bookings</div>
+                <div class="stat-value" id="activeBookings">0</div>
+                <div class="stat-trend"><span id="inProgressBookings">In progress</span></div>
               </div>
               <div class="stat-icon orange">
+                <i class="fas fa-calendar-check"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-header">
+              <div>
+                <div class="stat-label">Total Earnings</div>
+                <div class="stat-value" id="totalEarnings">₹0</div>
+                <div class="stat-trend"><span id="earningsTrend">All time</span></div>
+              </div>
+              <div class="stat-icon cyan">
+                <i class="fas fa-wallet"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-header">
+              <div>
+                <div class="stat-label">Unpaid Earnings</div>
+                <div class="stat-value" id="unpaidEarnings">₹0</div>
+                <div class="stat-trend"><span id="unpaidCount">Pending</span></div>
+              </div>
+              <div class="stat-icon red">
                 <i class="fas fa-rupee-sign"></i>
               </div>
             </div>
@@ -772,18 +559,69 @@
         </div>
         
         <div class="content-card">
+          <div class="card-header">
+            <h3 class="card-title">Recent Ride Requests</h3>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Rider</th>
+                <th>Pickup → Dropoff</th>
+                <th>Fare</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="recentRequestsTable"></tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Ride Requests View -->
+      <div id="ride-requests-view" class="view-content" style="display: none;">
+        <div class="content-card">
+          <div class="card-header">
+            <h3 class="card-title">All Ride Requests</h3>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Rider</th>
+                <th>Pickup</th>
+                <th>Dropoff</th>
+                <th>Fare</th>
+                <th>Status</th>
+                <th>Trip Stage</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="rideRequestsTable"></tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Active Bookings View -->
+      <div id="bookings-view" class="view-content" style="display: none;">
+        <div class="content-card">
+          <div class="card-header">
+            <h3 class="card-title">Active Bookings</h3>
+          </div>
           <table class="data-table">
             <thead>
               <tr>
                 <th>ID</th>
                 <th>Customer</th>
                 <th>Driver</th>
+                <th>Route</th>
                 <th>Fare</th>
                 <th>Status</th>
+                <th>Trip Stage</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="recentBookingsTable"></tbody>
+            <tbody id="bookingsTable"></tbody>
           </table>
         </div>
       </div>
@@ -797,37 +635,21 @@
         <div class="driver-list" id="driverList"></div>
       </div>
       
-      <!-- Bookings View -->
-      <div id="bookings-view" class="view-content" style="display: none;">
-        <div class="content-card">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Customer</th>
-                <th>Driver</th>
-                <th>Route</th>
-                <th>Fare</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="bookingsTable"></tbody>
-          </table>
-        </div>
-      </div>
-      
       <!-- Drivers View -->
       <div id="drivers-view" class="view-content" style="display: none;">
         <div class="content-card">
+          <div class="card-header">
+            <h3 class="card-title">All Drivers</h3>
+          </div>
           <table class="data-table">
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Phone</th>
-                <th>Car</th>
-                <th>Registration</th>
+                <th>Email</th>
                 <th>Status</th>
+                <th>Total Rides</th>
+                <th>Today Earnings</th>
+                <th>Last Seen</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -839,13 +661,18 @@
       <!-- Earnings View -->
       <div id="earnings-view" class="view-content" style="display: none;">
         <div class="content-card">
+          <div class="card-header">
+            <h3 class="card-title">Driver Earnings</h3>
+          </div>
           <table class="data-table">
             <thead>
               <tr>
                 <th>Driver ID</th>
                 <th>Booking ID</th>
+                <th>Ride Request ID</th>
                 <th>Amount</th>
                 <th>Status</th>
+                <th>Timestamp</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -857,13 +684,16 @@
       <!-- Users View -->
       <div id="users-view" class="view-content" style="display: none;">
         <div class="content-card">
+          <div class="card-header">
+            <h3 class="card-title">All Customers</h3>
+          </div>
           <table class="data-table">
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Phone</th>
-                <th>Email</th>
                 <th>Role</th>
+                <th>Created At</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -908,9 +738,10 @@
     };
 
     let app, auth, database;
-    let allBookings = [], allDrivers = [], allEarnings = [], allUsers = [];
+    let allRideRequests = [], allBookings = [], allDrivers = [], allEarnings = [], allUsers = [];
     let map, driverMarkers = {};
     let locationListeners = {};
+    let dataListeners = [];
     
     try {
       app = firebase.initializeApp(firebaseConfig);
@@ -921,7 +752,7 @@
         if (!user) {
           window.location.href = 'index.html';
         } else {
-          loadDashboardData();
+          setupRealtimeListeners();
         }
       });
     } catch (e) {
@@ -937,7 +768,6 @@
       sidebar.classList.toggle('active');
     });
 
-    // Close sidebar when clicking outside on mobile
     document.addEventListener('click', (e) => {
       if (window.innerWidth <= 768) {
         if (!sidebar.contains(e.target) && !hamburger.contains(e.target) && sidebar.classList.contains('active')) {
@@ -953,7 +783,6 @@
         const view = item.dataset.view;
         switchView(view);
         
-        // Close sidebar on mobile after clicking
         if (window.innerWidth <= 768) {
           sidebar.classList.remove('active');
           hamburger.classList.remove('active');
@@ -969,77 +798,156 @@
       
       const titles = {
         overview: 'Dashboard Overview',
+        'ride-requests': 'All Ride Requests',
+        bookings: 'Active Bookings',
         'live-tracking': 'Live Driver Tracking',
-        bookings: 'All Bookings',
         drivers: 'Driver Management',
-        earnings: 'Earnings & Payments',
+        earnings: 'Driver Earnings & Payments',
         users: 'Customer Management'
       };
       
       document.getElementById('pageTitle').textContent = titles[view];
       
-      // Initialize map when switching to tracking view
       if (view === 'live-tracking' && !map) {
         initMap();
         loadLiveTracking();
       }
     }
 
-    async function loadDashboardData() {
-      try {
-        const [bookings, drivers, earnings, users] = await Promise.all([
-          database.ref('evplan/bookings').once('value'),
-          database.ref('approvedcars').once('value'),
-          database.ref('evplan/driverEarnings').once('value'),
-          database.ref('users').once('value')
-        ]);
-        
-        allBookings = [];
-        bookings.forEach(ds => ds.forEach(bs => allBookings.push({id: bs.key, driverId: ds.key, ...bs.val()})));
-        
-        allDrivers = [];
-        drivers.forEach(ds => ds.forEach(cs => allDrivers.push({id: cs.key, driverId: ds.key, ...cs.val()})));
-        
-        allEarnings = [];
-        earnings.forEach(ds => ds.forEach(es => allEarnings.push({id: es.key, driverId: ds.key, ...es.val()})));
-        
-        allUsers = [];
-        users.forEach(s => allUsers.push({id: s.key, ...s.val()}));
-        
+    // Setup realtime listeners for evplan data
+    function setupRealtimeListeners() {
+      // Listen to ride requests
+      const rideRequestsRef = database.ref('evplan/rideRequests');
+      const rideRequestsListener = rideRequestsRef.on('value', (snapshot) => {
+        allRideRequests = [];
+        if (snapshot.exists()) {
+          snapshot.forEach(s => allRideRequests.push({id: s.key, ...s.val()}));
+        }
         updateDashboard();
-      } catch (e) {
-        console.error('Error:', e);
-        showToast('Error loading data', 'error');
-      }
+      });
+      dataListeners.push({ref: rideRequestsRef, type: 'value', callback: rideRequestsListener});
+
+      // Listen to bookings
+      const bookingsRef = database.ref('evplan/bookings');
+      const bookingsListener = bookingsRef.on('value', (snapshot) => {
+        allBookings = [];
+        if (snapshot.exists()) {
+          snapshot.forEach(ds => {
+            if (ds.val()) {
+              Object.entries(ds.val()).forEach(([key, val]) => {
+                allBookings.push({id: key, driverId: ds.key, ...val});
+              });
+            }
+          });
+        }
+        updateDashboard();
+      });
+      dataListeners.push({ref: bookingsRef, type: 'value', callback: bookingsListener});
+
+      // Listen to drivers
+      const driversRef = database.ref('evplan/drivers');
+      const driversListener = driversRef.on('value', (snapshot) => {
+        allDrivers = [];
+        if (snapshot.exists()) {
+          snapshot.forEach(s => allDrivers.push({id: s.key, ...s.val()}));
+        }
+        updateDashboard();
+      });
+      dataListeners.push({ref: driversRef, type: 'value', callback: driversListener});
+
+      // Listen to earnings
+      const earningsRef = database.ref('evplan/driverEarnings');
+      const earningsListener = earningsRef.on('value', (snapshot) => {
+        allEarnings = [];
+        if (snapshot.exists()) {
+          snapshot.forEach(ds => {
+            if (ds.val()) {
+              Object.entries(ds.val()).forEach(([key, val]) => {
+                allEarnings.push({id: key, driverId: ds.key, ...val});
+              });
+            }
+          });
+        }
+        updateDashboard();
+      });
+      dataListeners.push({ref: earningsRef, type: 'value', callback: earningsListener});
+
+      // Listen to users
+      const usersRef = database.ref('users');
+      const usersListener = usersRef.on('value', (snapshot) => {
+        allUsers = [];
+        if (snapshot.exists()) {
+          snapshot.forEach(s => allUsers.push({id: s.key, ...s.val()}));
+        }
+        updateDashboard();
+      });
+      dataListeners.push({ref: usersRef, type: 'value', callback: usersListener});
     }
 
     function updateDashboard() {
-      document.getElementById('totalBookings').textContent = allBookings.length;
+      // Update stats
+      document.getElementById('totalRideRequests').textContent = allRideRequests.length;
+      
+      const completedRides = allRideRequests.filter(r => r.status === 'completed').length;
+      document.getElementById('completedRides').textContent = completedRides;
+      const successRate = allRideRequests.length > 0 ? Math.round((completedRides / allRideRequests.length) * 100) : 0;
+      document.getElementById('completedTrend').textContent = successRate + '% success';
+      
       document.getElementById('activeDrivers').textContent = allDrivers.length;
+      const onlineDrivers = allDrivers.filter(d => d.isOnline).length;
+      document.getElementById('onlineDrivers').textContent = onlineDrivers + ' Online';
       
-      const rev = allBookings.filter(b => b.status === 'completed').reduce((s, b) => s + (b.fareEstimate || 0), 0);
-      document.getElementById('totalRevenue').textContent = '₹' + rev.toLocaleString();
+      const activeBookings = allBookings.filter(b => b.status !== 'completed' && b.status !== 'cancelled').length;
+      document.getElementById('activeBookings').textContent = activeBookings;
+      const inProgress = allBookings.filter(b => b.tripStage === 'in_journey').length;
+      document.getElementById('inProgressBookings').textContent = inProgress + ' in progress';
       
-      renderRecentBookings();
+      const totalEarnings = allEarnings.reduce((sum, e) => sum + (e.amount || 0), 0);
+      document.getElementById('totalEarnings').textContent = '₹' + totalEarnings.toLocaleString();
+      
+      const unpaid = allEarnings.filter(e => e.status !== 'paid');
+      const unpaidAmount = unpaid.reduce((sum, e) => sum + (e.amount || 0), 0);
+      document.getElementById('unpaidEarnings').textContent = '₹' + unpaidAmount.toLocaleString();
+      document.getElementById('unpaidCount').textContent = unpaid.length + ' pending';
+      
+      // Render tables
+      renderRecentRequests();
+      renderRideRequestsTable();
       renderBookingsTable();
       renderDriversTable();
       renderEarningsTable();
       renderUsersTable();
     }
 
-    function renderRecentBookings() {
-      const recent = allBookings.slice(0, 10);
-      const html = recent.length ? recent.map(b => `
+    function renderRecentRequests() {
+      const recent = allRideRequests.slice(0, 10);
+      const html = recent.length ? recent.map(r => `
         <tr>
-          <td><strong>#${b.id.slice(-6)}</strong></td>
-          <td>${b.riderName || 'N/A'}</td>
-          <td>${b.assignedDriverName || 'N/A'}</td>
-          <td><strong>₹${(b.fareEstimate || 0).toLocaleString()}</strong></td>
-          <td><span class="status-badge ${b.status}">${b.status || 'N/A'}</span></td>
-          <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(b).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
+          <td><strong>#${r.id.slice(-6)}</strong></td>
+          <td>${r.riderName || 'N/A'}</td>
+          <td>${(r.pickup?.address || 'N/A').substring(0, 30)}... → ${(r.dropoff?.address || 'N/A').substring(0, 30)}...</td>
+          <td><strong>₹${(r.fareEstimate || 0).toLocaleString()}</strong></td>
+          <td><span class="status-badge ${r.status}">${r.status || 'N/A'}</span></td>
+          <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(r).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
         </tr>
-      `).join('') : '<tr><td colspan="6" style="text-align:center;padding:40px;color:#64748b;">No bookings yet</td></tr>';
-      document.getElementById('recentBookingsTable').innerHTML = html;
+      `).join('') : '<tr><td colspan="6" style="text-align:center;padding:40px;color:#64748b;">No ride requests yet</td></tr>';
+      document.getElementById('recentRequestsTable').innerHTML = html;
+    }
+
+    function renderRideRequestsTable() {
+      const html = allRideRequests.length ? allRideRequests.map(r => `
+        <tr>
+          <td><strong>#${r.id.slice(-6)}</strong></td>
+          <td>${r.riderName || 'N/A'}</td>
+          <td>${(r.pickup?.address || 'N/A').substring(0, 40)}...</td>
+          <td>${(r.dropoff?.address || 'N/A').substring(0, 40)}...</td>
+          <td><strong>₹${(r.fareEstimate || 0).toLocaleString()}</strong></td>
+          <td><span class="status-badge ${r.status}">${r.status || 'N/A'}</span></td>
+          <td><span class="status-badge ${r.tripStage}">${r.tripStage || 'N/A'}</span></td>
+          <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(r).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
+        </tr>
+      `).join('') : '<tr><td colspan="8" style="text-align:center;padding:40px;color:#64748b;">No ride requests found</td></tr>';
+      document.getElementById('rideRequestsTable').innerHTML = html;
     }
 
     function renderBookingsTable() {
@@ -1048,26 +956,28 @@
           <td><strong>#${b.id.slice(-6)}</strong></td>
           <td>${b.riderName || 'N/A'}</td>
           <td>${b.assignedDriverName || 'N/A'}</td>
-          <td>${b.pickup?.address || 'N/A'} → ${b.dropoff?.address || 'N/A'}</td>
+          <td>${(b.pickup?.address || 'N/A').substring(0, 25)}... → ${(b.dropoff?.address || 'N/A').substring(0, 25)}...</td>
           <td><strong>₹${(b.fareEstimate || 0).toLocaleString()}</strong></td>
           <td><span class="status-badge ${b.status}">${b.status || 'N/A'}</span></td>
+          <td><span class="status-badge ${b.tripStage}">${b.tripStage || 'N/A'}</span></td>
           <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(b).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
         </tr>
-      `).join('') : '<tr><td colspan="7" style="text-align:center;padding:40px;color:#64748b;">No bookings found</td></tr>';
+      `).join('') : '<tr><td colspan="8" style="text-align:center;padding:40px;color:#64748b;">No bookings found</td></tr>';
       document.getElementById('bookingsTable').innerHTML = html;
     }
 
     function renderDriversTable() {
       const html = allDrivers.length ? allDrivers.map(d => `
         <tr>
-          <td><strong>${d.driverName || 'N/A'}</strong></td>
-          <td>${d.driverNumber || 'N/A'}</td>
-          <td>${d.carBrand || 'N/A'}</td>
-          <td><strong>${d.carReg || 'N/A'}</strong></td>
-          <td><span class="driver-status online">Active</span></td>
+          <td><strong>${d.name || 'N/A'}</strong></td>
+          <td>${d.email || 'N/A'}</td>
+          <td><span class="driver-status ${d.isOnline ? 'online' : 'offline'}">${d.isOnline ? 'Online' : 'Offline'}</span></td>
+          <td>${d.totalRides || 0}</td>
+          <td><strong>₹${(d.todayEarnings || 0).toLocaleString()}</strong></td>
+          <td>${d.lastSeen ? new Date(d.lastSeen).toLocaleString() : 'Never'}</td>
           <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(d).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
         </tr>
-      `).join('') : '<tr><td colspan="6" style="text-align:center;padding:40px;color:#64748b;">No drivers found</td></tr>';
+      `).join('') : '<tr><td colspan="7" style="text-align:center;padding:40px;color:#64748b;">No drivers found</td></tr>';
       document.getElementById('driversTable').innerHTML = html;
     }
 
@@ -1075,14 +985,16 @@
       const html = allEarnings.length ? allEarnings.map(e => `
         <tr>
           <td><strong>${e.driverId.slice(-6)}</strong></td>
-          <td>#${(e.bookingId || e.rideRequestId || 'N/A').slice(-6)}</td>
+          <td>#${(e.bookingId || 'N/A').slice(-6)}</td>
+          <td>#${(e.rideRequestId || 'N/A').slice(-6)}</td>
           <td><strong>₹${(e.amount || 0).toLocaleString()}</strong></td>
           <td><span class="status-badge ${e.status === 'paid' ? 'completed' : 'pending'}">${e.status || 'unpaid'}</span></td>
+          <td>${e.timestamp ? new Date(e.timestamp).toLocaleString() : 'N/A'}</td>
           <td>
             ${e.status !== 'paid' ? `<button class="btn btn-primary" style="padding:8px 16px;font-size:0.875rem;" onclick="markAsPaid('${e.driverId}','${e.id}')"><i class="fas fa-check"></i> Mark Paid</button>` : '<span style="color:#10b981;font-weight:600">✓ Paid</span>'}
           </td>
         </tr>
-      `).join('') : '<tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;">No earnings found</td></tr>';
+      `).join('') : '<tr><td colspan="7" style="text-align:center;padding:40px;color:#64748b;">No earnings found</td></tr>';
       document.getElementById('earningsTable').innerHTML = html;
     }
 
@@ -1091,8 +1003,8 @@
         <tr>
           <td><strong>${u.name || 'N/A'}</strong></td>
           <td>${u.phone || 'N/A'}</td>
-          <td>${u.email || 'N/A'}</td>
-          <td><span class="status-badge ${u.role === 'customer' ? 'booked' : 'pending'}">${u.role || 'customer'}</span></td>
+          <td><span class="status-badge ${u.role === 'customer' ? 'completed' : 'pending'}">${u.role || 'customer'}</span></td>
+          <td>${u.createdAt ? new Date(u.createdAt).toLocaleString() : 'N/A'}</td>
           <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(u).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
         </tr>
       `).join('') : '<tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;">No users found</td></tr>';
@@ -1125,7 +1037,6 @@
         const drivers = driversSnapshot.val();
         
         for (const [driverId, driver] of Object.entries(drivers)) {
-          // Listen to location updates
           if (locationListeners[driverId]) {
             database.ref(`evplan/drivers/${driverId}/location`).off('value', locationListeners[driverId]);
           }
@@ -1137,7 +1048,6 @@
             }
           });
           
-          // Create driver card
           const isOnline = driver.isOnline || false;
           const lastSeen = driver.lastSeen ? new Date(driver.lastSeen).toLocaleString() : 'Never';
           
@@ -1229,16 +1139,16 @@
     }
 
     async function markAsPaid(driverId, earningId) {
-      if (!confirm('Mark as paid?')) return;
+      if (!confirm('Mark this earning as paid?')) return;
       try {
         await database.ref(`evplan/driverEarnings/${driverId}/${earningId}`).update({
           status: 'paid',
           paidAt: firebase.database.ServerValue.TIMESTAMP
         });
-        showToast('Marked as paid!', 'success');
-        await loadDashboardData();
+        showToast('Marked as paid successfully!', 'success');
       } catch (e) {
-        showToast('Error updating', 'error');
+        console.error('Error:', e);
+        showToast('Error updating status', 'error');
       }
     }
 
@@ -1251,29 +1161,36 @@
     }
 
     async function logout() {
-      if (!confirm('Logout?')) return;
+      if (!confirm('Are you sure you want to logout?')) return;
       try {
-        // Stop all location listeners
         for (const driverId in locationListeners) {
           database.ref(`evplan/drivers/${driverId}/location`).off('value', locationListeners[driverId]);
         }
+        
+        dataListeners.forEach(({ref, type, callback}) => {
+          ref.off(type, callback);
+        });
+        
         await auth.signOut();
         window.location.href = 'index.html';
       } catch (e) {
+        console.error('Error:', e);
         showToast('Error logging out', 'error');
       }
     }
 
-    // Close modal on overlay click
     document.getElementById('modalOverlay').addEventListener('click', (e) => {
       if (e.target.id === 'modalOverlay') closeModal();
     });
 
-    // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
       for (const driverId in locationListeners) {
         database.ref(`evplan/drivers/${driverId}/location`).off('value', locationListeners[driverId]);
       }
+      
+      dataListeners.forEach(({ref, type, callback}) => {
+        ref.off(type, callback);
+      });
     });
   </script>
 </body>
