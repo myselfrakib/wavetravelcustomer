@@ -132,12 +132,30 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
     }
     
     .page-title {
       font-size: 1.75rem;
       font-weight: 800;
     }
+    
+    .refresh-btn {
+      padding: 10px 20px;
+      background: #f1f5f9;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+    }
+    
+    .refresh-btn:hover { background: #e2e8f0; }
     
     .btn {
       padding: 12px 24px;
@@ -153,7 +171,7 @@
     
     .btn-primary { background: var(--primary); color: white; }
     .btn-danger { background: #ef4444; color: white; }
-    .btn:hover { transform: translateY(-2px); }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     
     .stats-grid {
       display: grid;
@@ -278,6 +296,7 @@
     .status-badge.cancelled { background: #fee2e2; color: #dc2626; }
     .status-badge.in_journey { background: #e0e7ff; color: #4f46e5; }
     .status-badge.going_to_pickup { background: #fce7f3; color: #db2777; }
+    .status-badge.accepted { background: #dbeafe; color: #2563eb; }
     
     .icon-btn {
       width: 36px;
@@ -297,6 +316,31 @@
     
     #map { height: 600px; border-radius: 16px; }
     
+    .map-controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      gap: 10px;
+    }
+    
+    .map-control-btn {
+      background: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    
+    .map-control-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    
     .driver-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -313,8 +357,8 @@
       cursor: pointer;
     }
     
-    .driver-card:hover { transform: translateY(-4px); border-color: var(--primary); }
-    .driver-card.online { border-color: var(--primary); }
+    .driver-card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .driver-card.online { border-color: var(--primary); background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); }
     
     .driver-status {
       display: inline-block;
@@ -368,7 +412,10 @@
       background: #f1f5f9;
       border-radius: 10px;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
+    
+    .close-btn:hover { background: #e2e8f0; }
     
     .modal-body { padding: 32px; }
     
@@ -409,12 +456,48 @@
     .toast.success { border-left: 4px solid var(--primary); }
     .toast.error { border-left: 4px solid #ef4444; }
     
+    .loading-spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 40px auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .driver-marker {
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      border: 3px solid white;
+    }
+    
+    .driver-marker.offline {
+      background: #6b7280;
+      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+    }
+    
     @media (max-width: 768px) {
       .hamburger { display: flex; }
       .sidebar { transform: translateX(-100%); }
       .sidebar.active { transform: translateX(0); }
       .main-content { margin-left: 0; padding: 80px 20px 20px; }
       .stats-grid { grid-template-columns: 1fr; }
+      .data-table th, .data-table td { padding: 12px 16px; font-size: 0.875rem; }
+      .top-bar { padding: 16px 20px; }
     }
   </style>
 </head>
@@ -470,10 +553,16 @@
     <main class="main-content">
       <div class="top-bar">
         <h1 class="page-title" id="pageTitle">Dashboard Overview</h1>
-        <button class="btn btn-danger" onclick="logout()">
-          <i class="fas fa-sign-out-alt"></i>
-          Logout
-        </button>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <button class="refresh-btn" onclick="refreshData()">
+            <i class="fas fa-sync-alt"></i>
+            Refresh
+          </button>
+          <button class="btn btn-danger" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+          </button>
+        </div>
       </div>
       
       <!-- Overview View -->
@@ -573,7 +662,9 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="recentRequestsTable"></tbody>
+            <tbody id="recentRequestsTable">
+              <tr><td colspan="6"><div class="loading-spinner"></div></td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -597,7 +688,9 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="rideRequestsTable"></tbody>
+            <tbody id="rideRequestsTable">
+              <tr><td colspan="8"><div class="loading-spinner"></div></td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -621,18 +714,35 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="bookingsTable"></tbody>
+            <tbody id="bookingsTable">
+              <tr><td colspan="8"><div class="loading-spinner"></div></td></tr>
+            </tbody>
           </table>
         </div>
       </div>
       
       <!-- Live Tracking View -->
       <div id="live-tracking-view" class="view-content" style="display: none;">
-        <div class="content-card">
+        <div class="content-card" style="position: relative;">
+          <div class="map-controls">
+            <button class="map-control-btn" onclick="centerAllDrivers()">
+              <i class="fas fa-compress-arrows-alt"></i>
+              Show All
+            </button>
+            <button class="map-control-btn" onclick="toggleOnlineOnly()">
+              <i class="fas fa-filter"></i>
+              <span id="filterText">Online Only</span>
+            </button>
+          </div>
           <div id="map"></div>
         </div>
         
-        <div class="driver-list" id="driverList"></div>
+        <div style="margin-top: 24px;">
+          <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 16px;">Active Drivers</h3>
+          <div class="driver-list" id="driverList">
+            <div style="text-align:center;padding:40px;color:#64748b;">Loading drivers...</div>
+          </div>
+        </div>
       </div>
       
       <!-- Drivers View -->
@@ -653,7 +763,9 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="driversTable"></tbody>
+            <tbody id="driversTable">
+              <tr><td colspan="7"><div class="loading-spinner"></div></td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -676,7 +788,9 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="earningsTable"></tbody>
+            <tbody id="earningsTable">
+              <tr><td colspan="7"><div class="loading-spinner"></div></td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -697,7 +811,9 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="usersTable"></tbody>
+            <tbody id="usersTable">
+              <tr><td colspan="5"><div class="loading-spinner"></div></td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -739,9 +855,10 @@
 
     let app, auth, database;
     let allRideRequests = [], allBookings = [], allDrivers = [], allEarnings = [], allUsers = [];
-    let map, driverMarkers = {};
+    let map, driverMarkers = {}, driverCircles = {};
     let locationListeners = {};
     let dataListeners = [];
+    let showOnlineOnly = false;
     
     try {
       app = firebase.initializeApp(firebaseConfig);
@@ -757,6 +874,7 @@
       });
     } catch (e) {
       console.error('Firebase error:', e);
+      showToast('Failed to initialize Firebase', 'error');
     }
 
     // Hamburger menu
@@ -808,20 +926,32 @@
       
       document.getElementById('pageTitle').textContent = titles[view];
       
-      if (view === 'live-tracking' && !map) {
-        initMap();
-        loadLiveTracking();
+      if (view === 'live-tracking') {
+        if (!map) {
+          setTimeout(() => {
+            initMap();
+            loadLiveTracking();
+          }, 100);
+        } else {
+          setTimeout(() => map.invalidateSize(), 100);
+          updateDriverMarkers();
+        }
       }
     }
 
-    // Setup realtime listeners for evplan data
+    // Setup realtime listeners for /evplan data
     function setupRealtimeListeners() {
       // Listen to ride requests
       const rideRequestsRef = database.ref('evplan/rideRequests');
       const rideRequestsListener = rideRequestsRef.on('value', (snapshot) => {
         allRideRequests = [];
         if (snapshot.exists()) {
-          snapshot.forEach(s => allRideRequests.push({id: s.key, ...s.val()}));
+          snapshot.forEach(s => {
+            const data = s.val();
+            if (data) {
+              allRideRequests.push({id: s.key, ...data});
+            }
+          });
         }
         updateDashboard();
       });
@@ -832,10 +962,18 @@
       const bookingsListener = bookingsRef.on('value', (snapshot) => {
         allBookings = [];
         if (snapshot.exists()) {
-          snapshot.forEach(ds => {
-            if (ds.val()) {
-              Object.entries(ds.val()).forEach(([key, val]) => {
-                allBookings.push({id: key, driverId: ds.key, ...val});
+          snapshot.forEach(driverSnapshot => {
+            const driverId = driverSnapshot.key;
+            const bookingsData = driverSnapshot.val();
+            if (bookingsData && typeof bookingsData === 'object') {
+              Object.entries(bookingsData).forEach(([bookingId, bookingData]) => {
+                if (bookingData) {
+                  allBookings.push({
+                    id: bookingId,
+                    driverId: driverId,
+                    ...bookingData
+                  });
+                }
               });
             }
           });
@@ -849,9 +987,17 @@
       const driversListener = driversRef.on('value', (snapshot) => {
         allDrivers = [];
         if (snapshot.exists()) {
-          snapshot.forEach(s => allDrivers.push({id: s.key, ...s.val()}));
+          snapshot.forEach(s => {
+            const data = s.val();
+            if (data) {
+              allDrivers.push({id: s.key, ...data});
+            }
+          });
         }
         updateDashboard();
+        if (map) {
+          updateDriverMarkers();
+        }
       });
       dataListeners.push({ref: driversRef, type: 'value', callback: driversListener});
 
@@ -860,10 +1006,18 @@
       const earningsListener = earningsRef.on('value', (snapshot) => {
         allEarnings = [];
         if (snapshot.exists()) {
-          snapshot.forEach(ds => {
-            if (ds.val()) {
-              Object.entries(ds.val()).forEach(([key, val]) => {
-                allEarnings.push({id: key, driverId: ds.key, ...val});
+          snapshot.forEach(driverSnapshot => {
+            const driverId = driverSnapshot.key;
+            const earningsData = driverSnapshot.val();
+            if (earningsData && typeof earningsData === 'object') {
+              Object.entries(earningsData).forEach(([earningId, earningData]) => {
+                if (earningData) {
+                  allEarnings.push({
+                    id: earningId,
+                    driverId: driverId,
+                    ...earningData
+                  });
+                }
               });
             }
           });
@@ -877,7 +1031,12 @@
       const usersListener = usersRef.on('value', (snapshot) => {
         allUsers = [];
         if (snapshot.exists()) {
-          snapshot.forEach(s => allUsers.push({id: s.key, ...s.val()}));
+          snapshot.forEach(s => {
+            const data = s.val();
+            if (data) {
+              allUsers.push({id: s.key, ...data});
+            }
+          });
         }
         updateDashboard();
       });
@@ -902,12 +1061,12 @@
       const inProgress = allBookings.filter(b => b.tripStage === 'in_journey').length;
       document.getElementById('inProgressBookings').textContent = inProgress + ' in progress';
       
-      const totalEarnings = allEarnings.reduce((sum, e) => sum + (e.amount || 0), 0);
-      document.getElementById('totalEarnings').textContent = '₹' + totalEarnings.toLocaleString();
+      const totalEarnings = allEarnings.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+      document.getElementById('totalEarnings').textContent = '₹' + totalEarnings.toLocaleString('en-IN', {maximumFractionDigits: 0});
       
       const unpaid = allEarnings.filter(e => e.status !== 'paid');
-      const unpaidAmount = unpaid.reduce((sum, e) => sum + (e.amount || 0), 0);
-      document.getElementById('unpaidEarnings').textContent = '₹' + unpaidAmount.toLocaleString();
+      const unpaidAmount = unpaid.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+      document.getElementById('unpaidEarnings').textContent = '₹' + unpaidAmount.toLocaleString('en-IN', {maximumFractionDigits: 0});
       document.getElementById('unpaidCount').textContent = unpaid.length + ' pending';
       
       // Render tables
@@ -920,13 +1079,13 @@
     }
 
     function renderRecentRequests() {
-      const recent = allRideRequests.slice(0, 10);
+      const recent = allRideRequests.slice(-10).reverse();
       const html = recent.length ? recent.map(r => `
         <tr>
           <td><strong>#${r.id.slice(-6)}</strong></td>
           <td>${r.riderName || 'N/A'}</td>
-          <td>${(r.pickup?.address || 'N/A').substring(0, 30)}... → ${(r.dropoff?.address || 'N/A').substring(0, 30)}...</td>
-          <td><strong>₹${(r.fareEstimate || 0).toLocaleString()}</strong></td>
+          <td>${truncateText(r.pickup?.address || 'N/A', 25)} → ${truncateText(r.dropoff?.address || 'N/A', 25)}</td>
+          <td><strong>₹${formatCurrency(r.fareEstimate)}</strong></td>
           <td><span class="status-badge ${r.status}">${r.status || 'N/A'}</span></td>
           <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(r).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
         </tr>
@@ -935,13 +1094,14 @@
     }
 
     function renderRideRequestsTable() {
-      const html = allRideRequests.length ? allRideRequests.map(r => `
+      const sorted = [...allRideRequests].reverse();
+      const html = sorted.length ? sorted.map(r => `
         <tr>
           <td><strong>#${r.id.slice(-6)}</strong></td>
           <td>${r.riderName || 'N/A'}</td>
-          <td>${(r.pickup?.address || 'N/A').substring(0, 40)}...</td>
-          <td>${(r.dropoff?.address || 'N/A').substring(0, 40)}...</td>
-          <td><strong>₹${(r.fareEstimate || 0).toLocaleString()}</strong></td>
+          <td>${truncateText(r.pickup?.address || 'N/A', 35)}</td>
+          <td>${truncateText(r.dropoff?.address || 'N/A', 35)}</td>
+          <td><strong>₹${formatCurrency(r.fareEstimate)}</strong></td>
           <td><span class="status-badge ${r.status}">${r.status || 'N/A'}</span></td>
           <td><span class="status-badge ${r.tripStage}">${r.tripStage || 'N/A'}</span></td>
           <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(r).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
@@ -951,13 +1111,14 @@
     }
 
     function renderBookingsTable() {
-      const html = allBookings.length ? allBookings.map(b => `
+      const sorted = [...allBookings].reverse();
+      const html = sorted.length ? sorted.map(b => `
         <tr>
           <td><strong>#${b.id.slice(-6)}</strong></td>
           <td>${b.riderName || 'N/A'}</td>
-          <td>${b.assignedDriverName || 'N/A'}</td>
-          <td>${(b.pickup?.address || 'N/A').substring(0, 25)}... → ${(b.dropoff?.address || 'N/A').substring(0, 25)}...</td>
-          <td><strong>₹${(b.fareEstimate || 0).toLocaleString()}</strong></td>
+          <td>${b.assignedDriverName || getDriverName(b.driverId)}</td>
+          <td>${truncateText(b.pickup?.address || 'N/A', 20)} → ${truncateText(b.dropoff?.address || 'N/A', 20)}</td>
+          <td><strong>₹${formatCurrency(b.fareEstimate)}</strong></td>
           <td><span class="status-badge ${b.status}">${b.status || 'N/A'}</span></td>
           <td><span class="status-badge ${b.tripStage}">${b.tripStage || 'N/A'}</span></td>
           <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(b).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
@@ -973,8 +1134,8 @@
           <td>${d.email || 'N/A'}</td>
           <td><span class="driver-status ${d.isOnline ? 'online' : 'offline'}">${d.isOnline ? 'Online' : 'Offline'}</span></td>
           <td>${d.totalRides || 0}</td>
-          <td><strong>₹${(d.todayEarnings || 0).toLocaleString()}</strong></td>
-          <td>${d.lastSeen ? new Date(d.lastSeen).toLocaleString() : 'Never'}</td>
+          <td><strong>₹${formatCurrency(d.todayEarnings)}</strong></td>
+          <td>${d.lastSeen ? formatDate(d.lastSeen) : 'Never'}</td>
           <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(d).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
         </tr>
       `).join('') : '<tr><td colspan="7" style="text-align:center;padding:40px;color:#64748b;">No drivers found</td></tr>';
@@ -982,14 +1143,15 @@
     }
 
     function renderEarningsTable() {
-      const html = allEarnings.length ? allEarnings.map(e => `
+      const sorted = [...allEarnings].reverse();
+      const html = sorted.length ? sorted.map(e => `
         <tr>
-          <td><strong>${e.driverId.slice(-6)}</strong></td>
+          <td><strong>${getDriverName(e.driverId)}</strong></td>
           <td>#${(e.bookingId || 'N/A').slice(-6)}</td>
           <td>#${(e.rideRequestId || 'N/A').slice(-6)}</td>
-          <td><strong>₹${(e.amount || 0).toLocaleString()}</strong></td>
+          <td><strong>₹${formatCurrency(e.amount)}</strong></td>
           <td><span class="status-badge ${e.status === 'paid' ? 'completed' : 'pending'}">${e.status || 'unpaid'}</span></td>
-          <td>${e.timestamp ? new Date(e.timestamp).toLocaleString() : 'N/A'}</td>
+          <td>${e.timestamp ? formatDate(e.timestamp) : 'N/A'}</td>
           <td>
             ${e.status !== 'paid' ? `<button class="btn btn-primary" style="padding:8px 16px;font-size:0.875rem;" onclick="markAsPaid('${e.driverId}','${e.id}')"><i class="fas fa-check"></i> Mark Paid</button>` : '<span style="color:#10b981;font-weight:600">✓ Paid</span>'}
           </td>
@@ -1004,7 +1166,7 @@
           <td><strong>${u.name || 'N/A'}</strong></td>
           <td>${u.phone || 'N/A'}</td>
           <td><span class="status-badge ${u.role === 'customer' ? 'completed' : 'pending'}">${u.role || 'customer'}</span></td>
-          <td>${u.createdAt ? new Date(u.createdAt).toLocaleString() : 'N/A'}</td>
+          <td>${u.createdAt ? formatDate(u.createdAt) : 'N/A'}</td>
           <td><button class="icon-btn view" onclick='viewDetails(${JSON.stringify(u).replace(/'/g, "&apos;")})'><i class="fas fa-eye"></i></button></td>
         </tr>
       `).join('') : '<tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;">No users found</td></tr>';
@@ -1012,125 +1174,187 @@
     }
 
     // Live Tracking Functions
+    // Live Tracking Functions
     function initMap() {
       map = L.map('map').setView([22.5726, 88.3639], 12);
-      
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19
+        attribution: '© OpenStreetMap contributors'
       }).addTo(map);
-      
-      setTimeout(() => map.invalidateSize(), 100);
     }
 
-    async function loadLiveTracking() {
-      try {
-        const driversSnapshot = await database.ref('evplan/drivers').once('value');
-        const driverListEl = document.getElementById('driverList');
-        driverListEl.innerHTML = '';
-        
-        if (!driversSnapshot.exists()) {
-          driverListEl.innerHTML = '<p style="text-align:center;padding:40px;color:#64748b;">No active drivers found</p>';
-          return;
-        }
-        
-        const drivers = driversSnapshot.val();
-        
-        for (const [driverId, driver] of Object.entries(drivers)) {
-          if (locationListeners[driverId]) {
-            database.ref(`evplan/drivers/${driverId}/location`).off('value', locationListeners[driverId]);
+    function loadLiveTracking() {
+      // Stop existing listeners
+      Object.values(locationListeners).forEach(listener => {
+        if (listener) listener.off();
+      });
+      locationListeners = {};
+      
+      // Setup realtime location listeners for each driver
+      allDrivers.forEach(driver => {
+        const locationRef = database.ref(`evplan/drivers/${driver.id}/currentLocation`);
+        const listener = locationRef.on('value', (snapshot) => {
+          const location = snapshot.val();
+          if (location && location.latitude && location.longitude) {
+            updateDriverMarker(driver.id, {
+              ...driver,
+              currentLocation: location
+            });
           }
-          
-          locationListeners[driverId] = database.ref(`evplan/drivers/${driverId}/location`).on('value', (snapshot) => {
-            const location = snapshot.val();
-            if (location && location.lat && location.lng) {
-              updateDriverMarker(driverId, location, driver);
-            }
-          });
-          
-          const isOnline = driver.isOnline || false;
-          const lastSeen = driver.lastSeen ? new Date(driver.lastSeen).toLocaleString() : 'Never';
-          
-          const card = document.createElement('div');
-          card.className = `driver-card ${isOnline ? 'online' : ''}`;
-          card.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
-              <div>
-                <h3 style="margin:0 0 8px 0;font-size:1.1rem;">${driver.name || driverId}</h3>
-                <p style="margin:0;color:#64748b;font-size:0.875rem;">ID: ${driverId.slice(-8)}</p>
-              </div>
-              <span class="driver-status ${isOnline ? 'online' : 'offline'}">
-                ${isOnline ? 'Online' : 'Offline'}
-              </span>
-            </div>
-            <div style="font-size:0.875rem;color:#64748b;">
-              <p style="margin:4px 0;"><i class="fas fa-clock" style="margin-right:8px;"></i>Last seen: ${lastSeen}</p>
-              <p style="margin:4px 0;"><i class="fas fa-car" style="margin-right:8px;"></i>Total rides: ${driver.totalRides || 0}</p>
-              <p style="margin:4px 0;"><i class="fas fa-star" style="margin-right:8px;color:#f59e0b;"></i>Earnings: ₹${(driver.todayEarnings || 0).toLocaleString()}</p>
-            </div>
-          `;
-          
-          card.onclick = () => {
-            if (driver.location && driver.location.lat && driver.location.lng) {
-              map.setView([driver.location.lat, driver.location.lng], 15);
-              if (driverMarkers[driverId]) {
-                driverMarkers[driverId].openPopup();
-              }
-            }
-          };
-          
-          driverListEl.appendChild(card);
-        }
-      } catch (e) {
-        console.error('Error loading tracking:', e);
-        showToast('Error loading live tracking', 'error');
-      }
+        });
+        locationListeners[driver.id] = {ref: locationRef, off: () => locationRef.off('value', listener)};
+      });
+      
+      updateDriverList();
     }
 
-    function updateDriverMarker(driverId, location, driver) {
-      if (!map) return;
+    function updateDriverMarkers() {
+      allDrivers.forEach(driver => {
+        if (driver.currentLocation?.latitude && driver.currentLocation?.longitude) {
+          updateDriverMarker(driver.id, driver);
+        }
+      });
+      updateDriverList();
+    }
+
+    function updateDriverMarker(driverId, driver) {
+      const loc = driver.currentLocation;
+      if (!loc || !loc.latitude || !loc.longitude) return;
       
+      if (showOnlineOnly && !driver.isOnline) {
+        if (driverMarkers[driverId]) {
+          map.removeLayer(driverMarkers[driverId]);
+          delete driverMarkers[driverId];
+        }
+        if (driverCircles[driverId]) {
+          map.removeLayer(driverCircles[driverId]);
+          delete driverCircles[driverId];
+        }
+        return;
+      }
+      
+      const position = [loc.latitude, loc.longitude];
+      
+      // Create or update marker
       if (driverMarkers[driverId]) {
-        driverMarkers[driverId].setLatLng([location.lat, location.lng]);
+        driverMarkers[driverId].setLatLng(position);
       } else {
         const icon = L.divIcon({
-          className: 'driver-marker',
-          html: '<i class="fas fa-car"></i>',
+          html: `<div class="driver-marker ${!driver.isOnline ? 'offline' : ''}"><i class="fas fa-car"></i></div>`,
+          className: '',
           iconSize: [40, 40]
         });
         
-        const marker = L.marker([location.lat, location.lng], { icon })
-          .addTo(map)
-          .bindPopup(`
-            <div style="text-align:center;">
-              <strong>${driver.name || driverId}</strong><br>
-              <span style="font-size:0.875rem;color:#64748b;">
-                ${driver.isOnline ? '🟢 Online' : '🔴 Offline'}
-              </span>
-            </div>
-          `);
-        
+        const marker = L.marker(position, {icon}).addTo(map);
+        marker.bindPopup(`
+          <div style="padding:8px;">
+            <strong>${driver.name || 'Driver'}</strong><br>
+            <span class="driver-status ${driver.isOnline ? 'online' : 'offline'}">${driver.isOnline ? 'Online' : 'Offline'}</span><br>
+            <small>${driver.vehicleModel || 'N/A'}</small><br>
+            <small>${driver.vehicleNumber || 'N/A'}</small>
+          </div>
+        `);
         driverMarkers[driverId] = marker;
+      }
+      
+      // Create or update circle
+      if (driverCircles[driverId]) {
+        driverCircles[driverId].setLatLng(position);
+      } else {
+        const circle = L.circle(position, {
+          color: driver.isOnline ? '#10b981' : '#6b7280',
+          fillColor: driver.isOnline ? '#10b981' : '#6b7280',
+          fillOpacity: 0.1,
+          radius: 500
+        }).addTo(map);
+        driverCircles[driverId] = circle;
       }
     }
 
-    // Modal functions
-    function viewDetails(data) {
-      document.getElementById('modalTitle').textContent = 'Details';
-      let html = '';
-      
-      for (const [key, value] of Object.entries(data)) {
-        if (typeof value !== 'object') {
-          html += `
-            <div class="detail-row">
-              <div class="detail-label">${key}:</div>
-              <div class="detail-value">${value || 'N/A'}</div>
+    function updateDriverList() {
+      const filtered = showOnlineOnly ? allDrivers.filter(d => d.isOnline) : allDrivers;
+      const html = filtered.length ? filtered.map(d => `
+        <div class="driver-card ${d.isOnline ? 'online' : ''}" onclick="focusDriver('${d.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+            <div>
+              <strong style="font-size:1.1rem;">${d.name || 'N/A'}</strong>
+              <div style="color:#64748b;font-size:0.875rem;margin-top:4px;">${d.vehicleModel || 'N/A'} • ${d.vehicleNumber || 'N/A'}</div>
             </div>
-          `;
+            <span class="driver-status ${d.isOnline ? 'online' : 'offline'}">${d.isOnline ? 'Online' : 'Offline'}</span>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:0.875rem;">
+            <div><i class="fas fa-route" style="color:#10b981;margin-right:6px;"></i>${d.totalRides || 0} rides</div>
+            <div><i class="fas fa-wallet" style="color:#10b981;margin-right:6px;"></i>₹${formatCurrency(d.todayEarnings)}</div>
+          </div>
+        </div>
+      `).join('') : '<div style="text-align:center;padding:40px;color:#64748b;">No drivers found</div>';
+      document.getElementById('driverList').innerHTML = html;
+    }
+
+    function centerAllDrivers() {
+      const drivers = showOnlineOnly ? allDrivers.filter(d => d.isOnline) : allDrivers;
+      const positions = drivers
+        .filter(d => d.currentLocation?.latitude && d.currentLocation?.longitude)
+        .map(d => [d.currentLocation.latitude, d.currentLocation.longitude]);
+      
+      if (positions.length) {
+        map.fitBounds(positions, {padding: [50, 50]});
+      }
+    }
+
+    function toggleOnlineOnly() {
+      showOnlineOnly = !showOnlineOnly;
+      document.getElementById('filterText').textContent = showOnlineOnly ? 'Show All' : 'Online Only';
+      updateDriverMarkers();
+    }
+
+    function focusDriver(driverId) {
+      const driver = allDrivers.find(d => d.id === driverId);
+      if (driver?.currentLocation?.latitude && driver?.currentLocation?.longitude) {
+        map.setView([driver.currentLocation.latitude, driver.currentLocation.longitude], 15);
+        if (driverMarkers[driverId]) {
+          driverMarkers[driverId].openPopup();
         }
       }
+    }
+
+    // Helper Functions
+    function getDriverName(driverId) {
+      const driver = allDrivers.find(d => d.id === driverId);
+      return driver?.name || 'Unknown Driver';
+    }
+
+    function formatCurrency(val) {
+      return (parseFloat(val) || 0).toLocaleString('en-IN', {maximumFractionDigits: 0});
+    }
+
+    function formatDate(timestamp) {
+      if (!timestamp) return 'N/A';
+      const date = new Date(timestamp);
+      return date.toLocaleDateString('en-IN') + ' ' + date.toLocaleTimeString('en-IN', {hour: '2-digit', minute: '2-digit'});
+    }
+
+    function truncateText(text, len) {
+      return text && text.length > len ? text.substring(0, len) + '...' : text;
+    }
+
+    function viewDetails(data) {
+      document.getElementById('modalTitle').textContent = 'Details';
+      const fields = Object.entries(data).map(([key, value]) => {
+        let displayValue = value;
+        if (typeof value === 'object' && value !== null) {
+          displayValue = JSON.stringify(value, null, 2);
+        } else if (key.includes('timestamp') || key.includes('Time') || key.includes('At')) {
+          displayValue = formatDate(value);
+        }
+        return `
+          <div class="detail-row">
+            <div class="detail-label">${key.replace(/([A-Z])/g, ' $1').trim()}</div>
+            <div class="detail-value">${displayValue || 'N/A'}</div>
+          </div>
+        `;
+      }).join('');
       
-      document.getElementById('modalBody').innerHTML = html;
+      document.getElementById('modalBody').innerHTML = fields;
       document.getElementById('modalOverlay').classList.add('active');
     }
 
@@ -1140,58 +1364,65 @@
 
     async function markAsPaid(driverId, earningId) {
       if (!confirm('Mark this earning as paid?')) return;
+      
       try {
         await database.ref(`evplan/driverEarnings/${driverId}/${earningId}`).update({
           status: 'paid',
-          paidAt: firebase.database.ServerValue.TIMESTAMP
+          paidAt: Date.now()
         });
-        showToast('Marked as paid successfully!', 'success');
+        showToast('Marked as paid successfully', 'success');
       } catch (e) {
         console.error('Error:', e);
-        showToast('Error updating status', 'error');
+        showToast('Failed to update payment status', 'error');
       }
     }
 
-    function showToast(msg, type = 'success') {
+    function refreshData() {
+      showToast('Data refreshed', 'success');
+      updateDashboard();
+    }
+
+    function showToast(message, type = 'success') {
       const toast = document.getElementById('toast');
-      document.getElementById('toastMessage').textContent = msg;
-      toast.querySelector('i').className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
-      toast.className = `toast ${type} show`;
+      const icon = toast.querySelector('i');
+      
+      icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+      toast.className = `toast ${type}`;
+      document.getElementById('toastMessage').textContent = message;
+      
+      toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    async function logout() {
+    function logout() {
       if (!confirm('Are you sure you want to logout?')) return;
-      try {
-        for (const driverId in locationListeners) {
-          database.ref(`evplan/drivers/${driverId}/location`).off('value', locationListeners[driverId]);
-        }
-        
-        dataListeners.forEach(({ref, type, callback}) => {
-          ref.off(type, callback);
-        });
-        
-        await auth.signOut();
+      
+      // Clean up listeners
+      dataListeners.forEach(listener => {
+        listener.ref.off(listener.type, listener.callback);
+      });
+      dataListeners = [];
+      
+      Object.values(locationListeners).forEach(listener => {
+        if (listener) listener.off();
+      });
+      locationListeners = {};
+      
+      auth.signOut().then(() => {
         window.location.href = 'index.html';
-      } catch (e) {
-        console.error('Error:', e);
-        showToast('Error logging out', 'error');
-      }
+      }).catch(e => {
+        console.error('Logout error:', e);
+        showToast('Logout failed', 'error');
+      });
     }
 
+    // Close modal on overlay click
     document.getElementById('modalOverlay').addEventListener('click', (e) => {
       if (e.target.id === 'modalOverlay') closeModal();
     });
 
-    window.addEventListener('beforeunload', () => {
-      for (const driverId in locationListeners) {
-        database.ref(`evplan/drivers/${driverId}/location`).off('value', locationListeners[driverId]);
-      }
-      
-      dataListeners.forEach(({ref, type, callback}) => {
-        ref.off(type, callback);
-      });
-    });
+    // Initial load
+    updateDashboard();
   </script>
 </body>
 </html>
