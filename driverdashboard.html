@@ -1890,7 +1890,7 @@
       resetTimer();
     }
     
-    // Load driver info from database
+   // Load driver info from database
     async function loadDriverFromDatabase() {
       if (!database || !driverData.id) {
         console.error('❌ Database or driver ID not available');
@@ -1905,76 +1905,36 @@
         const driverRef = database.ref(`evplan/drivers/${driverData.id}`);
         const driverSnapshot = await driverRef.once('value');
         
-        let driverFound = false;
-        
-        if (driverSnapshot.exists()) {
-          const driver = driverSnapshot.val();
-          driverFound = true;
-          
-          driverData.name = driver.name || 'Driver';
-          driverData.phone = driver.phone || '';
-          driverData.vehicleType = driver.car?.vehicleType || 'sedan';
-          driverData.vehicle = driver.car?.name || 'Vehicle';
-          driverData.rating = driver.rating || 5.0;
-          driverData.todayEarnings = driver.todayEarnings || 0;
-          driverData.totalRides = driver.totalRides || 0;
-          
-          if (driver.location) {
-            driverData.currentLocation = driver.location;
-          }
-          
-          if (driver.isOnline === true) {
-            isOnline = true;
-          }
-          
-          console.log('✓ Driver loaded:', driverData.name);
-        } else {
-          // Fallback: check approved cars
-          const approvedCarsRef = database.ref(`evplan/approvedcars/${driverData.id}`);
-          const carsSnapshot = await approvedCarsRef.once('value');
-          
-          if (carsSnapshot.exists()) {
-            carsSnapshot.forEach((carSnapshot) => {
-              if (!driverFound) {
-                const car = carSnapshot.val();
-                driverFound = true;
-                
-                driverData.name = car.driverName || 'Driver';
-                driverData.phone = car.driverNumber || '';
-                driverData.vehicleType = car.vehicleType || 'sedan';
-                driverData.vehicle = `${car.carBrand || 'Vehicle'} • ${car.carReg || ''}`.trim();
-              }
-            });
-          }
-        }
-        
-        if (!driverFound) {
-          showToast('⚠️ Driver profile not found', 'error');
+        if (!driverSnapshot.exists()) {
+          showToast('⚠️ Driver profile not found in evplan/drivers', 'error');
           hideLoadingState();
           document.getElementById('empty-state').classList.add('show');
           return;
         }
         
-        driverStatusRef = database.ref(`evplan/drivers/${driverData.id}`);
+        const driver = driverSnapshot.val();
         
-        // Ensure driver exists in database
-        if (!driverSnapshot.exists()) {
-          await driverStatusRef.set({
-            name: driverData.name,
-            email: driverData.email,
-            phone: driverData.phone,
-            car: {
-              name: driverData.vehicle,
-              vehicleType: driverData.vehicleType
-            },
-            isOnline: false,
-            location: driverData.currentLocation,
-            todayEarnings: 0,
-            totalRides: 0,
-            rating: 5.0,
-            createdAt: firebase.database.ServerValue.TIMESTAMP
-          });
+        // Load all driver data from evplan/drivers
+        driverData.name = driver.name || 'Driver';
+        driverData.phone = driver.phone || '';
+        driverData.vehicleType = driver.car?.vehicleType || 'sedan';
+        driverData.vehicle = driver.car?.name || 'Vehicle';
+        driverData.rating = driver.rating || 5.0;
+        driverData.todayEarnings = driver.todayEarnings || 0;
+        driverData.totalRides = driver.totalRides || 0;
+        
+        if (driver.location) {
+          driverData.currentLocation = driver.location;
         }
+        
+        if (driver.isOnline === true) {
+          isOnline = true;
+        }
+        
+        console.log('✅ Driver loaded:', driverData.name);
+        console.log('🚗 Vehicle Type:', driverData.vehicleType);
+        
+        driverStatusRef = driverRef;
         
         initializeDriver();
         updateOnlineStatus(isOnline);
