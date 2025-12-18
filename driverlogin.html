@@ -557,7 +557,7 @@ async function verifyOTP() {
       
       setTimeout(() => {
         // redirect driver to driverslots page with driverId
-        window.location.replace('driverslots.html?driverId=' + encodeURIComponent(driverId));
+        window.location.replace('driverdashboard.html?driverId=' + encodeURIComponent(driverId));
       }, 900);
     } else {
       showToast('No driver record found. Please sign up first.', true);
