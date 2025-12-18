@@ -282,6 +282,28 @@
       letter-spacing: 0.5px;
     }
     
+    /* Skeleton Loader */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s ease-in-out infinite;
+      border-radius: 4px;
+    }
+    
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    .skeleton-text {
+      height: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .skeleton-text.short {
+      width: 60%;
+    }
+    
     /* Main Content */
     .main-content {
       flex: 1;
@@ -321,6 +343,94 @@
       font-size: 1rem;
       color: var(--gray);
       font-weight: 600;
+    }
+    
+    /* Permission Banner */
+    .permission-banner {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde047 100%);
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-md);
+      border: 2px solid #fbbf24;
+      display: none;
+      animation: slideDown 0.3s ease;
+    }
+    
+    .permission-banner.show {
+      display: block;
+    }
+    
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .permission-banner h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #78350f;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .permission-banner p {
+      font-size: 0.9rem;
+      color: #78350f;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    
+    .permission-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: var(--white);
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .permission-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+    }
+    
+    /* Connection Banner */
+    .connection-banner {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid #ef4444;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      display: none;
+    }
+    
+    .connection-banner.show {
+      display: flex;
+      animation: slideDown 0.3s ease;
+    }
+    
+    .connection-banner i {
+      font-size: 1.2rem;
+      color: #dc2626;
+    }
+    
+    .connection-banner p {
+      flex: 1;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #dc2626;
     }
     
     /* Ride Request Card */
@@ -1134,6 +1244,12 @@
 </head>
 <body>
   <div class="container">
+    <!-- Connection Banner -->
+    <div class="connection-banner" id="connection-banner">
+      <i class="fas fa-wifi"></i>
+      <p>Reconnecting to server...</p>
+    </div>
+    
     <!-- Sidebar Overlay -->
     <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
     
@@ -1232,6 +1348,15 @@
 
     <!-- Main Content -->
     <div class="main-content" id="main-content">
+      <!-- Location Permission Banner -->
+      <div class="permission-banner" id="permission-banner">
+        <h3><i class="fas fa-map-marker-alt"></i> Location Access Required</h3>
+        <p>We need your location to match you with nearby riders and provide navigation.</p>
+        <button class="permission-btn" onclick="requestLocationPermission()">
+          <i class="fas fa-check-circle"></i> Grant Location Access
+        </button>
+      </div>
+      
       <!-- Loading State -->
       <div class="loading-state" id="loading-state">
         <div class="loading-spinner"></div>
@@ -1393,36 +1518,30 @@
       appId: "1:298226098137:web:720953b80e3e61c8bc43c8"
     };
 
-    // Initialize Firebase
-    let app, auth, database, currentDriver = null;
+    // State Management
+    let app, auth, database;
     let activeRideMap, directionsService, directionsRenderer;
     let isOnline = false;
     let currentRideRequest = null;
     let currentRideRequestRef = null;
     let currentRideId = null;
-    let rideState = 'idle'; // idle, going_to_pickup, at_pickup, in_journey, completed
+    let rideState = 'idle';
     let activeRideListener = null;
     let rideRequestsListener = null;
     let driverStatusRef = null;
+    let locationWatchId = null;
+    let reconnectAttempts = 0;
+    let maxReconnectAttempts = 5;
+    let locationPermissionGranted = false;
     
-    try {
-      app = firebase.initializeApp(firebaseConfig);
-      auth = firebase.auth();
-      database = firebase.database();
-      console.log('✅ Firebase initialized successfully');
-    } catch (error) {
-      console.error('❌ Firebase initialization error:', error);
-      showToast('⚠️ Firebase initialization failed', 'error');
-    }
-
-    // Driver data - will be loaded from database
+    // Driver data
     const driverData = {
-      id: '2VmOFuuliNb4ne1Ad796NCUbklo2',
+      id: null,
       name: '',
       phone: '',
       email: '',
       vehicle: '',
-      vehicleType: '', // sedan or suv
+      vehicleType: '',
       rating: 5.0,
       todayEarnings: 0,
       totalRides: 0,
@@ -1431,111 +1550,350 @@
         lng: 88.4385091
       }
     };
-
-    // Sidebar functions
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebar-overlay');
-      const hamburger = document.getElementById('hamburger-btn');
-      
-      sidebar.classList.toggle('active');
-      overlay.classList.toggle('active');
-      hamburger.classList.toggle('active');
-      
-      if (sidebar.classList.contains('active')) {
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.body.style.overflow = '';
-      }
-    }
-
-    function closeSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebar-overlay');
-      const hamburger = document.getElementById('hamburger-btn');
-      
-      sidebar.classList.remove('active');
-      overlay.classList.remove('active');
-      hamburger.classList.remove('active');
-      document.body.style.overflow = '';
-    }
     
-    function navigateTo(page) {
-      closeSidebar();
-      if (page === 'home') {
-        showToast('✓ Already on home page', 'success');
-      }
-    }
-    
-    function showEarnings() {
-      closeSidebar();
-      showToast('📊 Earnings page coming soon', 'success');
-    }
-    
-    function showSettings() {
-      closeSidebar();
-      showToast('⚙️ Settings page coming soon', 'success');
-    }
-    
-    async function handleLogout() {
-      if (!confirm('Are you sure you want to logout?')) {
-        return;
-      }
-      
-      closeSidebar();
-      
-      if (!auth) {
-        showToast('Authentication not available', 'error');
-        return;
-      }
-
+    // Initialize Firebase with error handling
+    function initializeFirebase() {
       try {
-        // Set driver offline before logging out
-        if (database && driverStatusRef) {
-          await driverStatusRef.update({
-            isOnline: false,
-            lastSeen: firebase.database.ServerValue.TIMESTAMP
-          });
-        }
-        
-        await auth.signOut();
-        showToast('✓ Logged out successfully', 'success');
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 1000);
+        app = firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        database = firebase.database();
+        console.log('✅ Firebase initialized successfully');
+        return true;
       } catch (error) {
-        console.error('❌ Logout error:', error);
-        showToast('Error logging out: ' + error.message, 'error');
+        console.error('❌ Firebase initialization error:', error);
+        showToast('⚠️ Connection failed. Retrying...', 'error');
+        return false;
       }
     }
-
-    document.addEventListener('click', (e) => {
-      const sidebar = document.getElementById('sidebar');
-      const hamburger = document.getElementById('hamburger-btn');
-      
-      if (sidebar.classList.contains('active') && 
-          !sidebar.contains(e.target) && 
-          !hamburger.contains(e.target)) {
-        closeSidebar();
+    
+    // Retry connection with exponential backoff
+    async function retryConnection() {
+      if (reconnectAttempts >= maxReconnectAttempts) {
+        showToast('Unable to connect. Please check your internet.', 'error');
+        return false;
       }
-    });
-
+      
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
+      reconnectAttempts++;
+      
+      console.log(`Retry attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${delay}ms`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      if (initializeFirebase()) {
+        reconnectAttempts = 0;
+        return true;
+      }
+      
+      return retryConnection();
+    }
+    
+    // Check authentication status
+    async function checkAuthStatus() {
+      return new Promise((resolve) => {
+        const unsubscribe = auth.onAuthStateChanged(async (user) => {
+          unsubscribe();
+          
+          if (user) {
+            console.log('✅ User authenticated:', user.uid);
+            driverData.id = user.uid;
+            driverData.email = user.email;
+            resolve(true);
+          } else {
+            console.log('⚠️ No authenticated user');
+            showToast('Please login to continue', 'error');
+            setTimeout(() => {
+              window.location.href = 'index.html';
+            }, 2000);
+            resolve(false);
+          }
+        });
+      });
+    }
+    
+    // Save state to memory (backup)
+    function saveStateToMemory() {
+      const state = {
+        isOnline,
+        rideState,
+        currentRideId,
+        currentRideRequest,
+        driverData,
+        timestamp: Date.now()
+      };
+      
+      // Save to sessionStorage as backup (will be cleared on tab close)
+      try {
+        sessionStorage.setItem('driverState', JSON.stringify(state));
+      } catch (e) {
+        console.log('SessionStorage not available');
+      }
+    }
+    
+    // Restore state from memory
+    function restoreStateFromMemory() {
+      try {
+        const savedState = sessionStorage.getItem('driverState');
+        if (!savedState) return false;
+        
+        const state = JSON.parse(savedState);
+        const timeDiff = Date.now() - state.timestamp;
+        
+        // Only restore if less than 5 minutes old
+        if (timeDiff < 5 * 60 * 1000 && state.currentRideId) {
+          console.log('📦 Restoring state from memory');
+          Object.assign(driverData, state.driverData);
+          isOnline = state.isOnline;
+          currentRideId = state.currentRideId;
+          currentRideRequest = state.currentRideRequest;
+          rideState = state.rideState;
+          return true;
+        }
+      } catch (e) {
+        console.log('Could not restore state');
+      }
+      return false;
+    }
+    
+    // Clear state from memory
+    function clearStateFromMemory() {
+      try {
+        sessionStorage.removeItem('driverState');
+      } catch (e) {
+        console.log('SessionStorage not available');
+      }
+    }
+    
+    // Request location permission explicitly
+    async function requestLocationPermission() {
+      if (!navigator.geolocation) {
+        showToast('⚠️ Geolocation not supported', 'error');
+        return false;
+      }
+      
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            locationPermissionGranted = true;
+            driverData.currentLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            
+            document.getElementById('permission-banner').classList.remove('show');
+            showToast('✅ Location access granted', 'success');
+            
+            // Start watching location
+            startLocationTracking();
+            
+            console.log('✅ Location permission granted');
+            resolve(true);
+          },
+          (error) => {
+            console.error('❌ Location error:', error);
+            
+            let message = 'Location access denied';
+            if (error.code === error.PERMISSION_DENIED) {
+              message = 'Please enable location in browser settings';
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+              message = 'Location unavailable';
+            } else if (error.code === error.TIMEOUT) {
+              message = 'Location request timeout';
+            }
+            
+            showToast('⚠️ ' + message, 'error');
+            resolve(false);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      });
+    }
+    
+    // Start continuous location tracking
+    function startLocationTracking() {
+      if (locationWatchId) {
+        navigator.geolocation.clearWatch(locationWatchId);
+      }
+      
+      locationWatchId = navigator.geolocation.watchPosition(
+        (position) => {
+          driverData.currentLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          
+          // Update location in database if online
+          if (isOnline && driverStatusRef) {
+            driverStatusRef.update({
+              location: driverData.currentLocation,
+              lastLocationUpdate: firebase.database.ServerValue.TIMESTAMP
+            }).catch(err => console.error('Location update error:', err));
+          }
+          
+          // Update in active ride
+          if (currentRideRequestRef && rideState !== 'idle') {
+            currentRideRequestRef.update({
+              driverLocation: driverData.currentLocation
+            }).catch(err => console.error('Ride location update error:', err));
+          }
+        },
+        (error) => {
+          console.error('Location watch error:', error);
+        },
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
+      );
+    }
+    
+    // Stop location tracking
+    function stopLocationTracking() {
+      if (locationWatchId) {
+        navigator.geolocation.clearWatch(locationWatchId);
+        locationWatchId = null;
+        console.log('Location tracking stopped');
+      }
+    }
+    
+    // Check location permission on load
+    async function checkLocationPermission() {
+      if (!navigator.permissions) {
+        // Fallback: just request location
+        document.getElementById('permission-banner').classList.add('show');
+        return;
+      }
+      
+      try {
+        const result = await navigator.permissions.query({ name: 'geolocation' });
+        
+        if (result.state === 'granted') {
+          locationPermissionGranted = true;
+          await requestLocationPermission();
+        } else if (result.state === 'prompt') {
+          document.getElementById('permission-banner').classList.add('show');
+        } else {
+          document.getElementById('permission-banner').classList.add('show');
+        }
+      } catch (e) {
+        document.getElementById('permission-banner').classList.add('show');
+      }
+    }
+    
+    // Validate data before database writes
+    function validateRideData(data) {
+      if (!data) return false;
+      if (!data.status || !data.assignedDriverId) return false;
+      if (!data.pickup || !data.dropoff) return false;
+      return true;
+    }
+    
     // Initialize on load
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
       showLoadingState();
       initMap();
       
-      // Load driver from database and check for active ride
-      setTimeout(() => {
-        loadDriverFromDatabase();
-      }, 500);
+      // Try to restore state first
+      const stateRestored = restoreStateFromMemory();
+      
+      // Initialize Firebase
+      const firebaseReady = initializeFirebase() || await retryConnection();
+      
+      if (!firebaseReady) {
+        hideLoadingState();
+        showToast('Unable to connect to server', 'error');
+        return;
+      }
+      
+      // Check authentication
+      const authenticated = await checkAuthStatus();
+      
+      if (!authenticated) {
+        return;
+      }
+      
+      // Check location permission
+      await checkLocationPermission();
+      
+      // Load driver data
+      await loadDriverFromDatabase();
+      
+      // Setup connection monitoring
+      setupConnectionMonitoring();
+      
+      // Setup auto-logout (30 minutes of inactivity)
+      setupAutoLogout();
     });
+    
+    // Setup connection monitoring
+    function setupConnectionMonitoring() {
+      if (!database) return;
+      
+      const connectedRef = database.ref('.info/connected');
+      connectedRef.on('value', (snap) => {
+        if (snap.val() === true) {
+          console.log('✅ Connected to Firebase');
+          document.getElementById('connection-banner').classList.remove('show');
+          reconnectAttempts = 0;
+          
+          // Resync status when reconnected
+          if (isOnline && driverData.name) {
+            syncOnlineStatus();
+          }
+          
+          // If we have an active ride, restore it
+          if (currentRideId && currentRideRequest) {
+            restoreActiveRideConnection();
+          }
+        } else {
+          console.log('⚠️ Disconnected from Firebase');
+          document.getElementById('connection-banner').classList.add('show');
+        }
+      });
+    }
+    
+    // Restore active ride connection after reconnect
+    function restoreActiveRideConnection() {
+      if (!database || !currentRideId) return;
+      
+      const rideRef = database.ref(`evplan/rideRequests/${currentRideId}`);
+      listenToActiveRide(rideRef);
+    }
+    
+    // Setup auto-logout timer
+    let logoutTimer = null;
+    let lastActivity = Date.now();
+    
+    function setupAutoLogout() {
+      const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+      
+      // Reset timer on user activity
+      const resetTimer = () => {
+        lastActivity = Date.now();
+        
+        if (logoutTimer) {
+          clearTimeout(logoutTimer);
+        }
+        
+        logoutTimer = setTimeout(() => {
+          if (rideState === 'idle') {
+            showToast('Auto-logout due to inactivity', 'error');
+            setTimeout(() => {
+              handleLogout();
+            }, 2000);
+          }
+        }, INACTIVITY_TIMEOUT);
+      };
+      
+      // Activity events
+      ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(event => {
+        document.addEventListener(event, resetTimer, true);
+      });
+      
+      resetTimer();
+    }
     
     // Load driver info from database
     async function loadDriverFromDatabase() {
-      if (!database) {
-        console.error('❌ Database not initialized');
-        showToast('⚠️ Database connection failed', 'error');
+      if (!database || !driverData.id) {
+        console.error('❌ Database or driver ID not available');
         hideLoadingState();
         document.getElementById('empty-state').classList.add('show');
         return;
@@ -1544,7 +1902,6 @@
       try {
         console.log('📡 Loading driver data for ID:', driverData.id);
         
-        // First, try to load from /evplan/drivers
         const driverRef = database.ref(`evplan/drivers/${driverData.id}`);
         const driverSnapshot = await driverRef.once('value');
         
@@ -1554,40 +1911,29 @@
           const driver = driverSnapshot.val();
           driverFound = true;
           
-          // Update driver data from /evplan/drivers
           driverData.name = driver.name || 'Driver';
           driverData.phone = driver.phone || '';
-          driverData.email = driver.email || '';
           driverData.vehicleType = driver.car?.vehicleType || 'sedan';
           driverData.vehicle = driver.car?.name || 'Vehicle';
-          driverData.rating = 5.0; // Default rating
+          driverData.rating = driver.rating || 5.0;
           driverData.todayEarnings = driver.todayEarnings || 0;
           driverData.totalRides = driver.totalRides || 0;
           
-          // Load location if available
           if (driver.location) {
             driverData.currentLocation = driver.location;
           }
           
-          // Check online status
           if (driver.isOnline === true) {
             isOnline = true;
           }
           
-          console.log('✓ Driver loaded from /evplan/drivers:', {
-            name: driverData.name,
-            vehicleType: driverData.vehicleType,
-            vehicle: driverData.vehicle
-          });
+          console.log('✓ Driver loaded:', driverData.name);
         } else {
-          // Fallback: Try to load from /evplan/approvedcars
-          console.log('⚠️ Driver not in /evplan/drivers, checking approved cars...');
-          
+          // Fallback: check approved cars
           const approvedCarsRef = database.ref(`evplan/approvedcars/${driverData.id}`);
           const carsSnapshot = await approvedCarsRef.once('value');
           
           if (carsSnapshot.exists()) {
-            // Get the first approved car
             carsSnapshot.forEach((carSnapshot) => {
               if (!driverFound) {
                 const car = carSnapshot.val();
@@ -1597,29 +1943,21 @@
                 driverData.phone = car.driverNumber || '';
                 driverData.vehicleType = car.vehicleType || 'sedan';
                 driverData.vehicle = `${car.carBrand || 'Vehicle'} • ${car.carReg || ''}`.trim();
-                
-                console.log('✓ Driver loaded from approved cars:', {
-                  name: driverData.name,
-                  vehicleType: driverData.vehicleType,
-                  vehicle: driverData.vehicle
-                });
               }
             });
           }
         }
         
         if (!driverFound) {
-          console.error('❌ Driver not found in database');
           showToast('⚠️ Driver profile not found', 'error');
           hideLoadingState();
           document.getElementById('empty-state').classList.add('show');
           return;
         }
         
-        // Initialize driver status reference
         driverStatusRef = database.ref(`evplan/drivers/${driverData.id}`);
         
-        // Ensure driver exists in /evplan/drivers (create if from approved cars)
+        // Ensure driver exists in database
         if (!driverSnapshot.exists()) {
           await driverStatusRef.set({
             name: driverData.name,
@@ -1633,31 +1971,26 @@
             location: driverData.currentLocation,
             todayEarnings: 0,
             totalRides: 0,
+            rating: 5.0,
             createdAt: firebase.database.ServerValue.TIMESTAMP
           });
-          console.log('✓ Created driver entry in /evplan/drivers');
         }
         
-        // Update UI with loaded data
         initializeDriver();
-        
-        // Update online status UI
         updateOnlineStatus(isOnline);
         
-        console.log(`✅ Driver initialized: ${driverData.name} | Vehicle: ${driverData.vehicleType} | Online: ${isOnline}`);
+        console.log(`✅ Driver initialized: ${driverData.name}`);
         
-        // Check for active ride
-        checkForActiveRide();
+        await checkForActiveRide();
         
       } catch (error) {
-        console.error('❌ Error loading driver from database:', error);
-        showToast('⚠️ Error loading profile: ' + error.message, 'error');
+        console.error('❌ Error loading driver:', error);
+        showToast('⚠️ Error loading profile', 'error');
         hideLoadingState();
         document.getElementById('empty-state').classList.add('show');
       }
     }
     
-    // Show/hide loading state
     function showLoadingState() {
       document.getElementById('loading-state').style.display = 'block';
       document.getElementById('empty-state').classList.remove('show');
@@ -1669,7 +2002,6 @@
       document.getElementById('loading-state').style.display = 'none';
     }
 
-    // Check for active ride on page load
     async function checkForActiveRide() {
       if (!database) {
         hideLoadingState();
@@ -1678,7 +2010,6 @@
       }
 
       try {
-        // Check for any ride assigned to this driver that's not completed
         const rideRequestsRef = database.ref('evplan/rideRequests');
         const snapshot = await rideRequestsRef
           .orderByChild('assignedDriverId')
@@ -1690,44 +2021,35 @@
         snapshot.forEach((childSnapshot) => {
           const ride = childSnapshot.val();
           
-          // Check if ride is still active (accepted or in progress)
           if (ride.status === 'accepted' && ride.tripStage !== 'completed') {
             foundActiveRide = true;
             currentRideId = childSnapshot.key;
             currentRideRequest = ride;
             currentRideRequestRef = childSnapshot.ref;
             
-            // Restore ride state
             const stage = ride.tripStage || 'going_to_pickup';
             rideState = stage;
             
-            // Set driver online automatically if there's an active ride
             if (!isOnline) {
               isOnline = true;
               updateOnlineStatus(true);
               syncOnlineStatus();
             }
             
-            // Show the active ride
             restoreActiveRide(ride, stage);
-            
-            // Listen for changes to this ride
             listenToActiveRide(childSnapshot.ref);
             
-            console.log('✅ Restored active ride:', currentRideId, 'Stage:', stage);
+            console.log('✅ Restored active ride:', currentRideId);
           }
         });
 
         if (!foundActiveRide) {
-          // No active ride, show appropriate state
           hideLoadingState();
           
           if (isOnline) {
-            // If online, start listening for new requests
             document.getElementById('empty-state').classList.add('show');
             listenForRideRequests();
           } else {
-            // If offline, show empty state
             document.getElementById('empty-state').classList.add('show');
           }
         }
@@ -1743,25 +2065,19 @@
       }
     }
 
-    // Restore active ride UI
     function restoreActiveRide(ride, stage) {
       hideLoadingState();
       
-      // Update ride request data
       currentRideRequest = ride;
       
-      // Set addresses
       document.getElementById('pickup-address').textContent = ride.pickup.address;
       document.getElementById('dropoff-address').textContent = ride.dropoff.address;
       
-      // Show active ride card
       document.getElementById('active-ride-card').classList.add('show');
       document.getElementById('empty-state').classList.remove('show');
       
-      // Update ride state UI
       updateRideState(stage);
       
-      // Show route on map
       setTimeout(() => {
         google.maps.event.trigger(activeRideMap, 'resize');
         if (stage === 'going_to_pickup' || stage === 'at_pickup') {
@@ -1772,38 +2088,34 @@
       }, 100);
       
       showToast('🚗 Active ride restored', 'success');
+      saveStateToMemory();
     }
 
-    // Listen to active ride changes
     function listenToActiveRide(rideRef) {
-      // Remove previous listener if exists
       if (activeRideListener) {
         activeRideListener.off();
       }
       
       activeRideListener = rideRef;
+      currentRideRequestRef = rideRef;
       
       rideRef.on('value', (snapshot) => {
         const ride = snapshot.val();
         
         if (!ride) {
-          // Ride was deleted
           resetToIdle();
           return;
         }
         
-        // Update current ride data
         currentRideRequest = ride;
         
-        // Check if ride was cancelled or completed
         if (ride.status === 'cancelled') {
-          showToast('⚠️ Ride was cancelled by customer', 'error');
+          showToast('⚠️ Ride was cancelled', 'error');
           resetToIdle();
           return;
         }
         
         if (ride.status === 'completed' || ride.tripStage === 'completed') {
-          // Ride completed from another source
           if (rideState !== 'idle') {
             showToast('🎉 Ride completed!', 'success');
             setTimeout(() => {
@@ -1811,36 +2123,34 @@
             }, 2000);
           }
         }
+        
+        saveStateToMemory();
       });
     }
 
-    // Reset to idle state
     function resetToIdle() {
       rideState = 'idle';
       currentRideRequest = null;
       currentRideRequestRef = null;
       currentRideId = null;
       
-      // Remove active ride listener
       if (activeRideListener) {
         activeRideListener.off();
         activeRideListener = null;
       }
       
-      // Hide active ride card
       document.getElementById('active-ride-card').classList.remove('show');
       
-      // Show appropriate state
       if (isOnline) {
         document.getElementById('empty-state').classList.add('show');
-        // Restart listening for new requests
         listenForRideRequests();
       } else {
         document.getElementById('empty-state').classList.add('show');
       }
+      
+      clearStateFromMemory();
     }
 
-    // Sync online status to database
     async function syncOnlineStatus() {
       if (!database || !driverStatusRef) {
         console.error('❌ Cannot sync: database not initialized');
@@ -1859,67 +2169,16 @@
         };
         
         await driverStatusRef.update(updateData);
+        console.log('✓ Online status synced');
         
-        console.log('✓ Online status synced:', {
-          isOnline: isOnline,
-          vehicleType: driverData.vehicleType
-        });
-        
-        if (isOnline) {
-          updateDriverLocation();
-        }
       } catch (error) {
         console.error('❌ Error syncing online status:', error);
         showToast('⚠️ Connection error', 'error');
       }
     }
 
-    function updateDriverLocation() {
-      if (!isOnline || !database) return;
-      
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            driverData.currentLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            
-            if (driverStatusRef) {
-              driverStatusRef.update({
-                location: driverData.currentLocation,
-                lastLocationUpdate: firebase.database.ServerValue.TIMESTAMP
-              }).catch(err => console.error('❌ Location update error:', err));
-            }
-            
-            if (currentRideRequestRef && rideState !== 'idle') {
-              currentRideRequestRef.update({
-                driverLocation: driverData.currentLocation
-              }).catch(err => console.error('❌ Ride location update error:', err));
-            }
-          },
-          (error) => {
-            console.log('⚠️ Location error:', error.message);
-          },
-          { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
-        );
-      }
-    }
-    
-    // Update location every 10 seconds when online
-    setInterval(() => {
-      if (isOnline) {
-        updateDriverLocation();
-      }
-    }, 10000);
-
-    // Initialize driver info
     function initializeDriver() {
-      // Only update if we have loaded data
-      if (!driverData.name) {
-        console.log('⚠️ Driver data not yet loaded');
-        return;
-      }
+      if (!driverData.name) return;
       
       document.getElementById('driver-name').textContent = driverData.name;
       document.getElementById('driver-vehicle').textContent = driverData.vehicle;
@@ -1931,8 +2190,6 @@
       document.getElementById('sidebar-user-phone').textContent = driverData.phone;
       
       updateStats();
-      
-      console.log('✅ UI initialized with driver data');
     }
 
     function updateStats() {
@@ -1942,7 +2199,6 @@
       document.getElementById('sidebar-rides').textContent = driverData.totalRides;
     }
 
-    // Initialize Map
     function initMap() {
       const defaultLocation = { lat: 22.5726, lng: 88.3639 };
       
@@ -1972,7 +2228,6 @@
       });
     }
 
-    // Update online status UI
     function updateOnlineStatus(online) {
       const statusToggle = document.getElementById('status-toggle');
       const statusText = document.getElementById('status-text');
@@ -1986,15 +2241,18 @@
       }
     }
 
-    // Toggle online status
     function toggleOnlineStatus() {
-      // Verify driver data is loaded
       if (!driverData.name || !driverData.vehicleType) {
-        showToast('⚠️ Please wait for driver profile to load', 'error');
+        showToast('⚠️ Please wait for profile to load', 'error');
         return;
       }
       
-      // Don't allow going offline if there's an active ride
+      if (!locationPermissionGranted) {
+        showToast('⚠️ Location access required', 'error');
+        document.getElementById('permission-banner').classList.add('show');
+        return;
+      }
+      
       if (isOnline && rideState !== 'idle') {
         showToast('⚠️ Cannot go offline during active ride', 'error');
         return;
@@ -2007,34 +2265,28 @@
         showToast(`✓ You are now online (${driverData.vehicleType.toUpperCase()})`, 'success');
         document.getElementById('empty-state').classList.remove('show');
         listenForRideRequests();
+        startLocationTracking();
       } else {
         showToast('You are now offline', 'error');
         if (rideState === 'idle') {
           document.getElementById('empty-state').classList.add('show');
-          // Stop listening for ride requests
           if (rideRequestsListener) {
             rideRequestsListener.off();
             rideRequestsListener = null;
           }
         }
+        stopLocationTracking();
       }
       
-      // Sync status to database
       syncOnlineStatus();
     }
 
-    // Listen for ride requests with vehicle type matching
     function listenForRideRequests() {
       if (!database || rideState !== 'idle') return;
       
-      // Don't create duplicate listeners
-      if (rideRequestsListener) {
-        return;
-      }
+      if (rideRequestsListener) return;
       
-      // Verify vehicle type is set
       if (!driverData.vehicleType) {
-        console.error('❌ Vehicle type not set for driver');
         showToast('⚠️ Vehicle type not configured', 'error');
         return;
       }
@@ -2049,20 +2301,9 @@
         
         const request = snapshot.val();
         
-        // Check all matching conditions
         const isSearching = request.status === 'searching';
         const isVehicleMatch = request.vehicleType === driverData.vehicleType;
         const notAssigned = !request.assignedDriverId;
-        
-        console.log('🔍 New ride request check:', {
-          id: snapshot.key,
-          status: request.status,
-          requestedVehicle: request.vehicleType,
-          driverVehicle: driverData.vehicleType,
-          isMatch: isVehicleMatch,
-          isSearching: isSearching,
-          notAssigned: notAssigned
-        });
         
         if (isSearching && isVehicleMatch && notAssigned) {
           console.log('✅ MATCH! Showing ride request:', snapshot.key);
@@ -2073,10 +2314,7 @@
           
           displayRideRequest(request);
           showToast(`🔔 New ${request.vehicleType} ride request!`, 'success');
-        } else {
-          if (!isVehicleMatch) {
-            console.log(`⏭️ Skipping: Vehicle type mismatch (need ${request.vehicleType}, have ${driverData.vehicleType})`);
-          }
+          playNotificationSound();
         }
       });
       
@@ -2098,8 +2336,6 @@
       document.getElementById('customer-avatar').textContent = customerName.charAt(0).toUpperCase();
       
       const tripTypeText = request.tripType === 'roundtrip' ? 'Round Trip' : 'One Way Trip';
-      
-      // Add vehicle type badge
       const vehicleBadge = request.vehicleType === 'suv' ? '🚙 SUV' : '🚗 Sedan';
       document.getElementById('trip-type').textContent = `${tripTypeText} • ${vehicleBadge}`;
       
@@ -2111,14 +2347,6 @@
       document.getElementById('request-fare').textContent = '₹' + request.fareEstimate;
       
       document.getElementById('ride-request-card').classList.add('show');
-      
-      playNotificationSound();
-      
-      console.log('✅ Ride request displayed:', {
-        vehicleType: request.vehicleType,
-        tripType: request.tripType,
-        fare: request.fareEstimate
-      });
     }
 
     function hideRideRequest() {
@@ -2139,7 +2367,7 @@
       }
 
       try {
-        await currentRideRequestRef.update({
+        const updateData = {
           status: 'accepted',
           assignedDriverId: driverData.id,
           assignedDriverName: driverData.name,
@@ -2148,7 +2376,14 @@
           driverLocation: driverData.currentLocation,
           tripStage: 'going_to_pickup',
           acceptedAt: firebase.database.ServerValue.TIMESTAMP
-        });
+        };
+        
+        if (!validateRideData(updateData)) {
+          showToast('⚠️ Invalid ride data', 'error');
+          return;
+        }
+        
+        await currentRideRequestRef.update(updateData);
 
         showToast('✓ Ride accepted!', 'success');
         
@@ -2156,38 +2391,26 @@
         
         rideState = 'going_to_pickup';
         
-        // Stop listening for new ride requests
         if (rideRequestsListener) {
           rideRequestsListener.off();
           rideRequestsListener = null;
         }
         
-        // Start listening to this specific ride
         listenToActiveRide(currentRideRequestRef);
-        
         showActiveRide();
-        
-        console.log('✅ Ride accepted successfully');
+        saveStateToMemory();
         
       } catch (error) {
         console.error('❌ Error accepting ride:', error);
-        showToast('⚠️ Error accepting ride: ' + error.message, 'error');
+        showToast('⚠️ Error accepting ride', 'error');
       }
     }
 
     async function rejectRide() {
-      if (!currentRideRequestRef) {
-        showToast('⚠️ No ride request to reject', 'error');
-        return;
-      }
-
-      try {
-        showToast('Ride rejected', 'success');
-        hideRideRequest();
-      } catch (error) {
-        console.error('❌ Error rejecting ride:', error);
-        showToast('⚠️ Error rejecting ride: ' + error.message, 'error');
-      }
+      if (!currentRideRequestRef) return;
+      
+      showToast('Ride rejected', 'success');
+      hideRideRequest();
     }
 
     function showActiveRide() {
@@ -2205,7 +2428,6 @@
     function updateRideState(state) {
       rideState = state;
       
-      // Add null checks
       const stepPickup = document.getElementById('step-pickup');
       const stepJourney = document.getElementById('step-journey');
       const stepComplete = document.getElementById('step-complete');
@@ -2267,6 +2489,8 @@
           if (actionBtn) actionBtn.className = 'primary-action-btn';
           break;
       }
+      
+      saveStateToMemory();
     }
 
     async function handlePrimaryAction() {
@@ -2360,15 +2584,13 @@
         
         showToast('🎉 Ride completed! ₹' + currentRideRequest.fareEstimate + ' earned', 'success');
         
-        console.log('✅ Ride completed successfully');
-        
         setTimeout(() => {
           resetToIdle();
         }, 2000);
         
       } catch (error) {
         console.error('❌ Error completing ride:', error);
-        showToast('⚠️ Error completing ride: ' + error.message, 'error');
+        showToast('⚠️ Error completing ride', 'error');
       }
     }
 
@@ -2390,8 +2612,6 @@
           }, (result, status) => {
             if (status === 'OK') {
               directionsRenderer.setDirections(result);
-            } else {
-              console.error('❌ Directions request failed:', status);
             }
           });
         }
@@ -2426,23 +2646,28 @@
     function openNavigation() {
       if (!currentRideRequest) return;
       
-      let lat, lng;
+      let lat, lng, destination;
       
-      // Navigate to pickup if not picked up yet
       if (rideState === 'going_to_pickup' || rideState === 'at_pickup') {
         lat = currentRideRequest.pickup.lat;
         lng = currentRideRequest.pickup.lng;
+        destination = 'pickup location';
       } else {
-        // Navigate to dropoff after pickup
         lat = currentRideRequest.dropoff.lat;
         lng = currentRideRequest.dropoff.lng;
+        destination = 'drop-off location';
       }
       
-      // Open Google Maps with navigation
+      // Open in new tab/window so dashboard stays active
       const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
-      window.open(url, '_blank');
+      const newWindow = window.open(url, '_blank');
       
-      console.log('✅ Navigation opened to:', rideState === 'going_to_pickup' || rideState === 'at_pickup' ? 'Pickup' : 'Dropoff');
+      // Check if popup was blocked
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        showToast('⚠️ Please allow popups to open navigation', 'error');
+      } else {
+        showToast(`📍 Opening navigation to ${destination}`, 'success');
+      }
     }
 
     function playNotificationSound() {
@@ -2463,7 +2688,7 @@
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.5);
       } catch (error) {
-        console.log('Audio notification not supported');
+        console.log('Audio not supported');
       }
     }
 
@@ -2477,12 +2702,110 @@
       }, 3000);
     }
 
+    // Sidebar functions
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      sidebar.classList.toggle('active');
+      overlay.classList.toggle('active');
+      hamburger.classList.toggle('active');
+      
+      document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+    }
+
+    function closeSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      sidebar.classList.remove('active');
+      overlay.classList.remove('active');
+      hamburger.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    
+    function navigateTo(page) {
+      closeSidebar();
+      if (page === 'home') {
+        showToast('✓ Already on home page', 'success');
+      }
+    }
+    
+    function showEarnings() {
+      closeSidebar();
+      showToast('📊 Earnings page coming soon', 'success');
+    }
+    
+    function showSettings() {
+      closeSidebar();
+      showToast('⚙️ Settings page coming soon', 'success');
+    }
+    
+    async function handleLogout() {
+      if (!confirm('Are you sure you want to logout?')) {
+        return;
+      }
+      
+      closeSidebar();
+      
+      if (!auth) {
+        showToast('Authentication not available', 'error');
+        return;
+      }
+
+      try {
+        // Set driver offline before logging out
+        if (database && driverStatusRef) {
+          await driverStatusRef.update({
+            isOnline: false,
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+          });
+        }
+        
+        // Clear listeners
+        if (activeRideListener) {
+          activeRideListener.off();
+        }
+        if (rideRequestsListener) {
+          rideRequestsListener.off();
+        }
+        
+        // Stop location tracking
+        stopLocationTracking();
+        
+        // Clear state
+        clearStateFromMemory();
+        
+        await auth.signOut();
+        showToast('✓ Logged out successfully', 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+      } catch (error) {
+        console.error('❌ Logout error:', error);
+        showToast('Error logging out', 'error');
+      }
+    }
+
+    // Close sidebar when clicking outside
+    document.addEventListener('click', (e) => {
+      const sidebar = document.getElementById('sidebar');
+      const hamburger = document.getElementById('hamburger-btn');
+      
+      if (sidebar.classList.contains('active') && 
+          !sidebar.contains(e.target) && 
+          !hamburger.contains(e.target)) {
+        closeSidebar();
+      }
+    });
+
     // Handle page visibility changes
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
-        console.log('👁️ Page visible - refreshing state...');
+        console.log('👁️ Page visible');
         
-        // If we're in an active ride, refresh the map
         if (rideState !== 'idle' && activeRideMap) {
           setTimeout(() => {
             google.maps.event.trigger(activeRideMap, 'resize');
@@ -2493,43 +2816,40 @@
             }
           }, 300);
         }
-        
-        // Update location if online
-        if (isOnline) {
-          updateDriverLocation();
-        }
       }
     });
 
-    // Handle beforeunload to warn about active rides
+    // Handle beforeunload - only warn when closing/refreshing the dashboard
+    let navigationOpening = false;
+    
     window.addEventListener('beforeunload', (e) => {
+      // Don't show warning if just opening navigation
+      if (navigationOpening) {
+        navigationOpening = false;
+        return;
+      }
+      
+      // Show warning only when there's an active ride and user is closing dashboard
       if (rideState !== 'idle') {
         e.preventDefault();
-        e.returnValue = 'You have an active ride. Are you sure you want to leave?';
+        e.returnValue = 'You have an active ride. Closing this page will not cancel the ride, but you won\'t be able to update its status.';
         return e.returnValue;
       }
+      
+      // Save state before leaving
+      saveStateToMemory();
     });
 
-    // Handle connection state
-    if (database) {
-      const connectedRef = database.ref('.info/connected');
-      connectedRef.on('value', (snap) => {
-        if (snap.val() === true) {
-          console.log('✅ Connected to Firebase');
-          // Resync status when reconnected
-          if (isOnline && driverData.name) {
-            syncOnlineStatus();
-          }
-        } else {
-          console.log('⚠️ Disconnected from Firebase');
-          showToast('⚠️ Connection lost. Reconnecting...', 'error');
-        }
-      });
-    }
-    
-    // Log vehicle type on startup
-    console.log('🚗 Driver Dashboard Starting...');
-    console.log('Driver ID:', driverData.id);
+    // Cleanup on unload
+    window.addEventListener('unload', () => {
+      if (activeRideListener) {
+        activeRideListener.off();
+      }
+      if (rideRequestsListener) {
+        rideRequestsListener.off();
+      }
+      stopLocationTracking();
+    });
   </script>
 </body>
 </html>
