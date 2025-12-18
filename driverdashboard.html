@@ -1541,31 +1541,36 @@
       }
 
       try {
-        const approvedCarsRef = database.ref('evplan/approvedcars');
-        const snapshot = await approvedCarsRef.once('value');
+        // Check if driver's cars exist under their ID
+        const driverCarsRef = database.ref(`evplan/approvedcars/${driverData.id}`);
+        const snapshot = await driverCarsRef.once('value');
         
         let driverFound = false;
         
-        snapshot.forEach((childSnapshot) => {
-          const car = childSnapshot.val();
-          if (car.driverId === driverData.id) {
-            driverFound = true;
-            
-            // Update driver data from approved car
-            driverData.name = car.driverName || driverData.name;
-            driverData.phone = car.driverPhone || driverData.phone;
-            driverData.vehicle = `${car.carModel || ''} • ${car.carNumber || ''}`.trim();
-            driverData.vehicleType = car.vehicleType || driverData.vehicleType;
-            
-            console.log('Driver loaded from approved cars:', driverData);
-            
-            // Update UI with loaded data
-            initializeDriver();
-          }
-        });
+        if (snapshot.exists()) {
+          // Get the first car from the driver's approved cars
+          snapshot.forEach((carSnapshot) => {
+            if (!driverFound) {
+              const car = carSnapshot.val();
+              driverFound = true;
+              
+              // Update driver data from approved car
+              driverData.name = car.driverName || driverData.name;
+              driverData.phone = car.driverNumber || driverData.phone;
+              driverData.vehicle = `${car.carBrand || ''} • ${car.carReg || ''}`.trim();
+              driverData.vehicleType = 'sedan'; // Default to sedan
+              
+              console.log('✓ Driver loaded from approved cars:', driverData);
+              
+              // Update UI with loaded data
+              initializeDriver();
+            }
+          });
+        }
         
         if (!driverFound) {
-          console.log('Driver not found in approved cars, using default data');
+          console.log('⚠️ Driver not found in approved cars, using default data');
+          initializeDriver();
         }
         
         // Initialize driver status reference
