@@ -6,7 +6,6 @@
 <title>Driver Login — WaveTravel</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* (styles unchanged from your provided file) */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -310,7 +309,6 @@ button:disabled {
   }
 }
 
-/* Additional CSS to prevent reCAPTCHA movement on keyboard */
 #recaptcha-container {
   position: fixed !important;
   bottom: 0 !important;
@@ -323,7 +321,6 @@ button:disabled {
   pointer-events: auto !important;
 }
 
-/* Prevent viewport changes from affecting fixed elements */
 @supports (-webkit-touch-callout: none) {
   #recaptcha-container {
     position: fixed !important;
@@ -373,7 +370,6 @@ button:disabled {
 
 <div id="toast"></div>
 
-<!-- reCAPTCHA container moved to bottom right and fixed -->
 <div id="recaptcha-container" style="position: fixed; bottom: 0; right: 0; z-index: 1000; transform: translateZ(0); -webkit-transform: translateZ(0);"></div>
 
 <!-- Firebase SDK -->
@@ -442,7 +438,7 @@ function goBack() {
 
 // Auto-format OTP input
 document.getElementById('otpInput').addEventListener('input', function(e) {
-  let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+  let value = e.target.value.replace(/\D/g, '');
   if (value.length > 6) value = value.slice(0, 6);
   e.target.value = value;
 });
@@ -511,6 +507,48 @@ async function resendOTP() {
   }
 }
 
+// UPGRADED: Check both /driverdetails and /evplan/drivers for driver records
+async function findDriverByPhone(phoneNumber) {
+  console.log('Searching for driver with phone:', phoneNumber);
+  
+  // Check /driverdetails first
+  const driverDetailsSnapshot = await database.ref('driverdetails')
+    .orderByChild('phone')
+    .equalTo(phoneNumber)
+    .once('value');
+  
+  if (driverDetailsSnapshot.exists()) {
+    const driverId = Object.keys(driverDetailsSnapshot.val())[0];
+    const driverData = driverDetailsSnapshot.val()[driverId];
+    console.log('Found driver in /driverdetails:', driverId);
+    return {
+      driverId: driverId,
+      source: 'driverdetails',
+      data: driverData
+    };
+  }
+  
+  // Check /evplan/drivers if not found in driverdetails
+  const evplanDriversSnapshot = await database.ref('evplan/drivers')
+    .orderByChild('phone')
+    .equalTo(phoneNumber)
+    .once('value');
+  
+  if (evplanDriversSnapshot.exists()) {
+    const driverId = Object.keys(evplanDriversSnapshot.val())[0];
+    const driverData = evplanDriversSnapshot.val()[driverId];
+    console.log('Found driver in /evplan/drivers:', driverId);
+    return {
+      driverId: driverId,
+      source: 'evplan/drivers',
+      data: driverData
+    };
+  }
+  
+  console.log('Driver not found in either location');
+  return null;
+}
+
 // Verify OTP
 async function verifyOTP() {
   const verifyBtn = document.getElementById('verifyBtn');
@@ -527,37 +565,31 @@ async function verifyOTP() {
   try {
     const result = await confirmationResultGlobal.confirm(otp);
     const user = result.user;
-
-    const snapshot = await database.ref('driverdetails').orderByChild('phone').equalTo(user.phoneNumber).once('value');
     
-    if (snapshot.exists()) {
-      const driverId = Object.keys(snapshot.val())[0];
-
-      // --- NEW: set sessionStorage last-role marker for this authenticated UID ---
+    console.log('OTP verified, searching for driver record...');
+    
+    // Use upgraded search function
+    const driverInfo = await findDriverByPhone(user.phoneNumber);
+    
+    if (driverInfo) {
+      console.log(`Driver found in ${driverInfo.source}`);
+      
+      // Set session storage markers
       try {
         if (user && user.uid) {
           sessionStorage.setItem(`lastRoleFor:${user.uid}`, "driver");
-          sessionStorage.setItem(`lastDriverIdFor:${user.uid}`, driverId);
+          sessionStorage.setItem(`lastDriverIdFor:${user.uid}`, driverInfo.driverId);
+          sessionStorage.setItem(`driverSource:${user.uid}`, driverInfo.source);
         }
       } catch (e) {
-        console.warn("Failed to set sessionStorage role/driverId marker:", e);
+        console.warn("Failed to set sessionStorage markers:", e);
       }
-      // --- END NEW CODE ---
-
-      // Optional: persist role server-side in users/{uid}/role (uncomment if your rules allow)
-      /*
-      try {
-        await database.ref(`users/${user.uid}/role`).set("driver");
-      } catch (e) {
-        console.warn("Failed to write users/{uid}/role:", e);
-      }
-      */
 
       showToast('Login successful! Redirecting...');
       
       setTimeout(() => {
-        // redirect driver to driverslots page with driverId
-        window.location.replace('driverdashboard.html?driverId=' + encodeURIComponent(driverId));
+        // Redirect to driver dashboard with driverId
+        window.location.replace('driverdashboard.html?driverId=' + encodeURIComponent(driverInfo.driverId));
       }, 900);
     } else {
       showToast('No driver record found. Please sign up first.', true);
@@ -598,7 +630,7 @@ function startResendCountdown() {
 // Auto-verify when 6 digits are entered
 document.getElementById('otpInput').addEventListener('input', function() {
   if (this.value.length === 6) {
-    setTimeout(verifyOTP, 500); // Small delay for better UX
+    setTimeout(verifyOTP, 500);
   }
 });
 
