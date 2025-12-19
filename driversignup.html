@@ -476,6 +476,58 @@ document.getElementById('otpInput').addEventListener('input', function(e) {
   e.target.value = value;
 });
 
+// FIXED: Check all locations for existing accounts
+async function checkExistingAccount(phone, email) {
+  console.log('Checking for existing accounts...');
+  
+  // Check driverdetails
+  const driverDetailsSnapshot = await database.ref('driverdetails').once('value');
+  if (driverDetailsSnapshot.exists()) {
+    let found = false;
+    driverDetailsSnapshot.forEach(child => {
+      const val = child.val();
+      if (val && (val.phone === phone || val.email === email)) {
+        found = true;
+      }
+    });
+    if (found) {
+      return { exists: true, location: 'driverdetails' };
+    }
+  }
+  
+  // Check evplan/drivers
+  const evplanDriversSnapshot = await database.ref('evplan/drivers').once('value');
+  if (evplanDriversSnapshot.exists()) {
+    let found = false;
+    evplanDriversSnapshot.forEach(child => {
+      const val = child.val();
+      if (val && (val.phone === phone || val.email === email)) {
+        found = true;
+      }
+    });
+    if (found) {
+      return { exists: true, location: 'evplan/drivers' };
+    }
+  }
+  
+  // Check users (customers)
+  const usersSnapshot = await database.ref('users').once('value');
+  if (usersSnapshot.exists()) {
+    let found = false;
+    usersSnapshot.forEach(child => {
+      const val = child.val();
+      if (val && val.phone === phone) {
+        found = true;
+      }
+    });
+    if (found) {
+      return { exists: true, location: 'users', isCustomer: true };
+    }
+  }
+  
+  return { exists: false };
+}
+
 async function sendOTP() {
   const name = document.getElementById('name').value.trim();
   const email = document.getElementById('email').value.trim();
@@ -500,20 +552,24 @@ async function sendOTP() {
   }
 
   sendBtn.disabled = true;
-  sendBtn.innerHTML = '<span class="spinner"></span> Sending OTP...';
+  sendBtn.innerHTML = '<span class="spinner"></span> Checking...';
 
   try {
-    const existingDriver = await database.ref('driverdetails')
-      .orderByChild('phone')
-      .equalTo(phone)
-      .once('value');
-
-    if (existingDriver.exists()) {
-      showToast('⚠️ This phone number is already registered', true);
+    // FIXED: Check all locations for duplicates
+    const checkResult = await checkExistingAccount(phone, email);
+    
+    if (checkResult.exists) {
+      if (checkResult.isCustomer) {
+        showToast('⚠️ Number registered as Customer. Please use a different number!', true);
+      } else {
+        showToast('⚠️ This phone number or email is already registered', true);
+      }
       sendBtn.disabled = false;
       sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send OTP';
       return;
     }
+
+    sendBtn.innerHTML = '<span class="spinner"></span> Sending OTP...';
 
     const confirmationResult = await auth.signInWithPhoneNumber(phone, window.recaptchaVerifier);
     confirmationResultGlobal = confirmationResult;
@@ -576,17 +632,18 @@ async function verifyOTP() {
     const name = document.getElementById('name').value.trim();
     const email = document.getElementById('email').value.trim();
     const phone = formatPhoneNumber(document.getElementById('phone').value.trim());
+    const createdAt = new Date().toISOString();
 
-    await database.ref(`driverdetails/${driverId}`).set({
+    // FIXED: Save to both locations with consistent data structure
+    const driverDetailsData = {
       name: name,
       email: email,
       phone: phone,
       role: 'driver',
-      createdAt: new Date().toISOString()
-    });
+      createdAt: createdAt
+    };
 
-    await database.ref(`evplan/drivers/${driverId}`).set({
-      nameD: name,
+    const evplanDriverData = {
       name: name,
       email: email,
       phone: phone,
@@ -603,13 +660,24 @@ async function verifyOTP() {
       rating: 5.0,
       todayEarnings: 0,
       totalRides: 0,
-      createdAt: new Date().toISOString(),
+      createdAt: createdAt,
+      updatedAt: Date.now(),
       lastSeen: Date.now()
-    });
+    };
 
+    // Save to both locations simultaneously
+    await Promise.all([
+      database.ref(`driverdetails/${driverId}`).set(driverDetailsData),
+      database.ref(`evplan/drivers/${driverId}`).set(evplanDriverData)
+    ]);
+
+    console.log('Driver saved to both locations successfully');
+
+    // Set session storage
     try {
       sessionStorage.setItem(`lastRoleFor:${driverId}`, "driver");
       sessionStorage.setItem(`lastDriverIdFor:${driverId}`, driverId);
+      sessionStorage.setItem(`driverSource:${driverId}`, "both");
     } catch (e) {
       console.warn("Failed to set sessionStorage:", e);
     }
