@@ -2118,18 +2118,15 @@
       }
       
       try {
+        // Only update online status and location, DON'T change vehicle type
         const updateData = {
           isOnline: isOnline,
           lastSeen: firebase.database.ServerValue.TIMESTAMP,
-          location: driverData.currentLocation,
-          car: {
-            name: driverData.vehicle,
-            vehicleType: driverData.vehicleType
-          }
+          location: driverData.currentLocation
         };
         
         await driverStatusRef.update(updateData);
-        console.log('✓ Online status synced');
+        console.log('✓ Online status synced (vehicle type preserved)');
         
       } catch (error) {
         console.error('❌ Error syncing online status:', error);
