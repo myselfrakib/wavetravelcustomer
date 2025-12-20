@@ -23,7 +23,7 @@
       --gray-light: #e2e8f0;
       --white: #ffffff;
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-md: 4px 6px -1px rgba(0, 0, 0, 0.1);
       --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
       --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
       --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -1395,7 +1395,7 @@
             <i class="fas fa-times"></i>
             Reject
           </button>
-          <button class="btn btn-accept" id="accept-btn" onclick="acceptRide()">
+          <button class="btn btn-accept" id="accept-btn">
             <i class="fas fa-check"></i>
             Accept
           </button>
@@ -1489,7 +1489,6 @@
     let driverStatusRef = null;
     let locationWatchId = null;
     let locationPermissionGranted = false;
-    let isAcceptingRide = false; // NEW: Prevent multiple accept clicks
 
     // Driver Data Object
     const driverData = {
@@ -1552,6 +1551,13 @@
         auth = firebase.auth();
         database = firebase.database();
         console.log('✅ Firebase initialized');
+
+        // Setup accept button with event listener (NOT onclick)
+        const acceptBtn = document.getElementById('accept-btn');
+        if (acceptBtn) {
+          acceptBtn.addEventListener('click', acceptRide, { once: false });
+          console.log('✅ Accept button listener attached');
+        }
 
         auth.onAuthStateChanged(async (user) => {
           if (user) {
@@ -2003,64 +2009,44 @@
       document.getElementById('ride-request-card').classList.add('show');
     }
 
-    let lastAcceptAttempt = 0; // Global timestamp to track last accept attempt
-    
-    async function acceptRide() {
-      if (!currentRideRequestRef || !currentRideRequest) return;
-      
-      // AGGRESSIVE DEBOUNCE: Prevent accepts within 5 seconds
-      const now = Date.now();
-      if (now - lastAcceptAttempt < 5000) {
-        console.log('⚠️ Accept attempt too soon, ignoring (debounce)');
-        return;
+    // ULTIMATE FIX: Use transaction on booking node itself to guarantee ONE entry
+    async function acceptRide(event) {
+      // Prevent default and stop propagation
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
       }
-      lastAcceptAttempt = now;
-      
-      // CRITICAL FIX: Prevent multiple clicks
-      if (isAcceptingRide) {
-        console.log('⚠️ Already processing accept request');
+
+      if (!currentRideRequestRef || !currentRideRequest) {
+        console.log('⚠️ No current ride request');
         return;
       }
       
-      isAcceptingRide = true;
       const acceptBtn = document.getElementById('accept-btn');
+      
+      // Immediately disable button
+      if (acceptBtn.disabled) {
+        console.log('⚠️ Button already disabled');
+        return;
+      }
+      
       acceptBtn.disabled = true;
       acceptBtn.innerHTML = '<div class="spinner"></div> Accepting...';
       
-      // Generate booking ID OUTSIDE transaction (so it's only generated once)
+      // Generate booking ID
       const bookingId = database.ref('evplan/bookings').push().key;
-      console.log('📝 Pre-generated booking ID:', bookingId);
+      console.log('📝 Generated booking ID:', bookingId);
       
       try {
         console.log('🔄 Starting accept process for ride:', currentRideId);
         
-        // CRITICAL CHECK: Verify this specific booking doesn't already exist
-        const existingBookingCheck = await database.ref(`evplan/bookings/${bookingId}`).once('value');
-        if (existingBookingCheck.exists()) {
-          console.error('⚠️ Booking ID already exists in database!', bookingId);
-          throw new Error('Booking collision detected, please try again');
-        }
-        
-        // Use a transaction to atomically check and update the ride request
-        const transactionResult = await currentRideRequestRef.transaction((currentData) => {
-          if (currentData === null) {
-            console.log('⚠️ Ride doesn\'t exist');
-            return undefined; // Abort transaction
-          }
+        // STEP 1: Transaction on ride request to claim it
+        const rideTransaction = await currentRideRequestRef.transaction((currentData) => {
+          if (!currentData) return undefined;
+          if (currentData.assignedDriverId || currentData.bookingId) return undefined;
+          if (currentData.status !== 'searching') return undefined;
           
-          // Check if already assigned or has booking
-          if (currentData.assignedDriverId || currentData.bookingId) {
-            console.log('⚠️ Ride already assigned in transaction');
-            return undefined; // Abort transaction
-          }
-          
-          // Check if status is still searching
-          if (currentData.status !== 'searching') {
-            console.log('⚠️ Ride status changed in transaction:', currentData.status);
-            return undefined; // Abort transaction
-          }
-          
-          // Update the ride request data with pre-generated bookingId
           return {
             ...currentData,
             status: 'accepted',
@@ -2071,70 +2057,62 @@
             driverLocation: driverData.currentLocation,
             tripStage: 'going_to_pickup',
             acceptedAt: firebase.database.ServerValue.TIMESTAMP,
-            bookingId: bookingId  // Use pre-generated ID
+            bookingId: bookingId
           };
         });
         
-        // Check if transaction was successful
-        if (!transactionResult.committed) {
-          console.log('⚠️ Transaction aborted - ride already taken');
+        if (!rideTransaction.committed) {
+          console.log('⚠️ Ride already claimed');
           showToast('This ride was accepted by another driver', 'error');
-          isAcceptingRide = false;
-          lastAcceptAttempt = 0; // Reset debounce on failure
           hideRideRequest();
           return;
         }
         
-        const updatedRideData = transactionResult.snapshot.val();
-        console.log('✅ Transaction committed successfully');
+        console.log('✅ Ride claimed successfully');
         
-        // DOUBLE CHECK: Make sure booking doesn't exist before creating
-        const finalBookingCheck = await database.ref(`evplan/bookings/${bookingId}`).once('value');
-        if (finalBookingCheck.exists()) {
-          console.error('❌ CRITICAL: Booking already exists! Aborting creation.');
-          showToast('Ride already accepted', 'error');
-          isAcceptingRide = false;
-          lastAcceptAttempt = 0; // Reset debounce
-          hideRideRequest();
-          return;
-        }
-        
-        console.log('✅ Now creating booking record at:', `evplan/bookings/${bookingId}`);
-        
-        // Now create the booking record using the pre-generated bookingId
-        const bookingData = {
+        // STEP 2: Transaction on booking node to create entry atomically
+        const bookingNodeRef = database.ref(`evplan/bookings/${bookingId}`);
+        const bookingTransaction = await bookingNodeRef.transaction((currentData) => {
+          // If data already exists, abort
+          if (currentData !== null) {
+            console.error('❌ Booking node already exists!');
+            return undefined;
+          }
+          
+          // Create the booking
+          return {
             ...currentRideRequest,
-            ...updatedRideData,
+            ...rideTransaction.snapshot.val(),
             rideRequestId: currentRideId,
             bookedAt: firebase.database.ServerValue.TIMESTAMP
-        };
+          };
+        });
         
-        // Use .set() to create exactly ONE entry at this specific path
-        await database.ref(`evplan/bookings/${bookingId}`).set(bookingData);
-        console.log('✅ Booking created successfully');
+        if (!bookingTransaction.committed) {
+          console.error('❌ Booking creation failed - already exists');
+          showToast('Booking creation failed', 'error');
+          return;
+        }
         
-        // Clean up UI
+        console.log('✅ Booking created successfully via transaction');
+        
+        // Success - clean up UI
         document.getElementById('ride-request-card').classList.remove('show');
         showToast('✓ Ride Accepted!', 'success');
         
         if (rideRequestsListener) {
-            rideRequestsListener.off(); 
-            rideRequestsListener = null;
+          rideRequestsListener.off(); 
+          rideRequestsListener = null;
         }
         
-        // Restore active ride with the updated data
-        restoreActiveRide(currentRideId, updatedRideData);
+        // Restore active ride
+        restoreActiveRide(currentRideId, rideTransaction.snapshot.val());
         
       } catch (error) {
         console.error('❌ Error accepting ride:', error);
-        showToast('Error accepting ride: ' + error.message, 'error');
-        lastAcceptAttempt = 0; // Reset debounce on error
-        
-        // Re-enable button on error
+        showToast('Error: ' + error.message, 'error');
         acceptBtn.disabled = false;
         acceptBtn.innerHTML = '<i class="fas fa-check"></i> Accept';
-      } finally {
-        isAcceptingRide = false;
       }
     }
 
@@ -2370,7 +2348,6 @@
         const acceptBtn = document.getElementById('accept-btn');
         acceptBtn.disabled = false;
         acceptBtn.innerHTML = '<i class="fas fa-check"></i> Accept';
-        isAcceptingRide = false;
         
         if (isOnline && rideState === 'idle') document.getElementById('empty-state').classList.remove('show');
     }
