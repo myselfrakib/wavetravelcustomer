@@ -702,6 +702,12 @@
       transform: scale(0.95);
     }
     
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    
     /* Active Ride Card */
     .active-ride-card {
       background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
@@ -1389,7 +1395,7 @@
             <i class="fas fa-times"></i>
             Reject
           </button>
-          <button class="btn btn-accept" onclick="acceptRide()">
+          <button class="btn btn-accept" id="accept-btn" onclick="acceptRide()">
             <i class="fas fa-check"></i>
             Accept
           </button>
@@ -1483,6 +1489,7 @@
     let driverStatusRef = null;
     let locationWatchId = null;
     let locationPermissionGranted = false;
+    let isAcceptingRide = false; // NEW: Prevent multiple accept clicks
 
     // Driver Data Object
     const driverData = {
@@ -1579,10 +1586,7 @@
 
     // Handle app visibility changes (when driver returns from map app)
     function setupVisibilityHandlers() {
-      // Page Visibility API - detects when user switches tabs/apps
       document.addEventListener('visibilitychange', handleVisibilityChange);
-      
-      // Additional handlers for mobile
       window.addEventListener('focus', handleAppFocus);
       window.addEventListener('pageshow', handlePageShow);
       
@@ -1592,8 +1596,6 @@
     function handleVisibilityChange() {
       if (document.hidden) {
         console.log('📱 App went to background');
-        // App is hidden (user switched to map or another app)
-        // Keep connection alive, don't disconnect
       } else {
         console.log('📱 App came to foreground');
         handleAppReturn();
@@ -1606,7 +1608,6 @@
     }
 
     function handlePageShow(event) {
-      // Detects when page is loaded from cache (back button, etc)
       if (event.persisted) {
         console.log('🔄 Page loaded from cache');
         handleAppReturn();
@@ -1614,7 +1615,6 @@
     }
 
     async function handleAppReturn() {
-      // When driver returns to the app
       console.log('🔙 Driver returned to dashboard');
       
       try {
@@ -1624,31 +1624,27 @@
           const status = statusSnap.val();
           
           if (status) {
-            // Update local state from database
             const dbIsOnline = status.isOnline === true;
             if (dbIsOnline !== isOnline) {
               isOnline = dbIsOnline;
               updateOnlineStatus(isOnline);
             }
             
-            // Update earnings and rides
             driverData.todayEarnings = parseFloat(status.todayEarnings) || 0;
             driverData.totalRides = parseInt(status.totalRides) || 0;
             updateStatsUI();
           }
         }
         
-        // 2. Check for active ride (in case status changed while away)
+        // 2. Check for active ride
         if (rideState === 'idle' && !currentRideId) {
           await checkForActiveRide();
         } else if (currentRideId && currentRideRequestRef) {
-          // Refresh current ride data
           const rideSnap = await currentRideRequestRef.once('value');
           const rideData = rideSnap.val();
           
           if (rideData) {
             if (rideData.status === 'cancelled' || rideData.status === 'completed') {
-              // Ride ended while away
               showToast('Ride status updated', 'success');
               document.getElementById('active-ride-card').classList.remove('show');
               rideState = 'idle';
@@ -1663,12 +1659,10 @@
                 document.getElementById('empty-state').classList.add('show');
               }
             } else {
-              // Update current ride state
               currentRideRequest = rideData;
               const stage = rideData.tripStage || 'going_to_pickup';
               updateRideState(stage);
               
-              // Refresh map
               setTimeout(() => {
                 if (typeof google !== 'undefined' && activeRideMap) {
                   google.maps.event.trigger(activeRideMap, 'resize');
@@ -1694,7 +1688,7 @@
           }, null, { enableHighAccuracy: true });
         }
         
-        // 4. Ensure ride listeners are active if online and idle
+        // 4. Ensure ride listeners are active
         if (isOnline && rideState === 'idle' && !rideRequestsListener) {
           listenForRideRequests();
         }
@@ -1707,9 +1701,7 @@
       }
     }
 
-    // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
-      // Clean up listeners
       if (activeRideListener) activeRideListener.off();
       if (rideRequestsListener) rideRequestsListener.off();
       if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
@@ -1756,7 +1748,6 @@
 
         driverStatusRef = database.ref(`evplan/drivers/${driverData.id}`);
 
-        // Sync online status from database
         if (status && status.isOnline === true) {
           isOnline = true;
           updateOnlineStatus(true);
@@ -1765,7 +1756,6 @@
           updateOnlineStatus(false);
         }
 
-        // Listen for online status changes from database
         syncOnlineStatusFromDB();
 
         initializeDriverUI();
@@ -1778,14 +1768,12 @@
       }
     }
 
-    // New function to sync online status from database
     function syncOnlineStatusFromDB() {
       if (!driverStatusRef) return;
       
       driverStatusRef.child('isOnline').on('value', (snapshot) => {
         const dbOnlineStatus = snapshot.val();
         
-        // Only update if status changed
         if (dbOnlineStatus !== isOnline) {
           isOnline = dbOnlineStatus === true;
           updateOnlineStatus(isOnline);
@@ -1796,7 +1784,6 @@
             document.getElementById('empty-state').classList.remove('show');
             listenForRideRequests();
             
-            // Start location tracking
             if (navigator.geolocation && !locationWatchId) {
               locationWatchId = navigator.geolocation.watchPosition(pos => {
                 driverData.currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -1896,7 +1883,6 @@
       const stage = ride.tripStage || 'going_to_pickup';
       updateRideState(stage);
       
-      // Update pickup/dropoff addresses with validation
       if (ride.pickup) {
         if (ride.pickup.address) {
           document.getElementById('pickup-address').textContent = ride.pickup.address;
@@ -1922,7 +1908,6 @@
         if (typeof google !== 'undefined' && activeRideMap) {
             google.maps.event.trigger(activeRideMap, 'resize');
             
-            // Only show routes if we have valid location data
             if (stage === 'in_journey') {
                 if (ride.pickup && ride.pickup.lat && ride.dropoff && ride.dropoff.lat) {
                   showRouteToDestination();
@@ -1986,7 +1971,6 @@
       document.getElementById('customer-avatar').textContent = (request.riderName || 'C').charAt(0).toUpperCase();
       document.getElementById('trip-type').textContent = (request.tripType === 'roundtrip' ? 'Round Trip' : 'One Way') + ` • ${request.vehicleType.toUpperCase()}`;
       
-      // Validate and display pickup location
       if (request.pickup && request.pickup.address) {
         document.getElementById('request-pickup').textContent = request.pickup.address;
         console.log('✓ Pickup:', request.pickup);
@@ -1995,7 +1979,6 @@
         console.warn('⚠️ Missing pickup location in request');
       }
       
-      // Validate and display dropoff location
       if (request.dropoff && request.dropoff.address) {
         document.getElementById('request-dropoff').textContent = request.dropoff.address;
         console.log('✓ Dropoff:', request.dropoff);
@@ -2014,21 +1997,61 @@
     async function acceptRide() {
       if (!currentRideRequestRef || !currentRideRequest) return;
       
+      // CRITICAL FIX: Prevent multiple clicks
+      if (isAcceptingRide) {
+        console.log('⚠️ Already processing accept request');
+        return;
+      }
+      
+      isAcceptingRide = true;
+      const acceptBtn = document.getElementById('accept-btn');
+      acceptBtn.disabled = true;
+      acceptBtn.innerHTML = '<div class="spinner"></div> Accepting...';
+      
       try {
-        // First, check if booking already exists
+        console.log('🔄 Starting accept process for ride:', currentRideId);
+        
+        // STEP 1: Check current state of ride request
         const currentRideSnap = await currentRideRequestRef.once('value');
         const currentRideData = currentRideSnap.val();
         
-        if (currentRideData && currentRideData.bookingId) {
-          console.log('⚠️ Booking already exists:', currentRideData.bookingId);
-          showToast('Ride already accepted', 'error');
+        if (!currentRideData) {
+          throw new Error('Ride request no longer exists');
+        }
+        
+        // STEP 2: Check if ride already has a booking
+        if (currentRideData.bookingId) {
+          console.log('⚠️ Ride already has booking:', currentRideData.bookingId);
+          showToast('This ride has already been accepted', 'error');
+          isAcceptingRide = false;
+          hideRideRequest();
           return;
         }
         
-        // Create booking first
+        // STEP 3: Check if ride already assigned
+        if (currentRideData.assignedDriverId && currentRideData.assignedDriverId !== driverData.id) {
+          console.log('⚠️ Ride already assigned to another driver');
+          showToast('This ride was accepted by another driver', 'error');
+          isAcceptingRide = false;
+          hideRideRequest();
+          return;
+        }
+        
+        // STEP 4: Check if ride status is still searching
+        if (currentRideData.status !== 'searching') {
+          console.log('⚠️ Ride status is no longer searching:', currentRideData.status);
+          showToast('This ride is no longer available', 'error');
+          isAcceptingRide = false;
+          hideRideRequest();
+          return;
+        }
+        
+        // STEP 5: Create booking ID FIRST
         const bookingRef = database.ref('evplan/bookings').push();
         const bookingId = bookingRef.key;
+        console.log('📝 Created booking ID:', bookingId);
         
+        // STEP 6: Prepare update data
         const updates = {
            status: 'accepted',
            assignedDriverId: driverData.id,
@@ -2041,10 +2064,11 @@
            bookingId: bookingId
         };
         
-        // Update ride request with booking ID
+        // STEP 7: Update ride request with bookingId atomically
         await currentRideRequestRef.update(updates);
+        console.log('✅ Updated ride request with booking ID');
         
-        // Create booking record
+        // STEP 8: Create booking record
         const bookingData = {
             ...currentRideRequest,
             ...updates,
@@ -2052,9 +2076,9 @@
             bookedAt: firebase.database.ServerValue.TIMESTAMP
         };
         await bookingRef.set(bookingData);
+        console.log('✅ Created booking record');
         
-        console.log('✅ Booking created:', bookingId);
-        
+        // STEP 9: Clean up UI
         document.getElementById('ride-request-card').classList.remove('show');
         showToast('✓ Ride Accepted!', 'success');
         
@@ -2063,7 +2087,7 @@
             rideRequestsListener = null;
         }
         
-        // Fetch complete ride data from database before restoring
+        // STEP 10: Fetch fresh data and restore active ride
         const freshRideSnap = await currentRideRequestRef.once('value');
         const freshRideData = freshRideSnap.val();
         
@@ -2073,9 +2097,15 @@
           showToast('Error loading ride data', 'error');
         }
         
-      } catch (e) {
-        console.error('Error accepting:', e);
-        showToast('Error accepting ride', 'error');
+      } catch (error) {
+        console.error('❌ Error accepting ride:', error);
+        showToast('Error accepting ride: ' + error.message, 'error');
+        
+        // Re-enable button on error
+        acceptBtn.disabled = false;
+        acceptBtn.innerHTML = '<i class="fas fa-check"></i> Accept';
+      } finally {
+        isAcceptingRide = false;
       }
     }
 
@@ -2306,6 +2336,13 @@
     function hideRideRequest() {
         document.getElementById('ride-request-card').classList.remove('show');
         currentRideRequest = null;
+        
+        // Reset accept button state
+        const acceptBtn = document.getElementById('accept-btn');
+        acceptBtn.disabled = false;
+        acceptBtn.innerHTML = '<i class="fas fa-check"></i> Accept';
+        isAcceptingRide = false;
+        
         if (isOnline && rideState === 'idle') document.getElementById('empty-state').classList.remove('show');
     }
     
