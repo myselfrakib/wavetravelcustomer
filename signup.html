@@ -267,6 +267,25 @@
     }
   }
 
+  // Check if phone exists in evplan/users/profile
+  async function phoneExistsInEvPlan(fullPhone) {
+    try {
+      const snapshot = await db.ref('evplan/users/profile').once('value');
+      if (snapshot.exists()) {
+        const profiles = snapshot.val();
+        for (const uid in profiles) {
+          if (profiles[uid].userdetails && profiles[uid].userdetails.phone === fullPhone) {
+            return true;
+          }
+        }
+      }
+      return false;
+    } catch(e) {
+      console.error('phoneExistsInEvPlan error', e);
+      return false;
+    }
+  }
+
   // --- Spinner helpers ---
   function setSending(sending) {
     if (sending) {
@@ -366,6 +385,15 @@
           showToast('Driver account is found with this number, Please login or use different mobile number', 'error');
           return false;
         }
+
+        // Check if phone exists in evplan/users/profile
+        if (await phoneExistsInEvPlan(fullPhone)) {
+          showToast('Phone number already registered in EVPlan. Please login instead.', 'error');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 2000);
+          return false;
+        }
       }
 
       setSending(true);
@@ -430,13 +458,24 @@
       const user = result.user;
       const uid = user.uid;
 
-      // Save user data in Realtime Database (without email)
-      await db.ref('users/' + uid).set({
+      const timestamp = Date.now();
+      
+      // User data object
+      const userData = {
         name: name,
         phone: fullPhone,
         role: 'customer',
-        createdAt: Date.now()
-      });
+        createdAt: timestamp
+      };
+
+      // Save user data in both locations using Promise.all for parallel execution
+      await Promise.all([
+        // Save in original location: /users/{uid}
+        db.ref('users/' + uid).set(userData),
+        
+        // Save in new location: /evplan/users/profile/{uid}/userdetails
+        db.ref('evplan/users/profile/' + uid + '/userdetails').set(userData)
+      ]);
 
       showToast('Account created and signed in successfully!', 'success');
 
