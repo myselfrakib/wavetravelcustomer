@@ -1878,6 +1878,8 @@
     }
 
     function restoreActiveRide(rideId, ride) {
+      console.log('🔄 Restoring active ride:', rideId, ride);
+      
       currentRideId = rideId;
       currentRideRequest = ride;
       currentRideRequestRef = database.ref(`evplan/rideRequests/${rideId}`);
@@ -1894,12 +1896,23 @@
       const stage = ride.tripStage || 'going_to_pickup';
       updateRideState(stage);
       
-      // Update pickup/dropoff addresses
-      if (ride.pickup && ride.pickup.address) {
-        document.getElementById('pickup-address').textContent = ride.pickup.address;
+      // Update pickup/dropoff addresses with validation
+      if (ride.pickup) {
+        if (ride.pickup.address) {
+          document.getElementById('pickup-address').textContent = ride.pickup.address;
+        }
+        console.log('Pickup location:', ride.pickup);
+      } else {
+        console.warn('⚠️ No pickup location in ride data');
       }
-      if (ride.dropoff && ride.dropoff.address) {
-        document.getElementById('dropoff-address').textContent = ride.dropoff.address;
+      
+      if (ride.dropoff) {
+        if (ride.dropoff.address) {
+          document.getElementById('dropoff-address').textContent = ride.dropoff.address;
+        }
+        console.log('Dropoff location:', ride.dropoff);
+      } else {
+        console.warn('⚠️ No dropoff location in ride data');
       }
       
       document.getElementById('active-ride-card').classList.add('show');
@@ -1908,10 +1921,20 @@
       setTimeout(() => {
         if (typeof google !== 'undefined' && activeRideMap) {
             google.maps.event.trigger(activeRideMap, 'resize');
+            
+            // Only show routes if we have valid location data
             if (stage === 'in_journey') {
-                showRouteToDestination();
+                if (ride.pickup && ride.pickup.lat && ride.dropoff && ride.dropoff.lat) {
+                  showRouteToDestination();
+                } else {
+                  console.warn('⚠️ Cannot show route - missing location coordinates');
+                }
             } else {
-                showRouteOnMap();
+                if (ride.pickup && ride.pickup.lat && driverData.currentLocation) {
+                  showRouteOnMap();
+                } else {
+                  console.warn('⚠️ Cannot show route - missing pickup or driver location');
+                }
             }
         }
       }, 500);
@@ -1956,16 +1979,33 @@
     }
 
     function displayRideRequest(request) {
+      console.log('📋 Displaying ride request:', request);
+      
       document.getElementById('empty-state').classList.remove('show');
       document.getElementById('customer-name').textContent = request.riderName || 'Customer';
       document.getElementById('customer-avatar').textContent = (request.riderName || 'C').charAt(0).toUpperCase();
       document.getElementById('trip-type').textContent = (request.tripType === 'roundtrip' ? 'Round Trip' : 'One Way') + ` • ${request.vehicleType.toUpperCase()}`;
       
-      document.getElementById('request-pickup').textContent = request.pickup && request.pickup.address || 'Loading...';
-      document.getElementById('request-dropoff').textContent = request.dropoff && request.dropoff.address || 'Loading...';
+      // Validate and display pickup location
+      if (request.pickup && request.pickup.address) {
+        document.getElementById('request-pickup').textContent = request.pickup.address;
+        console.log('✓ Pickup:', request.pickup);
+      } else {
+        document.getElementById('request-pickup').textContent = 'Location not available';
+        console.warn('⚠️ Missing pickup location in request');
+      }
       
-      document.getElementById('request-distance').textContent = request.distance + ' km';
-      document.getElementById('request-duration').textContent = request.duration + ' hrs';
+      // Validate and display dropoff location
+      if (request.dropoff && request.dropoff.address) {
+        document.getElementById('request-dropoff').textContent = request.dropoff.address;
+        console.log('✓ Dropoff:', request.dropoff);
+      } else {
+        document.getElementById('request-dropoff').textContent = 'Location not available';
+        console.warn('⚠️ Missing dropoff location in request');
+      }
+      
+      document.getElementById('request-distance').textContent = (request.distance || '--') + ' km';
+      document.getElementById('request-duration').textContent = (request.duration || '--') + ' hrs';
       document.getElementById('request-fare').textContent = '₹' + (request.fareEstimate || 0);
       
       document.getElementById('ride-request-card').classList.add('show');
@@ -1975,6 +2015,20 @@
       if (!currentRideRequestRef || !currentRideRequest) return;
       
       try {
+        // First, check if booking already exists
+        const currentRideSnap = await currentRideRequestRef.once('value');
+        const currentRideData = currentRideSnap.val();
+        
+        if (currentRideData && currentRideData.bookingId) {
+          console.log('⚠️ Booking already exists:', currentRideData.bookingId);
+          showToast('Ride already accepted', 'error');
+          return;
+        }
+        
+        // Create booking first
+        const bookingRef = database.ref('evplan/bookings').push();
+        const bookingId = bookingRef.key;
+        
         const updates = {
            status: 'accepted',
            assignedDriverId: driverData.id,
@@ -1983,21 +2037,23 @@
            assignedDriverVehicle: `${driverData.vehicle} • ${driverData.vehicleReg || 'WB02AJ7678'}`,
            driverLocation: driverData.currentLocation,
            tripStage: 'going_to_pickup',
-           acceptedAt: firebase.database.ServerValue.TIMESTAMP
+           acceptedAt: firebase.database.ServerValue.TIMESTAMP,
+           bookingId: bookingId
         };
         
+        // Update ride request with booking ID
         await currentRideRequestRef.update(updates);
         
-        const bookingRef = database.ref('evplan/bookings').push();
+        // Create booking record
         const bookingData = {
             ...currentRideRequest,
             ...updates,
-            bookingId: bookingRef.key,
             rideRequestId: currentRideId,
             bookedAt: firebase.database.ServerValue.TIMESTAMP
         };
         await bookingRef.set(bookingData);
-        await currentRideRequestRef.update({ bookingId: bookingRef.key });
+        
+        console.log('✅ Booking created:', bookingId);
         
         document.getElementById('ride-request-card').classList.remove('show');
         showToast('✓ Ride Accepted!', 'success');
@@ -2007,7 +2063,15 @@
             rideRequestsListener = null;
         }
         
-        restoreActiveRide(currentRideId, { ...currentRideRequest, ...updates });
+        // Fetch complete ride data from database before restoring
+        const freshRideSnap = await currentRideRequestRef.once('value');
+        const freshRideData = freshRideSnap.val();
+        
+        if (freshRideData) {
+          restoreActiveRide(currentRideId, freshRideData);
+        } else {
+          showToast('Error loading ride data', 'error');
+        }
         
       } catch (e) {
         console.error('Error accepting:', e);
