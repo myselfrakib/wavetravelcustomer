@@ -1955,9 +1955,18 @@
       rideRequestsRef.on('child_changed', (snapshot) => {
          if (currentRideId === snapshot.key) {
              const val = snapshot.val();
-             if (val.status === 'cancelled' || val.assignedDriverId) {
+             if (val.status === 'cancelled') {
                  hideRideRequest();
-                 if (val.status === 'cancelled') showToast('Request was cancelled by user', 'error');
+                 showToast('Request was cancelled by user', 'error');
+             } else if (val.assignedDriverId && val.assignedDriverId !== driverData.id) {
+                 // Another driver took this ride
+                 console.log('⚠️ Ride assigned to another driver via listener');
+                 hideRideRequest();
+                 showToast('Request was accepted by another driver', 'error');
+             } else if (val.bookingId && val.assignedDriverId !== driverData.id) {
+                 // Booking exists for another driver
+                 console.log('⚠️ Booking exists for another driver');
+                 hideRideRequest();
              }
          }
       });
@@ -2011,74 +2020,69 @@
       try {
         console.log('🔄 Starting accept process for ride:', currentRideId);
         
-        // STEP 1: Check current state of ride request
-        const currentRideSnap = await currentRideRequestRef.once('value');
-        const currentRideData = currentRideSnap.val();
+        // Use a transaction to atomically check and update the ride request
+        const transactionResult = await currentRideRequestRef.transaction((currentData) => {
+          if (currentData === null) {
+            // Ride doesn't exist
+            return undefined; // Abort transaction
+          }
+          
+          // Check if already assigned or has booking
+          if (currentData.assignedDriverId || currentData.bookingId) {
+            console.log('⚠️ Ride already assigned in transaction');
+            return undefined; // Abort transaction
+          }
+          
+          // Check if status is still searching
+          if (currentData.status !== 'searching') {
+            console.log('⚠️ Ride status changed in transaction');
+            return undefined; // Abort transaction
+          }
+          
+          // Create booking ID inside transaction
+          const bookingId = database.ref('evplan/bookings').push().key;
+          
+          // Update the ride request data
+          return {
+            ...currentData,
+            status: 'accepted',
+            assignedDriverId: driverData.id,
+            assignedDriverName: driverData.name,
+            assignedDriverPhone: driverData.phone,
+            assignedDriverVehicle: `${driverData.vehicle} • ${driverData.vehicleReg || 'WB02AJ7678'}`,
+            driverLocation: driverData.currentLocation,
+            tripStage: 'going_to_pickup',
+            acceptedAt: firebase.database.ServerValue.TIMESTAMP,
+            bookingId: bookingId
+          };
+        });
         
-        if (!currentRideData) {
-          throw new Error('Ride request no longer exists');
-        }
-        
-        // STEP 2: Check if ride already has a booking
-        if (currentRideData.bookingId) {
-          console.log('⚠️ Ride already has booking:', currentRideData.bookingId);
-          showToast('This ride has already been accepted', 'error');
-          isAcceptingRide = false;
-          hideRideRequest();
-          return;
-        }
-        
-        // STEP 3: Check if ride already assigned
-        if (currentRideData.assignedDriverId && currentRideData.assignedDriverId !== driverData.id) {
-          console.log('⚠️ Ride already assigned to another driver');
+        // Check if transaction was successful
+        if (!transactionResult.committed) {
+          console.log('⚠️ Transaction aborted - ride already taken');
           showToast('This ride was accepted by another driver', 'error');
           isAcceptingRide = false;
           hideRideRequest();
           return;
         }
         
-        // STEP 4: Check if ride status is still searching
-        if (currentRideData.status !== 'searching') {
-          console.log('⚠️ Ride status is no longer searching:', currentRideData.status);
-          showToast('This ride is no longer available', 'error');
-          isAcceptingRide = false;
-          hideRideRequest();
-          return;
-        }
+        const updatedRideData = transactionResult.snapshot.val();
+        const bookingId = updatedRideData.bookingId;
         
-        // STEP 5: Create booking ID FIRST
-        const bookingRef = database.ref('evplan/bookings').push();
-        const bookingId = bookingRef.key;
-        console.log('📝 Created booking ID:', bookingId);
+        console.log('✅ Transaction successful, booking ID:', bookingId);
         
-        // STEP 6: Prepare update data
-        const updates = {
-           status: 'accepted',
-           assignedDriverId: driverData.id,
-           assignedDriverName: driverData.name,
-           assignedDriverPhone: driverData.phone,
-           assignedDriverVehicle: `${driverData.vehicle} • ${driverData.vehicleReg || 'WB02AJ7678'}`,
-           driverLocation: driverData.currentLocation,
-           tripStage: 'going_to_pickup',
-           acceptedAt: firebase.database.ServerValue.TIMESTAMP,
-           bookingId: bookingId
-        };
-        
-        // STEP 7: Update ride request with bookingId atomically
-        await currentRideRequestRef.update(updates);
-        console.log('✅ Updated ride request with booking ID');
-        
-        // STEP 8: Create booking record
+        // Now create the booking record
+        const bookingRef = database.ref(`evplan/bookings/${bookingId}`);
         const bookingData = {
             ...currentRideRequest,
-            ...updates,
+            ...updatedRideData,
             rideRequestId: currentRideId,
             bookedAt: firebase.database.ServerValue.TIMESTAMP
         };
         await bookingRef.set(bookingData);
         console.log('✅ Created booking record');
         
-        // STEP 9: Clean up UI
+        // Clean up UI
         document.getElementById('ride-request-card').classList.remove('show');
         showToast('✓ Ride Accepted!', 'success');
         
@@ -2087,15 +2091,8 @@
             rideRequestsListener = null;
         }
         
-        // STEP 10: Fetch fresh data and restore active ride
-        const freshRideSnap = await currentRideRequestRef.once('value');
-        const freshRideData = freshRideSnap.val();
-        
-        if (freshRideData) {
-          restoreActiveRide(currentRideId, freshRideData);
-        } else {
-          showToast('Error loading ride data', 'error');
-        }
+        // Restore active ride with the updated data
+        restoreActiveRide(currentRideId, updatedRideData);
         
       } catch (error) {
         console.error('❌ Error accepting ride:', error);
