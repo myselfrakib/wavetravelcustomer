@@ -1553,6 +1553,7 @@
             await loadDriverFromDatabase();
             setupConnectionMonitoring();
             checkLocationPermission();
+            setupVisibilityHandlers();
           } else {
             console.log('No user signed in');
             const params = new URLSearchParams(window.location.search);
@@ -1562,6 +1563,7 @@
                 console.log('Using URL Driver ID:', driverData.id);
                 await loadDriverFromDatabase();
                 setupConnectionMonitoring();
+                setupVisibilityHandlers();
             } else {
                 window.location.href = 'driverlogin.html';
             }
@@ -1573,6 +1575,144 @@
         showToast('Error connecting to server', 'error');
         hideLoadingState();
       }
+    });
+
+    // Handle app visibility changes (when driver returns from map app)
+    function setupVisibilityHandlers() {
+      // Page Visibility API - detects when user switches tabs/apps
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Additional handlers for mobile
+      window.addEventListener('focus', handleAppFocus);
+      window.addEventListener('pageshow', handlePageShow);
+      
+      console.log('👁️ Visibility handlers setup');
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        console.log('📱 App went to background');
+        // App is hidden (user switched to map or another app)
+        // Keep connection alive, don't disconnect
+      } else {
+        console.log('📱 App came to foreground');
+        handleAppReturn();
+      }
+    }
+
+    function handleAppFocus() {
+      console.log('🔄 App gained focus');
+      handleAppReturn();
+    }
+
+    function handlePageShow(event) {
+      // Detects when page is loaded from cache (back button, etc)
+      if (event.persisted) {
+        console.log('🔄 Page loaded from cache');
+        handleAppReturn();
+      }
+    }
+
+    async function handleAppReturn() {
+      // When driver returns to the app
+      console.log('🔙 Driver returned to dashboard');
+      
+      try {
+        // 1. Re-sync online status from database
+        if (driverStatusRef) {
+          const statusSnap = await driverStatusRef.once('value');
+          const status = statusSnap.val();
+          
+          if (status) {
+            // Update local state from database
+            const dbIsOnline = status.isOnline === true;
+            if (dbIsOnline !== isOnline) {
+              isOnline = dbIsOnline;
+              updateOnlineStatus(isOnline);
+            }
+            
+            // Update earnings and rides
+            driverData.todayEarnings = parseFloat(status.todayEarnings) || 0;
+            driverData.totalRides = parseInt(status.totalRides) || 0;
+            updateStatsUI();
+          }
+        }
+        
+        // 2. Check for active ride (in case status changed while away)
+        if (rideState === 'idle' && !currentRideId) {
+          await checkForActiveRide();
+        } else if (currentRideId && currentRideRequestRef) {
+          // Refresh current ride data
+          const rideSnap = await currentRideRequestRef.once('value');
+          const rideData = rideSnap.val();
+          
+          if (rideData) {
+            if (rideData.status === 'cancelled' || rideData.status === 'completed') {
+              // Ride ended while away
+              showToast('Ride status updated', 'success');
+              document.getElementById('active-ride-card').classList.remove('show');
+              rideState = 'idle';
+              currentRideRequest = null;
+              currentRideId = null;
+              currentRideRequestRef = null;
+              
+              if (isOnline) {
+                document.getElementById('empty-state').classList.remove('show');
+                listenForRideRequests();
+              } else {
+                document.getElementById('empty-state').classList.add('show');
+              }
+            } else {
+              // Update current ride state
+              currentRideRequest = rideData;
+              const stage = rideData.tripStage || 'going_to_pickup';
+              updateRideState(stage);
+              
+              // Refresh map
+              setTimeout(() => {
+                if (typeof google !== 'undefined' && activeRideMap) {
+                  google.maps.event.trigger(activeRideMap, 'resize');
+                  if (stage === 'in_journey') {
+                    showRouteToDestination();
+                  } else {
+                    showRouteOnMap();
+                  }
+                }
+              }, 300);
+            }
+          }
+        }
+        
+        // 3. Restart location tracking if online
+        if (isOnline && !locationWatchId && navigator.geolocation) {
+          locationWatchId = navigator.geolocation.watchPosition(pos => {
+            driverData.currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            if(driverStatusRef) driverStatusRef.update({ location: driverData.currentLocation });
+            if (rideState !== 'idle' && currentRideRequestRef) {
+              currentRideRequestRef.update({ driverLocation: driverData.currentLocation });
+            }
+          }, null, { enableHighAccuracy: true });
+        }
+        
+        // 4. Ensure ride listeners are active if online and idle
+        if (isOnline && rideState === 'idle' && !rideRequestsListener) {
+          listenForRideRequests();
+        }
+        
+        console.log('✅ App state restored');
+        
+      } catch (error) {
+        console.error('Error restoring app state:', error);
+        showToast('Syncing data...', 'error');
+      }
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      // Clean up listeners
+      if (activeRideListener) activeRideListener.off();
+      if (rideRequestsListener) rideRequestsListener.off();
+      if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
     });
 
     async function loadDriverFromDatabase() {
@@ -1616,6 +1756,18 @@
 
         driverStatusRef = database.ref(`evplan/drivers/${driverData.id}`);
 
+        // Sync online status from database
+        if (status && status.isOnline === true) {
+          isOnline = true;
+          updateOnlineStatus(true);
+        } else {
+          isOnline = false;
+          updateOnlineStatus(false);
+        }
+
+        // Listen for online status changes from database
+        syncOnlineStatusFromDB();
+
         initializeDriverUI();
         await checkForActiveRide();
 
@@ -1624,6 +1776,49 @@
         showToast('Error loading profile', 'error');
         hideLoadingState();
       }
+    }
+
+    // New function to sync online status from database
+    function syncOnlineStatusFromDB() {
+      if (!driverStatusRef) return;
+      
+      driverStatusRef.child('isOnline').on('value', (snapshot) => {
+        const dbOnlineStatus = snapshot.val();
+        
+        // Only update if status changed
+        if (dbOnlineStatus !== isOnline) {
+          isOnline = dbOnlineStatus === true;
+          updateOnlineStatus(isOnline);
+          
+          console.log('📡 Online status synced from DB:', isOnline);
+          
+          if (isOnline && rideState === 'idle') {
+            document.getElementById('empty-state').classList.remove('show');
+            listenForRideRequests();
+            
+            // Start location tracking
+            if (navigator.geolocation && !locationWatchId) {
+              locationWatchId = navigator.geolocation.watchPosition(pos => {
+                driverData.currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                if(driverStatusRef) driverStatusRef.update({ location: driverData.currentLocation });
+                if (rideState !== 'idle' && currentRideRequestRef) {
+                  currentRideRequestRef.update({ driverLocation: driverData.currentLocation });
+                }
+              }, null, { enableHighAccuracy: true });
+            }
+          } else if (!isOnline) {
+            document.getElementById('empty-state').classList.add('show');
+            if (rideRequestsListener) {
+              rideRequestsListener.off();
+              rideRequestsListener = null;
+            }
+            if (locationWatchId) {
+              navigator.geolocation.clearWatch(locationWatchId);
+              locationWatchId = null;
+            }
+          }
+        }
+      });
     }
 
     function initializeDriverUI() {
