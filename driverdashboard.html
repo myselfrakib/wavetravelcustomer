@@ -1552,13 +1552,6 @@
         database = firebase.database();
         console.log('✅ Firebase initialized');
 
-        // Setup accept button with event listener (NOT onclick)
-        const acceptBtn = document.getElementById('accept-btn');
-        if (acceptBtn) {
-          acceptBtn.addEventListener('click', acceptRide, { once: false });
-          console.log('✅ Accept button listener attached');
-        }
-
         auth.onAuthStateChanged(async (user) => {
           if (user) {
             driverData.id = user.uid;
