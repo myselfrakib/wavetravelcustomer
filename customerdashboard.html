@@ -1168,7 +1168,10 @@
       }
 
       try {
-        // Load ride requests with real-time listener
+        // First, check for any incomplete rides and restore them immediately
+        await checkAndRestoreIncompleteRides();
+
+        // Then set up real-time listener for all rides
         const rideRequestsRef = database.ref('evplan/rideRequests');
         rideRequestsRef.orderByChild('riderId').equalTo(currentUser.uid).on('value', (snapshot) => {
           const rideRequests = [];
@@ -1215,6 +1218,124 @@
         hideLoading();
       }
     }
+
+    // Check for incomplete rides when user returns to the app
+    async function checkAndRestoreIncompleteRides() {
+      if (!currentUser || !database) return;
+
+      try {
+        console.log('🔍 Checking for incomplete rides...');
+        
+        const rideRequestsRef = database.ref('evplan/rideRequests');
+        const snapshot = await rideRequestsRef.orderByChild('riderId').equalTo(currentUser.uid).once('value');
+        
+        const incompleteRides = [];
+        
+        snapshot.forEach((childSnapshot) => {
+          const ride = childSnapshot.val();
+          const rideId = childSnapshot.key;
+          
+          // Check if ride is not completed or cancelled
+          if (ride.status !== 'completed' && ride.status !== 'cancelled') {
+            // Check if ride has been accepted (has a driver assigned)
+            if (ride.status === 'accepted' || 
+                ride.tripStage === 'going_to_pickup' || 
+                ride.tripStage === 'at_pickup' || 
+                ride.tripStage === 'in_journey') {
+              
+              incompleteRides.push({
+                id: rideId,
+                ...ride
+              });
+              
+              console.log(`✅ Found incomplete ride: ${rideId}, Stage: ${ride.tripStage || 'accepted'}`);
+            }
+          }
+        });
+
+        if (incompleteRides.length > 0) {
+          console.log(`📍 Restoring ${incompleteRides.length} incomplete ride(s)`);
+          showToast(`Restoring your active ride...`, 'success');
+          
+          // Store incomplete rides in sessionStorage for persistence
+          sessionStorage.setItem('incompleteRides', JSON.stringify(incompleteRides.map(r => r.id)));
+        } else {
+          console.log('✓ No incomplete rides found');
+          sessionStorage.removeItem('incompleteRides');
+        }
+
+      } catch (error) {
+        console.error('Error checking incomplete rides:', error);
+      }
+    }
+
+    // Handle page visibility change (when user returns to app)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && currentUser) {
+        console.log('👁️ User returned to dashboard, checking ride status...');
+        
+        // Check if there are any stored incomplete rides
+        const storedRides = sessionStorage.getItem('incompleteRides');
+        if (storedRides) {
+          try {
+            const rideIds = JSON.parse(storedRides);
+            console.log('🔄 Verifying stored rides:', rideIds);
+            
+            // Verify each ride is still active
+            rideIds.forEach(rideId => {
+              const rideRef = database.ref(`evplan/rideRequests/${rideId}`);
+              rideRef.once('value').then(snapshot => {
+                const ride = snapshot.val();
+                if (ride && ride.status !== 'completed' && ride.status !== 'cancelled') {
+                  console.log(`✅ Ride ${rideId} still active, refreshing UI...`);
+                  
+                  // Trigger a refresh of the active rides display
+                  if (activeMaps[rideId]) {
+                    updateMapRoute({
+                      id: rideId,
+                      ...ride
+                    });
+                  }
+                }
+              });
+            });
+          } catch (e) {
+            console.error('Error parsing stored rides:', e);
+          }
+        }
+      }
+    });
+
+    // Handle page show event (when navigating back using browser back button)
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted && currentUser) {
+        console.log('🔙 Page restored from cache, refreshing ride data...');
+        checkAndRestoreIncompleteRides();
+      }
+    });
+
+    // Handle app focus (when user switches back to the tab)
+    window.addEventListener('focus', () => {
+      if (currentUser) {
+        console.log('🎯 App gained focus, syncing ride status...');
+        
+        // Re-check incomplete rides
+        const storedRides = sessionStorage.getItem('incompleteRides');
+        if (storedRides) {
+          try {
+            const rideIds = JSON.parse(storedRides);
+            rideIds.forEach(rideId => {
+              if (!activeRideListeners[rideId]) {
+                console.log(`🔄 Re-establishing listener for ride ${rideId}`);
+                setupRideListener(rideId);
+              }
+            });
+          } catch (e) {
+            console.error('Error restoring listeners:', e);
+          }
+        }
+      }
+    });
 
     // Display active rides with live tracking
     function displayActiveRides(rides) {
