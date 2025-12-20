@@ -1395,7 +1395,7 @@
             <i class="fas fa-times"></i>
             Reject
           </button>
-          <button class="btn btn-accept" id="accept-btn">
+          <button class="btn btn-accept" id="accept-btn" onclick="acceptRide()">
             <i class="fas fa-check"></i>
             Accept
           </button>
@@ -1958,14 +1958,9 @@
                  hideRideRequest();
                  showToast('Request was cancelled by user', 'error');
              } else if (val.assignedDriverId && val.assignedDriverId !== driverData.id) {
-                 // Another driver took this ride
                  console.log('⚠️ Ride assigned to another driver via listener');
                  hideRideRequest();
                  showToast('Request was accepted by another driver', 'error');
-             } else if (val.bookingId && val.assignedDriverId !== driverData.id) {
-                 // Booking exists for another driver
-                 console.log('⚠️ Booking exists for another driver');
-                 hideRideRequest();
              }
          }
       });
@@ -2000,6 +1995,87 @@
       document.getElementById('request-fare').textContent = '₹' + (request.fareEstimate || 0);
       
       document.getElementById('ride-request-card').classList.add('show');
+    }
+
+    async function acceptRide() {
+        const acceptBtn = document.getElementById('accept-btn');
+        acceptBtn.disabled = true;
+        acceptBtn.innerHTML = '<div class="spinner"></div> Accepting...';
+        
+        try {
+            // Check if ride still exists and is available
+            const rideSnap = await currentRideRequestRef.once('value');
+            const rideData = rideSnap.val();
+            
+            if (!rideData) {
+                showToast('Ride request no longer exists', 'error');
+                hideRideRequest();
+                return;
+            }
+            
+            if (rideData.status !== 'searching') {
+                showToast('Ride already accepted by another driver', 'error');
+                hideRideRequest();
+                return;
+            }
+            
+            // Update ride request with driver info and status
+            await currentRideRequestRef.update({
+                status: 'accepted',
+                tripStage: 'going_to_pickup',
+                assignedDriverId: driverData.id,
+                assignedDriverName: driverData.name,
+                assignedDriverPhone: driverData.phone,
+                assignedDriverVehicle: `${driverData.vehicle} • ${driverData.vehicleType.toUpperCase()}`,
+                acceptedAt: firebase.database.ServerValue.TIMESTAMP,
+                driverLocation: driverData.currentLocation
+            });
+            
+            // Update current ride data
+            currentRideRequest = {
+                ...currentRideRequest,
+                status: 'accepted',
+                tripStage: 'going_to_pickup',
+                assignedDriverId: driverData.id,
+                assignedDriverName: driverData.name,
+                assignedDriverPhone: driverData.phone,
+                assignedDriverVehicle: `${driverData.vehicle} • ${driverData.vehicleType.toUpperCase()}`,
+                driverLocation: driverData.currentLocation
+            };
+            
+            // Hide request card and show active ride
+            document.getElementById('ride-request-card').classList.remove('show');
+            rideState = 'going_to_pickup';
+            
+            // Setup active ride
+            listenToActiveRide(currentRideRequestRef);
+            updateRideState('going_to_pickup');
+            
+            if (currentRideRequest.pickup && currentRideRequest.pickup.address) {
+                document.getElementById('pickup-address').textContent = currentRideRequest.pickup.address;
+            }
+            if (currentRideRequest.dropoff && currentRideRequest.dropoff.address) {
+                document.getElementById('dropoff-address').textContent = currentRideRequest.dropoff.address;
+            }
+            
+            document.getElementById('active-ride-card').classList.add('show');
+            
+            // Show route on map
+            setTimeout(() => {
+                if (typeof google !== 'undefined' && activeRideMap) {
+                    google.maps.event.trigger(activeRideMap, 'resize');
+                    showRouteOnMap();
+                }
+            }, 500);
+            
+            showToast('Ride Accepted!', 'success');
+            
+        } catch (error) {
+            console.error('Accept error:', error);
+            showToast('Failed to accept ride', 'error');
+            acceptBtn.disabled = false;
+            acceptBtn.innerHTML = '<i class="fas fa-check"></i> Accept';
+        }
     }
 
     function openNavigation() {
@@ -2072,11 +2148,17 @@
 
         try {
             if (rideState === 'going_to_pickup') {
-                await currentRideRequestRef.update({ tripStage: 'at_pickup', reachedPickupAt: firebase.database.ServerValue.TIMESTAMP });
+                await currentRideRequestRef.update({ 
+                    tripStage: 'at_pickup', 
+                    reachedPickupAt: firebase.database.ServerValue.TIMESTAMP 
+                });
                 updateRideState('at_pickup');
                 showToast('Reached Pickup Point');
             } else if (rideState === 'at_pickup') {
-                await currentRideRequestRef.update({ tripStage: 'in_journey', journeyStartedAt: firebase.database.ServerValue.TIMESTAMP });
+                await currentRideRequestRef.update({ 
+                    tripStage: 'in_journey', 
+                    journeyStartedAt: firebase.database.ServerValue.TIMESTAMP 
+                });
                 updateRideState('in_journey');
                 showToast('Journey Started');
                 showRouteToDestination();
@@ -2125,15 +2207,6 @@
                 tripStage: 'completed',
                 completedAt: firebase.database.ServerValue.TIMESTAMP
             });
-            
-            const snapshot = await currentRideRequestRef.once('value');
-            const rideData = snapshot.val();
-            if (rideData.bookingId) {
-                await database.ref(`evplan/bookings/${rideData.bookingId}`).update({
-                    status: 'completed',
-                    completedAt: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
 
             const fareAmount = parseFloat(currentRideRequest.fareEstimate) || 0;
             driverData.todayEarnings += fareAmount;
@@ -2178,7 +2251,14 @@
                 document.getElementById('active-ride-card').classList.remove('show');
                 rideState = 'idle';
                 currentRideRequest = null;
-                if (isOnline) listenForRideRequests();
+                currentRideId = null;
+                currentRideRequestRef = null;
+                if (isOnline) {
+                    document.getElementById('empty-state').classList.remove('show');
+                    listenForRideRequests();
+                } else {
+                    document.getElementById('empty-state').classList.add('show');
+                }
             }
         });
     }
@@ -2207,10 +2287,15 @@
         } else {
             showToast('You are Offline', 'error');
             document.getElementById('empty-state').classList.add('show');
-            if (rideRequestsListener) rideRequestsListener.off();
-            rideRequestsListener = null;
+            if (rideRequestsListener) {
+                rideRequestsListener.off();
+                rideRequestsListener = null;
+            }
             if (driverStatusRef) driverStatusRef.update({ isOnline: false });
-            if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
+            if (locationWatchId) {
+                navigator.geolocation.clearWatch(locationWatchId);
+                locationWatchId = null;
+            }
         }
     }
 
@@ -2229,8 +2314,9 @@
     function hideRideRequest() {
         document.getElementById('ride-request-card').classList.remove('show');
         currentRideRequest = null;
+        currentRideId = null;
+        currentRideRequestRef = null;
         
-        // Reset accept button state
         const acceptBtn = document.getElementById('accept-btn');
         acceptBtn.disabled = false;
         acceptBtn.innerHTML = '<i class="fas fa-check"></i> Accept';
@@ -2317,6 +2403,6 @@
         showToast('Earnings feature coming soon', 'success'); 
     }
 
-</script>
+  </script>
 </body>
 </html>
