@@ -1479,9 +1479,17 @@
       // Default center (Kolkata)
       const defaultCenter = { lat: 22.5726, lng: 88.3639 };
       
+      // Determine initial center based on available data
+      let initialCenter = defaultCenter;
+      if (ride.driverLocation && ride.driverLocation.lat) {
+        initialCenter = { lat: ride.driverLocation.lat, lng: ride.driverLocation.lng };
+      } else if (ride.pickup && ride.pickup.lat) {
+        initialCenter = { lat: ride.pickup.lat, lng: ride.pickup.lng };
+      }
+      
       // Create map
       const map = new google.maps.Map(mapElement, {
-        center: ride.pickup?.lat ? { lat: ride.pickup.lat, lng: ride.pickup.lng } : defaultCenter,
+        center: initialCenter,
         zoom: 13,
         disableDefaultUI: true,
         zoomControl: true,
@@ -1490,20 +1498,28 @@
         ]
       });
 
+      const directionsService = new google.maps.DirectionsService();
+      const directionsRenderer = new google.maps.DirectionsRenderer({
+        map: map,
+        suppressMarkers: true, // We'll add custom markers
+        polylineOptions: {
+          strokeColor: '#10b981',
+          strokeWeight: 5,
+          strokeOpacity: 0.8
+        }
+      });
+
       // Store map instance
       activeMaps[ride.id] = {
         map: map,
-        directionsService: new google.maps.DirectionsService(),
-        directionsRenderer: new google.maps.DirectionsRenderer({
-          map: map,
-          suppressMarkers: false,
-          polylineOptions: {
-            strokeColor: '#10b981',
-            strokeWeight: 5
-          }
-        }),
-        driverMarker: null
+        directionsService: directionsService,
+        directionsRenderer: directionsRenderer,
+        driverMarker: null,
+        pickupMarker: null,
+        dropoffMarker: null
       };
+
+      console.log(`✅ Map initialized for ride ${ride.id}`);
 
       // Initial route display
       updateMapRoute(ride);
@@ -1511,87 +1527,243 @@
 
     // Update map route based on trip stage
     function updateMapRoute(ride) {
-      if (!activeMaps[ride.id]) return;
+      if (!activeMaps[ride.id]) {
+        console.log(`Map not initialized for ride ${ride.id}, initializing now...`);
+        initializeRideMap(ride);
+        return;
+      }
 
       const mapData = activeMaps[ride.id];
       const { map, directionsService, directionsRenderer } = mapData;
 
-      // Remove existing driver marker
+      console.log(`🗺️ Updating map for ride ${ride.id}, Stage: ${ride.tripStage || 'unknown'}`);
+      console.log('Driver location:', ride.driverLocation);
+      console.log('Pickup:', ride.pickup);
+      console.log('Dropoff:', ride.dropoff);
+
+      // Clear existing markers
       if (mapData.driverMarker) {
         mapData.driverMarker.setMap(null);
+        mapData.driverMarker = null;
+      }
+      if (mapData.pickupMarker) {
+        mapData.pickupMarker.setMap(null);
+        mapData.pickupMarker = null;
+      }
+      if (mapData.dropoffMarker) {
+        mapData.dropoffMarker.setMap(null);
+        mapData.dropoffMarker = null;
       }
 
       // Determine origin and destination based on trip stage
       let origin, destination;
+      let shouldShowRoute = false;
       
-      if (ride.tripStage === 'going_to_pickup' || ride.tripStage === 'at_pickup') {
+      if (ride.tripStage === 'going_to_pickup') {
         // Show route from driver to pickup
-        if (ride.driverLocation && ride.driverLocation.lat && ride.pickup && ride.pickup.lat) {
-          origin = { lat: ride.driverLocation.lat, lng: ride.driverLocation.lng };
-          destination = { lat: ride.pickup.lat, lng: ride.pickup.lng };
+        if (ride.driverLocation && ride.driverLocation.lat && ride.driverLocation.lng && 
+            ride.pickup && ride.pickup.lat && ride.pickup.lng) {
           
-          // Add driver marker
+          origin = new google.maps.LatLng(ride.driverLocation.lat, ride.driverLocation.lng);
+          destination = new google.maps.LatLng(ride.pickup.lat, ride.pickup.lng);
+          shouldShowRoute = true;
+          
+          console.log('📍 Route: Driver → Pickup');
+          console.log('Origin:', origin.toString());
+          console.log('Destination:', destination.toString());
+          
+          // Add driver marker (green car icon)
           mapData.driverMarker = new google.maps.Marker({
             position: origin,
             map: map,
             icon: {
+              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+              scale: 5,
+              fillColor: '#10b981',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
+              rotation: 0
+            },
+            title: 'Driver',
+            zIndex: 1000
+          });
+          
+          // Add pickup marker (green flag)
+          mapData.pickupMarker = new google.maps.Marker({
+            position: destination,
+            map: map,
+            icon: {
               path: google.maps.SymbolPath.CIRCLE,
-              scale: 8,
+              scale: 10,
               fillColor: '#10b981',
               fillOpacity: 1,
               strokeColor: '#ffffff',
               strokeWeight: 3
             },
-            title: 'Driver Location'
+            title: 'Pickup Location',
+            zIndex: 900
           });
+          
         } else {
-          console.warn('Missing driver or pickup location');
-          return;
+          console.warn('⚠️ Missing driver or pickup coordinates for going_to_pickup stage');
+        }
+      } else if (ride.tripStage === 'at_pickup') {
+        // Show pickup location prominently
+        if (ride.pickup && ride.pickup.lat && ride.pickup.lng) {
+          const pickupPos = new google.maps.LatLng(ride.pickup.lat, ride.pickup.lng);
+          
+          console.log('📍 Showing pickup location');
+          
+          // Add pickup marker
+          mapData.pickupMarker = new google.maps.Marker({
+            position: pickupPos,
+            map: map,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 12,
+              fillColor: '#10b981',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 3
+            },
+            title: 'Pickup - Driver Arrived',
+            animation: google.maps.Animation.BOUNCE,
+            zIndex: 1000
+          });
+          
+          // Center map on pickup
+          map.setCenter(pickupPos);
+          map.setZoom(15);
+          
+          // Stop bounce after 3 seconds
+          setTimeout(() => {
+            if (mapData.pickupMarker) {
+              mapData.pickupMarker.setAnimation(null);
+            }
+          }, 3000);
         }
       } else if (ride.tripStage === 'in_journey') {
-        // Show route from pickup to dropoff
-        if (ride.pickup && ride.pickup.lat && ride.dropoff && ride.dropoff.lat) {
-          origin = { lat: ride.pickup.lat, lng: ride.pickup.lng };
-          destination = { lat: ride.dropoff.lat, lng: ride.dropoff.lng };
+        // Show route from pickup to dropoff with driver position
+        if (ride.pickup && ride.pickup.lat && ride.pickup.lng && 
+            ride.dropoff && ride.dropoff.lat && ride.dropoff.lng) {
+          
+          origin = new google.maps.LatLng(ride.pickup.lat, ride.pickup.lng);
+          destination = new google.maps.LatLng(ride.dropoff.lat, ride.dropoff.lng);
+          shouldShowRoute = true;
+          
+          console.log('📍 Route: Pickup → Dropoff');
+          console.log('Origin:', origin.toString());
+          console.log('Destination:', destination.toString());
+          
+          // Add pickup marker (gray - passed)
+          mapData.pickupMarker = new google.maps.Marker({
+            position: origin,
+            map: map,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: '#94a3b8',
+              fillOpacity: 0.8,
+              strokeColor: '#ffffff',
+              strokeWeight: 2
+            },
+            title: 'Pickup (Completed)',
+            zIndex: 800
+          });
+          
+          // Add dropoff marker (red flag)
+          mapData.dropoffMarker = new google.maps.Marker({
+            position: destination,
+            map: map,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#ef4444',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 3
+            },
+            title: 'Dropoff Location',
+            zIndex: 900
+          });
           
           // Add driver marker if location available
-          if (ride.driverLocation && ride.driverLocation.lat) {
+          if (ride.driverLocation && ride.driverLocation.lat && ride.driverLocation.lng) {
+            const driverPos = new google.maps.LatLng(ride.driverLocation.lat, ride.driverLocation.lng);
+            
             mapData.driverMarker = new google.maps.Marker({
-              position: { lat: ride.driverLocation.lat, lng: ride.driverLocation.lng },
+              position: driverPos,
               map: map,
               icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 8,
+                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                scale: 5,
                 fillColor: '#10b981',
                 fillOpacity: 1,
                 strokeColor: '#ffffff',
-                strokeWeight: 3
+                strokeWeight: 2,
+                rotation: 0
               },
-              title: 'Driver Location'
+              title: 'Driver (En Route)',
+              zIndex: 1000
             });
+            
+            console.log('🚗 Driver marker added at:', driverPos.toString());
           }
         } else {
-          console.warn('Missing pickup or dropoff location');
-          return;
+          console.warn('⚠️ Missing pickup or dropoff coordinates for in_journey stage');
         }
       }
 
       // Request and display route
-      if (origin && destination) {
-        directionsService.route(
-          {
-            origin: origin,
-            destination: destination,
-            travelMode: google.maps.TravelMode.DRIVING
-          },
-          (result, status) => {
-            if (status === google.maps.DirectionsStatus.OK) {
-              directionsRenderer.setDirections(result);
-            } else {
-              console.error('Directions request failed:', status);
+      if (shouldShowRoute && origin && destination) {
+        console.log('🛣️ Requesting route from Google Directions API...');
+        
+        const request = {
+          origin: origin,
+          destination: destination,
+          travelMode: google.maps.TravelMode.DRIVING,
+          optimizeWaypoints: false
+        };
+        
+        directionsService.route(request, (result, status) => {
+          if (status === google.maps.DirectionsStatus.OK) {
+            console.log('✅ Route received successfully');
+            directionsRenderer.setDirections(result);
+            
+            // Fit bounds to show entire route
+            const bounds = new google.maps.LatLngBounds();
+            const route = result.routes[0];
+            
+            route.overview_path.forEach(point => {
+              bounds.extend(point);
+            });
+            
+            map.fitBounds(bounds);
+            
+            // Add some padding
+            setTimeout(() => {
+              const currentZoom = map.getZoom();
+              if (currentZoom > 15) {
+                map.setZoom(15);
+              }
+            }, 100);
+            
+          } else {
+            console.error('❌ Directions request failed:', status);
+            console.error('Request details:', request);
+            
+            // Fallback: just center on origin
+            if (origin) {
+              map.setCenter(origin);
+              map.setZoom(13);
             }
           }
-        );
+        });
+      } else if (!shouldShowRoute) {
+        console.log('ℹ️ No route to display for current stage');
+      } else {
+        console.warn('⚠️ Cannot display route: missing origin or destination');
       }
     }
 
