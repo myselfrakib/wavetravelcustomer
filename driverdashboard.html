@@ -2003,8 +2003,18 @@
       document.getElementById('ride-request-card').classList.add('show');
     }
 
+    let lastAcceptAttempt = 0; // Global timestamp to track last accept attempt
+    
     async function acceptRide() {
       if (!currentRideRequestRef || !currentRideRequest) return;
+      
+      // AGGRESSIVE DEBOUNCE: Prevent accepts within 5 seconds
+      const now = Date.now();
+      if (now - lastAcceptAttempt < 5000) {
+        console.log('⚠️ Accept attempt too soon, ignoring (debounce)');
+        return;
+      }
+      lastAcceptAttempt = now;
       
       // CRITICAL FIX: Prevent multiple clicks
       if (isAcceptingRide) {
@@ -2023,6 +2033,13 @@
       
       try {
         console.log('🔄 Starting accept process for ride:', currentRideId);
+        
+        // CRITICAL CHECK: Verify this specific booking doesn't already exist
+        const existingBookingCheck = await database.ref(`evplan/bookings/${bookingId}`).once('value');
+        if (existingBookingCheck.exists()) {
+          console.error('⚠️ Booking ID already exists in database!', bookingId);
+          throw new Error('Booking collision detected, please try again');
+        }
         
         // Use a transaction to atomically check and update the ride request
         const transactionResult = await currentRideRequestRef.transaction((currentData) => {
@@ -2063,12 +2080,25 @@
           console.log('⚠️ Transaction aborted - ride already taken');
           showToast('This ride was accepted by another driver', 'error');
           isAcceptingRide = false;
+          lastAcceptAttempt = 0; // Reset debounce on failure
           hideRideRequest();
           return;
         }
         
         const updatedRideData = transactionResult.snapshot.val();
         console.log('✅ Transaction committed successfully');
+        
+        // DOUBLE CHECK: Make sure booking doesn't exist before creating
+        const finalBookingCheck = await database.ref(`evplan/bookings/${bookingId}`).once('value');
+        if (finalBookingCheck.exists()) {
+          console.error('❌ CRITICAL: Booking already exists! Aborting creation.');
+          showToast('Ride already accepted', 'error');
+          isAcceptingRide = false;
+          lastAcceptAttempt = 0; // Reset debounce
+          hideRideRequest();
+          return;
+        }
+        
         console.log('✅ Now creating booking record at:', `evplan/bookings/${bookingId}`);
         
         // Now create the booking record using the pre-generated bookingId
@@ -2098,6 +2128,7 @@
       } catch (error) {
         console.error('❌ Error accepting ride:', error);
         showToast('Error accepting ride: ' + error.message, 'error');
+        lastAcceptAttempt = 0; // Reset debounce on error
         
         // Re-enable button on error
         acceptBtn.disabled = false;
