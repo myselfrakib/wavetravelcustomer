@@ -485,6 +485,98 @@
       color: #dc2626;
     }
     
+    /* Live Tracking Map */
+    .live-tracking-map {
+      width: 100%;
+      height: 280px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .driver-info-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 2px solid #10b981;
+    }
+    
+    .driver-info-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .driver-avatar {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.3rem;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .driver-details h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #065f46;
+      margin-bottom: 4px;
+    }
+    
+    .driver-details p {
+      font-size: 0.8rem;
+      color: #059669;
+      font-weight: 600;
+    }
+    
+    .trip-stage-indicator {
+      background: white;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .stage-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1rem;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    }
+    
+    .stage-text h5 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #065f46;
+      margin-bottom: 2px;
+    }
+    
+    .stage-text p {
+      font-size: 0.75rem;
+      color: #059669;
+    }
+    
     .ride-route {
       margin-bottom: 14px;
     }
@@ -949,6 +1041,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   
+  <!-- Google Maps API -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsn16p7w8b-x8pEA_WTO5F2oUk4MHwcUc&libraries=places&callback=initMap"></script>
+  
   <script>
     // Firebase Configuration
     const firebaseConfig = {
@@ -963,6 +1058,9 @@
 
     // Initialize Firebase
     let app, auth, database, currentUser = null;
+    let mapsLoaded = false;
+    let activeMaps = {};
+    let activeRideListeners = {};
     
     try {
       app = firebase.initializeApp(firebaseConfig);
@@ -973,6 +1071,12 @@
       console.error('Firebase initialization error:', error);
       showToast('⚠️ Firebase initialization failed', 'error');
     }
+
+    // Initialize Google Maps
+    window.initMap = function() {
+      mapsLoaded = true;
+      console.log('✅ Google Maps loaded');
+    };
 
     // Check auth state
     if (auth) {
@@ -1064,41 +1168,47 @@
       }
 
       try {
-        // Load bookings
-        const bookingsRef = database.ref('evplan/bookings');
-        const snapshot = await bookingsRef.orderByChild('riderId').equalTo(currentUser.uid).once('value');
-        
-        const bookings = [];
-        snapshot.forEach((childSnapshot) => {
-          bookings.push({
-            id: childSnapshot.key,
-            ...childSnapshot.val()
+        // Load ride requests with real-time listener
+        const rideRequestsRef = database.ref('evplan/rideRequests');
+        rideRequestsRef.orderByChild('riderId').equalTo(currentUser.uid).on('value', (snapshot) => {
+          const rideRequests = [];
+          snapshot.forEach((childSnapshot) => {
+            rideRequests.push({
+              id: childSnapshot.key,
+              ...childSnapshot.val()
+            });
           });
+
+          // Sort by creation time (newest first)
+          rideRequests.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+          // Calculate stats from completed rides
+          const completedRides = rideRequests.filter(r => r.status === 'completed');
+          const totalRides = completedRides.length;
+          const totalDistance = completedRides.reduce((sum, r) => sum + (r.distance || 0), 0);
+          const carbonSaved = Math.round(totalDistance * 0.12);
+
+          // Update stats
+          document.getElementById('total-rides').textContent = totalRides;
+          document.getElementById('total-distance').textContent = Math.round(totalDistance) + ' km';
+          document.getElementById('carbon-saved').textContent = carbonSaved + ' kg';
+
+          // Display active rides (accepted, going_to_pickup, at_pickup, in_journey)
+          const activeRides = rideRequests.filter(r => 
+            r.status === 'accepted' || 
+            r.tripStage === 'going_to_pickup' || 
+            r.tripStage === 'at_pickup' || 
+            r.tripStage === 'in_journey'
+          );
+          
+          displayActiveRides(activeRides);
+
+          // Display recent activity
+          displayRecentActivity(rideRequests.slice(0, 5));
+
+          hideLoading();
         });
 
-        // Sort by creation time (newest first)
-        bookings.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-        // Calculate stats
-        const totalRides = bookings.filter(b => b.status === 'completed').length;
-        const totalDistance = bookings
-          .filter(b => b.status === 'completed')
-          .reduce((sum, b) => sum + (b.distance || 0), 0);
-        const carbonSaved = Math.round(totalDistance * 0.12); // Approximate CO2 saved
-
-        // Update stats
-        document.getElementById('total-rides').textContent = totalRides;
-        document.getElementById('total-distance').textContent = Math.round(totalDistance) + ' km';
-        document.getElementById('carbon-saved').textContent = carbonSaved + ' kg';
-
-        // Display active rides
-        const activeRides = bookings.filter(b => b.status === 'booked' || b.status === 'in-progress');
-        displayActiveRides(activeRides);
-
-        // Display recent activity
-        displayRecentActivity(bookings.slice(0, 5));
-
-        hideLoading();
       } catch (error) {
         console.error('Error loading dashboard:', error);
         showToast('Error loading dashboard data', 'error');
@@ -1106,7 +1216,7 @@
       }
     }
 
-    // Display active rides
+    // Display active rides with live tracking
     function displayActiveRides(rides) {
       const container = document.getElementById('active-rides-container');
       
@@ -1126,20 +1236,62 @@
       }
 
       container.innerHTML = rides.map(ride => {
-        const statusClass = ride.status === 'booked' ? 'active' : 
-                           ride.status === 'completed' ? 'completed' : 'active';
-        const statusText = ride.status === 'booked' ? 'Booked' : 
-                          ride.status === 'in-progress' ? 'In Progress' : 'Active';
+        const mapId = `map-${ride.id}`;
+        
+        let statusText = 'Active';
+        let stageText = 'Preparing...';
+        let stageDescription = '';
+        
+        if (ride.tripStage === 'going_to_pickup') {
+          statusText = 'Driver Coming';
+          stageText = 'Driver En Route';
+          stageDescription = 'Your driver is on the way to pickup';
+        } else if (ride.tripStage === 'at_pickup') {
+          statusText = 'Driver Arrived';
+          stageText = 'At Pickup Point';
+          stageDescription = 'Your driver has arrived';
+        } else if (ride.tripStage === 'in_journey') {
+          statusText = 'In Journey';
+          stageText = 'On the Way';
+          stageDescription = 'Heading to your destination';
+        }
         
         const pickupAddress = ride.pickup?.address || 'Pickup location';
         const dropoffAddress = ride.dropoff?.address || 'Dropoff location';
+        const driverName = ride.assignedDriverName || 'Driver';
+        const driverVehicle = ride.assignedDriverVehicle || 'Vehicle';
+        const driverInitial = driverName.charAt(0).toUpperCase();
         
         return `
           <div class="ride-card">
-            <div class="ride-status ${statusClass}">
+            <div class="ride-status active">
               <i class="fas fa-circle"></i>
               ${statusText}
             </div>
+            
+            <!-- Driver Info Card -->
+            <div class="driver-info-card">
+              <div class="driver-info-header">
+                <div class="driver-avatar">${driverInitial}</div>
+                <div class="driver-details">
+                  <h4>${driverName}</h4>
+                  <p>${driverVehicle}</p>
+                </div>
+              </div>
+              
+              <div class="trip-stage-indicator">
+                <div class="stage-icon">
+                  <i class="fas fa-${ride.tripStage === 'in_journey' ? 'car' : 'map-marker-alt'}"></i>
+                </div>
+                <div class="stage-text">
+                  <h5>${stageText}</h5>
+                  <p>${stageDescription}</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Live Tracking Map -->
+            <div class="live-tracking-map" id="${mapId}"></div>
             
             <div class="ride-route">
               <div class="route-point">
@@ -1174,23 +1326,227 @@
                 <span class="ride-detail-value">${ride.vehicleType === 'suv' ? 'SUV' : 'Sedan'}</span>
               </div>
             </div>
-            
-            <div class="ride-actions">
-              <button class="ride-action-btn primary" onclick="viewRideDetails('${ride.id}')">
-                <i class="fas fa-eye"></i>
-                View Details
-              </button>
-            </div>
           </div>
         `;
       }).join('');
+
+      // Initialize maps for each active ride after DOM update
+      setTimeout(() => {
+        rides.forEach(ride => {
+          initializeRideMap(ride);
+          setupRideListener(ride.id);
+        });
+      }, 100);
+    }
+
+    // Initialize map for a specific ride
+    function initializeRideMap(ride) {
+      if (!mapsLoaded || !window.google) {
+        console.log('Maps not loaded yet, retrying...');
+        setTimeout(() => initializeRideMap(ride), 500);
+        return;
+      }
+
+      const mapId = `map-${ride.id}`;
+      const mapElement = document.getElementById(mapId);
+      
+      if (!mapElement) {
+        console.error(`Map element ${mapId} not found`);
+        return;
+      }
+
+      // Default center (Kolkata)
+      const defaultCenter = { lat: 22.5726, lng: 88.3639 };
+      
+      // Create map
+      const map = new google.maps.Map(mapElement, {
+        center: ride.pickup?.lat ? { lat: ride.pickup.lat, lng: ride.pickup.lng } : defaultCenter,
+        zoom: 13,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: [
+          { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+        ]
+      });
+
+      // Store map instance
+      activeMaps[ride.id] = {
+        map: map,
+        directionsService: new google.maps.DirectionsService(),
+        directionsRenderer: new google.maps.DirectionsRenderer({
+          map: map,
+          suppressMarkers: false,
+          polylineOptions: {
+            strokeColor: '#10b981',
+            strokeWeight: 5
+          }
+        }),
+        driverMarker: null
+      };
+
+      // Initial route display
+      updateMapRoute(ride);
+    }
+
+    // Update map route based on trip stage
+    function updateMapRoute(ride) {
+      if (!activeMaps[ride.id]) return;
+
+      const mapData = activeMaps[ride.id];
+      const { map, directionsService, directionsRenderer } = mapData;
+
+      // Remove existing driver marker
+      if (mapData.driverMarker) {
+        mapData.driverMarker.setMap(null);
+      }
+
+      // Determine origin and destination based on trip stage
+      let origin, destination;
+      
+      if (ride.tripStage === 'going_to_pickup' || ride.tripStage === 'at_pickup') {
+        // Show route from driver to pickup
+        if (ride.driverLocation && ride.driverLocation.lat && ride.pickup && ride.pickup.lat) {
+          origin = { lat: ride.driverLocation.lat, lng: ride.driverLocation.lng };
+          destination = { lat: ride.pickup.lat, lng: ride.pickup.lng };
+          
+          // Add driver marker
+          mapData.driverMarker = new google.maps.Marker({
+            position: origin,
+            map: map,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: '#10b981',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 3
+            },
+            title: 'Driver Location'
+          });
+        } else {
+          console.warn('Missing driver or pickup location');
+          return;
+        }
+      } else if (ride.tripStage === 'in_journey') {
+        // Show route from pickup to dropoff
+        if (ride.pickup && ride.pickup.lat && ride.dropoff && ride.dropoff.lat) {
+          origin = { lat: ride.pickup.lat, lng: ride.pickup.lng };
+          destination = { lat: ride.dropoff.lat, lng: ride.dropoff.lng };
+          
+          // Add driver marker if location available
+          if (ride.driverLocation && ride.driverLocation.lat) {
+            mapData.driverMarker = new google.maps.Marker({
+              position: { lat: ride.driverLocation.lat, lng: ride.driverLocation.lng },
+              map: map,
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: '#10b981',
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 3
+              },
+              title: 'Driver Location'
+            });
+          }
+        } else {
+          console.warn('Missing pickup or dropoff location');
+          return;
+        }
+      }
+
+      // Request and display route
+      if (origin && destination) {
+        directionsService.route(
+          {
+            origin: origin,
+            destination: destination,
+            travelMode: google.maps.TravelMode.DRIVING
+          },
+          (result, status) => {
+            if (status === google.maps.DirectionsStatus.OK) {
+              directionsRenderer.setDirections(result);
+            } else {
+              console.error('Directions request failed:', status);
+            }
+          }
+        );
+      }
+    }
+
+    // Setup real-time listener for a specific ride
+    function setupRideListener(rideId) {
+      // Clean up existing listener
+      if (activeRideListeners[rideId]) {
+        activeRideListeners[rideId].off();
+      }
+
+      const rideRef = database.ref(`evplan/rideRequests/${rideId}`);
+      
+      activeRideListeners[rideId] = rideRef.on('value', (snapshot) => {
+        const rideData = snapshot.val();
+        
+        if (!rideData) {
+          console.log(`Ride ${rideId} deleted`);
+          return;
+        }
+
+        // Check if ride is completed
+        if (rideData.status === 'completed') {
+          showToast('🎉 Ride completed!', 'success');
+          
+          // Clean up
+          if (activeRideListeners[rideId]) {
+            activeRideListeners[rideId].off();
+            delete activeRideListeners[rideId];
+          }
+          if (activeMaps[rideId]) {
+            delete activeMaps[rideId];
+          }
+          
+          // Redirect to dashboard after 2 seconds
+          setTimeout(() => {
+            window.location.href = 'customerdashboard.html';
+          }, 2000);
+          return;
+        }
+
+        // Check if ride is cancelled
+        if (rideData.status === 'cancelled') {
+          showToast('Ride was cancelled', 'error');
+          
+          // Clean up
+          if (activeRideListeners[rideId]) {
+            activeRideListeners[rideId].off();
+            delete activeRideListeners[rideId];
+          }
+          if (activeMaps[rideId]) {
+            delete activeMaps[rideId];
+          }
+          
+          // Reload dashboard
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+          return;
+        }
+
+        // Update map with new data
+        if (activeMaps[rideId]) {
+          const ride = {
+            id: rideId,
+            ...rideData
+          };
+          updateMapRoute(ride);
+        }
+      });
     }
 
     // Display recent activity
-    function displayRecentActivity(bookings) {
+    function displayRecentActivity(rideRequests) {
       const container = document.getElementById('activity-list');
       
-      if (bookings.length === 0) {
+      if (rideRequests.length === 0) {
         container.innerHTML = `
           <div class="activity-item">
             <div class="activity-icon ride">
@@ -1205,12 +1561,14 @@
         return;
       }
 
-      container.innerHTML = bookings.map(booking => {
-        const icon = booking.status === 'completed' ? 'check-circle' : 
-                     booking.status === 'booked' ? 'car' : 'clock';
-        const title = booking.status === 'completed' ? 'Ride Completed' : 
-                      booking.status === 'booked' ? 'Ride Booked' : 'Ride Active';
-        const timeAgo = getTimeAgo(booking.createdAt);
+      container.innerHTML = rideRequests.map(request => {
+        const icon = request.status === 'completed' ? 'check-circle' : 
+                     request.status === 'accepted' ? 'car' : 
+                     request.status === 'cancelled' ? 'times-circle' : 'clock';
+        const title = request.status === 'completed' ? 'Ride Completed' : 
+                      request.status === 'accepted' ? 'Ride Active' :
+                      request.status === 'cancelled' ? 'Ride Cancelled' : 'Ride Requested';
+        const timeAgo = getTimeAgo(request.createdAt);
         
         return `
           <div class="activity-item">
@@ -1221,15 +1579,10 @@
               <div class="activity-title">${title}</div>
               <div class="activity-time">${timeAgo}</div>
             </div>
-            <div class="activity-amount">₹${booking.fareEstimate || 0}</div>
+            <div class="activity-amount">₹${request.fareEstimate || 0}</div>
           </div>
         `;
       }).join('');
-    }
-
-    // View ride details
-    function viewRideDetails(rideId) {
-      window.location.href = `mybookings.html?id=${rideId}`;
     }
 
     // Get time ago
@@ -1275,6 +1628,13 @@
           !hamburger.contains(e.target)) {
         closeSidebar();
       }
+    });
+
+    // Clean up listeners when page unloads
+    window.addEventListener('beforeunload', () => {
+      Object.values(activeRideListeners).forEach(listener => {
+        if (listener && listener.off) listener.off();
+      });
     });
   </script>
 </body>
