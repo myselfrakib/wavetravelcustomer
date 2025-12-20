@@ -2017,13 +2017,17 @@
       acceptBtn.disabled = true;
       acceptBtn.innerHTML = '<div class="spinner"></div> Accepting...';
       
+      // Generate booking ID OUTSIDE transaction (so it's only generated once)
+      const bookingId = database.ref('evplan/bookings').push().key;
+      console.log('📝 Pre-generated booking ID:', bookingId);
+      
       try {
         console.log('🔄 Starting accept process for ride:', currentRideId);
         
         // Use a transaction to atomically check and update the ride request
         const transactionResult = await currentRideRequestRef.transaction((currentData) => {
           if (currentData === null) {
-            // Ride doesn't exist
+            console.log('⚠️ Ride doesn\'t exist');
             return undefined; // Abort transaction
           }
           
@@ -2035,14 +2039,11 @@
           
           // Check if status is still searching
           if (currentData.status !== 'searching') {
-            console.log('⚠️ Ride status changed in transaction');
+            console.log('⚠️ Ride status changed in transaction:', currentData.status);
             return undefined; // Abort transaction
           }
           
-          // Create booking ID inside transaction
-          const bookingId = database.ref('evplan/bookings').push().key;
-          
-          // Update the ride request data
+          // Update the ride request data with pre-generated bookingId
           return {
             ...currentData,
             status: 'accepted',
@@ -2053,7 +2054,7 @@
             driverLocation: driverData.currentLocation,
             tripStage: 'going_to_pickup',
             acceptedAt: firebase.database.ServerValue.TIMESTAMP,
-            bookingId: bookingId
+            bookingId: bookingId  // Use pre-generated ID
           };
         });
         
@@ -2067,20 +2068,20 @@
         }
         
         const updatedRideData = transactionResult.snapshot.val();
-        const bookingId = updatedRideData.bookingId;
+        console.log('✅ Transaction committed successfully');
+        console.log('✅ Now creating booking record at:', `evplan/bookings/${bookingId}`);
         
-        console.log('✅ Transaction successful, booking ID:', bookingId);
-        
-        // Now create the booking record
-        const bookingRef = database.ref(`evplan/bookings/${bookingId}`);
+        // Now create the booking record using the pre-generated bookingId
         const bookingData = {
             ...currentRideRequest,
             ...updatedRideData,
             rideRequestId: currentRideId,
             bookedAt: firebase.database.ServerValue.TIMESTAMP
         };
-        await bookingRef.set(bookingData);
-        console.log('✅ Created booking record');
+        
+        // Use .set() to create exactly ONE entry at this specific path
+        await database.ref(`evplan/bookings/${bookingId}`).set(bookingData);
+        console.log('✅ Booking created successfully');
         
         // Clean up UI
         document.getElementById('ride-request-card').classList.remove('show');
