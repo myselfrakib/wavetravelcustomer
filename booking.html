@@ -1425,6 +1425,50 @@
         grid-template-columns: 1fr;
       }
     }
+    
+    /* Restoring Ride Overlay */
+    .restoring-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(16, 185, 129, 0.95);
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .restoring-overlay.active {
+      display: flex;
+    }
+    
+    .restoring-spinner {
+      width: 80px;
+      height: 80px;
+      border: 6px solid rgba(255, 255, 255, 0.3);
+      border-top: 6px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    .restoring-text {
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 0 20px;
+    }
+    
+    .restoring-subtext {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 0 20px;
+    }
   </style>
 </head>
 <body>
@@ -1440,7 +1484,7 @@
             <div class="sidebar-avatar" id="sidebar-avatar">👤</div>
             <div class="sidebar-user-info">
               <div class="sidebar-user-name" id="sidebar-user-name">Loading...</div>
-              <div class="sidebar-user-email" id="sidebar-user-email">loading@email.com</div>
+              <div class="sidebar-user-email" id="sidebar-user-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e98586888d80878ea98c84888085c78a8684">[email&#160;protected]</a></div>
             </div>
           </div>
           <button class="sidebar-close-btn" onclick="closeSidebar()">
@@ -1786,8 +1830,15 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
+  <!-- Restoring Ride Overlay -->
+  <div class="restoring-overlay" id="restoring-overlay">
+    <div class="restoring-spinner"></div>
+    <div class="restoring-text">Restoring Your Active Ride</div>
+    <div class="restoring-subtext">Please wait while we reconnect you with your driver...</div>
+  </div>
+
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
@@ -1826,6 +1877,11 @@
           currentUser = user;
           console.log('User signed in:', user.email);
           updateSidebarUserInfo(user);
+          
+          // Check for ongoing trips after a short delay to ensure everything is initialized
+          setTimeout(() => {
+            checkForOngoingTrip();
+          }, 1500);
         } else {
           currentUser = null;
           console.log('No user signed in, redirecting to login...');
@@ -2723,6 +2779,135 @@
       }
     }
 
+    // Check for ongoing trip when page loads
+    async function checkForOngoingTrip() {
+      if (!currentUser || !database) {
+        console.log('User not authenticated or database not available');
+        return;
+      }
+
+      try {
+        console.log('Checking for ongoing trips for user:', currentUser.uid);
+        
+        // Query for active ride requests for this user
+        const rideRequestsRef = database.ref('evplan/rideRequests');
+        const snapshot = await rideRequestsRef
+          .orderByChild('riderId')
+          .equalTo(currentUser.uid)
+          .once('value');
+
+        if (!snapshot.exists()) {
+          console.log('No ride requests found');
+          return;
+        }
+
+        // Find an active ride (searching, accepted, booked, or in progress)
+        let activeRideId = null;
+        let activeRideData = null;
+
+        snapshot.forEach((childSnapshot) => {
+          const rideData = childSnapshot.val();
+          const rideId = childSnapshot.key;
+          
+          // Check if ride is in an active state (including searching)
+          if (rideData.status === 'searching' ||
+              rideData.status === 'accepted' || 
+              rideData.status === 'moved_to_bookings' ||
+              (rideData.tripStage && rideData.tripStage !== 'completed')) {
+            
+            // Make sure ride is not completed or cancelled
+            if (rideData.status !== 'completed' && 
+                rideData.status !== 'cancelled' && 
+                rideData.tripStage !== 'completed') {
+              activeRideId = rideId;
+              activeRideData = rideData;
+              console.log('Found active ride:', rideId, rideData.status, rideData.tripStage);
+            }
+          }
+        });
+
+        // If active ride found, restore appropriate view
+        if (activeRideId && activeRideData) {
+          console.log('Restoring active ride:', activeRideId, 'Status:', activeRideData.status);
+          
+          // Show restoring overlay
+          const restoringOverlay = document.getElementById('restoring-overlay');
+          restoringOverlay.classList.add('active');
+          
+          // Hide form view
+          document.getElementById('form-view').classList.add('hidden');
+          
+          // If still searching, show searching view
+          if (activeRideData.status === 'searching') {
+            console.log('Restoring searching view');
+            
+            // Set booking data from saved ride
+            bookingData.pickup = activeRideData.pickup;
+            bookingData.dropoff = activeRideData.dropoff;
+            bookingData.distance = activeRideData.distance;
+            bookingData.duration = activeRideData.duration;
+            bookingData.fareEstimate = activeRideData.fareEstimate;
+            bookingData.selectedCar = activeRideData.vehicleType;
+            
+            setTimeout(() => {
+              // Show searching view
+              document.getElementById('searching-view').classList.add('active');
+              
+              // Update searching view with data
+              document.getElementById('search-pickup-address').textContent = activeRideData.pickup.address;
+              document.getElementById('search-dropoff-address').textContent = activeRideData.dropoff.address;
+              document.getElementById('search-distance').textContent = activeRideData.distance + ' km';
+              document.getElementById('search-duration').textContent = activeRideData.duration + ' hrs';
+              document.getElementById('search-fare').textContent = '₹' + activeRideData.fareEstimate;
+              
+              const vehicleIcon = activeRideData.vehicleType === 'suv' ? '🚙' : '🚗';
+              const vehicleName = activeRideData.vehicleType === 'suv' ? 'SUV' : 'Sedan';
+              document.getElementById('search-vehicle-icon').textContent = vehicleIcon;
+              document.getElementById('search-vehicle-name').textContent = vehicleName;
+              
+              // Show route on map
+              setTimeout(() => {
+                google.maps.event.trigger(searchingMap, 'resize');
+                showRouteOnSearchingMap();
+              }, 100);
+              
+              // Set up reference and listen for driver acceptance
+              currentRideRequestRef = database.ref(`evplan/rideRequests/${activeRideId}`);
+              searchingForRide = true;
+              listenForDriverAcceptance(activeRideId);
+              
+              // Hide restoring overlay
+              restoringOverlay.classList.remove('active');
+              showToast('✓ Reconnected - still searching for driver', 'success');
+            }, 800);
+            
+          } else {
+            // Otherwise show tracking view
+            setTimeout(() => {
+              showTrackingView(activeRideId);
+              
+              // Hide restoring overlay after tracking view is shown
+              setTimeout(() => {
+                restoringOverlay.classList.remove('active');
+                showToast('✓ Reconnected to your ride!', 'success');
+              }, 1000);
+            }, 800);
+          }
+        } else {
+          console.log('No active rides found');
+        }
+
+      } catch (error) {
+        console.error('Error checking for ongoing trip:', error);
+        
+        // Hide restoring overlay on error
+        const restoringOverlay = document.getElementById('restoring-overlay');
+        if (restoringOverlay) {
+          restoringOverlay.classList.remove('active');
+        }
+      }
+    }
+
     // Show tracking view with real-time updates and immediate ETA calculation
     async function showTrackingView(rideRequestId) {
       document.getElementById('searching-view').classList.remove('active');
@@ -3367,15 +3552,4 @@
         {
           origin: origin,
           destination: destination,
-          travelMode: google.maps.TravelMode.DRIVING
-        },
-        (result, status) => {
-          if (status === 'OK') {
-            searchingDirectionsRenderer.setDirections(result);
-          }
-        }
-      );
-    }
-  </script>
-</body>
-</html>
+          travelMode: googl
