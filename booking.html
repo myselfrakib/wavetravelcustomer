@@ -2725,11 +2725,12 @@
             currentRideRequestRef = null;
             searchingForRide = false;
 
-            showToast('🎉 Driver assigned! Loading tracking...', 'success');
+            showToast('🎉 Driver assigned! Calculating ETA...', 'success');
 
+            // Immediately show tracking view and calculate first ETA
             setTimeout(() => {
-              showTrackingView(rideId);
-            }, 1500);
+              showTrackingView(rideId, true); // Pass true for immediate ETA calculation
+            }, 1000);
 
           } catch (error) {
             console.error('Error creating booking:', error);
