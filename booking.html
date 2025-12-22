@@ -1376,6 +1376,12 @@
       color: #64748b;
       margin-top: 4px;
     }
+    
+    .eta-loading {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-style: italic;
+    }
 
     .action-buttons {
       display: grid;
@@ -1736,8 +1742,10 @@
             <div class="eta-header">
               <span class="eta-label">ESTIMATED ARRIVAL</span>
             </div>
-            <div class="eta-time" id="eta-time">-- min</div>
-            <div class="eta-distance" id="eta-distance">-- km away</div>
+            <div class="eta-time" id="eta-time">
+              <div class="eta-loading">Calculating...</div>
+            </div>
+            <div class="eta-distance" id="eta-distance">Calculating route...</div>
           </div>
           
           <div class="ride-summary">
@@ -2699,7 +2707,23 @@
       }, 30000);
     }
 
-    // Show tracking view with real-time updates
+    // Format time from minutes to readable format (hours and minutes)
+    function formatTime(minutes) {
+      if (minutes < 1) {
+        return '< 1 min';
+      } else if (minutes < 60) {
+        return Math.round(minutes) + ' min';
+      } else {
+        const hours = Math.floor(minutes / 60);
+        const mins = Math.round(minutes % 60);
+        if (mins === 0) {
+          return hours + ' hr';
+        }
+        return hours + ' hr ' + mins + ' min';
+      }
+    }
+
+    // Show tracking view with real-time updates and immediate ETA calculation
     async function showTrackingView(rideRequestId) {
       document.getElementById('searching-view').classList.remove('active');
       document.getElementById('tracking-view').classList.add('active');
@@ -2742,6 +2766,11 @@
         
         // Update map based on trip stage
         updateTrackingMap(rideData);
+        
+        // ⭐ IMMEDIATE ETA CALCULATION - Calculate ETA as soon as driver location is available
+        if (rideData.driverLocation && rideData.driverLocation.lat && rideData.driverLocation.lng) {
+          calculateETAImmediately(rideData);
+        }
       });
       
       // Trigger map resize
@@ -2749,7 +2778,7 @@
         google.maps.event.trigger(trackingMap, 'resize');
       }, 100);
       
-      // Start ETA updates
+      // Start periodic ETA updates (every 5 seconds for real-time accuracy)
       startETAUpdates();
     }
 
@@ -2975,40 +3004,28 @@
       }
     }
 
-    // Start ETA updates
-    function startETAUpdates() {
-      if (etaUpdateInterval) {
-        clearInterval(etaUpdateInterval);
-      }
-      
-      updateETA();
-      
-      etaUpdateInterval = setInterval(() => {
-        updateETA();
-      }, 30000);
-    }
-
-    // Update ETA
-    function updateETA() {
-      if (!currentRideData || !currentRideData.driverLocation) {
+    // Calculate ETA immediately when driver location is available
+    function calculateETAImmediately(rideData) {
+      if (!rideData.driverLocation || !rideData.driverLocation.lat || !rideData.driverLocation.lng) {
         return;
       }
       
-      const driverLoc = currentRideData.driverLocation;
-      const tripStage = currentRideData.tripStage || 'going_to_pickup';
+      const driverLoc = rideData.driverLocation;
+      const tripStage = rideData.tripStage || 'going_to_pickup';
       
       let destination;
       
       if (tripStage === 'going_to_pickup' || tripStage === 'at_pickup') {
-        if (!currentRideData.pickup) return;
-        destination = new google.maps.LatLng(currentRideData.pickup.lat, currentRideData.pickup.lng);
+        if (!rideData.pickup) return;
+        destination = new google.maps.LatLng(rideData.pickup.lat, rideData.pickup.lng);
       } else if (tripStage === 'in_journey') {
-        if (!currentRideData.dropoff) return;
-        destination = new google.maps.LatLng(currentRideData.dropoff.lat, currentRideData.dropoff.lng);
+        if (!rideData.dropoff) return;
+        destination = new google.maps.LatLng(rideData.dropoff.lat, rideData.dropoff.lng);
       } else {
         return;
       }
       
+      // Calculate route and ETA
       directionsService.route(
         {
           origin: new google.maps.LatLng(driverLoc.lat, driverLoc.lng),
@@ -3018,14 +3035,45 @@
         (result, status) => {
           if (status === 'OK') {
             const route = result.routes[0].legs[0];
-            const durationMinutes = Math.ceil(route.duration.value / 60);
+            const durationMinutes = route.duration.value / 60; // Convert seconds to minutes
             const distanceKm = (route.distance.value / 1000).toFixed(1);
             
-            document.getElementById('eta-time').textContent = `${durationMinutes} min`;
+            // Format time with better display (hours and minutes)
+            const timeDisplay = formatTime(durationMinutes);
+            
+            // Update UI immediately
+            document.getElementById('eta-time').textContent = timeDisplay;
             document.getElementById('eta-distance').textContent = `${distanceKm} km away`;
+            
+            console.log('ETA calculated:', timeDisplay, distanceKm + ' km');
+          } else {
+            console.error('Directions request failed:', status);
+            document.getElementById('eta-time').innerHTML = '<div class="eta-loading">Recalculating...</div>';
+            document.getElementById('eta-distance').textContent = 'Please wait...';
           }
         }
       );
+    }
+
+    // Start ETA updates with fast refresh rate (every 5 seconds)
+    function startETAUpdates() {
+      if (etaUpdateInterval) {
+        clearInterval(etaUpdateInterval);
+      }
+      
+      // Update every 5 seconds for real-time accuracy
+      etaUpdateInterval = setInterval(() => {
+        if (currentRideData && currentRideData.driverLocation) {
+          calculateETAImmediately(currentRideData);
+        }
+      }, 5000); // 5 seconds for ultra-fast updates
+    }
+
+    // Update ETA (kept for backward compatibility but now uses calculateETAImmediately)
+    function updateETA() {
+      if (currentRideData) {
+        calculateETAImmediately(currentRideData);
+      }
     }
 
     // Call driver
@@ -3331,4 +3379,3 @@
   </script>
 </body>
 </html>
-
